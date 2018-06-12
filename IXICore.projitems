@@ -1,0 +1,35 @@
+﻿<?xml version="1.0" encoding="utf-8"?>
+<Project xmlns="http://schemas.microsoft.com/developer/msbuild/2003">
+  <PropertyGroup>
+    <MSBuildAllProjects>$(MSBuildAllProjects);$(MSBuildThisFileFullPath)</MSBuildAllProjects>
+    <HasSharedItems>true</HasSharedItems>
+    <SharedGUID>80487c64-619a-4b60-97bd-ed7670bf45b3</SharedGUID>
+  </PropertyGroup>
+  <PropertyGroup Label="Configuration">
+    <Import_RootNamespace>IXICore</Import_RootNamespace>
+  </PropertyGroup>
+  <ItemGroup>
+    <Compile Include="$(MSBuildThisFileDirectory)Address\Address.cs" />
+    <Compile Include="$(MSBuildThisFileDirectory)Crypto\Crypto.cs" />
+    <Compile Include="$(MSBuildThisFileDirectory)Crypto\CryptoLib.cs" />
+    <Compile Include="$(MSBuildThisFileDirectory)Crypto\CryptoLibs\BouncyCastle.cs" />
+    <Compile Include="$(MSBuildThisFileDirectory)Crypto\CryptoManager.cs" />
+    <Compile Include="$(MSBuildThisFileDirectory)Meta\Logging.cs" />
+    <Compile Include="$(MSBuildThisFileDirectory)Network\Network.cs" />
+    <Compile Include="$(MSBuildThisFileDirectory)Peer\Peer.cs" />
+    <Compile Include="$(MSBuildThisFileDirectory)Presence\Presence.cs" />
+    <Compile Include="$(MSBuildThisFileDirectory)Presence\PresenceList.cs" />
+    <Compile Include="$(MSBuildThisFileDirectory)Time\Time.cs" />
+    <Compile Include="$(MSBuildThisFileDirectory)Transaction\Transaction.cs" />
+    <Compile Include="$(MSBuildThisFileDirectory)Utils\BitWriter.cs" />
+    <Compile Include="$(MSBuildThisFileDirectory)Utils\KDTable.cs" />
+    <Compile Include="$(MSBuildThisFileDirectory)Utils\Mnemonics.cs" />
+    <Compile Include="$(MSBuildThisFileDirectory)Utils\Wordlist.cs" />
+    <Compile Include="$(MSBuildThisFileDirectory)Utils\WordlistSources.cs" />
+    <Compile Include="$(MSBuildThisFileDirectory)Wallet\Wallet.cs" />
+    <Compile Include="$(MSBuildThisFileDirectory)Wallet\WalletStorage.cs" />
+  </ItemGroup>
+  <ItemGroup>
+    <Folder Include="$(MSBuildThisFileDirectory)Address\" />
+  </ItemGroup>
+</Project>
