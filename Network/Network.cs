@@ -108,13 +108,12 @@ namespace DLT
             public static List<string> GetAllLocalIPAddresses()
             {
                 List<string> ips = new List<string>();
-                Console.WriteLine("Listing Local IP Addresses:");
                 var host = Dns.GetHostEntry(Dns.GetHostName());
                 foreach (var ip in host.AddressList)
                 {
                     if (ip.AddressFamily == AddressFamily.InterNetwork)
                     {
-                        Console.WriteLine("\t Local IP: {0}", ip.ToString());
+                        // Console.WriteLine("\t Local IP: {0}", ip.ToString());
                         ips.Add(ip.ToString());
                     }
                 }
