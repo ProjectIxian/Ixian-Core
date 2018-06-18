@@ -361,8 +361,9 @@ namespace DLT
                                     if(pa.lastSeenTime.Equals(timestamp, StringComparison.Ordinal) == false)
                                     {
                                         double d_timestamp = Convert.ToDouble(timestamp);
-                                        // Check for tampering
-                                        if (currentTime < Convert.ToDouble(timestamp))
+
+                                        // Check for tampering. Includes a 100 second synchronization zone
+                                        if (currentTime + 100 < d_timestamp)
                                         {
                                             Logging.warn(string.Format("[PL] Potential KEEPALIVE tampering for {0} {1}. Timestamp {2}", listEntry.wallet, pa.address, timestamp));
                                             return false;
