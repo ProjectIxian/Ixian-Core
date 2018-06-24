@@ -19,7 +19,7 @@ namespace DLT
 
         public PresenceAddress()
         {
-            device = Guid.NewGuid().ToString();
+            device = Config.device_id;
             address = string.Format("{0}:{1}", CoreNetworkUtils.GetLocalIPAddress(), Config.serverPort);
             type = 'M';
             lastSeenTime = Clock.getTimestamp(DateTime.Now);

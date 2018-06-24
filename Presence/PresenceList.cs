@@ -389,7 +389,7 @@ namespace DLT
                                         // Update the timestamp
                                         pa.lastSeenTime = timestamp;
 
-                                        Console.WriteLine("[PL] LASTSEEN for {0} set to {1}", hostname, pa.lastSeenTime);
+                                        // Console.WriteLine("[PL] LASTSEEN for {0} set to {1}", hostname, pa.lastSeenTime);
                                         return true;
                                     }
                                 }
@@ -423,18 +423,14 @@ namespace DLT
 
                     foreach (PresenceAddress pa in safe_addresses)
                     {
-                        // Skip self device
+                        // Skip self device from cleanup and apply current timestamp
                         if (pa.device.Equals(Config.device_id, StringComparison.Ordinal))
                         {
+                            // Update the timestamp
+                            pa.lastSeenTime = Clock.getTimestamp(DateTime.Now);
                             continue;
                         }
 
-                        // Skip C clients for now as they are handled by the relay
-                        // TODO: handle direct C clients
-                        if(pa.type == 'C')
-                        {
-                            continue;
-                        }
 
                         try
                         {
