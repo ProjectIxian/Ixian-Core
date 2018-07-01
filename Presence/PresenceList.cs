@@ -16,11 +16,11 @@ namespace DLT
 
 
         // Generate an initial presence list
-        public static void generatePresenceList()
+        public static void generatePresenceList(string initial_ip)
         {
             Logging.info("Generating presence list.");
             // Initialize with the default presence state
-            PresenceAddress this_address = new PresenceAddress();
+            PresenceAddress this_address = new PresenceAddress(Config.device_id, string.Format("{0}:{1}", initial_ip, Config.serverPort), 'M');
             Presence this_node = new Presence(Node.walletStorage.address, Node.walletStorage.encPublicKey, Node.walletStorage.publicKey, this_address);
             updateEntry(this_node);
 
