@@ -51,7 +51,8 @@ namespace DLT
                     String formattedMessage = String.Format("{0}|{1}: {2}", DateTime.Now.ToString("yyyy-MM-dd HH:mm:ss.ffff"), severity.ToString(), message);
                     Console.WriteLine(formattedMessage);
                     Debug.WriteLine(formattedMessage);
-                    if(Logging.singleton.outputFile != null)
+
+                    if (Logging.singleton.outputFile != null)
                     {
                         Logging.singleton.outputFile.WriteLine(formattedMessage);
                         Logging.singleton.outputFile.Flush();
