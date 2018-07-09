@@ -24,7 +24,7 @@ namespace DLT
                 currentSeverity = LogSeverity.trace;
                 try
                 {
-                    outputFile = File.AppendText("plasmadlt.log");
+                    outputFile = File.AppendText("ixian.log");
                 } catch(Exception e)
                 {
                     // Ignore all exception and start anyway with console only logging.
