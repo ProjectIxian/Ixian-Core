@@ -66,7 +66,6 @@ namespace DLT
                     to = reader.ReadString();
                     from = reader.ReadString();
                     data = reader.ReadString();
-
                     timeStamp = reader.ReadString();
                     checksum = reader.ReadString();
                     signature = reader.ReadString();

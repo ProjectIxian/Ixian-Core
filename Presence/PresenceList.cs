@@ -51,6 +51,7 @@ namespace DLT
             bool entryFound = false;
             bool entryUpdated = false;
 
+            Presence return_presence = null;
             lock(presences)
             {
                 foreach(Presence pr in presences)
@@ -122,10 +123,10 @@ namespace DLT
 
                         // Entry was updated, broadcast to network
                         //Console.WriteLine("[PL] Updating presence for {0}", pr.wallet);                  
-                        ProtocolMessage.broadcastProtocolMessage(ProtocolMessageCode.updatePresence, pr.getBytes(), skipSocket);
 
                         // Return the stored presence list entity
-                        return pr;
+                        return_presence = pr;
+                        break;
                     }
                 }
 
@@ -136,20 +137,26 @@ namespace DLT
                     //Console.WriteLine("[PL] Adding new entry for {0}", presence.wallet);
                     presences.Add(presence);
 
-                    ProtocolMessage.broadcastProtocolMessage(ProtocolMessageCode.updatePresence, presence.getBytes(), skipSocket);
-                    return presence;
+                    return_presence = presence;
                 }
             }
 
-            return null;
+            // Perform network oprations only after lock is lifted and we have a return_presence
+            if(return_presence != null)
+            {
+                ProtocolMessage.broadcastProtocolMessage(ProtocolMessageCode.updatePresence, return_presence.getBytes(), skipSocket);
+            }
+
+            return return_presence;
         }
 
         // Removes an entry from the presence list.
         public static bool removeEntry(Presence presence)
         {
+            Presence listEntry = null;
+
             lock (presences)
             {
-                Presence listEntry = null;
                 foreach (Presence pr in presences)
                 {
                     // Check if the wallet address is already in the presence list
@@ -159,14 +166,17 @@ namespace DLT
                         break;
                     }
                 }
+            }
 
-                if(listEntry != null)
+            if (listEntry != null)
+            {
+                ProtocolMessage.broadcastProtocolMessage(ProtocolMessageCode.removePresence, listEntry.getBytes());
+                // Remove it from the presences list as well
+                lock (presences)
                 {
-                    ProtocolMessage.broadcastProtocolMessage(ProtocolMessageCode.removePresence, listEntry.getBytes());
                     presences.Remove(listEntry);
-                    return true;                  
                 }
-
+                return true;
             }
 
             return false;

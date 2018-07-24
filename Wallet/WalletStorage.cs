@@ -68,7 +68,6 @@ namespace DLT
                 address = addr.ToString();
 
                 Logging.log(LogSeverity.info, String.Format("Wallet File Version: {0}", version));
-                Logging.log(LogSeverity.info, String.Format("Private Key: {0}", privateKey));
                 Logging.log(LogSeverity.info, String.Format("Public Key: {0}", publicKey));
 
 
@@ -78,7 +77,6 @@ namespace DLT
                     encPrivateKey = reader.ReadString();
                     encPublicKey = reader.ReadString();
 
-                    Logging.log(LogSeverity.info, String.Format("ENC Private Key: {0}", encPrivateKey));
                     Logging.log(LogSeverity.info, String.Format("ENC Public Key: {0}", encPublicKey));
                 }
 
@@ -167,13 +165,16 @@ namespace DLT
             Address addr = new Address(publicKey);
             address = addr.ToString();
 
-            Logging.log(LogSeverity.info, String.Format("Private Key: {0}", privateKey));
             Logging.log(LogSeverity.info, String.Format("Public Key: {0}", publicKey));
-
-            Logging.log(LogSeverity.info, String.Format("ENC Private Key: {0}", encPrivateKey));
             Logging.log(LogSeverity.info, String.Format("ENC Public Key: {0}", encPublicKey));
+            Logging.log(LogSeverity.info, String.Format("Public Node Address: {0}", address));
 
-            Logging.log(LogSeverity.info, String.Format("Your Address: {0}", address));
+            Console.WriteLine();
+            Console.Write("Your IXIAN address is ");
+            Console.ForegroundColor = ConsoleColor.Green;
+            Console.WriteLine(address);
+            Console.ResetColor();
+            Console.WriteLine();
 
             // Write the new wallet data to the file
             return writeWallet();
