@@ -82,7 +82,7 @@ namespace DLT
             // Domain/IP seperated by : from the port
             public static string[] seedNodes = new string[]
                     {
-                        "localhost:10000"
+                        "10.10.1.15:10000"
                     };
 
 
