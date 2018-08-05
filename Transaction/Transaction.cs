@@ -8,7 +8,7 @@ namespace DLT
     {
         public string id;
         public int type;
-        public ulong amount;
+        public IxiNumber amount;
         public string to;
         public string from;
         public string data;
@@ -25,7 +25,7 @@ namespace DLT
             timeStamp = Clock.getTimestamp(DateTime.Now);
         }
 
-        public Transaction(ulong tx_amount, string tx_to, string tx_from)
+        public Transaction(IxiNumber tx_amount, string tx_to, string tx_from)
         {
             id = Guid.NewGuid().ToString();
             type = 0;
@@ -62,7 +62,7 @@ namespace DLT
                 {
                     id = reader.ReadString();
                     type = reader.ReadInt32();
-                    amount = reader.ReadUInt64();
+                    amount = new IxiNumber(reader.ReadString());
                     to = reader.ReadString();
                     from = reader.ReadString();
                     data = reader.ReadString();
@@ -81,7 +81,7 @@ namespace DLT
                 {
                     writer.Write(id);
                     writer.Write(type);
-                    writer.Write(amount);
+                    writer.Write(amount.ToString());
                     writer.Write(to);
                     writer.Write(from);
                     writer.Write(data);
@@ -125,7 +125,7 @@ namespace DLT
         // Calculate a transaction checksum 
         public static string calculateChecksum(Transaction transaction)
         {
-            return Crypto.sha256(transaction.id + transaction.type + transaction.amount + transaction.to + transaction.from + transaction.data + transaction.timeStamp);
+            return Crypto.sha256(transaction.id + transaction.type + transaction.amount.ToString() + transaction.to + transaction.from + transaction.data + transaction.timeStamp);
         }
 
         public static string getSignature(string checksum)

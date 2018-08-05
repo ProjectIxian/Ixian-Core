@@ -5,17 +5,17 @@ namespace DLT
     public class Wallet
     {
         public string id;
-        public ulong balance;
+        public IxiNumber balance;
         public string data;
 
         public Wallet()
         {
             id = "";
-            balance = 0;
+            balance = new IxiNumber();
             data = "";
         }
 
-        public Wallet(string w_id, ulong w_balance)
+        public Wallet(string w_id, IxiNumber w_balance)
         {
             id = w_id;
             balance = w_balance;
@@ -36,7 +36,8 @@ namespace DLT
                 using (BinaryReader reader = new BinaryReader(m))
                 {
                     id = reader.ReadString();
-                    balance = reader.ReadUInt64();
+                    string balance_str = reader.ReadString();
+                    balance = new IxiNumber(balance_str);
                     data = reader.ReadString();
                 }
             }
@@ -49,7 +50,7 @@ namespace DLT
                 using (BinaryWriter writer = new BinaryWriter(m))
                 {
                     writer.Write(id);
-                    writer.Write(balance);
+                    writer.Write(balance.ToString());
                     writer.Write(data);
                 }
                 return m.ToArray();
@@ -59,7 +60,7 @@ namespace DLT
         // Calculate the wallet checksum based on it's contents
         public string calculateChecksum()
         {
-            string baseData = id + balance + data;
+            string baseData = id + balance.ToString() + data;
             return Crypto.sha256(baseData);
         }
 
