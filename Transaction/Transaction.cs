@@ -6,15 +6,28 @@ namespace DLT
 {
     public class Transaction
     {
-        public string id;
-        public int type;
-        public IxiNumber amount;
-        public string to;
-        public string from;
-        public string data;
-        public string timeStamp;
-        public string checksum;
-        public string signature;
+        public string id;           //  36 B
+        public int type;            //   4 B
+        public IxiNumber amount;    // ~16 B
+        public string to;           //  36 B
+        public string from;         //  36 B
+        public string data;         //   0 B
+        public string timeStamp;    // ~12 B
+        public string checksum;     //  32 B
+        public string signature;    //  32 B
+        public bool applied;        // TOTAL: ~200 B
+
+        /* TX RAM savings:
+         * id -> guid binary (36B -> 16B)
+         * type -> single byte (4B -> 1B) - MAX 255 types!! (should be plenty)
+         * amount -> binary (16B -> 8B)
+         * to, from -> binary (36B -> 16B)
+         * timestamp -> fix precision to ms, get it out of double(string) into int64 (~12B -> 8B)
+         * checksum -> binary (32B -> 16B)
+         * sig -> binary (32B -> 16B)
+         * NEW TXsize estimate: 97B
+         * Additional measures: Huffman code (need training data to estimate entropy before I can predict savings)
+         */
 
 
         public Transaction()
@@ -23,6 +36,7 @@ namespace DLT
             id = Guid.NewGuid().ToString();
             type = 0;
             timeStamp = Clock.getTimestamp(DateTime.Now);
+            applied = false;
         }
 
         public Transaction(IxiNumber tx_amount, string tx_to, string tx_from)
