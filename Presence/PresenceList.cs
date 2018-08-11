@@ -29,13 +29,16 @@ namespace DLT
         // Prototype specific function, used to retrieve the first valid master node address from the presence list
         public static string getFirstMasterNodeAddress()
         {
-            foreach (Presence pr in presences)
+            lock (presences)
             {
-                foreach (PresenceAddress addr in pr.addresses)
+                foreach (Presence pr in presences)
                 {
-                    if (addr.type == 'M')
+                    foreach (PresenceAddress addr in pr.addresses)
                     {
-                        return addr.address;
+                        if (addr.type == 'M')
+                        {
+                            return addr.address;
+                        }
                     }
                 }
             }
