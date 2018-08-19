@@ -156,6 +156,20 @@ namespace DLT
             return new IxiNumber(BigInteger.Divide(num1.getAmount(), num2.getAmount()));
         }
 
+        public static IxiNumber divRem(IxiNumber num1, IxiNumber num2, out IxiNumber remainder)
+        {
+            BigInteger bi_remainder = 0;
+            BigInteger bi_quotient = BigInteger.DivRem(num1.getAmount(), num2.getAmount(), out bi_remainder);
+
+            remainder = new IxiNumber(bi_remainder);
+
+            // Multiply the bi_quotient part if neccessary
+            double multiplier = Math.Pow(10, num_decimals);
+            bi_quotient = BigInteger.Multiply(bi_quotient, new BigInteger(multiplier));
+
+            return new IxiNumber(bi_quotient);
+        }
+
 
         // TODO: equals, assign, +, -
         // add assign from long
