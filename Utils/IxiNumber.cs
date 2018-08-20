@@ -110,6 +110,24 @@ namespace DLT
             return ret;
         }
 
+        public override int GetHashCode()
+        {
+            return amount.GetHashCode();
+        }
+
+        public override bool Equals(object obj)
+        {
+            if(obj is IxiNumber)
+            {
+                return this == (IxiNumber)obj;
+            }
+            if(obj is long)
+            {
+                return this == (long)obj;
+            }
+            return false;
+        }
+
         public BigInteger getAmount()
         {
             return amount;
