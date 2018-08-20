@@ -1,6 +1,7 @@
 using System;
 using System.IO;
 using System.Diagnostics;
+using System.Threading;
 
 namespace DLT
 {
@@ -48,7 +49,11 @@ namespace DLT
             {
                 if (severity >= Logging.singleton.currentSeverity)
                 {
-                    String formattedMessage = String.Format("{0}|{1}: {2}", DateTime.Now.ToString("yyyy-MM-dd HH:mm:ss.ffff"), severity.ToString(), message);
+                    String formattedMessage = String.Format("{0}|{1}|Thread({2}): {3}", 
+                        DateTime.Now.ToString("yyyy-MM-dd HH:mm:ss.ffff"), 
+                        severity.ToString(), 
+                        Thread.CurrentThread.ManagedThreadId,
+                        message);
                     Console.WriteLine(formattedMessage);
                     Debug.WriteLine(formattedMessage);
 

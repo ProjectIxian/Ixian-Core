@@ -4,9 +4,11 @@ namespace DLT
 {
     public class Wallet
     {
-        public string id;
-        public IxiNumber balance;
-        public string data;
+        public string id; // 36 B (18 B)
+        public IxiNumber balance; // 16 B
+        public string data; // 0 B
+
+        // TOTAL: 52 B (34 B)
 
         public Wallet()
         {
@@ -57,7 +59,6 @@ namespace DLT
             }
         }
 
-        // Calculate the wallet checksum based on it's contents
         public string calculateChecksum()
         {
             string baseData = id + balance.ToString() + data;
