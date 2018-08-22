@@ -75,16 +75,20 @@ namespace DLT
         }
 
 
-    
-            
+
+
         public class CoreNetworkUtils
         {
             // The list of seed nodes to connect to first. 
             // Domain/IP seperated by : from the port
             public static string[] seedNodes = new string[]
                     {
-                        "10.10.1.15:10001"
+                        "seed1.ixian.io:10515",
+                        "seed2.ixian.io:10515",
+                        "seed3.ixian.io:10515",
+                        "seed4.ixian.io:10515"
                     };
+        
 
 
             // Get the local accessible IP address of this node
