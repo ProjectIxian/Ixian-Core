@@ -15,7 +15,8 @@ namespace DLT
         public string timeStamp;    // ~12 B
         public string checksum;     //  32 B
         public string signature;    //  32 B
-        public bool applied;        // TOTAL: ~200 B
+        public ulong applied;        
+                                    // TOTAL: ~200 B
 
         /* TX RAM savings:
          * id -> guid binary (36B -> 16B)
@@ -36,7 +37,7 @@ namespace DLT
             id = Guid.NewGuid().ToString();
             type = 0;
             timeStamp = Clock.getTimestamp(DateTime.Now);
-            applied = false;
+            applied = 0;
         }
 
         public Transaction(IxiNumber tx_amount, string tx_to, string tx_from)
@@ -80,6 +81,8 @@ namespace DLT
                     to = reader.ReadString();
                     from = reader.ReadString();
                     data = reader.ReadString();
+                    applied = reader.ReadUInt64();
+
                     timeStamp = reader.ReadString();
                     checksum = reader.ReadString();
                     signature = reader.ReadString();
@@ -99,6 +102,7 @@ namespace DLT
                     writer.Write(to);
                     writer.Write(from);
                     writer.Write(data);
+                    writer.Write(applied);
 
                     writer.Write(timeStamp);
                     writer.Write(checksum);
