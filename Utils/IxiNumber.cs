@@ -31,6 +31,15 @@ namespace DLT
             amount = new BigInteger(number);
         }
 
+        public IxiNumber(ulong number, bool no_decimals)
+        {
+            amount = new BigInteger(number);
+            if (no_decimals == true)
+            {
+                amount = BigInteger.Multiply(amount, divisor);
+            }
+        }
+
         public IxiNumber(string number)
         {
             string[] split = number.Split('.');
