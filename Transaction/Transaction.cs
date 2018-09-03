@@ -6,6 +6,13 @@ namespace DLT
 {
     public class Transaction
     {
+
+        public enum Type:int
+        {
+            Normal = 0,
+            PoWSolution = 1
+        }
+
         public string id;           //  36 B
         public int type;            //   4 B
         public IxiNumber amount;    // ~16 B
@@ -35,7 +42,7 @@ namespace DLT
         {
             // This constructor is used only for development purposes
             id = Guid.NewGuid().ToString();
-            type = 0;
+            type = (int) Type.Normal;
             timeStamp = Clock.getTimestamp(DateTime.Now);
             applied = 0;
         }
@@ -43,7 +50,7 @@ namespace DLT
         public Transaction(IxiNumber tx_amount, string tx_to, string tx_from)
         {
             id = Guid.NewGuid().ToString();
-            type = 0;
+            type = (int) Type.Normal;
 
             amount = tx_amount;
             to = tx_to;
@@ -132,12 +139,24 @@ namespace DLT
         public bool verifySignature()
         {
             // Generate an address from the public key and compare it with the sender
-            Address p_address = new Address(data);
+            string pubkey = data;
+
+            // If this is a PoWSolution transaction, extract the public key from the data section first
+            if(type == (int)Transaction.Type.PoWSolution)
+            {
+                string[] split = data.Split(new string[] { "||" }, StringSplitOptions.None);
+                if (split.Length < 1)
+                    return false;
+
+                pubkey = split[0];
+            }
+
+            Address p_address = new Address(pubkey);
             if (from.Equals(p_address.ToString(), StringComparison.Ordinal) == false)
                 return false;
 
             // Verify the signature
-            return CryptoManager.lib.verifySignature(checksum, data, signature);
+            return CryptoManager.lib.verifySignature(checksum, pubkey, signature);
         }
 
         // Calculate a transaction checksum 
