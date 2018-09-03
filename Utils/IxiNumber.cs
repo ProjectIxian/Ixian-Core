@@ -190,9 +190,6 @@ namespace DLT
 
             remainder = new IxiNumber(bi_remainder);
 
-            // Multiply the bi_quotient part if neccessary
-            double multiplier = Math.Pow(10, num_decimals);
-            bi_quotient = BigInteger.Multiply(bi_quotient, new BigInteger(multiplier));
 
             return new IxiNumber(bi_quotient);
         }
