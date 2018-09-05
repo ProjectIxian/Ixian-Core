@@ -19,6 +19,7 @@ namespace DLT
         public string to;           //  36 B
         public string from;         //  36 B
         public string data;         //   0 B
+        public ulong nonce;
         public string timeStamp;    // ~12 B
         public string checksum;     //  32 B
         public string signature;    //  32 B
@@ -47,7 +48,7 @@ namespace DLT
             applied = 0;
         }
 
-        public Transaction(IxiNumber tx_amount, string tx_to, string tx_from)
+        public Transaction(IxiNumber tx_amount, string tx_to, string tx_from, ulong tx_nonce = 0)
         {
             id = Guid.NewGuid().ToString();
             type = (int) Type.Normal;
@@ -55,7 +56,9 @@ namespace DLT
             amount = tx_amount;
             to = tx_to;
             from = tx_from;
-            data = Node.walletStorage.publicKey; 
+            data = Node.walletStorage.publicKey;
+
+            nonce = tx_nonce;
 
             timeStamp = Clock.getTimestamp(DateTime.Now);
             checksum = Transaction.calculateChecksum(this);
@@ -70,6 +73,7 @@ namespace DLT
             to = tx_transaction.to;
             from = tx_transaction.from;
             data = tx_transaction.data;
+            nonce = tx_transaction.nonce;
 
             timeStamp = tx_transaction.timeStamp;
             checksum = tx_transaction.checksum;
@@ -88,6 +92,7 @@ namespace DLT
                     to = reader.ReadString();
                     from = reader.ReadString();
                     data = reader.ReadString();
+                    nonce = reader.ReadUInt64();
                     applied = reader.ReadUInt64();
 
                     timeStamp = reader.ReadString();
@@ -109,6 +114,7 @@ namespace DLT
                     writer.Write(to);
                     writer.Write(from);
                     writer.Write(data);
+                    writer.Write(nonce);
                     writer.Write(applied);
 
                     writer.Write(timeStamp);
@@ -162,7 +168,7 @@ namespace DLT
         // Calculate a transaction checksum 
         public static string calculateChecksum(Transaction transaction)
         {
-            return Crypto.sha256(transaction.id + transaction.type + transaction.amount.ToString() + transaction.to + transaction.from + transaction.data + transaction.timeStamp);
+            return Crypto.sha256(transaction.id + transaction.type + transaction.amount.ToString() + transaction.to + transaction.from + transaction.data + transaction.nonce + transaction.timeStamp);
         }
 
         public static string getSignature(string checksum)
