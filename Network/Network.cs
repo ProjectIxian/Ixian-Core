@@ -260,7 +260,10 @@ namespace DLT
             // Domain/IP seperated by : from the port
             public static string[] seedNodes = new string[]
                     {
-                        "10.24.254.86:10001"
+                        "seed1.ixian.io:10234",
+                        "seed2.ixian.io:10234",
+                        "seed3.ixian.io:10234",
+                        "seed4.ixian.io:10234"
                     };
         
 
@@ -369,7 +372,33 @@ namespace DLT
                 return ips;
 
             }
-            
+
+            public static bool PingAddressReachable(String full_hostname)
+            {
+                String[] hn_port = full_hostname.Split(':');
+                if(hn_port.Length != 2)
+                {
+                    return false;
+                }
+                String hostname = hn_port[0];
+                int port;
+                if(int.TryParse(hn_port[1], out port) == false)
+                {
+                    return false;
+                }
+                TcpClient temp = new TcpClient();
+                bool connected = false;
+                try
+                {
+                    temp.Connect(hostname, port);
+                    temp.Client.Blocking = false;
+                    temp.Client.Send(new byte[1], 0, 0);
+                    connected = temp.Client.Connected;
+                    temp.Close();
+                }
+                catch (SocketException) { connected = false; }
+                return connected;
+            }
         }
 
     }
