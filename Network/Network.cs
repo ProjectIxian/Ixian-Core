@@ -394,6 +394,8 @@ namespace DLT
                     temp.Client.Blocking = false;
                     temp.Client.Send(new byte[1], 0, 0);
                     connected = temp.Client.Connected;
+                    temp.Client.Send(ProtocolMessage.prepareProtocolMessage(ProtocolMessageCode.bye, new byte[1]));
+                    Logging.info(String.Format("Testing client connectivity for {0}. Local endpoint: {1}.", full_hostname, temp.Client.LocalEndPoint.ToString()));
                     temp.Close();
                 }
                 catch (SocketException) { connected = false; }
