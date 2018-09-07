@@ -10,7 +10,8 @@ namespace DLT
         public enum Type:int
         {
             Normal = 0,
-            PoWSolution = 1
+            PoWSolution = 1,
+            StakingReward = 2
         }
 
         public string id;           //  36 B
@@ -148,7 +149,7 @@ namespace DLT
             string pubkey = data;
 
             // If this is a PoWSolution transaction, extract the public key from the data section first
-            if(type == (int)Transaction.Type.PoWSolution)
+            if(type == (int)Transaction.Type.PoWSolution || type == (int)Transaction.Type.StakingReward)
             {
                 string[] split = data.Split(new string[] { "||" }, StringSplitOptions.None);
                 if (split.Length < 1)
