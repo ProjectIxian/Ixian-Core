@@ -404,7 +404,15 @@ namespace DLT
                             if(listEntry == null)
                             {
                                 // request for additional data
-                                ProtocolMessage.broadcastProtocolMessage(ProtocolMessageCode.getPresence, Encoding.UTF8.GetBytes(wallet));
+                                using (MemoryStream mw = new MemoryStream())
+                                {
+                                    using (BinaryWriter writer = new BinaryWriter(mw))
+                                    {
+                                        writer.Write(wallet);
+
+                                        ProtocolMessage.broadcastProtocolMessage(ProtocolMessageCode.getPresence, mw.ToArray());
+                                    }
+                                }
                                 return false;
                             }
 
