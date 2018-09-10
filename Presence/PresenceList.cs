@@ -403,6 +403,8 @@ namespace DLT
                             // Check if no such wallet found in presence list
                             if(listEntry == null)
                             {
+                                // request for additional data
+                                ProtocolMessage.broadcastProtocolMessage(ProtocolMessageCode.getPresence, Encoding.UTF8.GetBytes(wallet));
                                 return false;
                             }
 

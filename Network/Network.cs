@@ -51,7 +51,8 @@ namespace DLT
             getBalance,
             balance,
             keepAlivePresence,
-            syncWalletStateComplete
+            syncWalletStateComplete,
+            getPresence
         }
 
 
