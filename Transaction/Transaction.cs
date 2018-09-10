@@ -145,6 +145,12 @@ namespace DLT
         // Verifies the transaction signature and returns true if valid
         public bool verifySignature()
         {
+            // Skip signature verification for staking rewards
+            if (type == (int)Type.StakingReward)
+            {
+                return true;
+            }
+            
             // Generate an address from the public key and compare it with the sender
             string pubkey = data;
 
