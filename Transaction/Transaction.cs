@@ -11,7 +11,8 @@ namespace DLT
         {
             Normal = 0,
             PoWSolution = 1,
-            StakingReward = 2
+            StakingReward = 2,
+            Genesis = 3
         }
 
         public string id;           //  36 B
@@ -146,7 +147,7 @@ namespace DLT
         public bool verifySignature()
         {
             // Skip signature verification for staking rewards
-            if (type == (int)Type.StakingReward)
+            if (type == (int)Type.StakingReward || type == (int)Type.Genesis)
             {
                 return true;
             }
