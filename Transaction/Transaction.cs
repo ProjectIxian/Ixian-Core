@@ -95,7 +95,6 @@ namespace DLT
                     from = reader.ReadString();
                     data = reader.ReadString();
                     nonce = reader.ReadUInt64();
-                    applied = reader.ReadUInt64();
 
                     timeStamp = reader.ReadString();
                     checksum = reader.ReadString();
@@ -117,7 +116,6 @@ namespace DLT
                     writer.Write(from);
                     writer.Write(data);
                     writer.Write(nonce);
-                    writer.Write(applied);
 
                     writer.Write(timeStamp);
                     writer.Write(checksum);
