@@ -18,6 +18,7 @@ namespace DLT
         public string id;           //  36 B
         public int type;            //   4 B
         public IxiNumber amount;    // ~16 B
+        public IxiNumber fee;       // ~16 B
         public string to;           //  36 B
         public string from;         //  36 B
         public string data;         //   0 B
@@ -26,7 +27,6 @@ namespace DLT
         public string checksum;     //  32 B
         public string signature;    //  32 B
         public ulong applied;        
-                                    // TOTAL: ~200 B
 
         /* TX RAM savings:
          * id -> guid binary (36B -> 16B)
@@ -47,15 +47,17 @@ namespace DLT
             id = Guid.NewGuid().ToString();
             type = (int) Type.Normal;
             timeStamp = Clock.getTimestamp(DateTime.Now);
+            fee = new IxiNumber("0");
             applied = 0;
         }
 
-        public Transaction(IxiNumber tx_amount, string tx_to, string tx_from, ulong tx_nonce = 0)
+        public Transaction(IxiNumber tx_amount, IxiNumber tx_fee, string tx_to, string tx_from, ulong tx_nonce = 0)
         {
             id = Guid.NewGuid().ToString();
             type = (int) Type.Normal;
 
             amount = tx_amount;
+            fee = tx_fee;
             to = tx_to;
             from = tx_from;
             data = Node.walletStorage.publicKey;
@@ -72,6 +74,7 @@ namespace DLT
             id = tx_transaction.id;
             type = tx_transaction.type;
             amount = tx_transaction.amount;
+            fee = tx_transaction.fee;
             to = tx_transaction.to;
             from = tx_transaction.from;
             data = tx_transaction.data;
@@ -91,6 +94,7 @@ namespace DLT
                     id = reader.ReadString();
                     type = reader.ReadInt32();
                     amount = new IxiNumber(reader.ReadString());
+                    fee = new IxiNumber(reader.ReadString());
                     to = reader.ReadString();
                     from = reader.ReadString();
                     data = reader.ReadString();
@@ -112,6 +116,7 @@ namespace DLT
                     writer.Write(id);
                     writer.Write(type);
                     writer.Write(amount.ToString());
+                    writer.Write(fee.ToString());
                     writer.Write(to);
                     writer.Write(from);
                     writer.Write(data);
@@ -174,7 +179,7 @@ namespace DLT
         // Calculate a transaction checksum 
         public static string calculateChecksum(Transaction transaction)
         {
-            return Crypto.sha256(transaction.id + transaction.type + transaction.amount.ToString() + transaction.to + transaction.from + transaction.data + transaction.nonce + transaction.timeStamp);
+            return Crypto.sha256(transaction.id + transaction.type + transaction.amount.ToString() + transaction.fee.ToString() + transaction.to + transaction.from + transaction.data + transaction.nonce + transaction.timeStamp);
         }
 
         public static string getSignature(string checksum)
