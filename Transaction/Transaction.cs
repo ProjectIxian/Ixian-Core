@@ -48,12 +48,13 @@ namespace DLT
             type = (int) Type.Normal;
             timeStamp = Clock.getTimestamp(DateTime.Now);
             fee = new IxiNumber("0");
+            nonce = 0;
             applied = 0;
         }
 
         public Transaction(IxiNumber tx_amount, IxiNumber tx_fee, string tx_to, string tx_from, ulong tx_nonce = 0)
         {
-            id = Guid.NewGuid().ToString();
+            //id = Guid.NewGuid().ToString();
             type = (int) Type.Normal;
 
             amount = tx_amount;
@@ -65,6 +66,8 @@ namespace DLT
             nonce = tx_nonce;
 
             timeStamp = Clock.getTimestamp(DateTime.Now);
+
+            id = generateID();
             checksum = Transaction.calculateChecksum(this);
             signature = Transaction.getSignature(checksum);
         }
@@ -81,6 +84,7 @@ namespace DLT
             nonce = tx_transaction.nonce;
 
             timeStamp = tx_transaction.timeStamp;
+            //id = generateID();
             checksum = tx_transaction.checksum;
             signature = tx_transaction.signature;
         }
@@ -91,7 +95,7 @@ namespace DLT
             {
                 using (BinaryReader reader = new BinaryReader(m))
                 {
-                    id = reader.ReadString();
+                    //id = reader.ReadString();
                     type = reader.ReadInt32();
                     amount = new IxiNumber(reader.ReadString());
                     fee = new IxiNumber(reader.ReadString());
@@ -103,6 +107,7 @@ namespace DLT
                     timeStamp = reader.ReadString();
                     checksum = reader.ReadString();
                     signature = reader.ReadString();
+                    id = generateID();
                 }
             }
         }
@@ -113,7 +118,7 @@ namespace DLT
             {
                 using (BinaryWriter writer = new BinaryWriter(m))
                 {
-                    writer.Write(id);
+                    //writer.Write(id);
                     writer.Write(type);
                     writer.Write(amount.ToString());
                     writer.Write(fee.ToString());
@@ -174,6 +179,33 @@ namespace DLT
 
             // Verify the signature
             return CryptoManager.lib.verifySignature(checksum, pubkey, signature);
+        }
+
+        // Generates the transaction ID
+        public string generateID()
+        {
+            string txid = nonce + "-";
+
+            string chk = Crypto.sha256(type + amount.ToString() + fee.ToString() + to + from + nonce);
+            txid += chk;
+
+            return txid;
+        }
+
+        public static bool verifyTransactionID(Transaction transaction)
+        {
+            string txid = transaction.nonce + "-";
+
+            string chk = Crypto.sha256(transaction.type + transaction.amount.ToString() + transaction.fee.ToString() + transaction.to +
+                transaction.from + transaction.nonce);
+            txid += chk;
+
+            if(transaction.id.Equals(txid, StringComparison.Ordinal))
+            {
+                return true;
+            }
+
+            return false;
         }
 
         // Calculate a transaction checksum 
