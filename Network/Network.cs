@@ -43,7 +43,7 @@ namespace DLT
             updatePresence,
             removePresence,
             s2data,
-            updateTransaction,
+            /*updateTransaction,*/
             s2prepareSend,
             s2generateKeys,
             s2keys,
