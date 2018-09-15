@@ -45,6 +45,31 @@ namespace DLT
             return "none";
         }
 
+        // Returns a string list of master nodes according to the limit
+        // TODO: randomize the presences to achieve best results when the network is large
+        public static List<string> getMasterNodeAddresses(int maximum = 500)
+        {
+            List<string> result = new List<string>();
+            lock (presences)
+            {
+                foreach (Presence pr in presences)
+                {
+                    foreach (PresenceAddress addr in pr.addresses)
+                    {
+                        if (addr.type == 'M')
+                        {
+                            result.Add(addr.address);
+                            if(result.Count() >= maximum)
+                            {
+                                return result;
+                            }
+                        }
+                    }
+                }
+            }
+            return result;
+        }
+
         // Update a presence entry. If the wallet address is not found, it creates a new entry in the Presence List.
         // If the wallet address is found in the presence list, it adds any new addresses from the specified presence.
         public static Presence updateEntry(Presence presence, Socket skipSocket = null)
