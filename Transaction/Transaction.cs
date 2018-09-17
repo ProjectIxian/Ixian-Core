@@ -91,24 +91,31 @@ namespace DLT
 
         public Transaction(byte[] bytes)
         {
-            using (MemoryStream m = new MemoryStream(bytes))
+            try
             {
-                using (BinaryReader reader = new BinaryReader(m))
+                using (MemoryStream m = new MemoryStream(bytes))
                 {
-                    //id = reader.ReadString();
-                    type = reader.ReadInt32();
-                    amount = new IxiNumber(reader.ReadString());
-                    fee = new IxiNumber(reader.ReadString());
-                    to = reader.ReadString();
-                    from = reader.ReadString();
-                    data = reader.ReadString();
-                    nonce = reader.ReadUInt64();
+                    using (BinaryReader reader = new BinaryReader(m))
+                    {
+                        //id = reader.ReadString();
+                        type = reader.ReadInt32();
+                        amount = new IxiNumber(reader.ReadString());
+                        fee = new IxiNumber(reader.ReadString());
+                        to = reader.ReadString();
+                        from = reader.ReadString();
+                        data = reader.ReadString();
+                        nonce = reader.ReadUInt64();
 
-                    timeStamp = reader.ReadString();
-                    checksum = reader.ReadString();
-                    signature = reader.ReadString();
-                    id = generateID();
+                        timeStamp = reader.ReadString();
+                        checksum = reader.ReadString();
+                        signature = reader.ReadString();
+                        id = generateID();
+                    }
                 }
+            }
+            catch(Exception)
+            {
+
             }
         }
 
