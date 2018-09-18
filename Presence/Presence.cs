@@ -15,6 +15,7 @@ namespace DLT
         public string device; // Device id
         public string address; // IP and port
         public char type;   // M for MasterNode, R for RelayNode, D for Direct ip client, C for normal client
+        public string version; // Version
         public string lastSeenTime;
 
         public PresenceAddress()
@@ -22,14 +23,16 @@ namespace DLT
             device = Config.device_id;
             address = string.Format("{0}:{1}", CoreNetworkUtils.GetLocalIPAddress(), Config.serverPort);
             type = 'M';
+            version = Config.version;
             lastSeenTime = Clock.getTimestamp(DateTime.Now);
         }
 
-        public PresenceAddress(string node_device, string node_address, char node_type)
+        public PresenceAddress(string node_device, string node_address, char node_type, string node_version)
         {
             device = node_device;
             address = node_address;
             type = node_type;
+            version = node_version;
             lastSeenTime = Clock.getTimestamp(DateTime.Now);
         }
 
@@ -42,6 +45,7 @@ namespace DLT
                     device = reader.ReadString();
                     address = reader.ReadString();
                     type = reader.ReadChar();
+                    version = reader.ReadString();
                     lastSeenTime = reader.ReadString();
                 }
             }
@@ -56,6 +60,7 @@ namespace DLT
                     writer.Write(device);
                     writer.Write(address);
                     writer.Write(type);
+                    writer.Write(version);
                     writer.Write(lastSeenTime);
                 }
                 return m.ToArray();
@@ -85,6 +90,12 @@ namespace DLT
             {
                 return false;
             }
+
+            if (item.version.Equals(version, StringComparison.Ordinal) == false)
+            {
+                return false;
+            }
+
 
             return true;
         }
@@ -116,7 +127,7 @@ namespace DLT
             owner = " ";
         }
 
-        public Presence(string wallet_address, string node_pubkey, string node_ip, char node_type)
+        public Presence(string wallet_address, string node_pubkey, string node_ip, char node_type, string node_version)
         {
             wallet = wallet_address;
             pubkey = node_pubkey;
@@ -125,7 +136,7 @@ namespace DLT
             
             // Generate a device id
             string deviceId = Guid.NewGuid().ToString();
-            PresenceAddress address = new PresenceAddress(deviceId, node_ip, node_type);
+            PresenceAddress address = new PresenceAddress(deviceId, node_ip, node_type, node_version);
             addresses.Add(address);
             owner = " ";
 
@@ -213,22 +224,13 @@ namespace DLT
         {
             foreach(PresenceAddress addr in addresses)
             {
-
                 if(address.device.Equals(addr.device, StringComparison.Ordinal))
                 {
-
+                    return false;
                 }
-
             }
 
             return true;
-        }
-
-        // Updates the timestamp
-        public void updateTimestamp()
-        {
-            //lastSeenTime = Clock.getTimestamp(DateTime.Now);
-            // Moved to PresenceList
         }
 
     }
