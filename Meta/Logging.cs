@@ -19,13 +19,15 @@ namespace DLT
             private static Logging singletonInstance;
             private TextWriter outputFile = null;
             private LogSeverity currentSeverity;
+            private static string logfilename = "ixian.log";
+
 
             private Logging()
             {
                 currentSeverity = LogSeverity.trace;
                 try
                 {
-                    outputFile = File.AppendText("ixian.log");
+                    outputFile = File.AppendText(logfilename);
                 } catch(Exception e)
                 {
                     // Ignore all exception and start anyway with console only logging.
@@ -64,6 +66,17 @@ namespace DLT
                     }
 
                 }
+            }
+
+            // Clears the log file
+            public static void clear()
+            {
+                Logging.singleton.outputFile.Close();
+                if (File.Exists(logfilename))
+                {
+                    File.Delete(logfilename);
+                }
+                Logging.singleton.outputFile = File.AppendText(logfilename);
             }
 
             #region Convenience methods
