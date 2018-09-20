@@ -70,6 +70,28 @@ namespace DLT
             return result;
         }
 
+        // Searches through the entire presence list to find a matching IP with a specific type.
+        // Returns true if found, otherwise false
+        public static bool containsIP(string ip, char type)
+        {
+            lock (presences)
+            {
+                foreach (Presence pr in presences)
+                {
+                    foreach (PresenceAddress addr in pr.addresses)
+                    {
+                        if (addr.type == type)
+                        {
+                            if (addr.address.StartsWith(ip))
+                                return true;
+                        }
+                    }
+                }
+            }
+            // If we reach this point, no matching address was found
+            return false;
+        }
+
         // Update a presence entry. If the wallet address is not found, it creates a new entry in the Presence List.
         // If the wallet address is found in the presence list, it adds any new addresses from the specified presence.
         public static Presence updateEntry(Presence presence, Socket skipSocket = null)

@@ -56,7 +56,15 @@ namespace DLT
                         severity.ToString(), 
                         Thread.CurrentThread.ManagedThreadId,
                         message);
+
+                    if (severity == LogSeverity.error)
+                        Console.ForegroundColor = ConsoleColor.Red;
+
                     Console.WriteLine(formattedMessage);
+
+                    if (severity == LogSeverity.error)
+                        Console.ResetColor();
+
                     Debug.WriteLine(formattedMessage);
 
                     if (Logging.singleton.outputFile != null)
