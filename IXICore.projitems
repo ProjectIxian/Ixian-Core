@@ -16,9 +16,11 @@
     <Compile Include="$(MSBuildThisFileDirectory)Crypto\CryptoManager.cs" />
     <Compile Include="$(MSBuildThisFileDirectory)Meta\Logging.cs" />
     <Compile Include="$(MSBuildThisFileDirectory)Network\Network.cs" />
+    <Compile Include="$(MSBuildThisFileDirectory)Network\NetworkUtils.cs" />
     <Compile Include="$(MSBuildThisFileDirectory)Peer\Peer.cs" />
     <Compile Include="$(MSBuildThisFileDirectory)Presence\Presence.cs" />
     <Compile Include="$(MSBuildThisFileDirectory)Presence\PresenceList.cs" />
+    <Compile Include="$(MSBuildThisFileDirectory)Presence\PresenceStorage.cs" />
     <Compile Include="$(MSBuildThisFileDirectory)Time\Time.cs" />
     <Compile Include="$(MSBuildThisFileDirectory)Transaction\Transaction.cs" />
     <Compile Include="$(MSBuildThisFileDirectory)UPnP\UPnP.cs" />
