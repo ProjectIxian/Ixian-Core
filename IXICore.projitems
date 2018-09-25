@@ -21,6 +21,7 @@
     <Compile Include="$(MSBuildThisFileDirectory)Presence\PresenceList.cs" />
     <Compile Include="$(MSBuildThisFileDirectory)Time\Time.cs" />
     <Compile Include="$(MSBuildThisFileDirectory)Transaction\Transaction.cs" />
+    <Compile Include="$(MSBuildThisFileDirectory)UPnP\UPnP.cs" />
     <Compile Include="$(MSBuildThisFileDirectory)Utils\BitWriter.cs" />
     <Compile Include="$(MSBuildThisFileDirectory)Utils\IxiNumber.cs" />
     <Compile Include="$(MSBuildThisFileDirectory)Utils\KDTable.cs" />
