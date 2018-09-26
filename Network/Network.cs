@@ -64,19 +64,6 @@ namespace DLT
             Closed
         }
 
-        public class RemoteEndpoint
-        {
-            public IPEndPoint remoteIP;
-            public Socket clientSocket;
-            public RemoteEndpointState state;
-            public bool inIO;
-            public Thread thread;
-
-            public Presence presence = null;
-            public PresenceAddress presenceAddress = null;
-        }
-
-
         public class IPv4Subnet
         {
             private IPAddress subnet;
@@ -261,6 +248,7 @@ namespace DLT
             // Domain/IP seperated by : from the port
             public static string[] seedNodes = new string[]
                     {
+                        
                         "seed1.ixian.io:10234",
                         "seed2.ixian.io:10234",
                         "seed3.ixian.io:10234",
