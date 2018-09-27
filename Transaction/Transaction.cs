@@ -113,9 +113,9 @@ namespace DLT
                     }
                 }
             }
-            catch(Exception)
+            catch(Exception e)
             {
-
+                Logging.error("Exception occured while trying to construct Transaction from bytes: " + e);
             }
         }
 
@@ -191,7 +191,20 @@ namespace DLT
         // Generates the transaction ID
         public string generateID()
         {
-            string txid = nonce + "-";
+            string txid = "";
+
+            if(type == (int)Type.StakingReward)
+            {
+                ulong blockNum = 0;
+
+                var dataSplit = data.Split(new string[] { "||" }, StringSplitOptions.None);
+                if (dataSplit.Length > 0 && ulong.TryParse(dataSplit[1], out blockNum))
+                {
+                    txid = "stk-" + blockNum + "-";
+                }
+            }
+
+            txid += nonce + "-";
 
             string chk = Crypto.sha256(type + amount.ToString() + fee.ToString() + to + from + nonce);
             txid += chk;
@@ -201,7 +214,20 @@ namespace DLT
 
         public static bool verifyTransactionID(Transaction transaction)
         {
-            string txid = transaction.nonce + "-";
+            string txid = "";
+
+            if (transaction.type == (int)Type.StakingReward)
+            {
+                ulong blockNum = 0;
+
+                var dataSplit = transaction.data.Split(new string[] { "||" }, StringSplitOptions.None);
+                if (dataSplit.Length > 0 && ulong.TryParse(dataSplit[1], out blockNum))
+                {
+                    txid = "stk-" + blockNum + "-";
+                }
+            }
+
+            txid += transaction.nonce + "-";
 
             string chk = Crypto.sha256(transaction.type + transaction.amount.ToString() + transaction.fee.ToString() + transaction.to +
                 transaction.from + transaction.nonce);

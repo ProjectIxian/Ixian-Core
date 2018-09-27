@@ -43,7 +43,6 @@ namespace DLT
             updatePresence,
             removePresence,
             s2data,
-            /*updateTransaction,*/
             s2prepareSend,
             s2generateKeys,
             s2keys,
@@ -52,7 +51,10 @@ namespace DLT
             balance,
             keepAlivePresence,
             syncWalletStateComplete,
-            getPresence
+            getPresence,
+            getBlockTransactions,
+            transactionsChunk
+            /*updateTransaction,*/
         }
 
 
