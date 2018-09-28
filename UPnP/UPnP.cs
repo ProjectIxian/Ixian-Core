@@ -126,6 +126,7 @@ namespace DLT
                 Logging.error(String.Format("Invalid port number: {0}", public_port));
                 return false;
             }
+
             Logging.info(String.Format("Attempting to map external port {0} to local IP {1}", public_port, local_ip.ToString()));
             if (acquireRouterDevice() == true)
             {
@@ -144,6 +145,10 @@ namespace DLT
                 catch (MappingException ex)
                 {
                     Logging.error(String.Format("Error while mapping public port {0} to {1}:{2}: {3}", public_port, local_ip.ToString(), public_port, ex.Message));
+                }
+                catch (Exception e)
+                {
+                    Logging.error(String.Format("Inner exception for uPnP: {0}", e.Message));
                 }
             }
             Logging.info("UPnP router is not present or is using an incompatible version of the UPnP protocol.");
