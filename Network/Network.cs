@@ -50,7 +50,6 @@ namespace DLT
             getBalance,
             balance,
             keepAlivePresence,
-            syncWalletStateComplete,
             getPresence,
             getBlockTransactions,
             transactionsChunk
@@ -250,7 +249,6 @@ namespace DLT
             // Domain/IP seperated by : from the port
             public static string[] seedNodes = new string[]
                     {
-                        
                         "seed1.ixian.io:10234",
                         "seed2.ixian.io:10234",
                         "seed3.ixian.io:10234",
