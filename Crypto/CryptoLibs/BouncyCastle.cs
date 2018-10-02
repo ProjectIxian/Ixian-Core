@@ -41,6 +41,12 @@ namespace CryptoLibs
         private int salt_length = 8;
         private string delimiter = ":";
 
+        // Cache for signature
+        private ISigner signer = null;
+        private X9ECParameters curve = null;
+        private ECDomainParameters curve_spec = null;
+
+
         public BouncyCastle()
         {
             publicKeyString = "";
@@ -48,6 +54,11 @@ namespace CryptoLibs
 
             encPublicKeyString = "";
             encPrivateKeyString = "";
+
+            // Prepare the signature cache
+            signer = SignerUtilities.GetSigner("ECDSA");
+            curve = SecNamedCurves.GetByName("secp256k1");
+            curve_spec = new ECDomainParameters(curve.Curve, curve.G, curve.N, curve.H, curve.GetSeed());
         }
 
         // Generates keys for secp256k1 ECDSA signing
@@ -188,8 +199,6 @@ namespace CryptoLibs
                 var signer = SignerUtilities.GetSigner("ECDSA");
 
                 BigInteger biPrivateKey = new BigInteger(Convert.FromBase64String(privateKey));
-                X9ECParameters curve = SecNamedCurves.GetByName("secp256k1");
-                ECDomainParameters curve_spec = new ECDomainParameters(curve.Curve, curve.G, curve.N, curve.H, curve.GetSeed());
                 ECPrivateKeyParameters key_parameters = new ECPrivateKeyParameters(biPrivateKey, curve_spec);
 
                 signer.Init(true, key_parameters);
@@ -210,10 +219,7 @@ namespace CryptoLibs
             try
             {
                 var input_data = Encoding.UTF8.GetBytes(text);
-                var signer = SignerUtilities.GetSigner("ECDSA");
 
-                X9ECParameters curve = SecNamedCurves.GetByName("secp256k1");
-                ECDomainParameters curve_spec = new ECDomainParameters(curve.Curve, curve.G, curve.N, curve.H, curve.GetSeed());
                 ECCurve ecurve = curve_spec.Curve;
                 ECPoint epoint = ecurve.DecodePoint(Convert.FromBase64String(publicKey));
                 ECPublicKeyParameters key_parameters = new ECPublicKeyParameters(epoint, curve_spec);
