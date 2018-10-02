@@ -200,38 +200,6 @@ namespace DLT
             return return_presence;
         }
 
-        // Removes an entry from the presence list.
-        public static bool removeEntry(Presence presence)
-        {
-            Presence listEntry = null;
-
-            lock (presences)
-            {
-                foreach (Presence pr in presences)
-                {
-                    // Check if the wallet address is already in the presence list
-                    if (pr.wallet.Equals(presence.wallet, StringComparison.Ordinal))
-                    {
-                        listEntry = pr;
-                        break;
-                    }
-                }
-            }
-
-            if (listEntry != null)
-            {
-                ProtocolMessage.broadcastProtocolMessage(ProtocolMessageCode.removePresence, listEntry.getBytes());
-                // Remove it from the presences list as well
-                lock (presences)
-                {
-                    presences.Remove(listEntry);
-                }
-                return true;
-            }
-
-            return false;
-        }
-
         public static bool removeAddressEntry(string wallet_address, PresenceAddress address, Socket skipSocket = null)
         {
             lock (presences)
