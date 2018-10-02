@@ -171,7 +171,7 @@ namespace DLT
             string pubkey = data;
 
             // If this is a PoWSolution transaction, extract the public key from the data section first
-            if(type == (int)Transaction.Type.PoWSolution || type == (int)Transaction.Type.StakingReward)
+            if(type == (int)Transaction.Type.PoWSolution)
             {
                 string[] split = data.Split(new string[] { "||" }, StringSplitOptions.None);
                 if (split.Length < 1)
