@@ -116,6 +116,7 @@ namespace DLT
             catch(Exception e)
             {
                 Logging.error("Exception occured while trying to construct Transaction from bytes: " + e);
+                throw;
             }
         }
 
