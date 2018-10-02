@@ -41,12 +41,6 @@ namespace CryptoLibs
         private int salt_length = 8;
         private string delimiter = ":";
 
-        // Cache for signature
-        private ISigner signer = null;
-        private X9ECParameters curve = null;
-        private ECDomainParameters curve_spec = null;
-
-
         public BouncyCastle()
         {
             publicKeyString = "";
@@ -54,11 +48,6 @@ namespace CryptoLibs
 
             encPublicKeyString = "";
             encPrivateKeyString = "";
-
-            // Prepare the signature cache
-            signer = SignerUtilities.GetSigner("ECDSA");
-            curve = SecNamedCurves.GetByName("secp256k1");
-            curve_spec = new ECDomainParameters(curve.Curve, curve.G, curve.N, curve.H, curve.GetSeed());
         }
 
         // Generates keys for secp256k1 ECDSA signing
@@ -82,7 +71,7 @@ namespace CryptoLibs
                 publicKeyString = Convert.ToBase64String(serialized_public_bytes);
 
             }
-            catch(Exception e)
+            catch (Exception e)
             {
                 Logging.warn(string.Format("Exception while generating signature keys: {0}", e.ToString()));
                 return false;
@@ -120,7 +109,7 @@ namespace CryptoLibs
                 encPrivateKeyString = Convert.ToBase64String(serializedKeyPV);
 
             }
-            catch(Exception e)
+            catch (Exception e)
             {
                 Logging.warn(string.Format("Exception while generating encryption keys: {0}", e.ToString()));
                 return false;
@@ -199,6 +188,8 @@ namespace CryptoLibs
                 var signer = SignerUtilities.GetSigner("ECDSA");
 
                 BigInteger biPrivateKey = new BigInteger(Convert.FromBase64String(privateKey));
+                X9ECParameters curve = SecNamedCurves.GetByName("secp256k1");
+                ECDomainParameters curve_spec = new ECDomainParameters(curve.Curve, curve.G, curve.N, curve.H, curve.GetSeed());
                 ECPrivateKeyParameters key_parameters = new ECPrivateKeyParameters(biPrivateKey, curve_spec);
 
                 signer.Init(true, key_parameters);
@@ -219,7 +210,10 @@ namespace CryptoLibs
             try
             {
                 var input_data = Encoding.UTF8.GetBytes(text);
+                var signer = SignerUtilities.GetSigner("ECDSA");
 
+                X9ECParameters curve = SecNamedCurves.GetByName("secp256k1");
+                ECDomainParameters curve_spec = new ECDomainParameters(curve.Curve, curve.G, curve.N, curve.H, curve.GetSeed());
                 ECCurve ecurve = curve_spec.Curve;
                 ECPoint epoint = ecurve.DecodePoint(Convert.FromBase64String(publicKey));
                 ECPublicKeyParameters key_parameters = new ECPublicKeyParameters(epoint, curve_spec);
@@ -230,7 +224,7 @@ namespace CryptoLibs
                 byte[] signature_bytes = Convert.FromBase64String(signature);
                 return signer.VerifySignature(signature_bytes);
             }
-            catch(Exception)
+            catch (Exception)
             {
                 Logging.warn(string.Format("Invalid public key for {0}", publicKey));
             }
@@ -239,7 +233,7 @@ namespace CryptoLibs
 
         // First stage encryption using ElGamal
         public byte[] encryptData(byte[] data, string publicKey)
-        {          
+        {
             ElGamalPublicKeyParameters pu = (ElGamalPublicKeyParameters)PublicKeyFactory.CreateKey(Convert.FromBase64String(publicKey));
 
             ElGamalEngine encryptEngine = new ElGamalEngine();
@@ -261,7 +255,7 @@ namespace CryptoLibs
 
         // First stage decryption using ElGamal
         public byte[] decryptData(byte[] data, string privateKey)
-        {          
+        {
             ElGamalPrivateKeyParameters pv = (ElGamalPrivateKeyParameters)PrivateKeyFactory.CreateKey(Convert.FromBase64String(privateKey));
 
             var decryptEngine = new ElGamalEngine();
@@ -314,8 +308,8 @@ namespace CryptoLibs
 
             using (var txtreader = new StringReader(privateKey))
             {
-                 keyPair = (AsymmetricCipherKeyPair)new PemReader(txtreader).ReadObject();
-                 decryptEngine.Init(false, keyPair.Private);
+                keyPair = (AsymmetricCipherKeyPair)new PemReader(txtreader).ReadObject();
+                decryptEngine.Init(false, keyPair.Private);
             }
 
             // Check the block size and prepare the byte output
@@ -337,7 +331,7 @@ namespace CryptoLibs
         {
             // Perform key expansion
             byte[] salt = new byte[salt_length];
-            
+
             Asn1Encodable defParams = PbeUtilities.GenerateAlgorithmParameters("PBEWithSHA256And256BitAES-CBC-BC", salt, iteration_count);
             char[] password = key.ToCharArray();
             IWrapper wrapper = WrapperUtilities.GetWrapper("AES/CBC/PKCS5Padding");
@@ -418,7 +412,7 @@ namespace CryptoLibs
                     bytes[i] = dIn.ReadByte();
                 }
             }
-            catch(EndOfStreamException)
+            catch (EndOfStreamException)
             {
                 // TODO: handle this case and the different stream size when encrypted.
             }
