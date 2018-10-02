@@ -219,7 +219,8 @@ namespace DLT
                 // Check if there is such an entry in the presence list
                 if (listEntry != null)
                 {
-                    listEntry.addresses.Remove(address);
+                    
+                    listEntry.addresses.RemoveAll(x => x.address == address.address);
 
                     int address_count = listEntry.addresses.Count;
                     //Console.WriteLine("[PL] --->> Addresses: {0}", address_count);
