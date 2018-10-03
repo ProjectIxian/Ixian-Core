@@ -408,39 +408,29 @@ namespace DLT
 
                         lock (presences)
                         {
-                            Presence listEntry = null;
-                            foreach (Presence pr in presences)
+                            Presence listEntry = presences.Find(x => x.wallet == wallet);
+                            if (listEntry == null && wallet == Node.walletStorage.address)
                             {
-                                // Check if the wallet address is already in the presence list
-                                if (pr.wallet.Equals(wallet, StringComparison.Ordinal))
-                                {
-                                    listEntry = pr;
-                                    break;
-                                }
+                                string lastSeenTime = Clock.getTimestamp(DateTime.Now);
+                                updateEntry(curNodePresence);
+                                listEntry = presences.Find(x => x.wallet == wallet);
+                                Logging.error(string.Format("My entry was removed from local PL, readding."));
                             }
-                            // Check if no such wallet found in presence list
-                            if(listEntry == null)
-                            {
-                                if(wallet == Node.walletStorage.address)
-                                {
-                                    string lastSeenTime = Clock.getTimestamp(DateTime.Now);
-                                    updateEntry(curNodePresence);
-                                    Logging.error(string.Format("My entry was removed from local PL, readding."));
-                                }
-                                if (listEntry == null)
-                                {
-                                    // request for additional data
-                                    using (MemoryStream mw = new MemoryStream())
-                                    {
-                                        using (BinaryWriter writer = new BinaryWriter(mw))
-                                        {
-                                            writer.Write(wallet);
 
-                                            ProtocolMessage.broadcastProtocolMessage(ProtocolMessageCode.getPresence, mw.ToArray());
-                                        }
+                            // Check if no such wallet found in presence list
+                            if (listEntry == null)
+                            {
+                                // request for additional data
+                                using (MemoryStream mw = new MemoryStream())
+                                {
+                                    using (BinaryWriter writer = new BinaryWriter(mw))
+                                    {
+                                        writer.Write(wallet);
+
+                                        ProtocolMessage.broadcastProtocolMessage(ProtocolMessageCode.getPresence, mw.ToArray());
                                     }
-                                    return false;
                                 }
+                                return false;
                             }
 
                             // Go through every presence address for this entry
