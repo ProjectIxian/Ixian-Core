@@ -55,20 +55,18 @@ namespace CryptoLibs
         {
             try
             {
-                // Generate a secp256k1 ECDSA keypair
-                X9ECParameters curve = SecNamedCurves.GetByName("secp256k1");
-                ECDomainParameters curveSpec = new ECDomainParameters(curve.Curve, curve.G, curve.N, curve.H, curve.GetSeed());
-                IAsymmetricCipherKeyPairGenerator generator = GeneratorUtilities.GetKeyPairGenerator("ECDSA");
-                generator.Init(new ECKeyGenerationParameters(curveSpec, new SecureRandom()));
+                var rsaKeyParams = new RsaKeyGenerationParameters(BigInteger.ProbablePrime(512, new Random()),
+                                  new SecureRandom(), 4096, 25);
+                var keyGen = new RsaKeyPairGenerator();
+                keyGen.Init(rsaKeyParams);
 
-                AsymmetricCipherKeyPair key_pair = generator.GenerateKeyPair();
+                AsymmetricCipherKeyPair key_pair = keyGen.GenerateKeyPair();
 
-                // Store the private and public keys as base64-encoded strings
-                byte[] serialized_private_bytes = ((ECPrivateKeyParameters)key_pair.Private).D.ToByteArray();
-                privateKeyString = Convert.ToBase64String(serialized_private_bytes);
+                PrivateKeyInfo pkInfo = PrivateKeyInfoFactory.CreatePrivateKeyInfo(key_pair.Private);
+                privateKeyString = Convert.ToBase64String(pkInfo.GetDerEncoded());
 
-                byte[] serialized_public_bytes = ((ECPublicKeyParameters)key_pair.Public).Q.GetEncoded();
-                publicKeyString = Convert.ToBase64String(serialized_public_bytes);
+                SubjectPublicKeyInfo info = SubjectPublicKeyInfoFactory.CreateSubjectPublicKeyInfo(key_pair.Public);
+                publicKeyString = Convert.ToBase64String(info.GetDerEncoded());
 
             }
             catch (Exception e)
@@ -185,22 +183,21 @@ namespace CryptoLibs
             try
             {
                 var input_data = Encoding.UTF8.GetBytes(text);
-                var signer = SignerUtilities.GetSigner("ECDSA");
+                byte[] privateKeyBytes = Convert.FromBase64String(privateKey);
+                AsymmetricKeyParameter asymmetricKeyParameter = PrivateKeyFactory.CreateKey(privateKeyBytes);
+                RsaKeyParameters key = (RsaKeyParameters)asymmetricKeyParameter;
 
-                BigInteger biPrivateKey = new BigInteger(Convert.FromBase64String(privateKey));
-                X9ECParameters curve = SecNamedCurves.GetByName("secp256k1");
-                ECDomainParameters curve_spec = new ECDomainParameters(curve.Curve, curve.G, curve.N, curve.H, curve.GetSeed());
-                ECPrivateKeyParameters key_parameters = new ECPrivateKeyParameters(biPrivateKey, curve_spec);
+                ISigner signer = SignerUtilities.GetSigner("SHA256withRSA");
 
-                signer.Init(true, key_parameters);
+                signer.Init(true, key);
                 signer.BlockUpdate(input_data, 0, input_data.Length);
 
                 byte[] signature = signer.GenerateSignature();
                 return Convert.ToBase64String(signature);
             }
-            catch (Exception)
+            catch (Exception e)
             {
-                Logging.warn("Cannot generate signature");
+                Logging.warn(string.Format("Cannot generate signature: {0}", e.Message));
             }
             return null;
         }
@@ -210,23 +207,22 @@ namespace CryptoLibs
             try
             {
                 var input_data = Encoding.UTF8.GetBytes(text);
-                var signer = SignerUtilities.GetSigner("ECDSA");
 
-                X9ECParameters curve = SecNamedCurves.GetByName("secp256k1");
-                ECDomainParameters curve_spec = new ECDomainParameters(curve.Curve, curve.G, curve.N, curve.H, curve.GetSeed());
-                ECCurve ecurve = curve_spec.Curve;
-                ECPoint epoint = ecurve.DecodePoint(Convert.FromBase64String(publicKey));
-                ECPublicKeyParameters key_parameters = new ECPublicKeyParameters(epoint, curve_spec);
+                byte[] publicKeyBytes = Convert.FromBase64String(publicKey);
+                AsymmetricKeyParameter asymmetricKeyParameter = PublicKeyFactory.CreateKey(publicKeyBytes);
+                RsaKeyParameters key_parameters = (RsaKeyParameters)asymmetricKeyParameter;
+
+                ISigner signer = SignerUtilities.GetSigner("SHA256withRSA");
 
                 signer.Init(false, key_parameters);
-                signer.BlockUpdate(input_data, 0, input_data.Length);
 
-                byte[] signature_bytes = Convert.FromBase64String(signature);
+                byte[] signature_bytes = Convert.FromBase64String(signature);               
+                signer.BlockUpdate(input_data, 0, input_data.Length);
                 return signer.VerifySignature(signature_bytes);
             }
-            catch (Exception)
+            catch (Exception e)
             {
-                Logging.warn(string.Format("Invalid public key for {0}", publicKey));
+                Logging.warn(string.Format("Invalid public key {0}:{1}", publicKey, e.Message));
             }
             return false;
         }
