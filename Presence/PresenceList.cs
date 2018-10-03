@@ -14,15 +14,17 @@ namespace DLT
     {
         public static List<Presence> presences = new List<Presence> { }; // The presence list
 
+        private static PresenceAddress curNodePresenceAddress = null;
+        private static Presence curNodePresence = null;
 
         // Generate an initial presence list
         public static void generatePresenceList(string initial_ip)
         {
             Logging.info("Generating presence list.");
             // Initialize with the default presence state
-            PresenceAddress this_address = new PresenceAddress(Config.device_id, string.Format("{0}:{1}", initial_ip, Config.serverPort), 'M', Config.version);
-            Presence this_node = new Presence(Node.walletStorage.address, Node.walletStorage.encPublicKey, Node.walletStorage.publicKey, this_address);
-            updateEntry(this_node);
+            curNodePresenceAddress = new PresenceAddress(Config.device_id, string.Format("{0}:{1}", initial_ip, Config.serverPort), 'M', Config.version);
+            curNodePresence = new Presence(Node.walletStorage.address, Node.walletStorage.encPublicKey, Node.walletStorage.publicKey, curNodePresenceAddress);
+            updateEntry(curNodePresence);
 
         }
 
@@ -419,17 +421,26 @@ namespace DLT
                             // Check if no such wallet found in presence list
                             if(listEntry == null)
                             {
-                                // request for additional data
-                                using (MemoryStream mw = new MemoryStream())
+                                if(wallet == Node.walletStorage.address)
                                 {
-                                    using (BinaryWriter writer = new BinaryWriter(mw))
-                                    {
-                                        writer.Write(wallet);
-
-                                        ProtocolMessage.broadcastProtocolMessage(ProtocolMessageCode.getPresence, mw.ToArray());
-                                    }
+                                    string lastSeenTime = Clock.getTimestamp(DateTime.Now);
+                                    updateEntry(curNodePresence);
+                                    Logging.error(string.Format("My entry was removed from local PL, readding."));
                                 }
-                                return false;
+                                if (listEntry == null)
+                                {
+                                    // request for additional data
+                                    using (MemoryStream mw = new MemoryStream())
+                                    {
+                                        using (BinaryWriter writer = new BinaryWriter(mw))
+                                        {
+                                            writer.Write(wallet);
+
+                                            ProtocolMessage.broadcastProtocolMessage(ProtocolMessageCode.getPresence, mw.ToArray());
+                                        }
+                                    }
+                                    return false;
+                                }
                             }
 
                             // Go through every presence address for this entry
