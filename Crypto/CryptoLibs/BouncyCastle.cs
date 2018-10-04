@@ -56,7 +56,7 @@ namespace CryptoLibs
             try
             {
                 var rsaKeyParams = new RsaKeyGenerationParameters(BigInteger.ProbablePrime(512, new Random()),
-                                  new SecureRandom(), 4096, 25);
+                                  new SecureRandom(), 3072, 25);
                 var keyGen = new RsaKeyPairGenerator();
                 keyGen.Init(rsaKeyParams);
 
