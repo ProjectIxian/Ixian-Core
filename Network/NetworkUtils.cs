@@ -17,6 +17,22 @@ namespace DLT
 
             public static string resolveHostname(string hostname)
             {
+                // Check for IP
+                IPAddress address;
+                if (IPAddress.TryParse(hostname, out address))
+                {
+                    switch (address.AddressFamily)
+                    {
+                        case System.Net.Sockets.AddressFamily.InterNetwork:
+                            return hostname;
+                        case System.Net.Sockets.AddressFamily.InterNetworkV6:
+                            return hostname;
+                        default:
+                            break;
+                    }
+                }
+
+                // Check DNS
                 try
                 {
                     IPHostEntry hostEntry;
