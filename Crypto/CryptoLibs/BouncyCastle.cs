@@ -23,6 +23,7 @@ using System.IO;
 using Org.BouncyCastle.OpenSsl;
 using Org.BouncyCastle.Crypto.IO;
 using Org.BouncyCastle.Asn1;
+using System.Security.Cryptography;
 
 namespace CryptoLibs
 {
@@ -55,18 +56,26 @@ namespace CryptoLibs
         {
             try
             {
-                var rsaKeyParams = new RsaKeyGenerationParameters(BigInteger.ProbablePrime(512, new Random()),
-                                  new SecureRandom(), 3072, 25);
-                var keyGen = new RsaKeyPairGenerator();
-                keyGen.Init(rsaKeyParams);
+                // OLD BC RSA Code
+                /*         var rsaKeyParams = new RsaKeyGenerationParameters(BigInteger.ProbablePrime(512, new Random()),
+                                           new SecureRandom(), 3072, 25);
+                         var keyGen = new RsaKeyPairGenerator();
+                         keyGen.Init(rsaKeyParams);
 
-                AsymmetricCipherKeyPair key_pair = keyGen.GenerateKeyPair();
+                         AsymmetricCipherKeyPair key_pair = keyGen.GenerateKeyPair();
 
-                PrivateKeyInfo pkInfo = PrivateKeyInfoFactory.CreatePrivateKeyInfo(key_pair.Private);
-                privateKeyString = Convert.ToBase64String(pkInfo.GetDerEncoded());
+                         PrivateKeyInfo pkInfo = PrivateKeyInfoFactory.CreatePrivateKeyInfo(key_pair.Private);
+                         privateKeyString = Convert.ToBase64String(pkInfo.GetDerEncoded());
 
-                SubjectPublicKeyInfo info = SubjectPublicKeyInfoFactory.CreateSubjectPublicKeyInfo(key_pair.Public);
-                publicKeyString = Convert.ToBase64String(info.GetDerEncoded());
+                         SubjectPublicKeyInfo info = SubjectPublicKeyInfoFactory.CreateSubjectPublicKeyInfo(key_pair.Public);
+                         publicKeyString = Convert.ToBase64String(info.GetDerEncoded());*/
+
+
+                RSACryptoServiceProvider rsa = new RSACryptoServiceProvider(3072);
+                string pubkey = rsa.ToXmlString(false); 
+                string prikey = rsa.ToXmlString(true);
+                privateKeyString = prikey;
+                publicKeyString = pubkey;
 
             }
             catch (Exception e)
@@ -185,16 +194,23 @@ namespace CryptoLibs
             try
             {
                 var input_data = Encoding.UTF8.GetBytes(text);
-                byte[] privateKeyBytes = Convert.FromBase64String(privateKey);
-                AsymmetricKeyParameter asymmetricKeyParameter = PrivateKeyFactory.CreateKey(privateKeyBytes);
-                RsaKeyParameters key = (RsaKeyParameters)asymmetricKeyParameter;
+                // OLD BC RSA Code
+                /*   byte[] privateKeyBytes = Convert.FromBase64String(privateKey);
+                   AsymmetricKeyParameter asymmetricKeyParameter = PrivateKeyFactory.CreateKey(privateKeyBytes);
+                   RsaKeyParameters key = (RsaKeyParameters)asymmetricKeyParameter;
 
-                ISigner signer = SignerUtilities.GetSigner("SHA256withRSA");
+                   ISigner signer = SignerUtilities.GetSigner("SHA256withRSA");
 
-                signer.Init(true, key);
-                signer.BlockUpdate(input_data, 0, input_data.Length);
+                   signer.Init(true, key);
+                   signer.BlockUpdate(input_data, 0, input_data.Length);
 
-                byte[] signature = signer.GenerateSignature();
+                   byte[] signature = signer.GenerateSignature();
+                   return Convert.ToBase64String(signature);*/
+
+                RSACryptoServiceProvider rsa = new RSACryptoServiceProvider(3072);
+                rsa.FromXmlString(privateKey);
+
+                byte[] signature = rsa.SignData(input_data, CryptoConfig.MapNameToOID("SHA512"));
                 return Convert.ToBase64String(signature);
             }
             catch (Exception e)
@@ -215,18 +231,24 @@ namespace CryptoLibs
             try
             {
                 var input_data = Encoding.UTF8.GetBytes(text);
+                // OLD BC RSA Code
+                /*
+                                byte[] publicKeyBytes = Convert.FromBase64String(publicKey);
+                                AsymmetricKeyParameter asymmetricKeyParameter = PublicKeyFactory.CreateKey(publicKeyBytes);
+                                RsaKeyParameters key_parameters = (RsaKeyParameters)asymmetricKeyParameter;
 
-                byte[] publicKeyBytes = Convert.FromBase64String(publicKey);
-                AsymmetricKeyParameter asymmetricKeyParameter = PublicKeyFactory.CreateKey(publicKeyBytes);
-                RsaKeyParameters key_parameters = (RsaKeyParameters)asymmetricKeyParameter;
+                                ISigner signer = SignerUtilities.GetSigner("SHA256withRSA");
 
-                ISigner signer = SignerUtilities.GetSigner("SHA256withRSA");
+                                signer.Init(false, key_parameters);
 
-                signer.Init(false, key_parameters);
+                                byte[] signature_bytes = Convert.FromBase64String(signature);               
+                                signer.BlockUpdate(input_data, 0, input_data.Length);
+                                return signer.VerifySignature(signature_bytes);*/
 
-                byte[] signature_bytes = Convert.FromBase64String(signature);               
-                signer.BlockUpdate(input_data, 0, input_data.Length);
-                return signer.VerifySignature(signature_bytes);
+                RSACryptoServiceProvider rsa = new RSACryptoServiceProvider(3072);
+                rsa.FromXmlString(publicKey);
+                byte[] signature_bytes = Convert.FromBase64String(signature);
+                return rsa.VerifyData(input_data, CryptoConfig.MapNameToOID("SHA512"), signature_bytes);
             }
             catch (Exception e)
             {
