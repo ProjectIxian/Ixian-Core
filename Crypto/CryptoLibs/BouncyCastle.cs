@@ -180,6 +180,8 @@ namespace CryptoLibs
 
         public string getSignature(string text, string privateKey)
         {
+            // Dev: for network testing
+            //return Crypto.sha256(text);
             try
             {
                 var input_data = Encoding.UTF8.GetBytes(text);
@@ -204,6 +206,12 @@ namespace CryptoLibs
 
         public bool verifySignature(string text, string publicKey, string signature)
         {
+            // Dev: for network testing
+            /*if (Crypto.sha256(text) == signature)
+            {
+                return true;
+            }  
+            return false;*/
             try
             {
                 var input_data = Encoding.UTF8.GetBytes(text);
