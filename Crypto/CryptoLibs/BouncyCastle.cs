@@ -445,7 +445,7 @@ namespace CryptoLibs
             catch (Exception e)
             {
                 //Logging.error(string.Format("Error decrypting data. {0}", e.ToString()));
-                throw e;
+                throw;
             }
 
             return bytes;
