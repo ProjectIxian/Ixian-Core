@@ -12,7 +12,8 @@ namespace DLT
             Normal = 0,
             PoWSolution = 1,
             StakingReward = 2,
-            Genesis = 3
+            Genesis = 3,
+            MultisigTX = 4
         }
 
         public string id;           //  36 B
@@ -52,10 +53,10 @@ namespace DLT
             applied = 0;
         }
 
-        public Transaction(IxiNumber tx_amount, IxiNumber tx_fee, string tx_to, string tx_from, ulong tx_nonce = 0)
+        public Transaction(IxiNumber tx_amount, IxiNumber tx_fee, string tx_to, string tx_from, ulong tx_nonce = 0, int tx_type = (int)Transaction.Type.Normal)
         {
             //id = Guid.NewGuid().ToString();
-            type = (int) Type.Normal;
+            type = tx_type;
 
             amount = tx_amount;
             fee = tx_fee;
