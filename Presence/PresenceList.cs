@@ -358,7 +358,7 @@ namespace DLT
                         string hostname = reader.ReadString();
                         string timestamp = reader.ReadString();
                         string signature = reader.ReadString();
-                        //Console.WriteLine("[PL] KEEPALIVE request from {0}", hostname);
+                        //Logging.info(String.Format("[PL] KEEPALIVE request from {0}", hostname));
 
                         lock (presences)
                         {
