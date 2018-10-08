@@ -9,7 +9,7 @@ namespace DLT
 {
     interface ICryptoLib
     {
-        bool generateKeys();
+        bool generateKeys(int keySize);
         List<string> generateEncryptionKeys();
 
         string getPublicKey();
@@ -42,10 +42,10 @@ namespace DLT
             _cryptoLib = crypto_lib;
         }
 
-        public bool generateKeys()
+        public bool generateKeys(int keySize)
         {
             Trace.Assert(_cryptoLib != null);
-            return _cryptoLib.generateKeys();
+            return _cryptoLib.generateKeys(keySize);
         }
         public List<string> generateEncryptionKeys()
         {

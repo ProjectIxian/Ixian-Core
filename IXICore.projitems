@@ -20,7 +20,7 @@
     <Compile Include="$(MSBuildThisFileDirectory)Peer\Peer.cs" />
     <Compile Include="$(MSBuildThisFileDirectory)Presence\Presence.cs" />
     <Compile Include="$(MSBuildThisFileDirectory)Presence\PresenceList.cs" />
-    <Compile Include="$(MSBuildThisFileDirectory)Presence\PresenceStorage.cs" />
+    <Compile Include="$(MSBuildThisFileDirectory)Presence\PeerStorage.cs" />
     <Compile Include="$(MSBuildThisFileDirectory)Time\Time.cs" />
     <Compile Include="$(MSBuildThisFileDirectory)Transaction\Transaction.cs" />
     <Compile Include="$(MSBuildThisFileDirectory)UPnP\UPnP.cs" />

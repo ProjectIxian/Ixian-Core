@@ -51,8 +51,8 @@ namespace CryptoLibs
             encPrivateKeyString = "";
         }
 
-        // Generates keys for secp256k1 ECDSA signing
-        public bool generateKeys()
+        // Generates keys for RSA signing
+        public bool generateKeys(int keySize)
         {
             try
             {
@@ -71,7 +71,7 @@ namespace CryptoLibs
                          publicKeyString = Convert.ToBase64String(info.GetDerEncoded());*/
 
 
-                RSACryptoServiceProvider rsa = new RSACryptoServiceProvider(3072);
+                RSACryptoServiceProvider rsa = new RSACryptoServiceProvider(keySize);
                 string pubkey = rsa.ToXmlString(false); 
                 string prikey = rsa.ToXmlString(true);
                 privateKeyString = prikey;
@@ -442,7 +442,7 @@ namespace CryptoLibs
             {
                 // TODO: handle this case and the different stream size when encrypted.
             }
-            catch (Exception e)
+            catch (Exception)
             {
                 //Logging.error(string.Format("Error decrypting data. {0}", e.ToString()));
                 throw;

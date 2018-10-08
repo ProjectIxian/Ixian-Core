@@ -28,50 +28,6 @@ namespace DLT
 
         }
 
-        // Prototype specific function, used to retrieve the first valid master node address from the presence list
-        public static string getFirstMasterNodeAddress()
-        {
-            lock (presences)
-            {
-                foreach (Presence pr in presences)
-                {
-                    foreach (PresenceAddress addr in pr.addresses)
-                    {
-                        if (addr.type == 'M')
-                        {
-                            return addr.address;
-                        }
-                    }
-                }
-            }
-            return "none";
-        }
-
-        // Returns a string list of master nodes according to the limit
-        // TODO: randomize the presences to achieve best results when the network is large
-        public static List<string> getMasterNodeAddresses(int maximum = 500)
-        {
-            List<string> result = new List<string>();
-            lock (presences)
-            {
-                foreach (Presence pr in presences)
-                {
-                    foreach (PresenceAddress addr in pr.addresses)
-                    {
-                        if (addr.type == 'M')
-                        {
-                            result.Add(addr.address);
-                            if(result.Count() >= maximum)
-                            {
-                                return result;
-                            }
-                        }
-                    }
-                }
-            }
-            return result;
-        }
-
         // Searches through the entire presence list to find a matching IP with a specific type.
         // Returns true if found, otherwise false
         public static bool containsIP(string ip, char type)
@@ -436,8 +392,8 @@ namespace DLT
                             // Go through every presence address for this entry
                             foreach (PresenceAddress pa in listEntry.addresses)
                             {
-                                if (pa.address.Equals(hostname, StringComparison.Ordinal))
-                                if (pa.device.Equals(deviceid, StringComparison.Ordinal))
+                                if (pa.address.Equals(hostname, StringComparison.Ordinal) 
+                                    && pa.device.Equals(deviceid, StringComparison.Ordinal))
                                 {
                                     // Check the node type
                                     if(pa.lastSeenTime.Equals(timestamp, StringComparison.Ordinal) == false)
@@ -470,6 +426,11 @@ namespace DLT
 
                                         // Update the timestamp
                                         pa.lastSeenTime = timestamp;
+
+                                        if (pa.type == 'M')
+                                        {
+                                            PeerStorage.addPeerToPeerList(hostname, wallet);
+                                        }
 
                                         //Console.WriteLine("[PL] LASTSEEN for {0} - {1} set to {2}", hostname, deviceid, pa.lastSeenTime);
                                         return true;
