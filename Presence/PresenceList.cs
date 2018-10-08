@@ -84,12 +84,9 @@ namespace DLT
                                     {
                                         addressfound = true;
 
-                                        if (local_addr.lastSeenTime.Equals(addr.lastSeenTime, StringComparison.Ordinal) == false)
+                                        if (local_addr.lastSeenTime != addr.lastSeenTime)
                                         {
-                                            double addr_timestamp = Convert.ToDouble(addr.lastSeenTime);
-                                            double local_addr_timestamp = Convert.ToDouble(local_addr.lastSeenTime);
-
-                                            if (addr_timestamp < local_addr_timestamp)
+                                            if (long.Parse(addr.lastSeenTime) < long.Parse(local_addr.lastSeenTime))
                                             {
                                                 addr.lastSeenTime = local_addr.lastSeenTime;
                                                 entryUpdated = true;
@@ -115,6 +112,7 @@ namespace DLT
                             // Add the address if it's not found
                             if (addressfound == false && entryUpdated == false)
                             {
+                                //Console.WriteLine("[PL] Adding new address for {0}", presence.wallet);
                                 pr.addresses.Add(local_addr);
                                 entryUpdated = true;
                             }
@@ -346,7 +344,7 @@ namespace DLT
         public static bool receiveKeepAlive(byte[] bytes)
         {
             // Get the current timestamp
-            double currentTime = Convert.ToDouble(Clock.getTimestamp(DateTime.Now));
+            string currentTime = Clock.getTimestamp(DateTime.Now);
 
             try
             {
@@ -367,10 +365,9 @@ namespace DLT
                             Presence listEntry = presences.Find(x => x.wallet == wallet);
                             if (listEntry == null && wallet == Node.walletStorage.address)
                             {
-                                string lastSeenTime = Clock.getTimestamp(DateTime.Now);
+                                Logging.error(string.Format("My entry was removed from local PL, readding."));
                                 updateEntry(curNodePresence);
                                 listEntry = presences.Find(x => x.wallet == wallet);
-                                Logging.error(string.Format("My entry was removed from local PL, readding."));
                             }
 
                             // Check if no such wallet found in presence list
@@ -389,55 +386,70 @@ namespace DLT
                                 return false;
                             }
 
-                            // Go through every presence address for this entry
-                            foreach (PresenceAddress pa in listEntry.addresses)
+                            // Verify the signature
+                            if (CryptoManager.lib.verifySignature(timestamp.ToString(), listEntry.metadata, signature) == false)
                             {
-                                if (pa.address.Equals(hostname, StringComparison.Ordinal) 
-                                    && pa.device.Equals(deviceid, StringComparison.Ordinal))
-                                {
-                                    // Check the node type
-                                    if(pa.lastSeenTime.Equals(timestamp, StringComparison.Ordinal) == false)
-                                    {
-                                        double d_timestamp = Convert.ToDouble(timestamp);
-
-                                        // Check for tampering. Includes a 300 second synchronization zone
-                                        if (currentTime + 300 < d_timestamp)
-                                        {
-                                            Logging.warn(string.Format("[PL] Potential KEEPALIVE tampering for {0} {1}. Timestamp {2}", listEntry.wallet, pa.address, timestamp));
-                                            return false;
-                                        }
-
-                                        // Check for outdated timestamp
-                                        double d_oldLastSeen = Convert.ToDouble(pa.lastSeenTime);
-                                        if (d_timestamp < d_oldLastSeen)
-                                        {
-                                            // We already have a newer timestamp for this entry
-                                            return false;
-                                        }
-
-                                        // Finally, check the signature
-                                        // Verify the signature
-                                        // Disabled for dev purposes
-                                        if(CryptoManager.lib.verifySignature(timestamp, listEntry.metadata, signature) == false)
-                                        {
-                                            Logging.warn(string.Format("[PL] KEEPALIVE tampering for {0} {1}", listEntry.wallet, pa.address));
-                                            return false;
-                                        }
-
-                                        // Update the timestamp
-                                        pa.lastSeenTime = timestamp;
-
-                                        if (pa.type == 'M')
-                                        {
-                                            PeerStorage.addPeerToPeerList(hostname, wallet);
-                                        }
-
-                                        //Console.WriteLine("[PL] LASTSEEN for {0} - {1} set to {2}", hostname, deviceid, pa.lastSeenTime);
-                                        return true;
-                                    }
-                                }
+                                Logging.warn(string.Format("[PL] KEEPALIVE tampering for {0} {1}", listEntry.wallet, hostname));
+                                return false;
                             }
 
+                            PresenceAddress pa = listEntry.addresses.Find(x => x.address == hostname && x.device == deviceid);
+
+                            if(pa != null)
+                            {
+                                // Check the node type
+                                if (pa.lastSeenTime != timestamp)
+                                {
+                                    long lTimestamp = long.Parse(timestamp);
+                                    long lCurrentTime = long.Parse(currentTime);
+
+                                    // Check for tampering. Includes a 300 second synchronization zone
+                                    if ((lCurrentTime - lTimestamp) > 300)
+                                    {
+                                        Logging.warn(string.Format("[PL] Potential KEEPALIVE tampering for {0} {1}. Timestamp {2}", listEntry.wallet, pa.address, timestamp));
+                                        return false;
+                                    }
+
+                                    // Check for outdated timestamp
+                                    if (lTimestamp < lCurrentTime)
+                                    {
+                                        // We already have a newer timestamp for this entry
+                                        return false;
+                                    }
+
+
+                                    // Update the timestamp
+                                    pa.lastSeenTime = timestamp;
+
+                                    if (pa.type == 'M')
+                                    {
+                                        PeerStorage.addPeerToPeerList(hostname, wallet);
+                                    }
+
+                                    //Console.WriteLine("[PL] LASTSEEN for {0} - {1} set to {2}", hostname, deviceid, pa.lastSeenTime);
+                                    return true;
+                                }
+                            }else
+                            {
+                                if (wallet == Node.walletStorage.address)
+                                {
+                                    updateEntry(curNodePresence);
+                                    return true;
+                                }
+                                else
+                                {
+                                    using (MemoryStream mw = new MemoryStream())
+                                    {
+                                        using (BinaryWriter writer = new BinaryWriter(mw))
+                                        {
+                                            writer.Write(wallet);
+
+                                            ProtocolMessage.broadcastProtocolMessage(ProtocolMessageCode.getPresence, mw.ToArray());
+                                        }
+                                    }
+                                    return false;
+                                }
+                            }
                         }
                     }
                 }
@@ -454,7 +466,7 @@ namespace DLT
         public static bool performCleanup()
         {
             // Get the current timestamp
-            double currentTime = Convert.ToDouble(Clock.getTimestamp(DateTime.Now));
+            string currentTime = Clock.getTimestamp(DateTime.Now);
             lock (presences)
             {
                 // Store a copy of the presence list to allow safe modifications while enumerating
@@ -466,20 +478,10 @@ namespace DLT
 
                     foreach (PresenceAddress pa in safe_addresses)
                     {
-                        // Skip self device from cleanup and apply current timestamp
-                        if (pa.device.Equals(Config.device_id, StringComparison.Ordinal))
-                        {
-                            // Update the timestamp
-                            pa.lastSeenTime = Clock.getTimestamp(DateTime.Now);
-                            continue;
-                        }
-
-
                         try
                         {
-                            double paTime = Convert.ToDouble(pa.lastSeenTime);
                             // Check if timestamp is older than 300 seconds
-                            if(currentTime - paTime > 300)
+                            if((long.Parse(currentTime) - long.Parse(pa.lastSeenTime)) > 300)
                             {
                                 Logging.info(string.Format("Expired lastseen for {0} / {1}", pa.address, pa.device));
                                 removeAddressEntry(pr.wallet, pa);

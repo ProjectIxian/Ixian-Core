@@ -46,7 +46,7 @@ namespace DLT
                     address = reader.ReadString();
                     type = reader.ReadChar();
                     version = reader.ReadString();
-                    lastSeenTime = reader.ReadString();
+                    lastSeenTime =reader.ReadString();
                 }
             }
         }
@@ -217,21 +217,5 @@ namespace DLT
                 return m.ToArray();
             }
         }
-
-        // Adds an address to the presence. If the address is already found, returns false.
-        // If forceUpdate is true, it will overwrite the address if it's found.
-        public bool addAddress(PresenceAddress address, bool forceUpdate = false)
-        {
-            foreach(PresenceAddress addr in addresses)
-            {
-                if(address.device.Equals(addr.device, StringComparison.Ordinal))
-                {
-                    return false;
-                }
-            }
-
-            return true;
-        }
-
     }
 }
