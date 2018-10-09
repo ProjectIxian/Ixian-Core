@@ -24,7 +24,8 @@ namespace DLT
             address = string.Format("{0}:{1}", CoreNetworkUtils.GetLocalIPAddress(), Config.serverPort);
             type = 'M';
             version = Config.version;
-            lastSeenTime = Clock.getTimestamp(DateTime.Now);
+            lastSeenTime = Node.getCurrentTimestamp().ToString();
+
         }
 
         public PresenceAddress(string node_device, string node_address, char node_type, string node_version)
@@ -33,7 +34,7 @@ namespace DLT
             address = node_address;
             type = node_type;
             version = node_version;
-            lastSeenTime = Clock.getTimestamp(DateTime.Now);
+            lastSeenTime = Node.getCurrentTimestamp().ToString();
         }
 
         public PresenceAddress(byte[] bytes)

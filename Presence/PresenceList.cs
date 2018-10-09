@@ -344,7 +344,7 @@ namespace DLT
         public static bool receiveKeepAlive(byte[] bytes)
         {
             // Get the current timestamp
-            string currentTime = Clock.getTimestamp(DateTime.Now);
+            long currentTime = Node.getCurrentTimestamp();
 
             try
             {
@@ -401,17 +401,16 @@ namespace DLT
                                 if (pa.lastSeenTime != timestamp)
                                 {
                                     long lTimestamp = long.Parse(timestamp);
-                                    long lCurrentTime = long.Parse(currentTime);
 
-                                    // Check for tampering. Includes a 300 second synchronization zone
-                                    if ((lCurrentTime - lTimestamp) > 300)
+                                    // Check for tampering. Includes a 100 second synchronization zone
+                                    if ((currentTime - lTimestamp) > 100)
                                     {
                                         Logging.warn(string.Format("[PL] Potential KEEPALIVE tampering for {0} {1}. Timestamp {2}", listEntry.wallet, pa.address, timestamp));
                                         return false;
                                     }
 
                                     // Check for outdated timestamp
-                                    if (lTimestamp < lCurrentTime)
+                                    if (lTimestamp < currentTime)
                                     {
                                         // We already have a newer timestamp for this entry
                                         return false;
@@ -466,7 +465,7 @@ namespace DLT
         public static bool performCleanup()
         {
             // Get the current timestamp
-            string currentTime = Clock.getTimestamp(DateTime.Now);
+            long currentTime = Node.getCurrentTimestamp();
             lock (presences)
             {
                 // Store a copy of the presence list to allow safe modifications while enumerating
@@ -481,7 +480,7 @@ namespace DLT
                         try
                         {
                             // Check if timestamp is older than 300 seconds
-                            if((long.Parse(currentTime) - long.Parse(pa.lastSeenTime)) > 300)
+                            if((currentTime - long.Parse(pa.lastSeenTime)) > 300)
                             {
                                 Logging.info(string.Format("Expired lastseen for {0} / {1}", pa.address, pa.device));
                                 removeAddressEntry(pr.wallet, pa);

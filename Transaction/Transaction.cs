@@ -47,7 +47,7 @@ namespace DLT
             // This constructor is used only for development purposes
             id = Guid.NewGuid().ToString();
             type = (int) Type.Normal;
-            timeStamp = Clock.getTimestamp(DateTime.Now);
+            timeStamp = Node.getCurrentTimestamp().ToString();
             fee = new IxiNumber("0");
             nonce = 0;
             applied = 0;
@@ -66,7 +66,7 @@ namespace DLT
 
             nonce = tx_nonce;
 
-            timeStamp = Clock.getTimestamp(DateTime.Now);
+            timeStamp = Node.getCurrentTimestamp().ToString();
 
             id = generateID();
             checksum = Transaction.calculateChecksum(this);
