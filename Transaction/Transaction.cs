@@ -13,7 +13,15 @@ namespace DLT
             PoWSolution = 1,
             StakingReward = 2,
             Genesis = 3,
-            MultisigTX = 4
+            MultisigTX = 4,
+            ChangeMultisigWallet = 5
+        }
+
+        public enum MultisigWalletChangeType:byte
+        {
+            AddSigner = 1, // data is appended by :MS1:pubkey
+            DelSigner = 2, // data is appended by :MS2:pubkey
+            ChangeReqSigs = 3 // data is appended by :MS3:NUMBER ; where 0 < NUMBER < 256
         }
 
         public string id;           //  36 B
@@ -53,10 +61,10 @@ namespace DLT
             applied = 0;
         }
 
-        public Transaction(IxiNumber tx_amount, IxiNumber tx_fee, string tx_to, string tx_from, ulong tx_nonce = 0, int tx_type = (int)Transaction.Type.Normal)
+        public Transaction(IxiNumber tx_amount, IxiNumber tx_fee, string tx_to, string tx_from, ulong tx_nonce = 0)
         {
             //id = Guid.NewGuid().ToString();
-            type = tx_type;
+            type = (int)Transaction.Type.Normal;
 
             amount = tx_amount;
             fee = tx_fee;
@@ -254,6 +262,75 @@ namespace DLT
             string private_key = Node.walletStorage.privateKey;
             return CryptoManager.lib.getSignature(checksum, private_key);
         }
+
+        public static Transaction multisigTransaction(IxiNumber tx_amount, IxiNumber tx_fee, string tx_to, string tx_from, ulong tx_nonce = 0)
+        {
+            Transaction t = new Transaction(tx_amount, tx_fee, tx_to, tx_from, tx_nonce);
+            t.type = (int)Transaction.Type.MultisigTX;
+            // overwrite invalid values where were calcualted before the multisig flag was set
+            t.id = t.generateID();
+            t.checksum = Transaction.calculateChecksum(t);
+            t.signature = Transaction.getSignature(t.checksum);
+            return t;
+        }
+
+        public static Transaction multisigAddKeyTransaction(string signer,  IxiNumber tx_fee, string tx_from, ulong tx_nonce = 0)
+        {
+            Transaction t = new Transaction
+            {
+                type = (int)Transaction.Type.ChangeMultisigWallet,
+                amount = new IxiNumber(0),
+                fee = tx_fee,
+                from = tx_from,
+                to = tx_from,
+                nonce = tx_nonce,
+                data = "MS1:" + signer
+            };
+            //
+            t.id = t.generateID();
+            t.checksum = Transaction.calculateChecksum(t);
+            t.signature = Node.walletStorage.publicKey + ":" + Transaction.getSignature(t.checksum);
+            return t;
+        }
+
+        public static Transaction multisigDelKeyTransaction(string signer, IxiNumber tx_fee, string tx_from, ulong tx_nonce = 0)
+        {
+            Transaction t = new Transaction
+            {
+                type = (int)Transaction.Type.ChangeMultisigWallet,
+                amount = new IxiNumber(0),
+                fee = tx_fee,
+                from = tx_from,
+                to = tx_from,
+                nonce = tx_nonce,
+                data = "MS2:" + signer
+            };
+            //
+            t.id = t.generateID();
+            t.checksum = Transaction.calculateChecksum(t);
+            t.signature = Node.walletStorage.publicKey + ":" + Transaction.getSignature(t.checksum);
+            return t;
+        }
+
+        public static Transaction multisigChangeReqSigs(byte sigs, IxiNumber tx_fee, string tx_from, ulong tx_nonce = 0)
+        {
+            Transaction t = new Transaction
+            {
+                type = (int)Transaction.Type.ChangeMultisigWallet,
+                amount = new IxiNumber(0),
+                fee = tx_fee,
+                from = tx_from,
+                to = tx_from,
+                nonce = tx_nonce,
+                data = "MS3:" + sigs.ToString()
+            };
+            //
+            t.id = t.generateID();
+            t.checksum = Transaction.calculateChecksum(t);
+            t.signature = Node.walletStorage.publicKey + ":" + Transaction.getSignature(t.checksum);
+            return t;
+        }
+
 
     }
 }

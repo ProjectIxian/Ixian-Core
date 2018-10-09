@@ -1,6 +1,8 @@
 using DLT.Meta;
 using System;
+using System.Collections.Generic;
 using System.IO;
+using System.Linq;
 
 namespace DLT
 {
@@ -138,47 +140,25 @@ namespace DLT
             return Crypto.sha256(baseData);
         }
 
-        public void addSigningAddress(string address)
+        public int matchValidSigners(string[] pubkeys)
         {
-            lock (id)
+            Dictionary<string, bool> matchedSigs = new Dictionary<string, bool>();
+            if(allowedSigners == null)
             {
-                if (allowedSigners == null)
+                matchedSigs.Add(id, false);
+            } else
+            {
+                matchedSigs = allowedSigners.ToDictionary(k => k, v => false);
+            }
+            foreach (string key in pubkeys)
+            {
+                Address a = new Address(key);
+                if(matchedSigs.ContainsKey(a.ToString()))
                 {
-                    allowedSigners = new string[1];
-                    allowedSigners[0] = address;
-                    Logging.info(String.Format("Converting wallet {0} to a multisig wallet.", id));
-                    type = WalletType.Multisig;
-                    requiredSigs = 1;
-                }
-                else
-                {
-                    if (allowedSigners.Length >= 255)
-                    {
-                        Logging.warn("Attempted to add a signing address to a wallet that already has 255 signing wallets (max).");
-                        return;
-                    }
-                    string[] tmp = new string[allowedSigners.Length + 1];
-                    Array.Copy(allowedSigners, tmp, allowedSigners.Length);
-                    tmp[allowedSigners.Length] = address;
-                    allowedSigners = tmp;
+                    matchedSigs[a.ToString()] = true;
                 }
             }
-        }
-
-        public void setMinimumsignatures(byte numSigs)
-        {
-            if(type != WalletType.Multisig)
-            {
-                Logging.warn(String.Format("Unable to set minimum signatures for a non-multisig wallet {0}!", id));
-                return;
-            }
-            if(numSigs > allowedSigners.Length+1)
-            {
-                Logging.warn(String.Format("Attempting to set signature minimum to {0}, but wallet only has {1} pubkeys on the allowed list!",
-                    numSigs, allowedSigners.Length + 1));
-                return;
-            }
-            requiredSigs = numSigs;
+            return matchedSigs.Aggregate(0, (sum, kvp) => sum += kvp.Value ? 1 : 0, sum => sum);
         }
     }
 }
