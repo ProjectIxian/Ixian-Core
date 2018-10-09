@@ -9,6 +9,8 @@ using System.Threading.Tasks;
 
 namespace DLT
 {
+    // TODO TODO TODO add sigs to PresenceAddress; when syncing with other nodes,
+    // we can't rely on them sending the correct data, we have to verify with the originators sigs otherwise the entry is invalid
     // An object class that describes how to contact the specific node/client
     public class PresenceAddress
     {

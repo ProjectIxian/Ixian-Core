@@ -56,88 +56,67 @@ namespace DLT
         {
             //Console.WriteLine("[PL] Received update entry for: {0}", presence.wallet);
 
-            bool entryFound = false;
             bool entryUpdated = false;
 
             Presence return_presence = null;
             lock(presences)
             {
-                foreach(Presence pr in presences)
+                Presence pr = presences.Find(x => x.wallet == presence.wallet);
+                if (pr != null)
                 {
-                    // Check if the wallet address is already in the presence list
-                    if(pr.wallet.Equals(presence.wallet, StringComparison.Ordinal))
+                    entryUpdated = false;
+
+                    // Go through all addresses and add any missing ones
+                    foreach (PresenceAddress local_addr in presence.addresses)
                     {
-                        entryFound = true;
-                        entryUpdated = false;
-
-                        // Go through all addresses and add any missing ones
-                        foreach (PresenceAddress local_addr in presence.addresses)
+                        long currentTime = Node.getCurrentTimestamp();
+                        long lTimestamp = long.Parse(local_addr.lastSeenTime);
+                        // Check for tampering. Includes a 200 second synchronization zone
+                        if ((currentTime - lTimestamp) > 100 || (currentTime - lTimestamp) < -100)
                         {
-                            bool addressfound = false;
+                            Logging.warn(string.Format("[PL] Potential KEEPALIVE tampering for {0} {1}. Timestamp {2}. Skipping", pr.wallet, local_addr.address, lTimestamp));
+                            continue;
+                        }
 
-                            foreach (PresenceAddress addr in pr.addresses)
+                        bool addressfound = false;
+
+                        PresenceAddress addr = pr.addresses.Find(x => x.device == local_addr.device);
+                        if (addr != null)
+                        {
+                            addressfound = true;
+                            if(addr.address != local_addr.address)
                             {
-                                if (local_addr.device.Equals(addr.device))
-                                {
-                                    // Check if address matches
-                                    if (local_addr.address.Equals(addr.address))
-                                    {
-                                        addressfound = true;
-
-                                        if (local_addr.lastSeenTime != addr.lastSeenTime)
-                                        {
-                                            if (long.Parse(addr.lastSeenTime) < long.Parse(local_addr.lastSeenTime))
-                                            {
-                                                addr.lastSeenTime = local_addr.lastSeenTime;
-                                                entryUpdated = true;
-                                                //Console.WriteLine("[PL] Last time updated for {0}", addr.device);
-                                            }
-                                        }
-                                        else
-                                        {
-                                            //Console.WriteLine("[PL] Address already found: {0}\n\t{1} vs {2}", addr.device, addr.address, local_addr.address);
-                                        }
-                                    }
-                                    else
-                                    {
-                                        // Change in address location
-                                        addr.address = local_addr.address;
-                                        addr.lastSeenTime = local_addr.lastSeenTime;
-                                        entryUpdated = true;
-                                        //Console.WriteLine("[PL] Updated address for {0} to {1}", addr.device, addr.address);
-                                    }
-                                }
-                            }
-
-                            // Add the address if it's not found
-                            if (addressfound == false && entryUpdated == false)
-                            {
-                                //Console.WriteLine("[PL] Adding new address for {0}", presence.wallet);
-                                pr.addresses.Add(local_addr);
+                                addr.address = local_addr.address;
+                                addr.lastSeenTime = local_addr.lastSeenTime;
                                 entryUpdated = true;
                             }
-
+                            else if (long.Parse(addr.lastSeenTime) < long.Parse(local_addr.lastSeenTime))
+                            {
+                                addr.lastSeenTime = local_addr.lastSeenTime;
+                                entryUpdated = true;
+                                //Console.WriteLine("[PL] Last time updated for {0}", addr.device);
+                            }
                         }
 
-                        // Check if the entry was updated
-                        if(entryUpdated == false)
+                        // Add the address if it's not found
+                        if (addressfound == false && entryUpdated == false)
                         {
-                            // Return the stored presence list entity
-                            //Console.WriteLine("[PL] No update for presence {0}", pr.wallet);
-                            return pr;
+                            //Console.WriteLine("[PL] Adding new address for {0}", presence.wallet);
+                            pr.addresses.Add(local_addr);
+                            entryUpdated = true;
                         }
 
-                        // Entry was updated, broadcast to network
-                        //Console.WriteLine("[PL] Updating presence for {0}", pr.wallet);                  
-
-                        // Return the stored presence list entity
-                        return_presence = pr;
-                        break;
                     }
-                }
 
-                // No entry found to update
-                if(entryFound == false)
+                    // Check if the entry was updated
+                    if(entryUpdated == false)
+                    {
+                        return pr;
+                    }
+
+                    // Return the stored presence list entity
+                    return_presence = pr;
+                }else
                 {
                     // Insert a new entry
                     //Console.WriteLine("[PL] Adding new entry for {0}", presence.wallet);
@@ -148,7 +127,7 @@ namespace DLT
             }
 
             // Perform network oprations only after lock is lifted and we have a return_presence
-            if(return_presence != null)
+            if (return_presence != null)
             {
                 ProtocolMessage.broadcastProtocolMessage(ProtocolMessageCode.updatePresence, return_presence.getBytes(), skipSocket);
             }
@@ -364,9 +343,9 @@ namespace DLT
                             }
 
                             // Verify the signature
-                            if (CryptoManager.lib.verifySignature(timestamp.ToString(), listEntry.metadata, signature) == false)
+                            if (CryptoManager.lib.verifySignature(deviceid + "-" + timestamp + "-" + hostname, listEntry.metadata, signature) == false)
                             {
-                                Logging.warn(string.Format("[PL] KEEPALIVE tampering for {0} {1}", listEntry.wallet, hostname));
+                                Logging.warn(string.Format("[PL] KEEPALIVE tampering for {0} {1}, incorrect Sig.", listEntry.wallet, hostname));
                                 return false;
                             }
 
@@ -378,16 +357,18 @@ namespace DLT
                                 if (pa.lastSeenTime != timestamp)
                                 {
                                     long lTimestamp = long.Parse(timestamp);
+                                    long lLastSeenTime = long.Parse(pa.lastSeenTime);
 
-                                    // Check for tampering. Includes a 100 second synchronization zone
-                                    if ((currentTime - lTimestamp) > 100)
+
+                                    // Check for tampering. Includes a 200 second synchronization zone
+                                    if ((currentTime - lTimestamp) > 100 || (currentTime - lTimestamp) < -100)
                                     {
                                         Logging.warn(string.Format("[PL] Potential KEEPALIVE tampering for {0} {1}. Timestamp {2}", listEntry.wallet, pa.address, timestamp));
                                         return false;
                                     }
 
                                     // Check for outdated timestamp
-                                    if (lTimestamp < currentTime)
+                                    if (lTimestamp < lLastSeenTime)
                                     {
                                         // We already have a newer timestamp for this entry
                                         return false;
