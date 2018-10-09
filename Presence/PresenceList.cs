@@ -161,16 +161,7 @@ namespace DLT
             lock (presences)
             {
                 //Console.WriteLine("[PL] Received removal for {0} : {1}", wallet_address, address.address);
-                Presence listEntry = null;
-                foreach (Presence pr in presences)
-                {
-                    // Check if the wallet address is already in the presence list
-                    if (pr.wallet.Equals(wallet_address, StringComparison.Ordinal))
-                    {
-                        listEntry = pr;
-                        break;
-                    }
-                }
+                Presence listEntry = presences.Find(x => x.wallet == wallet_address);
 
                 // Check if there is such an entry in the presence list
                 if (listEntry != null)
@@ -183,23 +174,9 @@ namespace DLT
 
                     if (address_count == 0)
                     {
-                        // This means we'll have to remove the entry from the presence list
-                        //Console.WriteLine("[PL] REMOVING ENTRY FROM LIST {0}", listEntry.wallet);
-
-                        // Broadcast the message first
-                        // DEPRECATED in favor of KEEPALIVE
-                       // ProtocolMessage.broadcastProtocolMessage(ProtocolMessageCode.removePresence, listEntry.getBytes(), skipSocket);
-
                         // Remove it from the list
                         presences.Remove(listEntry);
                     }
-                    else
-                    {
-                        // This means we'll have to update the entry in the presence list
-                        // DEPRECATED in favor of KEEPALIVE
-                        //ProtocolMessage.broadcastProtocolMessage(ProtocolMessageCode.updatePresence, listEntry.getBytes(), skipSocket);
-                    }
-
 
                     // If presence address is a relay node, remove all other presences with matching ip:port
                     // TODO: find a better way to handle this while preventing modify-during-enumeration issues
@@ -473,6 +450,12 @@ namespace DLT
 
                 foreach (Presence pr in safe_presences)
                 {
+                    if(pr.addresses.Count == 0)
+                    {
+                        presences.Remove(pr);
+                        continue;
+                    }
+
                     List<PresenceAddress> safe_addresses = new List<PresenceAddress>(pr.addresses);
 
                     foreach (PresenceAddress pa in safe_addresses)
