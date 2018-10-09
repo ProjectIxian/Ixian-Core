@@ -5,6 +5,7 @@ using System.Threading;
 using System.Reflection;
 using System.Linq;
 using System.Text;
+using System.Collections.Generic;
 
 namespace DLT
 {
@@ -22,16 +23,36 @@ namespace DLT
             private static Logging singletonInstance;
             private LogSeverity currentSeverity;
 
-
             private static string logfilename = "ixian.log";
             private static string logfilepath = ""; // Stores the full log path
             private static string folderpath = ""; // Stores just the folder path
             private static string wildcard = "*";
             private static string logfilepathpart = "";
 
+            private static Thread thread = null;
+            private static bool running = false;
+
+
+            private struct LogStatement
+            {
+                public LogSeverity severity;
+                public string message;
+            }
+
+            private static List<LogStatement> statements = new List<LogStatement>();
+
             private Logging()
             {
                 currentSeverity = LogSeverity.trace;
+            }
+
+            public static void start()
+            {        
+                if(running)
+                {
+                    Console.WriteLine("Logging already started.");
+                    return;
+                }
                 try
                 {
                     // Obtain paths and cache them
@@ -46,12 +67,23 @@ namespace DLT
                     // Create the main log file
                     File.AppendAllText(logfilename, "Ixian Log" + Environment.NewLine, Encoding.UTF8);
 
+                    // Start thread
+                    running = true;
+                    thread = new Thread(new ThreadStart(threadLoop));
+                    thread.Start();
                 }
                 catch (Exception e)
                 {
                     // Ignore all exception and start anyway with console only logging.
                     Console.WriteLine(String.Format("Unable to open log file. Error was: {0}. Logging to console only.", e.Message));
                 }
+            }
+
+            // Stops the logging thread
+            public static void stop()
+            {
+                running = false;
+                thread.Abort();
             }
 
             public static Logging singleton
@@ -66,13 +98,36 @@ namespace DLT
                 }
             }
 
-            public static void log(LogSeverity severity, string message)
+            // Log a statement
+            public static void log(LogSeverity log_severity, string log_message)
+            {
+                
+                if(running == false)
+                {
+                    Console.WriteLine("Logging was not started.");
+                    return;
+                }
+
+                LogStatement statement = new LogStatement
+                {
+                    severity = log_severity,
+                    message = log_message
+                };
+
+                lock (statements)
+                {
+
+                    statements.Add(statement);
+                }
+            }
+
+            private static void log_internal(LogSeverity severity, string message)
             {
                 if (severity >= Logging.singleton.currentSeverity)
                 {
-                    String formattedMessage = String.Format("{0}|{1}|Thread({2}): {3}", 
-                        DateTime.Now.ToString("yyyy-MM-dd HH:mm:ss.ffff"), 
-                        severity.ToString(), 
+                    String formattedMessage = String.Format("{0}|{1}|Thread({2}): {3}",
+                        DateTime.Now.ToString("yyyy-MM-dd HH:mm:ss.ffff"),
+                        severity.ToString(),
                         Thread.CurrentThread.ManagedThreadId,
                         message);
 
@@ -94,6 +149,42 @@ namespace DLT
 
                 }
             }
+
+            // Storage thread
+            private static void threadLoop()
+            {
+                LogStatement statement = new LogStatement();
+
+                while (running)
+                {
+                    bool message_found = false;
+
+                    lock (statements)
+                    {
+                        if (statements.Count() > 0)
+                        {
+                            LogStatement candidate = statements[0];
+                            statement = candidate;
+                            statements.Remove(candidate);
+                            message_found = true;
+                        }
+                    }
+
+                    if (message_found)
+                    {
+                        log_internal(statement.severity, statement.message);
+                    }
+                    else
+                    {
+                        // Sleep for 100ms to prevent cpu waste
+                        Thread.Sleep(100);
+                    }
+                }
+
+                Thread.Yield();
+            }
+
+
 
             // Rolls the log file
             public static void roll()
@@ -140,19 +231,26 @@ namespace DLT
                 lock (logfilename)
                 {
 
-                    if (File.Exists(logfilename))
+                    try
                     {
-                        File.Delete(logfilename);
+                        if (File.Exists(logfilename))
+                        {
+                            File.Delete(logfilename);
+                        }
+
+                        string[] logFileList = Directory.GetFiles(folderpath, wildcard, SearchOption.TopDirectoryOnly);
+                        var rolledLogFileList = logFileList.Where(fileName => Path.GetFileName(fileName).Length == (logfilename.Length + 2)).ToArray();
+
+                        for (int i = rolledLogFileList.Length; i >= 0; --i)
+                        {
+                            string filename = logfilepathpart + "." + i + Path.GetExtension(logfilename);
+                            if (File.Exists(filename))
+                                File.Delete(filename);
+                        }
                     }
-
-                    string[] logFileList = Directory.GetFiles(folderpath, wildcard, SearchOption.TopDirectoryOnly);
-                    var rolledLogFileList = logFileList.Where(fileName => Path.GetFileName(fileName).Length == (logfilename.Length + 2)).ToArray();
-
-                    for (int i = rolledLogFileList.Length; i >= 0; --i)
+                    catch(Exception e)
                     {
-                        string filename = logfilepathpart + "." + i + Path.GetExtension(logfilename);
-                        if (File.Exists(filename))
-                            File.Delete(filename);
+                        Console.WriteLine("Exception clearing log files: {0}", e.Message);
                     }
 
                 }
