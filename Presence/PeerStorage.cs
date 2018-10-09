@@ -8,12 +8,20 @@ namespace DLT
 {
     class PeerStorage
     {
-        struct Peer
+        class Peer
         {
             public string hostname;
             public string walletAddress;
             public DateTime lastSeen;
-            public DateTime lastConnectAttempt;
+            public long lastConnectAttempt;
+
+            public Peer(string iHostname, string iWalletAddress, DateTime iLastSeen, long iLastConnectAttempt)
+            {
+                hostname = iHostname;
+                walletAddress = iWalletAddress;
+                lastSeen = iLastSeen;
+                lastConnectAttempt = iLastConnectAttempt;
+            }
         };
 
         private static List<Peer> peerList = new List<Peer>();
@@ -26,14 +34,15 @@ namespace DLT
             {
                 return;
             }
-            Peer p = new Peer();
-            p.hostname = hostname;
-            p.walletAddress = walletAddress;
-            p.lastSeen = DateTime.Now;
-            p.lastConnectAttempt = DateTime.MinValue;
+            Peer p = new Peer(hostname, walletAddress, DateTime.Now, 0);
 
             lock (peerList)
             {
+                if (peerList.Exists(x => x.hostname == hostname))
+                {
+                    p.lastConnectAttempt = peerList.Find(x => x.hostname == hostname).lastConnectAttempt;
+                }
+
                 if(peerList.RemoveAll(x => x.hostname == hostname) > 0)
                 {
                     storePeersFile = false; // this hostname:port is already in the file, no need to add it again
@@ -80,14 +89,15 @@ namespace DLT
             List<Peer> connectableList = null;
             lock (peerList)
             {
-                connectableList = peerList.FindAll(x => (DateTime.Now - x.lastConnectAttempt).TotalSeconds > 30);
-            }
-            if (connectableList != null && connectableList.Count > 0)
-            {
-                Random rnd = new Random();
-                Peer p = connectableList[rnd.Next(connectableList.Count)];
-                p.lastConnectAttempt = DateTime.Now;
-                return p.hostname;
+                long curTime = Clock.getTimestamp(DateTime.Now);
+                connectableList = peerList.FindAll(x => curTime - x.lastConnectAttempt > 30);
+                if (connectableList != null && connectableList.Count > 0)
+                {
+                    Random rnd = new Random();
+                    Peer p = connectableList[rnd.Next(connectableList.Count)];
+                    p.lastConnectAttempt = curTime;
+                    return p.hostname;
+                }
             }
             return "";
         }
