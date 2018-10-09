@@ -52,7 +52,8 @@ namespace DLT
             keepAlivePresence,
             getPresence,
             getBlockTransactions,
-            transactionsChunk
+            transactionsChunk,
+            getUnappliedTransactions,
             /*updateTransaction,*/
         }
 
