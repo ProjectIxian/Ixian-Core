@@ -20,18 +20,18 @@ namespace DLT
         }
         public class Logging
         {
-            private static Logging singletonInstance;
-            private LogSeverity currentSeverity;
+            // Public
+            public static LogSeverity currentSeverity = LogSeverity.trace;
 
+
+            // Private
             private static string logfilename = "ixian.log";
             private static string logfilepath = ""; // Stores the full log path
             private static string folderpath = ""; // Stores just the folder path
             private static string wildcard = "*";
             private static string logfilepathpart = "";
-
             private static Thread thread = null;
             private static bool running = false;
-
 
             private struct LogStatement
             {
@@ -41,11 +41,8 @@ namespace DLT
 
             private static List<LogStatement> statements = new List<LogStatement>();
 
-            private Logging()
-            {
-                currentSeverity = LogSeverity.trace;
-            }
 
+            // Setup and start the logging thread
             public static void start()
             {        
                 if(running)
@@ -86,18 +83,6 @@ namespace DLT
                 thread.Abort();
             }
 
-            public static Logging singleton
-            {
-                get
-                {
-                    if (singletonInstance == null)
-                    {
-                        singletonInstance = new Logging();
-                    }
-                    return singletonInstance;
-                }
-            }
-
             // Log a statement
             public static void log(LogSeverity log_severity, string log_message)
             {
@@ -121,9 +106,10 @@ namespace DLT
                 }
             }
 
+            // Internal log function called by the log thread
             private static void log_internal(LogSeverity severity, string message)
             {
-                if (severity >= Logging.singleton.currentSeverity)
+                if (severity >= currentSeverity)
                 {
                     String formattedMessage = String.Format("{0}|{1}|Thread({2}): {3}",
                         DateTime.Now.ToString("yyyy-MM-dd HH:mm:ss.ffff"),
@@ -154,10 +140,11 @@ namespace DLT
             private static void threadLoop()
             {
                 LogStatement statement = new LogStatement();
+                bool message_found = false;
 
                 while (running)
                 {
-                    bool message_found = false;
+                    message_found = false;
 
                     lock (statements)
                     {
@@ -176,15 +163,13 @@ namespace DLT
                     }
                     else
                     {
-                        // Sleep for 100ms to prevent cpu waste
-                        Thread.Sleep(100);
+                        // Sleep for 25ms to prevent cpu waste
+                        Thread.Sleep(25);
                     }
                 }
 
                 Thread.Yield();
             }
-
-
 
             // Rolls the log file
             public static void roll()
@@ -194,8 +179,6 @@ namespace DLT
                     var length = new FileInfo(logfilename).Length;
                     if(length > Config.maxLogFileSize)
                     {
-                        Console.WriteLine("Path: {0}", folderpath);
-
                         string[] logFileList = Directory.GetFiles(folderpath, wildcard, SearchOption.TopDirectoryOnly);
                         if (logFileList.Length > 0)
                         {
@@ -209,11 +192,15 @@ namespace DLT
                                 list.RemoveAt(9);
                                 rolledLogFileList = list.ToArray();
                             }
-                            // move remaining rolled files
+
+                            // Move remaining rolled files
                             for (int i = rolledLogFileList.Length; i > 0; --i)
+                            {
                                 File.Move(rolledLogFileList[i - 1], logfilepathpart + "." + i + Path.GetExtension(logfilename));
+                            }
+
+                            // Move original file
                             var targetPath = logfilepathpart + ".0" + Path.GetExtension(logfilename);
-                            // move original file
                             File.Move(logfilename, targetPath);
                         }
                     }
