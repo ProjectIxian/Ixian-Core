@@ -359,7 +359,7 @@ namespace DLT
                                         return false;
                                     }
 
-                                    // Check for tampering. Includes a 200 second synchronization zone
+                                    // Check for tampering. Includes a 100 second synchronization zone
                                     if ((currentTime - lTimestamp) > 100)
                                     {
                                         Logging.warn(string.Format("[PL] Potential KEEPALIVE tampering for {0} {1}. Timestamp {2}", listEntry.wallet, pa.address, timestamp));
@@ -377,7 +377,8 @@ namespace DLT
                                     //Console.WriteLine("[PL] LASTSEEN for {0} - {1} set to {2}", hostname, deviceid, pa.lastSeenTime);
                                     return true;
                                 }
-                            }else
+                            }
+                            else
                             {
                                 if (wallet == Node.walletStorage.address)
                                 {
@@ -432,6 +433,12 @@ namespace DLT
 
                     foreach (PresenceAddress pa in safe_addresses)
                     {
+                        // Don't remove self address from presence list
+                        if(pa == curNodePresenceAddress)
+                        {
+                            continue;
+                        }
+
                         try
                         {
                             // Check if timestamp is older than 300 seconds
