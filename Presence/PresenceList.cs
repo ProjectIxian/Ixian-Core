@@ -74,7 +74,7 @@ namespace DLT
                         // Check for tampering. Includes a 200 second synchronization zone
                         if ((currentTime - lTimestamp) > 100 || (currentTime - lTimestamp) < -100)
                         {
-                            Logging.warn(string.Format("[PL] Potential KEEPALIVE tampering for {0} {1}. Timestamp {2}. Skipping", pr.wallet, local_addr.address, lTimestamp));
+                            Logging.warn(string.Format("[PL] Potential KEEPALIVE tampering for {0} {1}. Skipping; {2} - {3}", pr.wallet, local_addr.address, currentTime, lTimestamp));
                             continue;
                         }
 
@@ -297,7 +297,7 @@ namespace DLT
 
         // Called when receiving a keepalive network message. The PresenceList will update the appropriate entry based on the timestamp.
         // Returns TRUE if it updated an entry in the PL
-        public static bool receiveKeepAlive(byte[] bytes)
+        public static bool receiveKeepAlive(byte[] bytes, string hostname)
         {
             // Get the current timestamp
             long currentTime = Node.getCurrentTimestamp();
@@ -311,7 +311,6 @@ namespace DLT
 
                         string wallet = reader.ReadString();
                         string deviceid = reader.ReadString();
-                        string hostname = reader.ReadString();
                         string timestamp = reader.ReadString();
                         string signature = reader.ReadString();
                         //Logging.info(String.Format("[PL] KEEPALIVE request from {0}", hostname));
@@ -343,7 +342,7 @@ namespace DLT
                             }
 
                             // Verify the signature
-                            if (CryptoManager.lib.verifySignature(deviceid + "-" + timestamp + "-" + hostname, listEntry.metadata, signature) == false)
+                            if (CryptoManager.lib.verifySignature(deviceid + "-" + timestamp, listEntry.metadata, signature) == false)
                             {
                                 Logging.warn(string.Format("[PL] KEEPALIVE tampering for {0} {1}, incorrect Sig.", listEntry.wallet, hostname));
                                 return false;
@@ -359,14 +358,6 @@ namespace DLT
                                     long lTimestamp = long.Parse(timestamp);
                                     long lLastSeenTime = long.Parse(pa.lastSeenTime);
 
-
-                                    // Check for tampering. Includes a 200 second synchronization zone
-                                    if ((currentTime - lTimestamp) > 100 || (currentTime - lTimestamp) < -100)
-                                    {
-                                        Logging.warn(string.Format("[PL] Potential KEEPALIVE tampering for {0} {1}. Timestamp {2}", listEntry.wallet, pa.address, timestamp));
-                                        return false;
-                                    }
-
                                     // Check for outdated timestamp
                                     if (lTimestamp < lLastSeenTime)
                                     {
@@ -374,6 +365,12 @@ namespace DLT
                                         return false;
                                     }
 
+                                    // Check for tampering. Includes a 200 second synchronization zone
+                                    if ((currentTime - lTimestamp) > 100)
+                                    {
+                                        Logging.warn(string.Format("[PL] Potential KEEPALIVE tampering for {0} {1}. Timestamp {2}", listEntry.wallet, pa.address, timestamp));
+                                        return false;
+                                    }
 
                                     // Update the timestamp
                                     pa.lastSeenTime = timestamp;
