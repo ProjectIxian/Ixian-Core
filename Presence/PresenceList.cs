@@ -14,18 +14,16 @@ namespace DLT
     {
         public static List<Presence> presences = new List<Presence> { }; // The presence list
 
-        private static PresenceAddress curNodePresenceAddress = null;
-        private static Presence curNodePresence = null;
+        public static PresenceAddress curNodePresenceAddress = null;
+        public static Presence curNodePresence = null;
 
         // Generate an initial presence list
         public static void generatePresenceList(string initial_ip)
         {
             Logging.info("Generating presence list.");
             // Initialize with the default presence state
-            curNodePresenceAddress = new PresenceAddress(Config.device_id, string.Format("{0}:{1}", initial_ip, Config.serverPort), 'M', Config.version);
+            curNodePresenceAddress = new PresenceAddress(Config.device_id, string.Format("{0}:{1}", initial_ip, Config.serverPort), 'M', Config.version, "", "");
             curNodePresence = new Presence(Node.walletStorage.address, Node.walletStorage.encPublicKey, Node.walletStorage.publicKey, curNodePresenceAddress);
-            updateEntry(curNodePresence);
-
         }
 
         // Searches through the entire presence list to find a matching IP with a specific type.
@@ -291,7 +289,7 @@ namespace DLT
 
         // Called when receiving a keepalive network message. The PresenceList will update the appropriate entry based on the timestamp.
         // Returns TRUE if it updated an entry in the PL
-        public static bool receiveKeepAlive(byte[] bytes, string hostname)
+        public static bool receiveKeepAlive(byte[] bytes)
         {
             // Get the current timestamp
             long currentTime = Node.getCurrentTimestamp();
@@ -306,6 +304,7 @@ namespace DLT
                         string wallet = reader.ReadString();
                         string deviceid = reader.ReadString();
                         string timestamp = reader.ReadString();
+                        string hostname = reader.ReadString();
                         string signature = reader.ReadString();
                         //Logging.info(String.Format("[PL] KEEPALIVE request from {0}", hostname));
 
@@ -336,7 +335,7 @@ namespace DLT
                             }
 
                             // Verify the signature
-                            if (CryptoManager.lib.verifySignature(deviceid + "-" + timestamp, listEntry.metadata, signature) == false)
+                            if (CryptoManager.lib.verifySignature(deviceid + "-" + timestamp + "-" + hostname, listEntry.metadata, signature) == false)
                             {
                                 Logging.warn(string.Format("[PL] KEEPALIVE tampering for {0} {1}, incorrect Sig.", listEntry.wallet, hostname));
                                 return false;
@@ -368,6 +367,7 @@ namespace DLT
 
                                     // Update the timestamp
                                     pa.lastSeenTime = timestamp;
+                                    pa.signature = signature;
 
                                     if (pa.type == 'M')
                                     {
@@ -434,10 +434,10 @@ namespace DLT
                     foreach (PresenceAddress pa in safe_addresses)
                     {
                         // Don't remove self address from presence list
-                        if(pa == curNodePresenceAddress)
+                        /*if(pa == curNodePresenceAddress)
                         {
                             continue;
-                        }
+                        }*/
 
                         try
                         {

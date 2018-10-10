@@ -3,9 +3,6 @@ using DLT.Network;
 using System;
 using System.Collections.Generic;
 using System.IO;
-using System.Linq;
-using System.Text;
-using System.Threading.Tasks;
 
 namespace DLT
 {
@@ -19,6 +16,7 @@ namespace DLT
         public char type;   // M for MasterNode, R for RelayNode, D for Direct ip client, C for normal client
         public string version; // Version
         public string lastSeenTime;
+        public string signature;
 
         public PresenceAddress()
         {
@@ -27,16 +25,17 @@ namespace DLT
             type = 'M';
             version = Config.version;
             lastSeenTime = Node.getCurrentTimestamp().ToString();
-
+            signature = "";
         }
 
-        public PresenceAddress(string node_device, string node_address, char node_type, string node_version)
+        public PresenceAddress(string node_device, string node_address, char node_type, string node_version, string node_lastSeenTime, string node_signature)
         {
             device = node_device;
             address = node_address;
             type = node_type;
             version = node_version;
-            lastSeenTime = Node.getCurrentTimestamp().ToString();
+            lastSeenTime = node_lastSeenTime;
+            signature = node_signature;
         }
 
         public PresenceAddress(byte[] bytes)
@@ -49,7 +48,8 @@ namespace DLT
                     address = reader.ReadString();
                     type = reader.ReadChar();
                     version = reader.ReadString();
-                    lastSeenTime =reader.ReadString();
+                    lastSeenTime = reader.ReadString();
+                    signature = reader.ReadString();
                 }
             }
         }
@@ -65,6 +65,7 @@ namespace DLT
                     writer.Write(type);
                     writer.Write(version);
                     writer.Write(lastSeenTime);
+                    writer.Write(signature);
                 }
                 return m.ToArray();
             }
@@ -98,7 +99,6 @@ namespace DLT
             {
                 return false;
             }
-
 
             return true;
         }
@@ -139,7 +139,7 @@ namespace DLT
             
             // Generate a device id
             string deviceId = Guid.NewGuid().ToString();
-            PresenceAddress address = new PresenceAddress(deviceId, node_ip, node_type, node_version);
+            PresenceAddress address = new PresenceAddress(deviceId, node_ip, node_type, node_version, "", "");
             addresses.Add(address);
             owner = " ";
 
