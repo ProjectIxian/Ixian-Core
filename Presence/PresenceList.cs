@@ -52,7 +52,7 @@ namespace DLT
 
         // Update a presence entry. If the wallet address is not found, it creates a new entry in the Presence List.
         // If the wallet address is found in the presence list, it adds any new addresses from the specified presence.
-        public static Presence updateEntry(Presence presence, Socket skipSocket = null)
+        public static Presence updateEntry(Presence presence, RemoteEndpoint skipEndpoint = null)
         {
             //Console.WriteLine("[PL] Received update entry for: {0}", presence.wallet);
 
@@ -129,13 +129,13 @@ namespace DLT
             // Perform network oprations only after lock is lifted and we have a return_presence
             if (return_presence != null)
             {
-                ProtocolMessage.broadcastProtocolMessage(ProtocolMessageCode.updatePresence, return_presence.getBytes(), skipSocket);
+                ProtocolMessage.broadcastProtocolMessage(ProtocolMessageCode.updatePresence, return_presence.getBytes(), skipEndpoint);
             }
 
             return return_presence;
         }
 
-        public static bool removeAddressEntry(string wallet_address, PresenceAddress address, Socket skipSocket = null)
+        public static bool removeAddressEntry(string wallet_address, PresenceAddress address)
         {
             lock (presences)
             {
