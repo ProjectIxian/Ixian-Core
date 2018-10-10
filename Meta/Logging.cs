@@ -37,6 +37,8 @@ namespace DLT
             {
                 public LogSeverity severity;
                 public string message;
+                public int threadId;
+                public string time;
             }
 
             private static List<LogStatement> statements = new List<LogStatement>();
@@ -95,8 +97,10 @@ namespace DLT
 
                 LogStatement statement = new LogStatement
                 {
+                    threadId = Thread.CurrentThread.ManagedThreadId,
                     severity = log_severity,
-                    message = log_message
+                    message = log_message,
+                    time = DateTime.Now.ToString("yyyy-MM-dd HH:mm:ss.ffff")
                 };
 
                 lock (statements)
@@ -107,14 +111,14 @@ namespace DLT
             }
 
             // Internal log function called by the log thread
-            private static void log_internal(LogSeverity severity, string message)
+            private static void log_internal(LogSeverity severity, string message, int threadId, string time)
             {
                 if (severity >= currentSeverity)
                 {
                     String formattedMessage = String.Format("{0}|{1}|Thread({2}): {3}",
-                        DateTime.Now.ToString("yyyy-MM-dd HH:mm:ss.ffff"),
+                        time,
                         severity.ToString(),
-                        Thread.CurrentThread.ManagedThreadId,
+                        threadId,
                         message);
 
                     if (severity == LogSeverity.error)
@@ -159,7 +163,7 @@ namespace DLT
 
                     if (message_found)
                     {
-                        log_internal(statement.severity, statement.message);
+                        log_internal(statement.severity, statement.message, statement.threadId, statement.time);
                     }
                     else
                     {
