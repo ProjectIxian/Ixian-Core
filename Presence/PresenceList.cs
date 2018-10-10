@@ -126,12 +126,6 @@ namespace DLT
                 }
             }
 
-            // Perform network oprations only after lock is lifted and we have a return_presence
-            if (return_presence != null)
-            {
-                ProtocolMessage.broadcastProtocolMessage(ProtocolMessageCode.updatePresence, return_presence.getBytes(), skipEndpoint);
-            }
-
             return return_presence;
         }
 
