@@ -91,7 +91,7 @@ namespace DLT
                 
                 if(running == false)
                 {
-                    Console.WriteLine("Logging was not started.");
+                    Console.WriteLine("Logging is not active.");
                     return;
                 }
 
