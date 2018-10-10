@@ -433,12 +433,6 @@ namespace DLT
 
                     foreach (PresenceAddress pa in safe_addresses)
                     {
-                        // Don't remove self address from presence list
-                        if(pa == curNodePresenceAddress)
-                        {
-                            continue;
-                        }
-
                         try
                         {
                             // Check if timestamp is older than 300 seconds
