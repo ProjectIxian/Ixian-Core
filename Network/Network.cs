@@ -47,6 +47,7 @@ namespace DLT
             s2generateKeys,
             s2keys,
             ping,
+            pong,
             getBalance,
             balance,
             keepAlivePresence,
