@@ -60,8 +60,8 @@ namespace DLT
                     wildcard = Path.GetFileNameWithoutExtension(logfilename) + "*" + Path.GetExtension(logfilename);
                     logfilepathpart = Path.Combine(folderpath, Path.GetFileNameWithoutExtension(logfilename));
 
-                    // Clear all previous logs
-                    clear();
+                    // Roll the previous log
+                    roll(true);
 
                     // Create the main log file
                     File.AppendAllText(logfilename, "Ixian Log" + Environment.NewLine, Encoding.UTF8);
@@ -176,12 +176,12 @@ namespace DLT
             }
 
             // Rolls the log file
-            public static void roll()
+            public static void roll(bool forceRoll = false)
             {
                 try
                 {
                     var length = new FileInfo(logfilename).Length;
-                    if(length > Config.maxLogFileSize)
+                    if(length > Config.maxLogFileSize || (length > 0 && forceRoll))
                     {
                         string[] logFileList = Directory.GetFiles(folderpath, wildcard, SearchOption.TopDirectoryOnly);
                         if (logFileList.Length > 0)
