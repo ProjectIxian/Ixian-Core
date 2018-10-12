@@ -30,6 +30,8 @@ namespace DLT
         byte[] encryptDataAES(byte[] input, string key);
         byte[] decryptDataAES(byte[] input, string key);
 
+        byte[] encryptWithPassword(string data, string password);
+        string decryptWithPassword(byte[] data, string password);
     }
 
 
@@ -111,6 +113,16 @@ namespace DLT
         public byte[] decryptDataAES(byte[] input, string key)
         {
             return _cryptoLib.decryptDataAES(input, key);
+        }
+
+        public byte[] encryptWithPassword(string data, string password)
+        {
+            return _cryptoLib.encryptWithPassword(data, password);
+        }
+
+        public string decryptWithPassword(byte[] data, string password)
+        {
+            return _cryptoLib.decryptWithPassword(data, password);
         }
 
     }

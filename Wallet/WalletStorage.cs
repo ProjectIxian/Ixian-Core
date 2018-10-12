@@ -5,6 +5,7 @@ using System.Collections.Generic;
 using System.IO;
 using System.Linq;
 using System.Text;
+using System.Threading;
 using System.Threading.Tasks;
 
 namespace DLT
@@ -36,7 +37,8 @@ namespace DLT
         // Try to read wallet information from the file
         private bool readWallet()
         {
-            if(File.Exists(filename) == false)
+            
+            if (File.Exists(filename) == false)
             {
                 Logging.log(LogSeverity.error, "Cannot read wallet file.");
 
@@ -46,8 +48,10 @@ namespace DLT
 
             Logging.log(LogSeverity.info, "Wallet file found, reading data...");
 
-            BinaryReader reader;
+            // Sleep a bit for the logger to catch up
+            Thread.Sleep(100);
 
+            BinaryReader reader;
             try
             {
                 reader = new BinaryReader(new FileStream(filename, FileMode.Open));
@@ -60,25 +64,54 @@ namespace DLT
 
             try
             {
+                // Read the wallet version
                 System.Int32 version = reader.ReadInt32();
-                privateKey = reader.ReadString();
-                publicKey = reader.ReadString();
+                
+
+                // Read the encrypted keys
+                int b_privateKeyLength = reader.ReadInt32();
+                byte[] b_privateKey = reader.ReadBytes(b_privateKeyLength);
+
+                int b_publicKeyLength = reader.ReadInt32();
+                byte[] b_publicKey = reader.ReadBytes(b_publicKeyLength);
+
+                int b_privateKeyEncLength = reader.ReadInt32();
+                byte[] b_privateKeyEncKey = reader.ReadBytes(b_privateKeyEncLength);
+
+                int b_publicKeyEncLength = reader.ReadInt32();
+                byte[] b_publicKeyEnc = reader.ReadBytes(b_publicKeyEncLength);
+
+                bool success = false;
+                while (!success)
+                {
+                    Console.WriteLine();
+                    Console.Write("Please enter wallet password: ");
+                    string password = getPasswordInput();
+                    success = true;
+                    try
+                    {
+                        // Decrypt here
+                        privateKey = CryptoManager.lib.decryptWithPassword(b_privateKey, password);
+                        publicKey = CryptoManager.lib.decryptWithPassword(b_publicKey, password);
+                        encPrivateKey = CryptoManager.lib.decryptWithPassword(b_privateKeyEncKey, password);
+                        encPublicKey = CryptoManager.lib.decryptWithPassword(b_publicKeyEnc, password);
+                        //////
+                    }
+                    catch(Exception e)
+                    {
+                        Logging.error(string.Format("Exception decrypting: {0}", e.Message));
+                        success = false;
+                    }
+                  
+                }
 
                 Address addr = new Address(publicKey);
                 address = addr.ToString();
 
                 Logging.log(LogSeverity.info, String.Format("Wallet File Version: {0}", version));
-                Logging.log(LogSeverity.info, String.Format("Public Key: {0}", publicKey));
-
-
-                // Read the enc keypair as well
-                if(version > 1)
-                {
-                    encPrivateKey = reader.ReadString();
-                    encPublicKey = reader.ReadString();
-
-                    Logging.log(LogSeverity.info, String.Format("ENC Public Key: {0}", encPublicKey));
-                }
+                Logging.log(LogSeverity.info, String.Format("Public Key: {0}", publicKey));        
+                Logging.log(LogSeverity.info, String.Format("ENC Public Key: {0}", encPublicKey));
+                
 
                 Logging.log(LogSeverity.info, String.Format("Public Node Address: {0}", address));
 
@@ -102,10 +135,20 @@ namespace DLT
         }
 
         // Write the wallet to the file
-        private bool writeWallet()
+        private bool writeWallet(string password)
         {
-            BinaryWriter writer;
+            if (password.Length < 10)
+                return false;
 
+            // Encrypt data first
+            // Encrypt here
+            byte[] b_privateKey = CryptoManager.lib.encryptWithPassword(privateKey, password);
+            byte[] b_publicKey = CryptoManager.lib.encryptWithPassword(publicKey, password);
+            byte[] b_privateKeyEnc = CryptoManager.lib.encryptWithPassword(encPrivateKey, password);
+            byte[] b_publicKeyEnc = CryptoManager.lib.encryptWithPassword(encPublicKey, password);           
+            //////
+
+            BinaryWriter writer;
             try
             {
                 writer = new BinaryWriter(new FileStream(filename, FileMode.Create));
@@ -118,14 +161,22 @@ namespace DLT
 
             try
             {
-                System.Int32 version = 2; // Set the wallet version
+                System.Int32 version = 1; // Set the wallet version
                 writer.Write(version);
+
                 // Write the address keypair
-                writer.Write(privateKey);
-                writer.Write(publicKey);
+                writer.Write(b_privateKey.Length);
+                writer.Write(b_privateKey);
+
+                writer.Write(b_publicKey.Length);
+                writer.Write(b_publicKey);
+
                 // Write the encryption keypair
-                writer.Write(encPrivateKey);
-                writer.Write(encPublicKey);
+                writer.Write(b_privateKeyEnc.Length);
+                writer.Write(b_privateKeyEnc);
+
+                writer.Write(b_publicKeyEnc.Length);
+                writer.Write(b_publicKeyEnc);
             }
 
             catch (IOException e)
@@ -155,6 +206,13 @@ namespace DLT
                 return false;
             }
 
+            // Request a password
+            string password = "";
+            while(password.Length < 10)
+            {
+                password = requestNewPassword();
+            }
+
             privateKey = CryptoManager.lib.getPrivateKey();
             publicKey = CryptoManager.lib.getPublicKey();
 
@@ -177,7 +235,75 @@ namespace DLT
             Console.WriteLine();
 
             // Write the new wallet data to the file
-            return writeWallet();
+            return writeWallet(password);
+        }
+
+        // Requests the user to type a new password
+        private string requestNewPassword()
+        {
+            Console.WriteLine();
+            Console.Write("Please enter a password for your wallet: ");
+            try
+            {
+                string pass = getPasswordInput();
+
+                if(pass.Length < 10)
+                {
+                    Console.WriteLine("Password needs to be at least 10 characters. Try again.");
+                    return "";
+                }
+
+                Console.Write("Please type it again to confirm: ");
+
+                string passconfirm = getPasswordInput();
+
+                if(pass.Equals(passconfirm, StringComparison.Ordinal))
+                {                   
+                    return pass;
+                }
+                else
+                {
+                    Console.WriteLine("Passwords don't match, try again.");
+
+                    // Passwords don't match
+                    return "";
+                }
+
+            }
+            catch (Exception)
+            {
+                // Handle exceptions
+                return "";
+            }
+        }
+
+        // Handles console password input
+        public string getPasswordInput()
+        {
+            StringBuilder sb = new StringBuilder();
+            while (true)
+            {
+                ConsoleKeyInfo i = Console.ReadKey(true);
+                if (i.Key == ConsoleKey.Enter)
+                {
+                    Console.WriteLine();
+                    break;
+                }
+                else if (i.Key == ConsoleKey.Backspace)
+                {
+                    if (sb.Length > 0)
+                    {
+                        sb.Remove(sb.Length - 1, 1);
+                        Console.Write("\b \b");
+                    }
+                }
+                else if (i.KeyChar != '\u0000')
+                {
+                    sb.Append(i.KeyChar);
+                    Console.Write("*");
+                }
+            }
+            return sb.ToString();
         }
 
         // Obtain the mnemonic address

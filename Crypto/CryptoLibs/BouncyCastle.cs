@@ -451,5 +451,19 @@ namespace CryptoLibs
             return bytes;
         }
 
+
+        // Encrypt using password
+        public byte[] encryptWithPassword(string data, string password)
+        {
+            return Encoding.UTF8.GetBytes(data);
+        }
+
+        // Decrypt using password
+        public string decryptWithPassword(byte[] data, string password)
+        {
+            // Throw an exception if password is incorrect / returned data is garbage
+            return Encoding.UTF8.GetString(data);
+        }
+
     }
 }
