@@ -67,6 +67,11 @@ namespace DLT
                 // Read the wallet version
                 System.Int32 version = reader.ReadInt32();
                 
+                if(version != 1)
+                {
+                    Logging.error(string.Format("Wallet version mismatch, expecting {0}, got {1}", 1, version));
+                    return false;
+                }
 
                 // Read the encrypted keys
                 int b_privateKeyLength = reader.ReadInt32();
