@@ -90,16 +90,16 @@ namespace DLT
                     success = true;
                     try
                     {
-                        // Decrypt here
+                        // Decrypt
                         privateKey = CryptoManager.lib.decryptWithPassword(b_privateKey, password);
                         publicKey = CryptoManager.lib.decryptWithPassword(b_publicKey, password);
                         encPrivateKey = CryptoManager.lib.decryptWithPassword(b_privateKeyEncKey, password);
                         encPublicKey = CryptoManager.lib.decryptWithPassword(b_publicKeyEnc, password);
-                        //////
                     }
-                    catch(Exception e)
+                    catch(Exception)
                     {
-                        Logging.error(string.Format("Exception decrypting: {0}", e.Message));
+                        Logging.error(string.Format("Incorrect password"));
+                        Thread.Sleep(100);
                         success = false;
                     }
                   
@@ -143,12 +143,10 @@ namespace DLT
                 return false;
 
             // Encrypt data first
-            // Encrypt here
             byte[] b_privateKey = CryptoManager.lib.encryptWithPassword(privateKey, password);
             byte[] b_publicKey = CryptoManager.lib.encryptWithPassword(publicKey, password);
             byte[] b_privateKeyEnc = CryptoManager.lib.encryptWithPassword(encPrivateKey, password);
             byte[] b_publicKeyEnc = CryptoManager.lib.encryptWithPassword(encPublicKey, password);           
-            //////
 
             BinaryWriter writer;
             try

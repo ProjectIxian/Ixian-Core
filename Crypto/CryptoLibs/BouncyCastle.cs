@@ -455,14 +455,17 @@ namespace CryptoLibs
         // Encrypt using password
         public byte[] encryptWithPassword(string data, string password)
         {
-            return Encoding.UTF8.GetBytes(data);
+            byte[] ret_data = encryptDataAES(Encoding.UTF8.GetBytes(data), password);
+            return ret_data;
         }
 
         // Decrypt using password
         public string decryptWithPassword(byte[] data, string password)
         {
             // Throw an exception if password is incorrect / returned data is garbage
-            return Encoding.UTF8.GetString(data);
+            byte[] ret_data = decryptDataAES(data, password);
+            return Encoding.UTF8.GetString(ret_data);
+
         }
 
     }
