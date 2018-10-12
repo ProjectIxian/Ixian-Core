@@ -104,9 +104,9 @@ namespace DLT
                         encPrivateKey = CryptoManager.lib.decryptWithPassword(b_privateKeyEncKey, password);
                         encPublicKey = CryptoManager.lib.decryptWithPassword(b_publicKeyEnc, password);
                     }
-                    catch(Exception)
+                    catch(Exception e)
                     {
-                        Logging.error(string.Format("Incorrect password"));
+                        Logging.error(string.Format("Incorrect password " + e));
                         while (Logging.getRemainingStatementsCount() > 0)
                         {
                             Thread.Sleep(100);
@@ -210,7 +210,7 @@ namespace DLT
         // Generate a new wallet with matching private/public key pairs
         private bool generateWallet()
         {
-            Logging.log(LogSeverity.info, "Generating new wallet keys...");
+            Logging.log(LogSeverity.info, "Generating new wallet keys, this may take a while, please wait...");
 
             // Generate the private and public key pair
             try

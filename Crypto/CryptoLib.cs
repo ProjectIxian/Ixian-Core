@@ -27,8 +27,8 @@ namespace DLT
         byte[] encryptDataS2(byte[] data, string publicKey);
         byte[] decryptDataS2(byte[] data, string privateKey);
 
-        byte[] encryptDataAES(byte[] input, string key);
-        byte[] decryptDataAES(byte[] input, string key);
+        byte[] encryptDataAES(byte[] input, byte[] key);
+        byte[] decryptDataAES(byte[] input, byte[] key, int offset = 0);
 
         byte[] encryptWithPassword(string data, string password);
         string decryptWithPassword(byte[] data, string password);
@@ -105,14 +105,14 @@ namespace DLT
             return _cryptoLib.decryptDataS2(data, privateKey);
         }
 
-        public byte[] encryptDataAES(byte[] input, string key)
+        public byte[] encryptDataAES(byte[] input, byte[] key)
         {
             return _cryptoLib.encryptDataAES(input, key);
         }
 
-        public byte[] decryptDataAES(byte[] input, string key)
+        public byte[] decryptDataAES(byte[] input, byte[] key, int offset = 0)
         {
-            return _cryptoLib.decryptDataAES(input, key);
+            return _cryptoLib.decryptDataAES(input, key, offset);
         }
 
         public byte[] encryptWithPassword(string data, string password)
