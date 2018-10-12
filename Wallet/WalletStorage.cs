@@ -49,7 +49,7 @@ namespace DLT
             Logging.log(LogSeverity.info, "Wallet file found, reading data...");
 
             // Sleep a bit for the logger to catch up
-            Thread.Sleep(100);
+            Thread.Sleep(150);
 
             BinaryReader reader;
             try
@@ -127,7 +127,13 @@ namespace DLT
             // Check if we should change the password of the wallet
             if(Config.changePass == true)
             {
-                string new_password = requestNewPassword("Enter a new password for your wallet: ");
+                // Request a new password
+                string new_password = "";
+                while (new_password.Length < 10)
+                {
+                    new_password = requestNewPassword("Enter a new password for your wallet: ");
+                }
+
                 writeWallet(new_password);
             }
 
