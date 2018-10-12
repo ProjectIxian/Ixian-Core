@@ -85,7 +85,7 @@ namespace DLT
                 while (!success)
                 {
                     Console.WriteLine();
-                    Console.Write("Please enter wallet password: ");
+                    Console.Write("Enter wallet password: ");
                     string password = getPasswordInput();
                     success = true;
                     try
@@ -108,13 +108,6 @@ namespace DLT
                 Address addr = new Address(publicKey);
                 address = addr.ToString();
 
-                Logging.log(LogSeverity.info, String.Format("Wallet File Version: {0}", version));
-                Logging.log(LogSeverity.info, String.Format("Public Key: {0}", publicKey));        
-                Logging.log(LogSeverity.info, String.Format("ENC Public Key: {0}", encPublicKey));
-                
-
-                Logging.log(LogSeverity.info, String.Format("Public Node Address: {0}", address));
-
                 Console.WriteLine();
                 Console.Write("Your IXIAN address is ");
                 Console.ForegroundColor = ConsoleColor.Green;
@@ -130,6 +123,15 @@ namespace DLT
             }
 
             reader.Close();
+
+            // Check if we should change the password of the wallet
+            if(Config.changePass == true)
+            {
+                string new_password = requestNewPassword("Enter a new password for your wallet: ");
+                writeWallet(new_password);
+            }
+
+            Logging.log(LogSeverity.info, String.Format("Public Node Address: {0}", address));
 
             return true;
         }
@@ -210,7 +212,7 @@ namespace DLT
             string password = "";
             while(password.Length < 10)
             {
-                password = requestNewPassword();
+                password = requestNewPassword("Enter a password for your wallet: ");
             }
 
             privateKey = CryptoManager.lib.getPrivateKey();
@@ -239,10 +241,10 @@ namespace DLT
         }
 
         // Requests the user to type a new password
-        private string requestNewPassword()
+        private string requestNewPassword(string banner)
         {
             Console.WriteLine();
-            Console.Write("Please enter a password for your wallet: ");
+            Console.Write(banner);
             try
             {
                 string pass = getPasswordInput();
@@ -253,7 +255,7 @@ namespace DLT
                     return "";
                 }
 
-                Console.Write("Please type it again to confirm: ");
+                Console.Write("Type it again to confirm: ");
 
                 string passconfirm = getPasswordInput();
 
