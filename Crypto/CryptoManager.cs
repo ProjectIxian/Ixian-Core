@@ -11,21 +11,12 @@ namespace DLT
         static public CryptoLib lib;
 
 
-        private static CryptoManager singletonInstance = new CryptoManager();
         static CryptoManager()
         {
         }
 
         private CryptoManager()
         {
-        }
-
-        public static CryptoManager singleton
-        {
-            get
-            {
-                return singletonInstance;
-            }
         }
 
         public static void initLib()
