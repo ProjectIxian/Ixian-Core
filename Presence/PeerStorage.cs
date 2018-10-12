@@ -84,7 +84,7 @@ namespace DLT
             return true;
         }
 
-        public static string getRandomMasterNodeIp()
+        public static string getRandomMasterNodeAddress()
         {
             List<Peer> connectableList = null;
             lock (peerList)
