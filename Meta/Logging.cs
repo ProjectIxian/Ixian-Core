@@ -247,6 +247,15 @@ namespace DLT
                 }
             }
 
+            // Returns the number of remaining log messages in the queue
+            public static int getRemainingStatementsCount()
+            {
+                lock(statements)
+                {
+                    return statements.Count();
+                }
+            }
+
             #region Convenience methods
             public static void trace(string message)
             {

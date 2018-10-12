@@ -49,7 +49,10 @@ namespace DLT
             Logging.log(LogSeverity.info, "Wallet file found, reading data...");
 
             // Sleep a bit for the logger to catch up
-            Thread.Sleep(150);
+            while (Logging.getRemainingStatementsCount() > 0)
+            {
+                Thread.Sleep(100);
+            }
 
             BinaryReader reader;
             try
@@ -104,7 +107,10 @@ namespace DLT
                     catch(Exception)
                     {
                         Logging.error(string.Format("Incorrect password"));
-                        Thread.Sleep(100);
+                        while (Logging.getRemainingStatementsCount() > 0)
+                        {
+                            Thread.Sleep(100);
+                        }
                         success = false;
                     }
                   
