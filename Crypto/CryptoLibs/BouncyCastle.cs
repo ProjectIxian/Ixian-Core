@@ -37,8 +37,7 @@ namespace CryptoLibs
 
         // Private variables used for AES key expansion
         private int PBKDF2_iterations = 10000;
-        private int key_length = 256;
-        private int salt_length = 8;
+        private string AES_algorithm = "AES/CBC/PKCS7Padding";
 
         public BouncyCastle()
         {
@@ -353,22 +352,21 @@ namespace CryptoLibs
         // Encrypt data using AES
         public byte[] encryptDataAES(byte[] input, byte[] key)
         {
+            IBufferedCipher outCipher = CipherUtilities.GetCipher("AES/CBC/PKCS7Padding");
+
+            int blockSize = outCipher.GetBlockSize();
             // Perform key expansion
-            byte[] salt = new byte[salt_length];
+            byte[] salt = new byte[blockSize];
+            using (RNGCryptoServiceProvider rngCsp = new RNGCryptoServiceProvider())
+            {
+                // Fill the array with a random value.
+                rngCsp.GetBytes(salt);
+            }
 
-            Asn1Encodable defParams = PbeUtilities.GenerateAlgorithmParameters("PBEWithSHA256And256BitAES-CBC-BC", salt, PBKDF2_iterations);
-            IWrapper wrapper = WrapperUtilities.GetWrapper("AES/CBC/PKCS5Padding");
-            ICipherParameters parameters = PbeUtilities.GenerateCipherParameters("PBEWithSHA256And256BitAES-CBC-BC", Encoding.UTF8.GetChars(key), defParams);
-            wrapper.Init(true, parameters);
-
-            byte[] keyText = wrapper.Wrap(key, 0, key.Length);
-
-            KeyParameter keyp = ParameterUtilities.CreateKeyParameter("AES", keyText);
-            IBufferedCipher outCipher = CipherUtilities.GetCipher("AES/CBC/PKCS5Padding");
-
+            ParametersWithIV withIV = new ParametersWithIV(new KeyParameter(key), salt);
             try
             {
-                outCipher.Init(true, keyp);
+                outCipher.Init(true, withIV);
             }
             catch (Exception e)
             {
@@ -376,83 +374,40 @@ namespace CryptoLibs
                 return null;
             }
 
-            MemoryStream bOut = new MemoryStream();
-            CipherStream cOut = new CipherStream(bOut, null, outCipher);
-            try
-            {
-                for (int i = 0; i < salt_length; i++)
-                {
-                    cOut.WriteByte(salt[i]);
-                }
+            List<byte> bytes = new List<byte>();
+            bytes.AddRange(salt);
+            bytes.AddRange(outCipher.DoFinal(input));
 
-                for (int i = 0; i < input.Length; i++)
-                {
-                    cOut.WriteByte(input[i]);
-                }
-                cOut.Close();
-            }
-            catch (IOException e)
-            {
-                Logging.error(string.Format("Error encrypting data. {0}", e.ToString()));
-            }
-
-            byte[] bytes = bOut.ToArray();
-
-            return bytes;
+            return bytes.ToArray();
         }
 
         // Decrypt data using AES
-        public byte[] decryptDataAES(byte[] input, byte [] key, int indexOffset = 0)
+        public byte[] decryptDataAES(byte[] input, byte [] key, int inOffset = 0)
         {
-            byte[] salt = new byte[salt_length];
 
-            for(int i = 0; i < salt_length; i++)
+            IBufferedCipher inCipher = CipherUtilities.GetCipher("AES/CBC/PKCS7Padding");
+
+            int blockSize = inCipher.GetBlockSize();
+            // Perform key expansion
+            byte[] salt = new byte[blockSize];
+
+            for (int i = 0; i < blockSize; i++)
             {
-                salt[i] = input[indexOffset + i];
+                salt[i] = input[inOffset + i];
             }
 
-            Asn1Encodable defParams = PbeUtilities.GenerateAlgorithmParameters("PBEWithSHA256And256BitAES-CBC-BC", salt, PBKDF2_iterations);
-            IWrapper wrapper = WrapperUtilities.GetWrapper("AES/CBC/PKCS5Padding");
-            ICipherParameters parameters = PbeUtilities.GenerateCipherParameters("PBEWithSHA256And256BitAES-CBC-BC", Encoding.UTF8.GetChars(key), defParams);
-            wrapper.Init(true, parameters);
-            byte[] keyText = wrapper.Wrap(key, 0, key.Length);
-
-            KeyParameter keyp = ParameterUtilities.CreateKeyParameter("AES", keyText);
-            IBufferedCipher inCipher = CipherUtilities.GetCipher("AES/CBC/PKCS5Padding");
+            ParametersWithIV withIV = new ParametersWithIV(new KeyParameter(key), salt);
 
             try
             {
-                inCipher.Init(false, keyp);
+                inCipher.Init(false, withIV);
             }
             catch (Exception e)
             {
                 Logging.error(string.Format("Error initializing decryption. {0}", e.ToString()));
             }
 
-            MemoryStream bIn = new MemoryStream(input, salt_length + indexOffset - 1, input.Length - indexOffset - salt_length, false);
-            CipherStream cIn = new CipherStream(bIn, inCipher, null);
-            byte[] bytes = null;
-
-            try
-            {
-                BinaryReader dIn = new BinaryReader(cIn);
-
-                bytes = new byte[input.Length - indexOffset - salt_length];
-
-                for (int i = 0; i < bytes.Length; i++)
-                {
-                    bytes[i] = dIn.ReadByte();
-                }
-            }
-            catch (EndOfStreamException)
-            {
-                // TODO: handle this case and the different stream size when encrypted.
-            }
-            catch (Exception)
-            {
-                //Logging.error(string.Format("Error decrypting data. {0}", e.ToString()));
-                throw;
-            }
+            byte[] bytes = inCipher.DoFinal(input, inOffset + blockSize, input.Length - inOffset - blockSize);
 
             return bytes;
         }
@@ -465,16 +420,16 @@ namespace CryptoLibs
         }
 
         // Encrypt using password
-        public byte[] encryptWithPassword(string data, string password)
+        public byte[] encryptWithPassword(byte[] data, string password)
         {
-            byte[] salt = new byte[8];
+            byte[] salt = new byte[16];
             using (RNGCryptoServiceProvider rngCsp = new RNGCryptoServiceProvider())
             {
                 // Fill the array with a random value.
                 rngCsp.GetBytes(salt);
             }
             byte[] key = getPbkdf2BytesFromPassphrase(password, salt, PBKDF2_iterations, 16);
-            byte[] ret_data = encryptDataAES(Encoding.UTF8.GetBytes(data), key);
+            byte[] ret_data = encryptDataAES(data, key);
 
             List<byte> tmpList = new List<byte>();
             tmpList.AddRange(salt);
@@ -484,23 +439,15 @@ namespace CryptoLibs
         }
 
         // Decrypt using password
-        public string decryptWithPassword(byte[] data, string password)
+        public byte[] decryptWithPassword(byte[] data, string password)
         {
-            byte[] salt = new byte[8];
-            for(int i = 0; i < 8; i++)
+            byte[] salt = new byte[16];
+            for(int i = 0; i < 16; i++)
             {
                 salt[i] = data[i];
             }
-            using (RNGCryptoServiceProvider rngCsp = new RNGCryptoServiceProvider())
-            {
-                // Fill the array with a random value.
-                rngCsp.GetBytes(salt);
-            }
             byte[] key = getPbkdf2BytesFromPassphrase(password, salt, PBKDF2_iterations, 16);
-            byte[] ret_data = decryptDataAES(data, key, 8);
-            return Encoding.UTF8.GetString(ret_data);
-
+            return decryptDataAES(data, key, 16);
         }
-
     }
 }

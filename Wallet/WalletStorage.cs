@@ -99,14 +99,14 @@ namespace DLT
                     try
                     {
                         // Decrypt
-                        privateKey = CryptoManager.lib.decryptWithPassword(b_privateKey, password);
-                        publicKey = CryptoManager.lib.decryptWithPassword(b_publicKey, password);
-                        encPrivateKey = CryptoManager.lib.decryptWithPassword(b_privateKeyEncKey, password);
-                        encPublicKey = CryptoManager.lib.decryptWithPassword(b_publicKeyEnc, password);
+                        privateKey = Encoding.UTF8.GetString(CryptoManager.lib.decryptWithPassword(b_privateKey, password));
+                        publicKey = Encoding.UTF8.GetString(CryptoManager.lib.decryptWithPassword(b_publicKey, password));
+                        encPrivateKey = Encoding.UTF8.GetString(CryptoManager.lib.decryptWithPassword(b_privateKeyEncKey, password));
+                        encPublicKey = Encoding.UTF8.GetString(CryptoManager.lib.decryptWithPassword(b_publicKeyEnc, password));
                     }
-                    catch(Exception e)
+                    catch(Exception)
                     {
-                        Logging.error(string.Format("Incorrect password " + e));
+                        Logging.error(string.Format("Incorrect password"));
                         while (Logging.getRemainingStatementsCount() > 0)
                         {
                             Thread.Sleep(100);
@@ -160,10 +160,10 @@ namespace DLT
                 return false;
 
             // Encrypt data first
-            byte[] b_privateKey = CryptoManager.lib.encryptWithPassword(privateKey, password);
-            byte[] b_publicKey = CryptoManager.lib.encryptWithPassword(publicKey, password);
-            byte[] b_privateKeyEnc = CryptoManager.lib.encryptWithPassword(encPrivateKey, password);
-            byte[] b_publicKeyEnc = CryptoManager.lib.encryptWithPassword(encPublicKey, password);           
+            byte[] b_privateKey = CryptoManager.lib.encryptWithPassword(Encoding.UTF8.GetBytes(privateKey), password);
+            byte[] b_publicKey = CryptoManager.lib.encryptWithPassword(Encoding.UTF8.GetBytes(publicKey), password);
+            byte[] b_privateKeyEnc = CryptoManager.lib.encryptWithPassword(Encoding.UTF8.GetBytes(encPrivateKey), password);
+            byte[] b_publicKeyEnc = CryptoManager.lib.encryptWithPassword(Encoding.UTF8.GetBytes(encPublicKey), password);           
 
             BinaryWriter writer;
             try
