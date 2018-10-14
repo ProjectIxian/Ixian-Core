@@ -180,6 +180,10 @@ namespace DLT
             {
                 try
                 {
+                    if(!File.Exists(logfilename))
+                    {
+                        return;
+                    }
                     var length = new FileInfo(logfilename).Length;
                     if(length > Config.maxLogFileSize || (length > 0 && forceRoll))
                     {
