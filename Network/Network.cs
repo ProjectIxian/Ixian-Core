@@ -254,9 +254,24 @@ namespace DLT
                         "seed1.ixian.io:10234",
                         "seed2.ixian.io:10234",
                         "seed3.ixian.io:10234",
-                        "seed4.ixian.io:10234"
+                        "seed4.ixian.io:10234",
+                        "seed5.ixian.io:10234"
                     };
-        
+
+            public static string[] seedTestNetNodes = new string[]
+                    {
+                        "seedtest1.ixian.io:11234",
+                        "seedtest2.ixian.io:11234"
+                    };
+
+            public static string[] getSeedNodes(bool isTestNet)
+            {
+                if(isTestNet)
+                {
+                    return seedTestNetNodes;
+                }
+                return seedNodes;
+            }
 
 
             // Get the local accessible IP address of this node
