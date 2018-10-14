@@ -124,6 +124,12 @@ namespace DLT
                 Address addr = new Address(publicKey);
                 address = addr.ToString();
 
+                // Wait for any pending log messages to be written
+                while (Logging.getRemainingStatementsCount() > 0)
+                {
+                    Thread.Sleep(100);
+                }
+
                 Console.WriteLine();
                 Console.Write("Your IXIAN address is ");
                 Console.ForegroundColor = ConsoleColor.Green;
