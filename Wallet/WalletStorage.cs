@@ -261,6 +261,12 @@ namespace DLT
             Logging.log(LogSeverity.info, String.Format("ENC Public Key: {0}", encPublicKey));
             Logging.log(LogSeverity.info, String.Format("Public Node Address: {0}", address));
 
+            // Wait for any pending log messages to be written
+            while (Logging.getRemainingStatementsCount() > 0)
+            {
+                Thread.Sleep(100);
+            }
+
             Console.WriteLine();
             Console.Write("Your IXIAN address is ");
             Console.ForegroundColor = ConsoleColor.Green;
