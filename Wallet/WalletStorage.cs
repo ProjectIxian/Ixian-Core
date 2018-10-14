@@ -92,7 +92,12 @@ namespace DLT
                 bool success = false;
                 while (!success)
                 {
-                    Console.WriteLine();
+                    Console.ForegroundColor = ConsoleColor.Red;
+                    Console.WriteLine("Always remember to keep a backup of your wallet.dat file and your password. In case of a lost file you will not be able to access your funds.");
+                    Console.WriteLine("Never give your wallet.dat and/or password to anyone.");
+                    Console.WriteLine("");
+                    Console.ResetColor();
+
                     Console.Write("Enter wallet password: ");
                     string password = getPasswordInput();
                     success = true;
@@ -222,6 +227,12 @@ namespace DLT
                 Logging.error(string.Format("Error generating wallet: {0}", e.ToString()));
                 return false;
             }
+
+            Console.ForegroundColor = ConsoleColor.Red;
+            Console.WriteLine("Always remember to keep a backup of your wallet.dat file and your password. In case of a lost file you will not be able to access your funds.");
+            Console.WriteLine("Never give your wallet.dat and/or password to anyone.");
+            Console.WriteLine("");
+            Console.ResetColor();
 
             // Request a password
             string password = "";
