@@ -21,8 +21,9 @@ namespace DLT
         public string[] allowedSigners;
         public string data; // 0 B
         public ulong nonce;
+        public string publicKey;
 
-        // TOTAL: 52 B (34 B). Note: add nonce
+        // TOTAL: 52 B (34 B). Note: add nonce and publicKey
 
         public Wallet()
         {
@@ -33,6 +34,7 @@ namespace DLT
             allowedSigners = null;
             data = "";
             nonce = 0;
+            publicKey = "";
         }
 
         public Wallet(string w_id, IxiNumber w_balance)
@@ -44,6 +46,7 @@ namespace DLT
             allowedSigners = null;
             data = "";
             nonce = 0;
+            publicKey = "";
         }
 
         public Wallet(Wallet wallet)
@@ -59,6 +62,7 @@ namespace DLT
             }
             data = wallet.data;
             nonce = wallet.nonce;
+            publicKey = wallet.publicKey;
         }
 
         public Wallet(byte[] bytes)
@@ -89,6 +93,7 @@ namespace DLT
                         {
                             allowedSigners = null;
                         }
+                        publicKey = reader.ReadString();
                     }
                     catch(Exception)
                     {
@@ -124,6 +129,7 @@ namespace DLT
                         {
                             writer.Write((byte)0);
                         }
+                        writer.Write(publicKey);
                     }
                     catch(Exception)
                     {
