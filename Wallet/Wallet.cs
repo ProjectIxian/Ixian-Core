@@ -142,7 +142,7 @@ namespace DLT
 
         public string calculateChecksum()
         {
-            string baseData = id + balance.ToString() + data + nonce + ((int)type).ToString() + requiredSigs.ToString();
+            string baseData = id + balance.ToString() + data + nonce + publicKey + ((int)type).ToString() + requiredSigs.ToString();
             return Crypto.sha256(baseData);
         }
 
