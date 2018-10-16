@@ -61,7 +61,7 @@ namespace DLT
             applied = 0;
         }
 
-        public Transaction(IxiNumber tx_amount, IxiNumber tx_fee, string tx_to, string tx_from, ulong tx_nonce = 0)
+        public Transaction(IxiNumber tx_amount, IxiNumber tx_fee, string tx_to, string tx_from, string tx_data, ulong tx_nonce = 0)
         {
             //id = Guid.NewGuid().ToString();
             type = (int)Transaction.Type.Normal;
@@ -70,7 +70,8 @@ namespace DLT
             fee = tx_fee;
             to = tx_to;
             from = tx_from;
-            data = Node.walletStorage.publicKey;
+
+            data = tx_data;
 
             nonce = tx_nonce;
 
@@ -169,25 +170,12 @@ namespace DLT
         }
 
         // Verifies the transaction signature and returns true if valid
-        public bool verifySignature()
+        public bool verifySignature(string pubkey)
         {
             // Skip signature verification for staking rewards
             if (type == (int)Type.StakingReward || type == (int)Type.Genesis)
             {
                 return true;
-            }
-            
-            // Generate an address from the public key and compare it with the sender
-            string pubkey = data;
-
-            // If this is a PoWSolution transaction, extract the public key from the data section first
-            if(type == (int)Transaction.Type.PoWSolution)
-            {
-                string[] split = data.Split(new string[] { "||" }, StringSplitOptions.None);
-                if (split.Length < 1)
-                    return false;
-
-                pubkey = split[0];
             }
 
             Address p_address = new Address(pubkey);
@@ -207,8 +195,7 @@ namespace DLT
             {
                 ulong blockNum = 0;
 
-                var dataSplit = data.Split(new string[] { "||" }, StringSplitOptions.None);
-                if (dataSplit.Length > 0 && ulong.TryParse(dataSplit[1], out blockNum))
+                if (data.Length > 0 && ulong.TryParse(data, out blockNum))
                 {
                     txid = "stk-" + blockNum + "-";
                 }
@@ -263,9 +250,9 @@ namespace DLT
             return CryptoManager.lib.getSignature(checksum, private_key);
         }
 
-        public static Transaction multisigTransaction(IxiNumber tx_amount, IxiNumber tx_fee, string tx_to, string tx_from, ulong tx_nonce = 0)
+        public static Transaction multisigTransaction(IxiNumber tx_amount, IxiNumber tx_fee, string tx_to, string tx_from, string tx_data, ulong tx_nonce = 0)
         {
-            Transaction t = new Transaction(tx_amount, tx_fee, tx_to, tx_from, tx_nonce);
+            Transaction t = new Transaction(tx_amount, tx_fee, tx_to, tx_from, tx_data, tx_nonce);
             t.type = (int)Transaction.Type.MultisigTX;
             // overwrite invalid values where were calcualted before the multisig flag was set
             t.id = t.generateID();
