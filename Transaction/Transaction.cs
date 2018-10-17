@@ -63,7 +63,7 @@ namespace DLT
             applied = 0;
         }
 
-        public Transaction(IxiNumber tx_amount, IxiNumber tx_fee, string tx_to, string tx_from, string tx_data, ulong tx_blockHeight, int tx_nonce)
+        public Transaction(IxiNumber tx_amount, IxiNumber tx_fee, string tx_to, string tx_from, string tx_data, ulong tx_blockHeight)
         {
             //id = Guid.NewGuid().ToString();
             type = (int)Transaction.Type.Normal;
@@ -77,7 +77,9 @@ namespace DLT
 
             blockHeight = tx_blockHeight;
 
-            nonce = tx_nonce;
+            Random r = new Random();
+
+            nonce = (int) ((DateTimeOffset.Now.ToUnixTimeMilliseconds() - (DateTimeOffset.Now.ToUnixTimeSeconds() * 1000))*100) + r.Next(100);
 
             timeStamp = Node.getCurrentTimestamp().ToString();
 
@@ -294,9 +296,9 @@ namespace DLT
             return CryptoManager.lib.getSignature(checksum, private_key);
         }
 
-        public static Transaction multisigTransaction(IxiNumber tx_amount, IxiNumber tx_fee, string tx_to, string tx_from, string tx_data, ulong tx_blockHeight, int tx_nonce)
+        public static Transaction multisigTransaction(IxiNumber tx_amount, IxiNumber tx_fee, string tx_to, string tx_from, string tx_data, ulong tx_blockHeight)
         {
-            Transaction t = new Transaction(tx_amount, tx_fee, tx_to, tx_from, tx_data, tx_blockHeight, tx_nonce);
+            Transaction t = new Transaction(tx_amount, tx_fee, tx_to, tx_from, tx_data, tx_blockHeight);
             t.type = (int)Transaction.Type.MultisigTX;
             // overwrite invalid values where were calcualted before the multisig flag was set
             t.id = t.generateID();
