@@ -352,7 +352,7 @@ namespace CryptoLibs
         // Encrypt data using AES
         public byte[] encryptDataAES(byte[] input, byte[] key)
         {
-            IBufferedCipher outCipher = CipherUtilities.GetCipher("AES/CBC/PKCS7Padding");
+            IBufferedCipher outCipher = CipherUtilities.GetCipher(AES_algorithm);
 
             int blockSize = outCipher.GetBlockSize();
             // Perform key expansion
@@ -385,7 +385,7 @@ namespace CryptoLibs
         public byte[] decryptDataAES(byte[] input, byte [] key, int inOffset = 0)
         {
 
-            IBufferedCipher inCipher = CipherUtilities.GetCipher("AES/CBC/PKCS7Padding");
+            IBufferedCipher inCipher = CipherUtilities.GetCipher(AES_algorithm);
 
             int blockSize = inCipher.GetBlockSize();
             // Perform key expansion
