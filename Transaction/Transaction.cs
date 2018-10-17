@@ -210,6 +210,8 @@ namespace DLT
 
             if (blockHeight == 0)
             {
+                // legacy, do not remove
+
                 txid += nonce + "-";
 
                 string chk = Crypto.sha256(type + amount.ToString() + fee.ToString() + to + from + nonce);
@@ -243,6 +245,8 @@ namespace DLT
 
             if (transaction.blockHeight == 0)
             {
+                // legacy, do not remove
+
                 txid += transaction.nonce + "-";
 
                 string chk = Crypto.sha256(transaction.type + transaction.amount.ToString() + transaction.fee.ToString() + transaction.to +
