@@ -208,10 +208,20 @@ namespace DLT
                 }
             }
 
-            txid += blockHeight + "-" + nonce + "-";
+            if (blockHeight == 0)
+            {
+                txid += nonce + "-";
 
-            string chk = Crypto.sha256(type + amount.ToString() + fee.ToString() + to + from + blockHeight + nonce);
-            txid += chk;
+                string chk = Crypto.sha256(type + amount.ToString() + fee.ToString() + to + from + nonce);
+                txid += chk;
+            }
+            else
+            {
+                txid += blockHeight + "-" + nonce + "-";
+
+                string chk = Crypto.sha256(type + amount.ToString() + fee.ToString() + to + from + blockHeight + nonce);
+                txid += chk;
+            }
 
             return txid;
         }
@@ -231,13 +241,23 @@ namespace DLT
                 }
             }
 
-            txid += transaction.blockHeight + "-" + transaction.nonce + "-";
+            if (transaction.blockHeight == 0)
+            {
+                txid += transaction.nonce + "-";
 
-            string chk = Crypto.sha256(transaction.type + transaction.amount.ToString() + transaction.fee.ToString() + transaction.to +
-                transaction.from + transaction.blockHeight + transaction.nonce);
-            txid += chk;
+                string chk = Crypto.sha256(transaction.type + transaction.amount.ToString() + transaction.fee.ToString() + transaction.to +
+                    transaction.from + transaction.nonce);
+                txid += chk;
+            }else
+            {
+                txid += transaction.blockHeight + "-" + transaction.nonce + "-";
 
-            if(transaction.id.Equals(txid, StringComparison.Ordinal))
+                string chk = Crypto.sha256(transaction.type + transaction.amount.ToString() + transaction.fee.ToString() + transaction.to +
+                    transaction.from + transaction.blockHeight + transaction.nonce);
+                txid += chk;
+            }
+
+            if (transaction.id.Equals(txid, StringComparison.Ordinal))
             {
                 return true;
             }
@@ -248,7 +268,7 @@ namespace DLT
         // Calculate a transaction checksum 
         public static string calculateChecksum(Transaction transaction)
         {
-            return Crypto.sha256(transaction.id + transaction.type + transaction.amount.ToString() + transaction.fee.ToString() + transaction.to + transaction.from + transaction.data + transaction.blockHeight + transaction.nonce + transaction.timeStamp);
+            return Crypto.sha256(transaction.id + transaction.type + transaction.amount.ToString() + transaction.fee.ToString() + transaction.to + transaction.from + transaction.data + transaction.nonce + transaction.timeStamp);
         }
 
         public static string getSignature(string checksum)
