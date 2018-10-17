@@ -14,6 +14,7 @@
     <Compile Include="$(MSBuildThisFileDirectory)Crypto\CryptoLib.cs" />
     <Compile Include="$(MSBuildThisFileDirectory)Crypto\CryptoLibs\BouncyCastle.cs" />
     <Compile Include="$(MSBuildThisFileDirectory)Crypto\CryptoManager.cs" />
+    <Compile Include="$(MSBuildThisFileDirectory)Legacy\Legacy.cs" />
     <Compile Include="$(MSBuildThisFileDirectory)Meta\Logging.cs" />
     <Compile Include="$(MSBuildThisFileDirectory)Network\Network.cs" />
     <Compile Include="$(MSBuildThisFileDirectory)Network\NetworkUtils.cs" />

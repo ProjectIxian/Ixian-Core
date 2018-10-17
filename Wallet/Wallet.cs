@@ -65,7 +65,7 @@ namespace DLT
             publicKey = wallet.publicKey;
         }
 
-        public Wallet(byte[] bytes)
+        public Wallet(byte[] bytes, bool legacy = false)
         {
             using (MemoryStream m = new MemoryStream(bytes))
             {
@@ -93,7 +93,16 @@ namespace DLT
                         {
                             allowedSigners = null;
                         }
-                        publicKey = reader.ReadString();
+
+                        // Handle reading of legacy wallets
+                        if (legacy == true)
+                        {
+                            publicKey = "";
+                        }
+                        else
+                        {
+                            publicKey = reader.ReadString();
+                        }
                     }
                     catch(Exception)
                     {

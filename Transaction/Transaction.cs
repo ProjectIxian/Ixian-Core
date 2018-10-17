@@ -97,14 +97,12 @@ namespace DLT
             data = tx_transaction.data;
             blockHeight = tx_transaction.blockHeight;
             nonce = tx_transaction.nonce;
-
             timeStamp = tx_transaction.timeStamp;
-            //id = generateID();
             checksum = tx_transaction.checksum;
             signature = tx_transaction.signature;
         }
 
-        public Transaction(byte[] bytes)
+        public Transaction(byte[] bytes, bool legacy = false)
         {
             try
             {
@@ -119,18 +117,29 @@ namespace DLT
                         to = reader.ReadString();
                         from = reader.ReadString();
                         data = reader.ReadString();
-                        blockHeight = reader.ReadUInt64();
+
+                        // Handle reading of legacy transactions
+                        if (legacy == true)
+                        {
+                            blockHeight = 0;
+                        }
+                        else
+                        {
+                            blockHeight = reader.ReadUInt64();
+                        }
+
                         nonce = reader.ReadInt32();
 
                         timeStamp = reader.ReadString();
                         checksum = reader.ReadString();
                         signature = reader.ReadString();
+
                         id = generateID();
                     }
                 }
             }
             catch(Exception e)
-            {
+            {              
                 Logging.error("Exception occured while trying to construct Transaction from bytes: " + e);
                 throw;
             }
@@ -155,6 +164,7 @@ namespace DLT
                     writer.Write(timeStamp);
                     writer.Write(checksum);
                     writer.Write(signature);
+
                 }
                 return m.ToArray();
             }
@@ -208,10 +218,9 @@ namespace DLT
                 }
             }
 
-            if (blockHeight == 0)
+            if(Legacy.isLegacy(blockHeight))
             {
                 // legacy, do not remove
-
                 txid += nonce + "-";
 
                 string chk = Crypto.sha256(type + amount.ToString() + fee.ToString() + to + from + nonce);
@@ -243,7 +252,7 @@ namespace DLT
                 }
             }
 
-            if (transaction.blockHeight == 0)
+            if (Legacy.isLegacy(transaction.blockHeight))
             {
                 // legacy, do not remove
 
@@ -252,7 +261,8 @@ namespace DLT
                 string chk = Crypto.sha256(transaction.type + transaction.amount.ToString() + transaction.fee.ToString() + transaction.to +
                     transaction.from + transaction.nonce);
                 txid += chk;
-            }else
+            }
+            else
             {
                 txid += transaction.blockHeight + "-" + transaction.nonce + "-";
 
@@ -272,7 +282,10 @@ namespace DLT
         // Calculate a transaction checksum 
         public static string calculateChecksum(Transaction transaction)
         {
-            return Crypto.sha256(transaction.id + transaction.type + transaction.amount.ToString() + transaction.fee.ToString() + transaction.to + transaction.from + transaction.data + transaction.nonce + transaction.timeStamp);
+            if (Legacy.isLegacy(transaction.blockHeight))
+                return Crypto.sha256(transaction.id + transaction.type + transaction.amount.ToString() + transaction.fee.ToString() + transaction.to + transaction.from + transaction.data + transaction.nonce + transaction.timeStamp);
+
+            return Crypto.sha256(transaction.id + transaction.type + transaction.amount.ToString() + transaction.fee.ToString() + transaction.to + transaction.from + transaction.data + transaction.blockHeight + transaction.nonce + transaction.timeStamp);
         }
 
         public static string getSignature(string checksum)
