@@ -31,7 +31,8 @@ namespace DLT
         public string to;           //  36 B
         public string from;         //  36 B
         public string data;         //   0 B
-        public ulong nonce;
+        public ulong blockHeight;   //   8 B
+        public int nonce;           //   4 B
         public string timeStamp;    // ~12 B
         public string checksum;     //  32 B
         public string signature;    //  32 B
@@ -57,11 +58,12 @@ namespace DLT
             type = (int) Type.Normal;
             timeStamp = Node.getCurrentTimestamp().ToString();
             fee = new IxiNumber("0");
+            blockHeight = 0;
             nonce = 0;
             applied = 0;
         }
 
-        public Transaction(IxiNumber tx_amount, IxiNumber tx_fee, string tx_to, string tx_from, string tx_data, ulong tx_nonce = 0)
+        public Transaction(IxiNumber tx_amount, IxiNumber tx_fee, string tx_to, string tx_from, string tx_data, ulong tx_blockHeight, int tx_nonce)
         {
             //id = Guid.NewGuid().ToString();
             type = (int)Transaction.Type.Normal;
@@ -72,6 +74,8 @@ namespace DLT
             from = tx_from;
 
             data = tx_data;
+
+            blockHeight = tx_blockHeight;
 
             nonce = tx_nonce;
 
@@ -91,6 +95,7 @@ namespace DLT
             to = tx_transaction.to;
             from = tx_transaction.from;
             data = tx_transaction.data;
+            blockHeight = tx_transaction.blockHeight;
             nonce = tx_transaction.nonce;
 
             timeStamp = tx_transaction.timeStamp;
@@ -114,7 +119,8 @@ namespace DLT
                         to = reader.ReadString();
                         from = reader.ReadString();
                         data = reader.ReadString();
-                        nonce = reader.ReadUInt64();
+                        blockHeight = reader.ReadUInt64();
+                        nonce = reader.ReadInt32();
 
                         timeStamp = reader.ReadString();
                         checksum = reader.ReadString();
@@ -143,6 +149,7 @@ namespace DLT
                     writer.Write(to);
                     writer.Write(from);
                     writer.Write(data);
+                    writer.Write(blockHeight);
                     writer.Write(nonce);
 
                     writer.Write(timeStamp);
@@ -201,9 +208,9 @@ namespace DLT
                 }
             }
 
-            txid += nonce + "-";
+            txid += blockHeight + "-" + nonce + "-";
 
-            string chk = Crypto.sha256(type + amount.ToString() + fee.ToString() + to + from + nonce);
+            string chk = Crypto.sha256(type + amount.ToString() + fee.ToString() + to + from + blockHeight + nonce);
             txid += chk;
 
             return txid;
@@ -224,10 +231,10 @@ namespace DLT
                 }
             }
 
-            txid += transaction.nonce + "-";
+            txid += transaction.blockHeight + "-" + transaction.nonce + "-";
 
             string chk = Crypto.sha256(transaction.type + transaction.amount.ToString() + transaction.fee.ToString() + transaction.to +
-                transaction.from + transaction.nonce);
+                transaction.from + transaction.blockHeight + transaction.nonce);
             txid += chk;
 
             if(transaction.id.Equals(txid, StringComparison.Ordinal))
@@ -241,7 +248,7 @@ namespace DLT
         // Calculate a transaction checksum 
         public static string calculateChecksum(Transaction transaction)
         {
-            return Crypto.sha256(transaction.id + transaction.type + transaction.amount.ToString() + transaction.fee.ToString() + transaction.to + transaction.from + transaction.data + transaction.nonce + transaction.timeStamp);
+            return Crypto.sha256(transaction.id + transaction.type + transaction.amount.ToString() + transaction.fee.ToString() + transaction.to + transaction.from + transaction.data + transaction.blockHeight + transaction.nonce + transaction.timeStamp);
         }
 
         public static string getSignature(string checksum)
@@ -250,9 +257,9 @@ namespace DLT
             return CryptoManager.lib.getSignature(checksum, private_key);
         }
 
-        public static Transaction multisigTransaction(IxiNumber tx_amount, IxiNumber tx_fee, string tx_to, string tx_from, string tx_data, ulong tx_nonce = 0)
+        public static Transaction multisigTransaction(IxiNumber tx_amount, IxiNumber tx_fee, string tx_to, string tx_from, string tx_data, ulong tx_blockHeight, int tx_nonce)
         {
-            Transaction t = new Transaction(tx_amount, tx_fee, tx_to, tx_from, tx_data, tx_nonce);
+            Transaction t = new Transaction(tx_amount, tx_fee, tx_to, tx_from, tx_data, tx_blockHeight, tx_nonce);
             t.type = (int)Transaction.Type.MultisigTX;
             // overwrite invalid values where were calcualted before the multisig flag was set
             t.id = t.generateID();
@@ -261,7 +268,7 @@ namespace DLT
             return t;
         }
 
-        public static Transaction multisigAddKeyTransaction(string signer,  IxiNumber tx_fee, string tx_from, ulong tx_nonce = 0)
+        public static Transaction multisigAddKeyTransaction(string signer,  IxiNumber tx_fee, string tx_from, ulong tx_blockHeight, int tx_nonce)
         {
             Transaction t = new Transaction
             {
@@ -270,6 +277,7 @@ namespace DLT
                 fee = tx_fee,
                 from = tx_from,
                 to = tx_from,
+                blockHeight = tx_blockHeight,
                 nonce = tx_nonce,
                 data = "MS1:" + signer
             };
@@ -280,7 +288,7 @@ namespace DLT
             return t;
         }
 
-        public static Transaction multisigDelKeyTransaction(string signer, IxiNumber tx_fee, string tx_from, ulong tx_nonce = 0)
+        public static Transaction multisigDelKeyTransaction(string signer, IxiNumber tx_fee, string tx_from, ulong tx_blockHeight, int tx_nonce)
         {
             Transaction t = new Transaction
             {
@@ -289,6 +297,7 @@ namespace DLT
                 fee = tx_fee,
                 from = tx_from,
                 to = tx_from,
+                blockHeight = tx_blockHeight,
                 nonce = tx_nonce,
                 data = "MS2:" + signer
             };
@@ -299,7 +308,7 @@ namespace DLT
             return t;
         }
 
-        public static Transaction multisigChangeReqSigs(byte sigs, IxiNumber tx_fee, string tx_from, ulong tx_nonce = 0)
+        public static Transaction multisigChangeReqSigs(byte sigs, IxiNumber tx_fee, string tx_from, ulong tx_blockHeight, int tx_nonce)
         {
             Transaction t = new Transaction
             {
@@ -308,6 +317,7 @@ namespace DLT
                 fee = tx_fee,
                 from = tx_from,
                 to = tx_from,
+                blockHeight = tx_blockHeight,
                 nonce = tx_nonce,
                 data = "MS3:" + sigs.ToString()
             };
