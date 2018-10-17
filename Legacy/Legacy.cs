@@ -26,6 +26,11 @@ namespace DLT
             return false;
         }
 
+        // Returns the legacy level
+        public static ulong getLegacyLevel()
+        {
+            return up20181017;
+        }
 
     }
 }
