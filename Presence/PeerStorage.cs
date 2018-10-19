@@ -11,11 +11,11 @@ namespace DLT
         class Peer
         {
             public string hostname;
-            public string walletAddress;
+            public byte[] walletAddress;
             public DateTime lastSeen;
             public long lastConnectAttempt;
 
-            public Peer(string iHostname, string iWalletAddress, DateTime iLastSeen, long iLastConnectAttempt)
+            public Peer(string iHostname, byte[] iWalletAddress, DateTime iLastSeen, long iLastConnectAttempt)
             {
                 hostname = iHostname;
                 walletAddress = iWalletAddress;
@@ -28,7 +28,7 @@ namespace DLT
 
         public static string peersFilename = "peers.dat";
 
-        public static void addPeerToPeerList(string hostname, string walletAddress, bool storePeersFile = true)
+        public static void addPeerToPeerList(string hostname, byte[] walletAddress, bool storePeersFile = true)
         {
             if(!validateHostname(hostname))
             {
@@ -48,7 +48,7 @@ namespace DLT
                     storePeersFile = false; // this hostname:port is already in the file, no need to add it again
 
                 }
-                peerList.RemoveAll(x => x.walletAddress == walletAddress);
+                peerList.RemoveAll(x => x.walletAddress.SequenceEqual(walletAddress));
 
                 peerList.Add(p);
 
@@ -142,7 +142,7 @@ namespace DLT
                     List<string> ips = File.ReadAllLines(peersFilename).ToList();
                     foreach (string ip in ips)
                     {
-                        addPeerToPeerList(ip, ip, false);
+                        addPeerToPeerList(ip, null, false);
                     }
                 }
             }

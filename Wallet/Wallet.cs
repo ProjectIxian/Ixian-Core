@@ -1,8 +1,10 @@
 using DLT.Meta;
+using IXICore.Utils;
 using System;
 using System.Collections.Generic;
 using System.IO;
 using System.Linq;
+using System.Text;
 
 namespace DLT
 {
@@ -14,39 +16,39 @@ namespace DLT
 
     public class Wallet
     {
-        public string id; // 36 B (18 B)
+        public byte[] id; // 36 B (18 B)
         public IxiNumber balance; // 16 B
         public WalletType type;
         public byte requiredSigs;
-        public string[] allowedSigners;
-        public string data; // 0 B
+        public byte[][] allowedSigners;
+        public byte[] data; // 0 B
         public ulong nonce;
-        public string publicKey;
+        public byte[] publicKey;
 
         // TOTAL: 52 B (34 B). Note: add nonce and publicKey
 
         public Wallet()
         {
-            id = "";
+            id = null;
             balance = new IxiNumber();
             type = WalletType.Normal;
             requiredSigs = 1;
             allowedSigners = null;
-            data = "";
+            data = null;
             nonce = 0;
-            publicKey = "";
+            publicKey = null;
         }
 
-        public Wallet(string w_id, IxiNumber w_balance)
+        public Wallet(byte[] w_id, IxiNumber w_balance)
         {
             id = w_id;
             balance = w_balance;
             type = WalletType.Normal;
             requiredSigs = 1;
             allowedSigners = null;
-            data = "";
+            data = null;
             nonce = 0;
-            publicKey = "";
+            publicKey = null;
         }
 
         public Wallet(Wallet wallet)
@@ -57,8 +59,12 @@ namespace DLT
             requiredSigs = wallet.requiredSigs;
             if(wallet.allowedSigners != null)
             {
-                allowedSigners = new string[wallet.allowedSigners.Length];
-                Array.Copy(wallet.allowedSigners, allowedSigners, allowedSigners.Length);
+                allowedSigners = new byte[wallet.allowedSigners.Length][];
+                for (int i = 0; i < wallet.allowedSigners.Length; i++)
+                {
+                    allowedSigners[i] = new byte[wallet.allowedSigners[i].Length];
+                    Array.Copy(wallet.allowedSigners[i], allowedSigners[i], allowedSigners[i].Length);
+                }
             }
             data = wallet.data;
             nonce = wallet.nonce;
@@ -73,20 +79,23 @@ namespace DLT
                 {
                     try
                     {
-                        id = reader.ReadString();
+                        int idLen = reader.ReadInt32();
+                        id = reader.ReadBytes(idLen);
                         string balance_str = reader.ReadString();
                         balance = new IxiNumber(balance_str);
-                        data = reader.ReadString();
+                        int dataLen = reader.ReadInt32();
+                        data = reader.ReadBytes(dataLen);
                         nonce = reader.ReadUInt64();
                         type = (WalletType)reader.ReadByte();
                         requiredSigs = reader.ReadByte();
                         byte num_allowed_sigs = reader.ReadByte();
                         if (num_allowed_sigs > 0)
                         {
-                            allowedSigners = new string[num_allowed_sigs];
+                            allowedSigners = new byte[num_allowed_sigs][];
                             for (int i = 0; i < num_allowed_sigs; i++)
                             {
-                                allowedSigners[i] = reader.ReadString();
+                                int signerLen = reader.ReadInt32();
+                                allowedSigners[i] = reader.ReadBytes(signerLen);
                             }
                         }
                         else
@@ -94,17 +103,10 @@ namespace DLT
                             allowedSigners = null;
                         }
 
-                        // Handle reading of legacy wallets
-                        if (legacy == true)
-                        {
-                            publicKey = "";
-                        }
-                        else
-                        {
-                            publicKey = reader.ReadString();
-                        }
+                        int pkLen = reader.ReadInt32();
+                        publicKey = reader.ReadBytes(pkLen);
                     }
-                    catch(Exception)
+                    catch (Exception)
                     {
                         
                     }
@@ -120,8 +122,10 @@ namespace DLT
                 {
                     try
                     {
+                        writer.Write(id.Length);
                         writer.Write(id);
                         writer.Write(balance.ToString());
+                        writer.Write(data.Length);
                         writer.Write(data);
                         writer.Write(nonce);
                         writer.Write((byte)type);
@@ -131,6 +135,7 @@ namespace DLT
                             writer.Write(allowedSigners.Length);
                             for (int i = 0; i < allowedSigners.Length; i++)
                             {
+                                writer.Write(allowedSigners[i].Length);
                                 writer.Write(allowedSigners[i]);
                             }
                         }
@@ -138,9 +143,10 @@ namespace DLT
                         {
                             writer.Write((byte)0);
                         }
+                        writer.Write(publicKey.Length);
                         writer.Write(publicKey);
                     }
-                    catch(Exception)
+                    catch (Exception)
                     {
 
                     }
@@ -149,15 +155,28 @@ namespace DLT
             }
         }
 
-        public string calculateChecksum()
+        public byte[] calculateChecksum()
         {
-            string baseData = id + balance.ToString() + data + nonce + publicKey + ((int)type).ToString() + requiredSigs.ToString();
-            return Crypto.sha256(baseData);
+            List<byte> rawData = new List<byte>();
+            rawData.AddRange(id);
+            rawData.AddRange(Encoding.UTF8.GetBytes(balance.ToString()));
+            if (data != null)
+            {
+                rawData.AddRange(data);
+            }
+            rawData.AddRange(BitConverter.GetBytes(nonce));
+            if (publicKey != null)
+            {
+                rawData.AddRange(publicKey);
+            }
+            rawData.AddRange(BitConverter.GetBytes((int)type));
+            rawData.AddRange(BitConverter.GetBytes(requiredSigs));
+            return Crypto.sha256(rawData.ToArray());
         }
 
         public int matchValidSigners(string[] pubkeys)
         {
-            Dictionary<string, bool> matchedSigs = new Dictionary<string, bool>();
+            Dictionary<byte[], bool> matchedSigs = new Dictionary<byte[], bool>(new ByteArrayComparer());
             if(allowedSigners == null)
             {
                 matchedSigs.Add(id, false);
@@ -167,10 +186,10 @@ namespace DLT
             }
             foreach (string key in pubkeys)
             {
-                Address a = new Address(key);
-                if(matchedSigs.ContainsKey(a.ToString()))
+                Address a = new Address(Convert.FromBase64String(key));
+                if(matchedSigs.ContainsKey(a.address))
                 {
-                    matchedSigs[a.ToString()] = true;
+                    matchedSigs[a.address] = true;
                 }
             }
             return matchedSigs.Aggregate(0, (sum, kvp) => sum += kvp.Value ? 1 : 0, sum => sum);

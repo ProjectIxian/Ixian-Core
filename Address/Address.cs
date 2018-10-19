@@ -8,82 +8,58 @@ namespace DLT
 {
     class Address
     {
-        private string publicKey;
-        private string address;
-        private string checksum;
+        public byte[] address;
+        private byte[] checksum;
 
         public Address()
         {
-            address = "";
+            address = null;
         }
 
-        public Address(string public_key)
+        public Address(byte[] public_key)
         {
-            publicKey = public_key;
+            //  the public key using SHA256 
+            byte[] hashed_key = Crypto.sha256(public_key);
 
-            // Hash the public key using SHA256 
-            var hashed_key = Crypto.sha256(publicKey);
+            checksum = Crypto.sha256(hashed_key);
 
-            // Hash the hashed key using Mnemonics
-            address = hashed_key;
-
-            checksum = Crypto.sha256(address);
-            checksum = checksum.Substring(0, 4);
-
-            address = hashed_key + checksum;
+            address = new byte[hashed_key.Length + 2];
+            Array.Copy(hashed_key, address, hashed_key.Length);
+            Array.Copy(checksum, 0, address, hashed_key.Length, 2);
 
             //Mnemonic mnemonic_addr = new Mnemonic(Wordlist.English, Encoding.ASCII.GetBytes(hashed_key.ToString()));
             //address = mnemonic_addr.ToString();
 
         }
 
-
-
         public override string ToString()
         {
-            return address;
-        }
-
-        // Generates the checksummed address from a normal address
-        public static string generateChecksumAddress(string address)
-        {
-            // Check if the address already has a checksum
-            if (validateChecksum(address) == true)
-                return address;
-
-            // Generate the actual checksum
-            string chk_address = address;
-            string checksum = Crypto.sha256(address);
-            checksum = checksum.Substring(0, 4);
-
-            chk_address = chk_address + checksum;
-
-            return chk_address;
+            return Crypto.hashToString(address);
         }
 
         // Validates an address by checking the checksum
-        public static bool validateChecksum(string address)
+        public static bool validateChecksum(byte[] address)
         {
             try
             {
                 // Check the address length
-                if (address.Length != 68)
+                if (address.Length != 34)
                 {
                     return false;
                 }
 
-                string in_addr = address.Substring(0, 64);
-                string in_chk = address.Substring(64, 4);
+                byte[] in_addr = address.Take(32).ToArray();
+                byte[] in_chk = address.Skip(32).Take(2).ToArray();
 
-                string checksum = Crypto.sha256(in_addr);
-                checksum = checksum.Substring(0, 4);
+                byte[] checksum = Crypto.sha256(in_addr);
+                checksum = checksum.Take(2).ToArray();
 
-                if (checksum.Equals(in_chk, StringComparison.Ordinal))
+                if (checksum.SequenceEqual(in_chk))
                 {
                     return true;
                 }
             }
-            catch(Exception)
+            catch(Exception e)
             {
                 // If any exception occurs, the checksum is invalid
                 return false;

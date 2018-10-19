@@ -12,14 +12,14 @@ namespace DLT
         bool generateKeys(int keySize);
         List<string> generateEncryptionKeys();
 
-        string getPublicKey();
-        string getPrivateKey();
+        byte[] getPublicKey();
+        byte[] getPrivateKey();
 
-        string getEncPublicKey();
-        string getEncPrivateKey();
+        byte[] getEncPublicKey();
+        byte[] getEncPrivateKey();
 
-        string getSignature(string text, string privateKey);
-        bool verifySignature(string text, string publicKey, string signature);
+        byte[] getSignature(byte[] input, byte[] privateKey);
+        bool verifySignature(byte[] input, byte[] publicKey, byte[] signature);
 
         byte[] encryptData(byte[] data, string publicKey);
         byte[] decryptData(byte[] data, string privateKey);
@@ -55,34 +55,34 @@ namespace DLT
             return _cryptoLib.generateEncryptionKeys();
         }
 
-        public string getPublicKey()
+        public byte[] getPublicKey()
         {
             return _cryptoLib.getPublicKey();
         }
 
-        public string getPrivateKey()
+        public byte[] getPrivateKey()
         {
             return _cryptoLib.getPrivateKey();
         }
 
-        public string getEncPublicKey()
+        public byte[] getEncPublicKey()
         {
             return _cryptoLib.getEncPublicKey();
         }
 
-        public string getEncPrivateKey()
+        public byte[] getEncPrivateKey()
         {
             return _cryptoLib.getEncPrivateKey();
         }
 
-        public string getSignature(string text, string privateKey)
+        public byte[] getSignature(byte[] input, byte[] privateKey)
         {
-            return _cryptoLib.getSignature(text, privateKey);
+            return _cryptoLib.getSignature(input, privateKey);
         }
 
-        public bool verifySignature(string text, string publicKey, string signature)
+        public bool verifySignature(byte[] input, byte[] publicKey, byte[] signature)
         {
-            return _cryptoLib.verifySignature(text, publicKey, signature);
+            return _cryptoLib.verifySignature(input, publicKey, signature);
         }
 
         public byte[] encryptData(byte[] data, string publicKey)

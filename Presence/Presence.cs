@@ -3,6 +3,7 @@ using DLT.Network;
 using System;
 using System.Collections.Generic;
 using System.IO;
+using System.Linq;
 
 namespace DLT
 {
@@ -15,8 +16,8 @@ namespace DLT
         public string address; // IP and port
         public char type;   // M for MasterNode, R for RelayNode, D for Direct ip client, C for normal client
         public string version; // Version
-        public string lastSeenTime;
-        public string signature;
+        public long lastSeenTime;
+        public byte[] signature;
 
         public PresenceAddress()
         {
@@ -24,11 +25,11 @@ namespace DLT
             address = string.Format("{0}:{1}", CoreNetworkUtils.GetLocalIPAddress(), Config.serverPort);
             type = 'M';
             version = Config.version;
-            lastSeenTime = Node.getCurrentTimestamp().ToString();
-            signature = "";
+            lastSeenTime = Node.getCurrentTimestamp();
+            signature = null;
         }
 
-        public PresenceAddress(string node_device, string node_address, char node_type, string node_version, string node_lastSeenTime, string node_signature)
+        public PresenceAddress(string node_device, string node_address, char node_type, string node_version, long node_lastSeenTime, byte[] node_signature)
         {
             device = node_device;
             address = node_address;
@@ -48,8 +49,9 @@ namespace DLT
                     address = reader.ReadString();
                     type = reader.ReadChar();
                     version = reader.ReadString();
-                    lastSeenTime = reader.ReadString();
-                    signature = reader.ReadString();
+                    lastSeenTime = reader.ReadInt64();
+                    int sigLen = reader.ReadInt32();
+                    signature = reader.ReadBytes(sigLen);
                 }
             }
         }
@@ -65,6 +67,7 @@ namespace DLT
                     writer.Write(type);
                     writer.Write(version);
                     writer.Write(lastSeenTime);
+                    writer.Write(signature.Length);
                     writer.Write(signature);
                 }
                 return m.ToArray();
@@ -80,7 +83,7 @@ namespace DLT
                 return false;
             }
 
-            if (item.address.Equals(address, StringComparison.Ordinal) == false)
+            if (item.address.SequenceEqual(address) == false)
             {
                 return false;
             }
@@ -114,38 +117,38 @@ namespace DLT
     // The actual presence object, which can contain multiple PresenceAddress objects
     public class Presence
     {
-        public string wallet;
-        public string pubkey;
-        public string metadata; 
+        public byte[] wallet;
+        public byte[] pubkey;
+        public byte[] metadata; 
         public List<PresenceAddress> addresses;
         public string owner; // Represents the node that can perform changes for this presence (usually a master or relay node)
 
         public Presence()
         {
-            wallet = " ";
-            pubkey = " ";
-            metadata = " ";
+            wallet = null;
+            pubkey = null;
+            metadata = null;
             addresses = new List<PresenceAddress> { };
             //owner = PresenceList.getFirstMasterNodeAddress();
             owner = " ";
         }
 
-        public Presence(string wallet_address, string node_pubkey, string node_ip, char node_type, string node_version)
+        public Presence(byte[] wallet_address, byte[] node_pubkey, string node_ip, char node_type, string node_version)
         {
             wallet = wallet_address;
             pubkey = node_pubkey;
-            metadata = " ";
+            metadata = null;
             addresses = new List<PresenceAddress> { };
             
             // Generate a device id
             string deviceId = Guid.NewGuid().ToString();
-            PresenceAddress address = new PresenceAddress(deviceId, node_ip, node_type, node_version, "", "");
+            PresenceAddress address = new PresenceAddress(deviceId, node_ip, node_type, node_version, 0, null);
             addresses.Add(address);
             owner = " ";
 
         }
 
-        public Presence(string wallet_address, string node_pubkey, string node_meta, PresenceAddress node_address)
+        public Presence(byte[] wallet_address, byte[] node_pubkey, byte[] node_meta, PresenceAddress node_address)
         {
             wallet = wallet_address;
             pubkey = node_pubkey;
@@ -160,9 +163,9 @@ namespace DLT
             // Prepare addresses
             addresses = new List<PresenceAddress> { };
 
-            wallet = string.Empty;
-            pubkey = string.Empty;
-            metadata = string.Empty;
+            wallet = null;
+            pubkey = null;
+            metadata = null;
             owner = string.Empty;
 
 
@@ -170,9 +173,12 @@ namespace DLT
             {
                 using (BinaryReader reader = new BinaryReader(m))
                 {
-                    wallet = reader.ReadString();
-                    pubkey = reader.ReadString();
-                    metadata = reader.ReadString();
+                    int walletLen = reader.ReadInt32();
+                    wallet = reader.ReadBytes(walletLen);
+                    int pubkeyLen = reader.ReadInt32();
+                    pubkey = reader.ReadBytes(pubkeyLen);
+                    int mdLen = reader.ReadInt32();
+                    metadata = reader.ReadBytes(mdLen);
 
 
                     // Read number of addresses
@@ -198,8 +204,11 @@ namespace DLT
             {
                 using (BinaryWriter writer = new BinaryWriter(m))
                 {
+                    writer.Write(wallet.Length);
                     writer.Write(wallet);
+                    writer.Write(pubkey.Length);
                     writer.Write(pubkey);
+                    writer.Write(metadata.Length);
                     writer.Write(metadata);
 
                     // Write the number of ips

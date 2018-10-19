@@ -22,8 +22,8 @@ namespace DLT
         {
             Logging.info("Generating presence list.");
             // Initialize with the default presence state
-            curNodePresenceAddress = new PresenceAddress(Config.device_id, string.Format("{0}:{1}", initial_ip, Config.serverPort), 'M', Config.version, "", "");
-            curNodePresence = new Presence(Node.walletStorage.address, Node.walletStorage.encPublicKey, Node.walletStorage.publicKey, curNodePresenceAddress);
+            curNodePresenceAddress = new PresenceAddress(Config.device_id, string.Format("{0}:{1}", initial_ip, Config.serverPort), 'M', Config.version, 0, null);
+            curNodePresence = new Presence(Node.walletStorage.address, Node.walletStorage.publicKey, Node.walletStorage.publicKey, curNodePresenceAddress);
         }
 
         // Searches through the entire presence list to find a matching IP with a specific type.
@@ -59,7 +59,7 @@ namespace DLT
             Presence return_presence = null;
             lock(presences)
             {
-                Presence pr = presences.Find(x => x.wallet == presence.wallet);
+                Presence pr = presences.Find(x => x.wallet.SequenceEqual(presence.wallet));
                 if (pr != null)
                 {
                     entryUpdated = false;
@@ -68,7 +68,7 @@ namespace DLT
                     foreach (PresenceAddress local_addr in presence.addresses)
                     {
                         long currentTime = Node.getCurrentTimestamp();
-                        long lTimestamp = long.Parse(local_addr.lastSeenTime);
+                        long lTimestamp = local_addr.lastSeenTime;
                         // Check for tampering. Includes a 200 second synchronization zone
                         if ((currentTime - lTimestamp) > 100 || (currentTime - lTimestamp) < -100)
                         {
@@ -88,7 +88,7 @@ namespace DLT
                                 addr.lastSeenTime = local_addr.lastSeenTime;
                                 entryUpdated = true;
                             }
-                            else if (long.Parse(addr.lastSeenTime) < long.Parse(local_addr.lastSeenTime))
+                            else if (addr.lastSeenTime < local_addr.lastSeenTime)
                             {
                                 addr.lastSeenTime = local_addr.lastSeenTime;
                                 entryUpdated = true;
@@ -127,12 +127,12 @@ namespace DLT
             return return_presence;
         }
 
-        public static bool removeAddressEntry(string wallet_address, PresenceAddress address)
+        public static bool removeAddressEntry(byte[] wallet_address, PresenceAddress address)
         {
             lock (presences)
             {
                 //Console.WriteLine("[PL] Received removal for {0} : {1}", wallet_address, address.address);
-                Presence listEntry = presences.Find(x => x.wallet == wallet_address);
+                Presence listEntry = presences.Find(x => x.wallet.SequenceEqual(wallet_address));
 
                 // Check if there is such an entry in the presence list
                 if (listEntry != null)
@@ -167,7 +167,7 @@ namespace DLT
 
                             foreach (PresenceAddress pa in pr.addresses)
                             {
-                                if (pa.address.Equals(relay_address, StringComparison.Ordinal))
+                                if (pa.address.SequenceEqual(relay_address))
                                 {
                                     // Check if it's a client node
                                     if (pa.type == 'C')
@@ -301,21 +301,23 @@ namespace DLT
                     using (BinaryReader reader = new BinaryReader(m))
                     {
 
-                        string wallet = reader.ReadString();
+                        int walletLen = reader.ReadInt32();
+                        byte[] wallet = reader.ReadBytes(walletLen);
                         string deviceid = reader.ReadString();
-                        string timestamp = reader.ReadString();
+                        long timestamp = reader.ReadInt64();
                         string hostname = reader.ReadString();
-                        string signature = reader.ReadString();
+                        int sigLen = reader.ReadInt32();
+                        byte[] signature = reader.ReadBytes(sigLen);
                         //Logging.info(String.Format("[PL] KEEPALIVE request from {0}", hostname));
 
                         lock (presences)
                         {
-                            Presence listEntry = presences.Find(x => x.wallet == wallet);
+                            Presence listEntry = presences.Find(x => x.wallet.SequenceEqual(wallet));
                             if (listEntry == null && wallet == Node.walletStorage.address)
                             {
                                 Logging.error(string.Format("My entry was removed from local PL, readding."));
                                 updateEntry(curNodePresence);
-                                listEntry = presences.Find(x => x.wallet == wallet);
+                                listEntry = presences.Find(x => x.wallet.SequenceEqual(wallet));
                             }
 
                             // Check if no such wallet found in presence list
@@ -326,6 +328,7 @@ namespace DLT
                                 {
                                     using (BinaryWriter writer = new BinaryWriter(mw))
                                     {
+                                        writer.Write(wallet.Length);
                                         writer.Write(wallet);
 
                                         ProtocolMessage.broadcastProtocolMessage(ProtocolMessageCode.getPresence, mw.ToArray());
@@ -335,7 +338,7 @@ namespace DLT
                             }
 
                             // Verify the signature
-                            if (CryptoManager.lib.verifySignature(deviceid + "-" + timestamp + "-" + hostname, listEntry.metadata, signature) == false)
+                            if (CryptoManager.lib.verifySignature(Encoding.UTF8.GetBytes(deviceid + "-" + timestamp + "-" + hostname), listEntry.pubkey, signature) == false)
                             {
                                 Logging.warn(string.Format("[PL] KEEPALIVE tampering for {0} {1}, incorrect Sig.", listEntry.wallet, hostname));
                                 return false;
@@ -348,18 +351,15 @@ namespace DLT
                                 // Check the node type
                                 if (pa.lastSeenTime != timestamp)
                                 {
-                                    long lTimestamp = long.Parse(timestamp);
-                                    long lLastSeenTime = long.Parse(pa.lastSeenTime);
-
                                     // Check for outdated timestamp
-                                    if (lTimestamp < lLastSeenTime)
+                                    if (timestamp < pa.lastSeenTime)
                                     {
                                         // We already have a newer timestamp for this entry
                                         return false;
                                     }
 
                                     // Check for tampering. Includes a 100 second synchronization zone
-                                    if ((currentTime - lTimestamp) > 100)
+                                    if ((currentTime - timestamp) > 100)
                                     {
                                         Logging.warn(string.Format("[PL] Potential KEEPALIVE tampering for {0} {1}. Timestamp {2}", listEntry.wallet, pa.address, timestamp));
                                         return false;
@@ -391,6 +391,7 @@ namespace DLT
                                     {
                                         using (BinaryWriter writer = new BinaryWriter(mw))
                                         {
+                                            writer.Write(wallet.Length);
                                             writer.Write(wallet);
 
                                             ProtocolMessage.broadcastProtocolMessage(ProtocolMessageCode.getPresence, mw.ToArray());
@@ -442,7 +443,7 @@ namespace DLT
                         try
                         {
                             // Check if timestamp is older than 300 seconds
-                            if((currentTime - long.Parse(pa.lastSeenTime)) > 300)
+                            if((currentTime - pa.lastSeenTime) > 300)
                             {
                                 Logging.info(string.Format("Expired lastseen for {0} / {1}", pa.address, pa.device));
                                 removeAddressEntry(pr.wallet, pa);

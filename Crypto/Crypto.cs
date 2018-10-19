@@ -1,3 +1,4 @@
+using System;
 using System.Security.Cryptography;
 using System.Text;
 
@@ -9,20 +10,32 @@ namespace DLT
 
         static public string sha256(string randomString)
         {
-            System.Security.Cryptography.SHA256Managed crypt = new System.Security.Cryptography.SHA256Managed();
-            System.Text.StringBuilder hash = new System.Text.StringBuilder();
+            SHA256Managed crypt = new SHA256Managed();
             byte[] crypto = crypt.ComputeHash(Encoding.UTF8.GetBytes(randomString), 0, Encoding.UTF8.GetByteCount(randomString));
             return hashToString(crypto);
         }
 
         public static string hashToString(byte[] data)
         {
-            System.Text.StringBuilder hash = new System.Text.StringBuilder();
+            if(data == null)
+            {
+                return "null";
+            }
+            StringBuilder hash = new StringBuilder();
             foreach (byte theByte in data)
             {
                 hash.Append(theByte.ToString("x2"));
             }
             return hash.ToString();
+        }
+
+        public static byte[] stringToHash(string data)
+        {
+            int NumberChars = data.Length;
+            byte[] bytes = new byte[NumberChars / 2];
+            for (int i = 0; i < NumberChars; i += 2)
+                bytes[i / 2] = Convert.ToByte(data.Substring(i, 2), 16);
+            return bytes;
         }
 
         public static byte[] sha256(byte[] data)

@@ -14,13 +14,13 @@ namespace DLT
     {
         private string filename;
 
-        public string privateKey = null;
-        public string publicKey = null;
-        public string address = null;
+        public byte[] privateKey = null;
+        public byte[] publicKey = null;
+        public byte[] address = null;
 
         // Used for encrypting and decrypting user messages
-        public string encPrivateKey = null;
-        public string encPublicKey = null;
+        public byte[] encPrivateKey = null;
+        public byte[] encPublicKey = null;
 
         public WalletStorage()
         {
@@ -104,10 +104,10 @@ namespace DLT
                     try
                     {
                         // Decrypt
-                        privateKey = Encoding.UTF8.GetString(CryptoManager.lib.decryptWithPassword(b_privateKey, password));
-                        publicKey = Encoding.UTF8.GetString(CryptoManager.lib.decryptWithPassword(b_publicKey, password));
-                        encPrivateKey = Encoding.UTF8.GetString(CryptoManager.lib.decryptWithPassword(b_privateKeyEncKey, password));
-                        encPublicKey = Encoding.UTF8.GetString(CryptoManager.lib.decryptWithPassword(b_publicKeyEnc, password));
+                        privateKey = CryptoManager.lib.decryptWithPassword(b_privateKey, password);
+                        publicKey = CryptoManager.lib.decryptWithPassword(b_publicKey, password);
+                        encPrivateKey = CryptoManager.lib.decryptWithPassword(b_privateKeyEncKey, password);
+                        encPublicKey = CryptoManager.lib.decryptWithPassword(b_publicKeyEnc, password);
                     }
                     catch(Exception)
                     {
@@ -122,7 +122,7 @@ namespace DLT
                 }
 
                 Address addr = new Address(publicKey);
-                address = addr.ToString();
+                address = addr.address;
 
                 // Wait for any pending log messages to be written
                 while (Logging.getRemainingStatementsCount() > 0)
@@ -133,7 +133,7 @@ namespace DLT
                 Console.WriteLine();
                 Console.Write("Your IXIAN address is ");
                 Console.ForegroundColor = ConsoleColor.Green;
-                Console.WriteLine(address);
+                Console.WriteLine(Crypto.hashToString(address));
                 Console.ResetColor();
                 Console.WriteLine();
 
@@ -159,7 +159,7 @@ namespace DLT
                 writeWallet(new_password);
             }
 
-            Logging.log(LogSeverity.info, String.Format("Public Node Address: {0}", address));
+            Logging.log(LogSeverity.info, String.Format("Public Node Address: {0}", Crypto.hashToString(address)));
 
             return true;
         }
@@ -171,10 +171,10 @@ namespace DLT
                 return false;
 
             // Encrypt data first
-            byte[] b_privateKey = CryptoManager.lib.encryptWithPassword(Encoding.UTF8.GetBytes(privateKey), password);
-            byte[] b_publicKey = CryptoManager.lib.encryptWithPassword(Encoding.UTF8.GetBytes(publicKey), password);
-            byte[] b_privateKeyEnc = CryptoManager.lib.encryptWithPassword(Encoding.UTF8.GetBytes(encPrivateKey), password);
-            byte[] b_publicKeyEnc = CryptoManager.lib.encryptWithPassword(Encoding.UTF8.GetBytes(encPublicKey), password);           
+            byte[] b_privateKey = CryptoManager.lib.encryptWithPassword(privateKey, password);
+            byte[] b_publicKey = CryptoManager.lib.encryptWithPassword(publicKey, password);
+            byte[] b_privateKeyEnc = CryptoManager.lib.encryptWithPassword(encPrivateKey, password);
+            byte[] b_publicKeyEnc = CryptoManager.lib.encryptWithPassword(encPublicKey, password);           
 
             BinaryWriter writer;
             try
@@ -255,11 +255,11 @@ namespace DLT
 
 
             Address addr = new Address(publicKey);
-            address = addr.ToString();
+            address = addr.address;
 
-            Logging.log(LogSeverity.info, String.Format("Public Key: {0}", publicKey));
-            Logging.log(LogSeverity.info, String.Format("ENC Public Key: {0}", encPublicKey));
-            Logging.log(LogSeverity.info, String.Format("Public Node Address: {0}", address));
+            Logging.info(String.Format("Public Key: {0}", Crypto.hashToString(publicKey)));
+            Logging.info(String.Format("ENC Public Key: {0}", Crypto.hashToString(encPublicKey)));
+            Logging.info(String.Format("Public Node Address: {0}", Crypto.hashToString(address)));
 
             // Wait for any pending log messages to be written
             while (Logging.getRemainingStatementsCount() > 0)
@@ -270,7 +270,7 @@ namespace DLT
             Console.WriteLine();
             Console.Write("Your IXIAN address is ");
             Console.ForegroundColor = ConsoleColor.Green;
-            Console.WriteLine(address);
+            Console.WriteLine(Crypto.hashToString(address));
             Console.ResetColor();
             Console.WriteLine();
 
@@ -347,7 +347,7 @@ namespace DLT
         }
 
         // Obtain the mnemonic address
-        public string getWalletAddress()
+        public byte[] getWalletAddress()
         {
             return address;
         }
