@@ -338,7 +338,7 @@ namespace DLT
                             }
 
                             // Verify the signature
-                            if (CryptoManager.lib.verifySignature(Encoding.UTF8.GetBytes(Config.ixianChecksumLock + "-" + deviceid + "-" + timestamp + "-" + hostname), listEntry.pubkey, signature) == false)
+                            if (CryptoManager.lib.verifySignature(Encoding.UTF8.GetBytes(Config.ixianChecksumLockString + "-" + deviceid + "-" + timestamp + "-" + hostname), listEntry.pubkey, signature) == false)
                             {
                                 Logging.warn(string.Format("[PL] KEEPALIVE tampering for {0} {1}, incorrect Sig.", Crypto.hashToString(listEntry.wallet), hostname));
                                 return false;
