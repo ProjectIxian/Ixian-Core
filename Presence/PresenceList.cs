@@ -313,7 +313,7 @@ namespace DLT
                         lock (presences)
                         {
                             Presence listEntry = presences.Find(x => x.wallet.SequenceEqual(wallet));
-                            if (listEntry == null && wallet == Node.walletStorage.address)
+                            if (listEntry == null && wallet.SequenceEqual(Node.walletStorage.address))
                             {
                                 Logging.error(string.Format("My entry was removed from local PL, readding."));
                                 updateEntry(curNodePresence);
@@ -380,7 +380,7 @@ namespace DLT
                             }
                             else
                             {
-                                if (wallet == Node.walletStorage.address)
+                                if (wallet.SequenceEqual(Node.walletStorage.address))
                                 {
                                     updateEntry(curNodePresence);
                                     return true;
