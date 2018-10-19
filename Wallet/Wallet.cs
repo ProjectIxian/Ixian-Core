@@ -184,7 +184,7 @@ namespace DLT
 
         public bool isValidSigner(byte[] address)
         {
-            if (address.SequenceEqual(publicKey)) return true;
+            if (address.SequenceEqual(id)) return true;
             foreach(var accepted_pubkey in allowedSigners)
             {
                 if (address.SequenceEqual(accepted_pubkey)) return true;

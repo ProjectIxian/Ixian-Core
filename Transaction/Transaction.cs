@@ -22,9 +22,9 @@ namespace DLT
 
         public enum MultisigWalletChangeType:byte
         {
-            AddSigner = 1, // data is appended by :MS1:pubkey
-            DelSigner = 2, // data is appended by :MS2:pubkey
-            ChangeReqSigs = 3 // data is appended by :MS3:NUMBER ; where 0 < NUMBER < 256
+            AddSigner = 1, 
+            DelSigner = 2, 
+            ChangeReqSigs = 3
         }
 
         public string id;           //  36 B
