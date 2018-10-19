@@ -59,7 +59,7 @@ namespace DLT
                     return true;
                 }
             }
-            catch(Exception e)
+            catch(Exception)
             {
                 // If any exception occurs, the checksum is invalid
                 return false;

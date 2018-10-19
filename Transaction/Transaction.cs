@@ -40,7 +40,9 @@ namespace DLT
         public byte[] checksum;     //  32 B
         public byte[] signature;    //  32 B
         public byte[] pubKey;    //  32 B
-        public ulong applied;        
+        public ulong applied;
+
+        private readonly static byte[] multisigStartMarker = { 0x4d, 0x73 };
 
         /* TX RAM savings:
          * id -> guid binary (36B -> 16B)
@@ -358,7 +360,7 @@ namespace DLT
             return t;
         }
 
-        public static Transaction multisigAddKeyTransaction(string signer,  IxiNumber tx_fee, byte[] tx_from, ulong tx_blockHeight, int tx_nonce)
+        public static Transaction multisigAddKeyTransaction(byte[] signer_address,  IxiNumber tx_fee, byte[] tx_from, ulong tx_blockHeight, int tx_nonce)
         {
             Transaction t = new Transaction
             {
@@ -369,8 +371,10 @@ namespace DLT
                 to = tx_from,
                 blockHeight = tx_blockHeight,
                 nonce = tx_nonce,
-                data = Encoding.UTF8.GetBytes("MS1:" + signer)
+                data = new byte[signer_address.Length + 1]
             };
+            t.data[0] = (byte)MultisigWalletChangeType.AddSigner;
+            Array.Copy(signer_address, 0, t.data, 1, signer_address.Length);
             //
             t.id = t.generateID();
             t.checksum = calculateChecksum(t);
@@ -379,7 +383,7 @@ namespace DLT
             return t;
         }
 
-        public static Transaction multisigDelKeyTransaction(string signer, IxiNumber tx_fee, byte[] tx_from, ulong tx_blockHeight, int tx_nonce)
+        public static Transaction multisigDelKeyTransaction(byte[] signer_address, IxiNumber tx_fee, byte[] tx_from, ulong tx_blockHeight, int tx_nonce)
         {
             Transaction t = new Transaction
             {
@@ -390,8 +394,10 @@ namespace DLT
                 to = tx_from,
                 blockHeight = tx_blockHeight,
                 nonce = tx_nonce,
-                data = Encoding.UTF8.GetBytes("MS2:" + signer)
+                data = new byte[signer_address.Length + 1]
             };
+            t.data[0] = (byte)MultisigWalletChangeType.DelSigner;
+            Array.Copy(signer_address, 0, t.data, 1, signer_address.Length);
             //
             t.id = t.generateID();
             t.checksum = calculateChecksum(t);
@@ -411,8 +417,10 @@ namespace DLT
                 to = tx_from,
                 blockHeight = tx_blockHeight,
                 nonce = tx_nonce,
-                data = Encoding.UTF8.GetBytes("MS3:" + sigs.ToString())
+                data = new byte[2]
             };
+            t.data[0] = (byte)MultisigWalletChangeType.ChangeReqSigs;
+            t.data[1] = sigs;
             //
             t.id = t.generateID();
             t.checksum = calculateChecksum(t);
@@ -420,7 +428,5 @@ namespace DLT
             t.signature = getSignature(t.checksum);
             return t;
         }
-
-
     }
 }

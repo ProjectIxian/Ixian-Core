@@ -16,16 +16,24 @@ namespace DLT
 
     public class Wallet
     {
-        public byte[] id; // 36 B (18 B)
-        public IxiNumber balance; // 16 B
+        public byte[] id;
+        public IxiNumber balance;
         public WalletType type;
         public byte requiredSigs;
         public byte[][] allowedSigners;
-        public byte[] data; // 0 B
+        public byte[] data;
         public ulong nonce;
         public byte[] publicKey;
 
-        // TOTAL: 52 B (34 B). Note: add nonce and publicKey
+        public byte countAllowedSigners
+        {
+            get
+            {
+                if (allowedSigners == null) return 0;
+                return (byte)allowedSigners.Length;
+            }
+        }
+        
 
         public Wallet()
         {
@@ -174,25 +182,41 @@ namespace DLT
             return Crypto.sha256(rawData.ToArray());
         }
 
-        public int matchValidSigners(string[] pubkeys)
+        public bool isValidSigner(byte[] address)
         {
-            Dictionary<byte[], bool> matchedSigs = new Dictionary<byte[], bool>(new ByteArrayComparer());
-            if(allowedSigners == null)
+            if (address.SequenceEqual(publicKey)) return true;
+            foreach(var accepted_pubkey in allowedSigners)
             {
-                matchedSigs.Add(id, false);
-            } else
-            {
-                matchedSigs = allowedSigners.ToDictionary(k => k, v => false);
+                if (address.SequenceEqual(accepted_pubkey)) return true;
             }
-            foreach (string key in pubkeys)
+            return false;
+        }
+
+        public void addValidSigner(byte[] address)
+        {
+            if (isValidSigner(address)) return;
+            byte[][] tmp = new byte[allowedSigners.Length + 1][];
+            for(int i=0;i<allowedSigners.Length;i++)
             {
-                Address a = new Address(Convert.FromBase64String(key));
-                if(matchedSigs.ContainsKey(a.address))
-                {
-                    matchedSigs[a.address] = true;
-                }
+                tmp[i] = allowedSigners[i];
             }
-            return matchedSigs.Aggregate(0, (sum, kvp) => sum += kvp.Value ? 1 : 0, sum => sum);
+            tmp[allowedSigners.Length] = address;
+            allowedSigners = tmp;
+        }
+
+        public void delValidSigner(byte[] address)
+        {
+            if (!isValidSigner(address)) return;
+            if (id.SequenceEqual(address)) return; // can't remove self
+            byte[][] tmp = new byte[allowedSigners.Length - 1][];
+            int idx = 0;
+            foreach(var allowed_signer in allowedSigners)
+            {
+                if (allowed_signer.SequenceEqual(address)) continue;
+                tmp[idx] = allowed_signer;
+                idx++;
+            }
+            allowedSigners = tmp;
         }
     }
 }
