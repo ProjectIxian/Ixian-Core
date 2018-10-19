@@ -72,7 +72,7 @@ namespace DLT
                         // Check for tampering. Includes a 200 second synchronization zone
                         if ((currentTime - lTimestamp) > 100 || (currentTime - lTimestamp) < -100)
                         {
-                            Logging.warn(string.Format("[PL] Potential KEEPALIVE tampering for {0} {1}. Skipping; {2} - {3}", pr.wallet, local_addr.address, currentTime, lTimestamp));
+                            Logging.warn(string.Format("[PL] Potential KEEPALIVE tampering for {0} {1}. Skipping; {2} - {3}", Crypto.hashToString(pr.wallet), local_addr.address, currentTime, lTimestamp));
                             continue;
                         }
 
@@ -340,7 +340,7 @@ namespace DLT
                             // Verify the signature
                             if (CryptoManager.lib.verifySignature(Encoding.UTF8.GetBytes(deviceid + "-" + timestamp + "-" + hostname), listEntry.pubkey, signature) == false)
                             {
-                                Logging.warn(string.Format("[PL] KEEPALIVE tampering for {0} {1}, incorrect Sig.", listEntry.wallet, hostname));
+                                Logging.warn(string.Format("[PL] KEEPALIVE tampering for {0} {1}, incorrect Sig.", Crypto.hashToString(listEntry.wallet), hostname));
                                 return false;
                             }
 
@@ -361,7 +361,7 @@ namespace DLT
                                     // Check for tampering. Includes a 100 second synchronization zone
                                     if ((currentTime - timestamp) > 100)
                                     {
-                                        Logging.warn(string.Format("[PL] Potential KEEPALIVE tampering for {0} {1}. Timestamp {2}", listEntry.wallet, pa.address, timestamp));
+                                        Logging.warn(string.Format("[PL] Potential KEEPALIVE tampering for {0} {1}. Timestamp {2}", Crypto.hashToString(listEntry.wallet), pa.address, timestamp));
                                         return false;
                                     }
 
