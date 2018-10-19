@@ -48,7 +48,11 @@ namespace DLT
                     storePeersFile = false; // this hostname:port is already in the file, no need to add it again
 
                 }
-                peerList.RemoveAll(x => x.walletAddress.SequenceEqual(walletAddress));
+
+                if (walletAddress != null)
+                {
+                    peerList.RemoveAll(x => x.walletAddress.SequenceEqual(walletAddress));
+                }
 
                 peerList.Add(p);
 
