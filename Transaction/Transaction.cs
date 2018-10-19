@@ -256,7 +256,7 @@ namespace DLT
             if(type == (int)Type.StakingReward)
             {
 
-                if (data.Length > 0)
+                if (data != null)
                 {
                     ulong blockNum = BitConverter.ToUInt64(data, 0);
                     if (blockNum > 0)
@@ -289,7 +289,7 @@ namespace DLT
 
             if (transaction.type == (int)Type.StakingReward)
             {
-                if (transaction.data.Length > 0)
+                if (transaction.data != null)
                 {
                     ulong blockNum = BitConverter.ToUInt64(transaction.data, 0);
                     if (blockNum > 0)
