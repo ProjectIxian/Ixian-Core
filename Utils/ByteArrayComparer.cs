@@ -5,9 +5,9 @@ using System.Text;
 
 namespace IXICore.Utils
 {
-    class ByteArrayComparer : IComparer<byte[]>, IEqualityComparer<byte[]>
+    class _ByteArrayComparer
     {
-        public int Compare(byte[] x, byte[] y)
+        public static int Compare(byte[] x, byte[] y)
         {
             var len = Math.Min(x.Length, y.Length);
             for (var i = 0; i < len; i++)
@@ -20,6 +20,14 @@ namespace IXICore.Utils
             }
 
             return x.Length.CompareTo(y.Length);
+        }
+    }
+
+    class ByteArrayComparer : IComparer<byte[]>, IEqualityComparer<byte[]>
+    {
+        public int Compare(byte[] x, byte[] y)
+        {
+            return _ByteArrayComparer.Compare(x, y);
         }
         public bool Equals(byte[] left, byte[] right)
         {
