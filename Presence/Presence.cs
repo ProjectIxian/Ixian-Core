@@ -51,7 +51,10 @@ namespace DLT
                     version = reader.ReadString();
                     lastSeenTime = reader.ReadInt64();
                     int sigLen = reader.ReadInt32();
-                    signature = reader.ReadBytes(sigLen);
+                    if (sigLen > 0)
+                    {
+                        signature = reader.ReadBytes(sigLen);
+                    }
                 }
             }
         }
@@ -67,8 +70,14 @@ namespace DLT
                     writer.Write(type);
                     writer.Write(version);
                     writer.Write(lastSeenTime);
-                    writer.Write(signature.Length);
-                    writer.Write(signature);
+                    if (signature != null)
+                    {
+                        writer.Write(signature.Length);
+                        writer.Write(signature);
+                    }else
+                    {
+                        writer.Write(0);
+                    }
                 }
                 return m.ToArray();
             }
@@ -174,11 +183,20 @@ namespace DLT
                 using (BinaryReader reader = new BinaryReader(m))
                 {
                     int walletLen = reader.ReadInt32();
-                    wallet = reader.ReadBytes(walletLen);
+                    if (walletLen > 0)
+                    {
+                        wallet = reader.ReadBytes(walletLen);
+                    }
                     int pubkeyLen = reader.ReadInt32();
-                    pubkey = reader.ReadBytes(pubkeyLen);
+                    if (pubkeyLen > 0)
+                    {
+                        pubkey = reader.ReadBytes(pubkeyLen);
+                    }
                     int mdLen = reader.ReadInt32();
-                    metadata = reader.ReadBytes(mdLen);
+                    if (mdLen > 0)
+                    {
+                        metadata = reader.ReadBytes(mdLen);
+                    }
 
 
                     // Read number of addresses
@@ -188,9 +206,12 @@ namespace DLT
                     for(UInt16 i = 0; i < number_of_addresses; i++)
                     {
                         int byte_count = reader.ReadInt32();
-                        byte[] address_bytes = reader.ReadBytes(byte_count);
+                        if (byte_count > 0)
+                        {
+                            byte[] address_bytes = reader.ReadBytes(byte_count);
 
-                        addresses.Add(new PresenceAddress(address_bytes));
+                            addresses.Add(new PresenceAddress(address_bytes));
+                        }
                     }
 
                     owner = reader.ReadString();
@@ -204,12 +225,32 @@ namespace DLT
             {
                 using (BinaryWriter writer = new BinaryWriter(m))
                 {
-                    writer.Write(wallet.Length);
-                    writer.Write(wallet);
-                    writer.Write(pubkey.Length);
-                    writer.Write(pubkey);
-                    writer.Write(metadata.Length);
-                    writer.Write(metadata);
+                    if (wallet != null)
+                    {
+                        writer.Write(wallet.Length);
+                        writer.Write(wallet);
+                    }else
+                    {
+                        writer.Write(0);
+                    }
+
+                    if (pubkey != null)
+                    {
+                        writer.Write(pubkey.Length);
+                        writer.Write(pubkey);
+                    }else
+                    {
+                        writer.Write(0);
+                    }
+
+                    if (metadata != null)
+                    {
+                        writer.Write(metadata.Length);
+                        writer.Write(metadata);
+                    }else
+                    {
+                        writer.Write(0);
+                    }
 
                     // Write the number of ips
                     UInt16 number_of_addresses = (UInt16) addresses.Count;
@@ -218,10 +259,20 @@ namespace DLT
                     // Write all ips
                     for (UInt16 i = 0; i < number_of_addresses; i++)
                     {
+                        if (addresses[i] == null)
+                        {
+                            writer.Write(0);
+                            continue;
+                        }
                         byte[] address_data = addresses[i].getBytes();
-                        int address_data_size = address_data.Length;
-                        writer.Write(address_data_size);
-                        writer.Write(address_data);
+                        if(address_data != null)
+                        {
+                            writer.Write(address_data.Length);
+                            writer.Write(address_data);
+                        }else
+                        {
+                            writer.Write(0);
+                        }
                     }
 
                     writer.Write(owner);
