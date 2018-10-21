@@ -447,6 +447,10 @@ namespace DLT
                             {
                                 Logging.info(string.Format("Expired lastseen for {0} / {1}", pa.address, pa.device));
                                 removeAddressEntry(pr.wallet, pa);
+                            }else if ((currentTime - pa.lastSeenTime) < -20) // future time + 20 seconds amortization?
+                            {
+                                Logging.info(string.Format("Expired future lastseen for {0} / {1}", pa.address, pa.device));
+                                removeAddressEntry(pr.wallet, pa);
                             }
 
                         }
