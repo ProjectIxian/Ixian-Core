@@ -51,7 +51,7 @@ namespace DLT
 
                 if (walletAddress != null)
                 {
-                    peerList.RemoveAll(x => x.walletAddress.SequenceEqual(walletAddress));
+                    peerList.RemoveAll(x => walletAddress.SequenceEqual(x.walletAddress));
                 }
 
                 peerList.Add(p);
