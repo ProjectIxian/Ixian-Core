@@ -297,7 +297,7 @@ namespace DLT
                 }
             }
 
-            txid += blockHeight + "-" + nonce + "-";
+            txid += blockHeight + "-";
 
             List<byte> rawData = new List<byte>();
             rawData.AddRange(BitConverter.GetBytes(type));
@@ -307,7 +307,7 @@ namespace DLT
             rawData.AddRange(from);
             rawData.AddRange(BitConverter.GetBytes(blockHeight));
             rawData.AddRange(BitConverter.GetBytes(nonce));
-            string chk = Crypto.hashToString(Crypto.sha256(rawData.ToArray()));
+            string chk = Base58Check.Base58CheckEncoding.EncodePlain(Crypto.sha512sqTrunc(rawData.ToArray()));
 
             txid += chk;
 
@@ -330,7 +330,7 @@ namespace DLT
                 }
             }
 
-            txid += transaction.blockHeight + "-" + transaction.nonce + "-";
+            txid += transaction.blockHeight + "-";
 
             List<byte> rawData = new List<byte>();
             rawData.AddRange(BitConverter.GetBytes(transaction.type));
@@ -340,7 +340,7 @@ namespace DLT
             rawData.AddRange(transaction.from);
             rawData.AddRange(BitConverter.GetBytes(transaction.blockHeight));
             rawData.AddRange(BitConverter.GetBytes(transaction.nonce));
-            string chk = Crypto.hashToString(Crypto.sha256(rawData.ToArray()));
+            string chk = Base58Check.Base58CheckEncoding.EncodePlain(Crypto.sha512sqTrunc(rawData.ToArray()));
 
             txid += chk;
 
@@ -370,7 +370,7 @@ namespace DLT
             rawData.AddRange(BitConverter.GetBytes(transaction.blockHeight));
             rawData.AddRange(BitConverter.GetBytes(transaction.nonce));
             rawData.AddRange(BitConverter.GetBytes(transaction.timeStamp));
-            return Crypto.sha256(rawData.ToArray());
+            return Crypto.sha512sqTrunc(rawData.ToArray());
         }
 
         public static byte[] getSignature(byte[] checksum)

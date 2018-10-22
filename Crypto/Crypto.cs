@@ -8,13 +8,6 @@ namespace DLT
     public class Crypto
     {
 
-        static public string sha256(string randomString)
-        {
-            SHA256Managed crypt = new SHA256Managed();
-            byte[] crypto = crypt.ComputeHash(Encoding.UTF8.GetBytes(randomString), 0, Encoding.UTF8.GetByteCount(randomString));
-            return hashToString(crypto);
-        }
-
         public static string hashToString(byte[] data)
         {
             if(data == null)
@@ -37,49 +30,40 @@ namespace DLT
                 bytes[i / 2] = Convert.ToByte(data.Substring(i, 2), 16);
             return bytes;
         }
-
-        public static byte[] sha256(byte[] data)
-        {
-            return sha256(data, 0, data.Length);
-        }
-
-        public static byte[] sha256(byte[] data, int count)
-        {
-            return sha256(data, 0, count);
-        }
-
-        public static byte[] sha256(byte[] data, int offset, int count)
+        
+        public static byte[] sha512(byte[] data, int offset = 0, int count = 0)
         {
 #if USEBC || WINDOWS_UWP || NETCORE
-			Sha256Digest sha256 = new Sha256Digest();
-			sha256.BlockUpdate(data, offset, count);
-			byte[] rv = new byte[32];
-			sha256.DoFinal(rv, 0);
-			sha256.BlockUpdate(rv, 0, rv.Length);
-			sha256.DoFinal(rv, 0);
+			Sha512Digest sha = new Sha512Digest();
+			sha.BlockUpdate(data, offset, count);
+			byte[] rv = new byte[64];
+			sha.DoFinal(rv, 0);
+			sha.BlockUpdate(rv, 0, rv.Length);
+			sha.DoFinal(rv, 0);
 			return new uint256(rv);
 #else
-            using (var sha = new SHA256Managed())
+            using (var sha = new SHA512Managed())
             {
+                if(count == 0)
+                {
+                    count = data.Length - offset;
+                }
                 var h = sha.ComputeHash(data, offset, count);
                 return sha.ComputeHash(h, 0, h.Length);
             }
 #endif
         }
 
-        // Used to compare checksums. Could move it to a better place
-        public static bool byteArrayCompare(byte[] a1, byte[] a2)
+        public static byte[] sha512sq(byte[] data, int offset = 0, int count = 0)
         {
-            if (a1.Length != a2.Length)
-                return false;
+            return sha512(sha512(data, offset, count));
+        }
 
-            for (int i = 0; i < a1.Length; i++)
-                if (a1[i] != a2[i])
-                    return false;
-
-            return true;
+        public static byte[] sha512sqTrunc(byte[] data, int offset = 0, int count = 0)
+        {
+            byte[] shaTrunc = new byte[32];
+            Array.Copy(sha512sq(data, offset, count), shaTrunc, 32);
+            return shaTrunc;
         }
     }
-
-
 }
