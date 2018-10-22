@@ -37,7 +37,7 @@ namespace DLT
             else
             {
                 address = publicKeyOrAddress;
-                checksum = address.Skip(33).Take(2).ToArray();
+                checksum = address.Skip(33).Take(3).ToArray();
             }
         }
 
