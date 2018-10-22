@@ -544,7 +544,7 @@ namespace DLT
                             {
                                 case MultisigWalletChangeType.AddSigner:
                                     int ch_addr_len = rd.ReadInt32();
-                                    if(ch_addr_len <=0|| ch_addr_len > 34)
+                                    if(ch_addr_len <=0|| ch_addr_len > 36)
                                     {
                                         Logging.warn("Multisig change transaction: Adding signer, but the data does not contain a valid address!");
                                         return null;
@@ -562,7 +562,7 @@ namespace DLT
                                     };
                                 case MultisigWalletChangeType.DelSigner:
                                     ch_addr_len = rd.ReadInt32();
-                                    if (ch_addr_len <= 0 || ch_addr_len > 34)
+                                    if (ch_addr_len <= 0 || ch_addr_len > 36)
                                     {
                                         Logging.warn("Multisig change transaction: Deleting signer, but the data does not contain a valid address!");
                                         return null;
