@@ -219,11 +219,31 @@ namespace DLT
             return status;
         }
 
+        public static bool operator ==(IxiNumber a, IxiNumber b)
+        {
+            bool status = false;
+            if(BigInteger.Compare(a.getAmount(), b.getAmount()) == 0)
+            {
+                status = true;
+            }
+            return status;
+        }
+
         public static bool operator !=(IxiNumber a, long b)
         {
             bool status = false;
             BigInteger bi = new BigInteger(b);
             if (BigInteger.Compare(a.getAmount(), bi) != 0)
+            {
+                status = true;
+            }
+            return status;
+        }
+
+        public static bool operator !=(IxiNumber a, IxiNumber b)
+        {
+            bool status = false;
+            if (BigInteger.Compare(a.getAmount(), b.getAmount()) != 0)
             {
                 status = true;
             }
