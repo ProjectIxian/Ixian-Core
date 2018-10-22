@@ -283,7 +283,7 @@ namespace DLT
             rawData.AddRange(from);
             rawData.AddRange(BitConverter.GetBytes(blockHeight));
             rawData.AddRange(BitConverter.GetBytes(nonce));
-            string chk = Crypto.hashToString(Crypto.sha512sqTrunc(rawData.ToArray()));
+            string chk = Base58Check.Base58CheckEncoding.EncodePlain(Crypto.sha512sqTrunc(rawData.ToArray()));
 
             txid += chk;
 
@@ -316,7 +316,7 @@ namespace DLT
             rawData.AddRange(transaction.from);
             rawData.AddRange(BitConverter.GetBytes(transaction.blockHeight));
             rawData.AddRange(BitConverter.GetBytes(transaction.nonce));
-            string chk = Crypto.hashToString(Crypto.sha512sqTrunc(rawData.ToArray()));
+            string chk = Base58Check.Base58CheckEncoding.EncodePlain(Crypto.sha512sqTrunc(rawData.ToArray()));
 
             txid += chk;
 

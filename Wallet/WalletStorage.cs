@@ -161,7 +161,7 @@ namespace DLT
                 writeWallet(new_password);
             }
 
-            Logging.log(LogSeverity.info, String.Format("Public Node Address: {0}", Crypto.hashToString(address)));
+            Logging.log(LogSeverity.info, String.Format("Public Node Address: {0}", Base58Check.Base58CheckEncoding.EncodePlain(address)));
 
             return true;
         }

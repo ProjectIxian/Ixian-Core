@@ -43,7 +43,7 @@ namespace DLT
 
         public override string ToString()
         {
-            return Crypto.hashToString(address);
+            return Base58Check.Base58CheckEncoding.EncodePlain(address);
         }
 
         // Validates an address by checking the checksum
