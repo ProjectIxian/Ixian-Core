@@ -260,7 +260,9 @@ namespace DLT
 
             public static string[] seedTestNetNodes = new string[]
                     {
-                        "10.24.254.86:10001"
+                        "seedtest1.ixian.io:11234",
+                        "seedtest2.ixian.io:11234",
+                        "seedtest3.ixian.io:11234"
                     };
 
             public static string[] getSeedNodes(bool isTestNet)
