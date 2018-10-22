@@ -57,7 +57,7 @@ namespace DLT
                     return false;
                 }
 
-                if(address[0] != 1)
+                if(address[0] != 0)
                 {
                     return false;
                 }
