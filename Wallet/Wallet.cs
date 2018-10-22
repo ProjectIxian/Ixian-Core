@@ -185,9 +185,12 @@ namespace DLT
         public bool isValidSigner(byte[] address)
         {
             if (address.SequenceEqual(id)) return true;
-            foreach(var accepted_pubkey in allowedSigners)
+            if (allowedSigners != null)
             {
-                if (address.SequenceEqual(accepted_pubkey)) return true;
+                foreach (var accepted_pubkey in allowedSigners)
+                {
+                    if (address.SequenceEqual(accepted_pubkey)) return true;
+                }
             }
             return false;
         }
@@ -195,12 +198,21 @@ namespace DLT
         public void addValidSigner(byte[] address)
         {
             if (isValidSigner(address)) return;
-            byte[][] tmp = new byte[allowedSigners.Length + 1][];
-            for(int i=0;i<allowedSigners.Length;i++)
+            byte[][] tmp = null;
+            int pos = 0;
+            if (allowedSigners != null)
             {
-                tmp[i] = allowedSigners[i];
+                tmp = new byte[allowedSigners.Length + 1][];
+                for (int i = 0; i < allowedSigners.Length; i++)
+                {
+                    tmp[i] = allowedSigners[i];
+                }
+                pos = allowedSigners.Length;
+            } else
+            {
+                tmp = new byte[1][];
             }
-            tmp[allowedSigners.Length] = address;
+            tmp[pos] = address;
             allowedSigners = tmp;
         }
 
