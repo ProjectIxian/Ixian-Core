@@ -18,10 +18,6 @@ namespace DLT
         public byte[] publicKey = null;
         public byte[] address = null;
 
-        // Used for encrypting and decrypting user messages
-        public byte[] encPrivateKey = null;
-        public byte[] encPublicKey = null;
-
         public WalletStorage()
         {
             filename = "wallet.dat";
@@ -83,12 +79,6 @@ namespace DLT
                 int b_publicKeyLength = reader.ReadInt32();
                 byte[] b_publicKey = reader.ReadBytes(b_publicKeyLength);
 
-                int b_privateKeyEncLength = reader.ReadInt32();
-                byte[] b_privateKeyEncKey = reader.ReadBytes(b_privateKeyEncLength);
-
-                int b_publicKeyEncLength = reader.ReadInt32();
-                byte[] b_publicKeyEnc = reader.ReadBytes(b_publicKeyEncLength);
-
                 bool success = false;
                 while (!success)
                 {
@@ -108,8 +98,6 @@ namespace DLT
                         // Decrypt
                         privateKey = CryptoManager.lib.decryptWithPassword(b_privateKey, password);
                         publicKey = CryptoManager.lib.decryptWithPassword(b_publicKey, password);
-                        encPrivateKey = CryptoManager.lib.decryptWithPassword(b_privateKeyEncKey, password);
-                        encPublicKey = CryptoManager.lib.decryptWithPassword(b_publicKeyEnc, password);
                     }
                     catch(Exception)
                     {
@@ -175,8 +163,6 @@ namespace DLT
             // Encrypt data first
             byte[] b_privateKey = CryptoManager.lib.encryptWithPassword(privateKey, password);
             byte[] b_publicKey = CryptoManager.lib.encryptWithPassword(publicKey, password);
-            byte[] b_privateKeyEnc = CryptoManager.lib.encryptWithPassword(encPrivateKey, password);
-            byte[] b_publicKeyEnc = CryptoManager.lib.encryptWithPassword(encPublicKey, password);           
 
             BinaryWriter writer;
             try
@@ -201,12 +187,6 @@ namespace DLT
                 writer.Write(b_publicKey.Length);
                 writer.Write(b_publicKey);
 
-                // Write the encryption keypair
-                writer.Write(b_privateKeyEnc.Length);
-                writer.Write(b_privateKeyEnc);
-
-                writer.Write(b_publicKeyEnc.Length);
-                writer.Write(b_publicKeyEnc);
             }
 
             catch (IOException e)
@@ -252,15 +232,10 @@ namespace DLT
             privateKey = CryptoManager.lib.getPrivateKey();
             publicKey = CryptoManager.lib.getPublicKey();
 
-            encPrivateKey = CryptoManager.lib.getEncPrivateKey();
-            encPublicKey = CryptoManager.lib.getEncPublicKey();
-
-
             Address addr = new Address(publicKey);
             address = addr.address;
 
             Logging.info(String.Format("Public Key: {0}", Crypto.hashToString(publicKey)));
-            Logging.info(String.Format("ENC Public Key: {0}", Crypto.hashToString(encPublicKey)));
             Logging.info(String.Format("Public Node Address: {0}", Base58Check.Base58CheckEncoding.EncodePlain(address)));
 
             // Wait for any pending log messages to be written

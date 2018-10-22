@@ -23,7 +23,7 @@ namespace DLT
             Logging.info("Generating presence list.");
             // Initialize with the default presence state
             curNodePresenceAddress = new PresenceAddress(Config.device_id, string.Format("{0}:{1}", initial_ip, Config.serverPort), 'M', Config.version, 0, null);
-            curNodePresence = new Presence(Node.walletStorage.address, Node.walletStorage.publicKey, Node.walletStorage.publicKey, curNodePresenceAddress);
+            curNodePresence = new Presence(Node.walletStorage.address, Node.walletStorage.publicKey, null, curNodePresenceAddress);
         }
 
         // Searches through the entire presence list to find a matching IP with a specific type.
@@ -300,7 +300,7 @@ namespace DLT
                 {
                     using (BinaryReader reader = new BinaryReader(m))
                     {
-
+                        int keepAliveVersion = reader.ReadInt32();
                         int walletLen = reader.ReadInt32();
                         byte[] wallet = reader.ReadBytes(walletLen);
                         string deviceid = reader.ReadString();

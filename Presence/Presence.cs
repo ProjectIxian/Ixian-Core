@@ -12,29 +12,32 @@ namespace DLT
     // An object class that describes how to contact the specific node/client
     public class PresenceAddress
     {
+        public int version;
         public string device; // Device id
         public string address; // IP and port
         public char type;   // M for MasterNode, R for RelayNode, D for Direct ip client, C for normal client
-        public string version; // Version
+        public string nodeVersion; // Version
         public long lastSeenTime;
         public byte[] signature;
 
         public PresenceAddress()
         {
+            version = 0;
             device = Config.device_id;
             address = string.Format("{0}:{1}", CoreNetworkUtils.GetLocalIPAddress(), Config.serverPort);
             type = 'M';
-            version = Config.version;
+            nodeVersion = Config.version;
             lastSeenTime = Node.getCurrentTimestamp();
             signature = null;
         }
 
         public PresenceAddress(string node_device, string node_address, char node_type, string node_version, long node_lastSeenTime, byte[] node_signature)
         {
+            version = 0;
             device = node_device;
             address = node_address;
             type = node_type;
-            version = node_version;
+            nodeVersion = node_version;
             lastSeenTime = node_lastSeenTime;
             signature = node_signature;
         }
@@ -45,10 +48,11 @@ namespace DLT
             {
                 using (BinaryReader reader = new BinaryReader(m))
                 {
+                    version = reader.ReadInt32();
                     device = reader.ReadString();
                     address = reader.ReadString();
                     type = reader.ReadChar();
-                    version = reader.ReadString();
+                    nodeVersion = reader.ReadString();
                     lastSeenTime = reader.ReadInt64();
                     int sigLen = reader.ReadInt32();
                     if (sigLen > 0)
@@ -65,10 +69,11 @@ namespace DLT
             {
                 using (BinaryWriter writer = new BinaryWriter(m))
                 {
+                    writer.Write(version);
                     writer.Write(device);
                     writer.Write(address);
                     writer.Write(type);
-                    writer.Write(version);
+                    writer.Write(nodeVersion);
                     writer.Write(lastSeenTime);
                     if (signature != null)
                     {
@@ -107,7 +112,7 @@ namespace DLT
                 return false;
             }
 
-            if (item.version.Equals(version, StringComparison.Ordinal) == false)
+            if (item.nodeVersion.Equals(nodeVersion, StringComparison.Ordinal) == false)
             {
                 return false;
             }
@@ -126,6 +131,7 @@ namespace DLT
     // The actual presence object, which can contain multiple PresenceAddress objects
     public class Presence
     {
+        public int version;
         public byte[] wallet;
         public byte[] pubkey;
         public byte[] metadata; 
@@ -134,6 +140,7 @@ namespace DLT
 
         public Presence()
         {
+            version = 0;
             wallet = null;
             pubkey = null;
             metadata = null;
@@ -144,6 +151,7 @@ namespace DLT
 
         public Presence(byte[] wallet_address, byte[] node_pubkey, string node_ip, char node_type, string node_version)
         {
+            version = 0;
             wallet = wallet_address;
             pubkey = node_pubkey;
             metadata = null;
@@ -159,6 +167,7 @@ namespace DLT
 
         public Presence(byte[] wallet_address, byte[] node_pubkey, byte[] node_meta, PresenceAddress node_address)
         {
+            version = 0;
             wallet = wallet_address;
             pubkey = node_pubkey;
             metadata = node_meta;
@@ -182,6 +191,8 @@ namespace DLT
             {
                 using (BinaryReader reader = new BinaryReader(m))
                 {
+                    version = reader.ReadInt32();
+
                     int walletLen = reader.ReadInt32();
                     if (walletLen > 0)
                     {
@@ -225,6 +236,8 @@ namespace DLT
             {
                 using (BinaryWriter writer = new BinaryWriter(m))
                 {
+                    writer.Write(version);
+
                     if (wallet != null)
                     {
                         writer.Write(wallet.Length);

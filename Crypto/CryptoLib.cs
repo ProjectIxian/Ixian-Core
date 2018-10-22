@@ -10,22 +10,12 @@ namespace DLT
     interface ICryptoLib
     {
         bool generateKeys(int keySize);
-        List<string> generateEncryptionKeys();
 
         byte[] getPublicKey();
         byte[] getPrivateKey();
 
-        byte[] getEncPublicKey();
-        byte[] getEncPrivateKey();
-
         byte[] getSignature(byte[] input, byte[] privateKey);
         bool verifySignature(byte[] input, byte[] publicKey, byte[] signature);
-
-        byte[] encryptData(byte[] data, string publicKey);
-        byte[] decryptData(byte[] data, string privateKey);
-
-        byte[] encryptDataS2(byte[] data, string publicKey);
-        byte[] decryptDataS2(byte[] data, string privateKey);
 
         byte[] encryptDataAES(byte[] input, byte[] key);
         byte[] decryptDataAES(byte[] input, byte[] key, int offset = 0);
@@ -49,11 +39,6 @@ namespace DLT
             Trace.Assert(_cryptoLib != null);
             return _cryptoLib.generateKeys(keySize);
         }
-        public List<string> generateEncryptionKeys()
-        {
-            Trace.Assert(_cryptoLib != null);
-            return _cryptoLib.generateEncryptionKeys();
-        }
 
         public byte[] getPublicKey()
         {
@@ -65,16 +50,6 @@ namespace DLT
             return _cryptoLib.getPrivateKey();
         }
 
-        public byte[] getEncPublicKey()
-        {
-            return _cryptoLib.getEncPublicKey();
-        }
-
-        public byte[] getEncPrivateKey()
-        {
-            return _cryptoLib.getEncPrivateKey();
-        }
-
         public byte[] getSignature(byte[] input, byte[] privateKey)
         {
             return _cryptoLib.getSignature(input, privateKey);
@@ -83,26 +58,6 @@ namespace DLT
         public bool verifySignature(byte[] input, byte[] publicKey, byte[] signature)
         {
             return _cryptoLib.verifySignature(input, publicKey, signature);
-        }
-
-        public byte[] encryptData(byte[] data, string publicKey)
-        {
-            return _cryptoLib.encryptData(data, publicKey);
-        }
-
-        public byte[] decryptData(byte[] data, string privateKey)
-        {
-            return _cryptoLib.decryptData(data, privateKey);
-        }
-
-        public byte[] encryptDataS2(byte[] data, string publicKey)
-        {
-            return _cryptoLib.encryptDataS2(data, publicKey);
-        }
-
-        public byte[] decryptDataS2(byte[] data, string privateKey)
-        {
-            return _cryptoLib.decryptDataS2(data, privateKey);
         }
 
         public byte[] encryptDataAES(byte[] input, byte[] key)

@@ -44,7 +44,7 @@ namespace DLT
             public string origTXId;
             public byte reqSigs;
         }
-
+        public int version;
         public string id;
         public int type;
         public IxiNumber amount;
@@ -72,6 +72,7 @@ namespace DLT
             blockHeight = 0;
             nonce = 0;
             applied = 0;
+            version = 0;
         }
 
         public Transaction(IxiNumber tx_amount, IxiNumber tx_fee, byte[] tx_to, byte[] tx_from, byte[] tx_data, byte[] tx_pubKey, ulong tx_blockHeight)
@@ -98,6 +99,8 @@ namespace DLT
             checksum = calculateChecksum(this);
             signature = getSignature(checksum);
             pubKey = tx_pubKey;
+
+            version = 0;
         }
 
         public Transaction(Transaction tx_transaction)
@@ -128,6 +131,8 @@ namespace DLT
 
             pubKey = new byte[tx_transaction.pubKey.Length];
             Array.Copy(tx_transaction.pubKey, pubKey, pubKey.Length);
+
+            version = tx_transaction.version;
         }
 
         public Transaction(byte[] bytes)
@@ -170,6 +175,8 @@ namespace DLT
                         {
                             pubKey = reader.ReadBytes(pkLen);
                         }
+
+                        version = reader.ReadInt32();
 
                         id = generateID();
                     }
@@ -223,6 +230,8 @@ namespace DLT
                     {
                         writer.Write((int)0);
                     }
+
+                    writer.Write(version);
 
                 }
                 return m.ToArray();
@@ -307,6 +316,7 @@ namespace DLT
             rawData.AddRange(from);
             rawData.AddRange(BitConverter.GetBytes(blockHeight));
             rawData.AddRange(BitConverter.GetBytes(nonce));
+            rawData.AddRange(BitConverter.GetBytes(version));
             string chk = Base58Check.Base58CheckEncoding.EncodePlain(Crypto.sha512sqTrunc(rawData.ToArray()));
 
             txid += chk;
@@ -340,6 +350,7 @@ namespace DLT
             rawData.AddRange(transaction.from);
             rawData.AddRange(BitConverter.GetBytes(transaction.blockHeight));
             rawData.AddRange(BitConverter.GetBytes(transaction.nonce));
+            rawData.AddRange(BitConverter.GetBytes(transaction.version));
             string chk = Base58Check.Base58CheckEncoding.EncodePlain(Crypto.sha512sqTrunc(rawData.ToArray()));
 
             txid += chk;
@@ -370,6 +381,7 @@ namespace DLT
             rawData.AddRange(BitConverter.GetBytes(transaction.blockHeight));
             rawData.AddRange(BitConverter.GetBytes(transaction.nonce));
             rawData.AddRange(BitConverter.GetBytes(transaction.timeStamp));
+            rawData.AddRange(BitConverter.GetBytes(transaction.version));
             return Crypto.sha512sqTrunc(rawData.ToArray());
         }
 
