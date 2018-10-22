@@ -68,7 +68,7 @@ namespace DLT
                 data[i] ^= entropy[pos % 32];
                 pos++;
             }
-            entropy = Crypto.sha256(data);
+            entropy = Crypto.sha512sqTrunc(data);
             for (int i = 0; i < data.Length; i++)
             {
                 data[i] ^= entropy[pos % 32];
@@ -91,7 +91,7 @@ namespace DLT
         {
             if (data == null)
                 throw new ArgumentNullException("data");
-            var entropy = Crypto.sha256(data);
+            var entropy = Crypto.sha512sqTrunc(data);
             if (additionalEntropy == null)
                 additionalEntropy = entropy;
             else
@@ -100,7 +100,7 @@ namespace DLT
                 {
                     additionalEntropy[i] ^= entropy[i];
                 }
-                additionalEntropy = Crypto.sha256(additionalEntropy);
+                additionalEntropy = Crypto.sha512sqTrunc(additionalEntropy);
             }
         }
 
@@ -179,7 +179,7 @@ namespace DLT
                 throw new ArgumentException("The length for entropy should be : " + String.Join(",", entArray), "entropy");
 
             int cs = csArray[i];
-            byte[] checksum = Crypto.sha256(entropy);
+            byte[] checksum = Crypto.sha512sqTrunc(entropy);
             BitWriter entcsResult = new BitWriter();
 
             entcsResult.Write(entropy);
@@ -223,7 +223,7 @@ namespace DLT
                     var bits = Wordlist.ToBits(_Indices);
                     writer.Write(bits, ent);
                     var entropy = writer.ToBytes();
-                    var checksum = Crypto.sha256(entropy);
+                    var checksum = Crypto.sha512sqTrunc(entropy);
 
                     writer.Write(checksum, cs);
                     var expectedIndices = writer.ToIntegers();

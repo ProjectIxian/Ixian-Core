@@ -275,8 +275,6 @@ namespace CryptoLibs
 
         public byte[] getSignature(byte[] input_data, byte[] privateKey)
         {
-            // Dev: for network testing
-            //return Crypto.sha256(text);
             try
             {
                 RSACryptoServiceProvider rsa = rsaKeyFromBytes(privateKey);
@@ -313,12 +311,6 @@ namespace CryptoLibs
 
         public bool verifySignature(byte[] input_data, byte[] publicKey, byte[] signature)
         {
-            // Dev: for network testing
-            /*if (Crypto.sha256(text) == signature)
-            {
-                return true;
-            }  
-            return false;*/
             try
             {
 

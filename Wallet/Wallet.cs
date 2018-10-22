@@ -179,7 +179,7 @@ namespace DLT
             }
             rawData.AddRange(BitConverter.GetBytes((int)type));
             rawData.AddRange(BitConverter.GetBytes(requiredSigs));
-            return Crypto.sha256(rawData.ToArray());
+            return Crypto.sha512sqTrunc(rawData.ToArray());
         }
 
         public bool isValidSigner(byte[] address)

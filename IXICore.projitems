@@ -25,6 +25,7 @@
     <Compile Include="$(MSBuildThisFileDirectory)Time\Time.cs" />
     <Compile Include="$(MSBuildThisFileDirectory)Transaction\Transaction.cs" />
     <Compile Include="$(MSBuildThisFileDirectory)UPnP\UPnP.cs" />
+    <Compile Include="$(MSBuildThisFileDirectory)Utils\Base58CheckEncoding.cs" />
     <Compile Include="$(MSBuildThisFileDirectory)Utils\BitWriter.cs" />
     <Compile Include="$(MSBuildThisFileDirectory)Utils\ByteArrayComparer.cs" />
     <Compile Include="$(MSBuildThisFileDirectory)Utils\IxiNumber.cs" />

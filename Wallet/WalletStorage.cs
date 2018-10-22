@@ -135,7 +135,7 @@ namespace DLT
                 Console.WriteLine();
                 Console.Write("Your IXIAN address is ");
                 Console.ForegroundColor = ConsoleColor.Green;
-                Console.WriteLine(Crypto.hashToString(address));
+                Console.WriteLine(Base58Check.Base58CheckEncoding.EncodePlain(address));
                 Console.ResetColor();
                 Console.WriteLine();
 
@@ -261,7 +261,7 @@ namespace DLT
 
             Logging.info(String.Format("Public Key: {0}", Crypto.hashToString(publicKey)));
             Logging.info(String.Format("ENC Public Key: {0}", Crypto.hashToString(encPublicKey)));
-            Logging.info(String.Format("Public Node Address: {0}", Crypto.hashToString(address)));
+            Logging.info(String.Format("Public Node Address: {0}", Base58Check.Base58CheckEncoding.EncodePlain(address)));
 
             // Wait for any pending log messages to be written
             while (Logging.getRemainingStatementsCount() > 0)
@@ -272,7 +272,7 @@ namespace DLT
             Console.WriteLine();
             Console.Write("Your IXIAN address is ");
             Console.ForegroundColor = ConsoleColor.Green;
-            Console.WriteLine(Crypto.hashToString(address));
+            Console.WriteLine(Base58Check.Base58CheckEncoding.EncodePlain(address));
             Console.ResetColor();
             Console.WriteLine();
 
