@@ -56,8 +56,8 @@ namespace DLT
         public int nonce; // 4
         public long timeStamp; // 8
         public byte[] checksum; // 32
-        public byte[] signature; // 32
-        public byte[] pubKey; // 32
+        public byte[] signature; // 512
+        public byte[] pubKey; // 0 or 512
         public ulong applied;
 
         private readonly static byte[] multisigStartMarker = { 0x4d, 0x73 };
