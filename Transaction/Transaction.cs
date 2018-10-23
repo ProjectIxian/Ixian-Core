@@ -70,7 +70,10 @@ namespace DLT
             timeStamp = Node.getCurrentTimestamp();
             fee = new IxiNumber("0");
             blockHeight = 0;
-            nonce = 0;
+
+            Random r = new Random();
+            nonce = (int)((DateTimeOffset.Now.ToUnixTimeMilliseconds() - (DateTimeOffset.Now.ToUnixTimeSeconds() * 1000)) * 100) + r.Next(100);
+
             applied = 0;
             version = 0;
         }
@@ -90,7 +93,6 @@ namespace DLT
             blockHeight = tx_blockHeight;
 
             Random r = new Random();
-
             nonce = (int) ((DateTimeOffset.Now.ToUnixTimeMilliseconds() - (DateTimeOffset.Now.ToUnixTimeSeconds() * 1000))*100) + r.Next(100);
 
             timeStamp = Node.getCurrentTimestamp();
@@ -625,7 +627,7 @@ namespace DLT
             return t;
         }
 
-        public static Transaction multisigAddKeyTransaction(string orig_txid, byte[] allowed_address,  IxiNumber tx_fee, byte[] tx_from, ulong tx_blockHeight, int tx_nonce)
+        public static Transaction multisigAddKeyTransaction(string orig_txid, byte[] allowed_address,  IxiNumber tx_fee, byte[] tx_from, ulong tx_blockHeight)
         {
             Transaction t = new Transaction
             {
@@ -634,8 +636,7 @@ namespace DLT
                 fee = tx_fee,
                 from = tx_from,
                 to = tx_from,
-                blockHeight = tx_blockHeight,
-                nonce = tx_nonce
+                blockHeight = tx_blockHeight
             };
             t.AddMultisigChWallet(orig_txid, allowed_address, MultisigWalletChangeType.AddSigner);
             //
@@ -646,7 +647,7 @@ namespace DLT
             return t;
         }
 
-        public static Transaction multisigDelKeyTransaction(string orig_txid, byte[] disallowed_address, IxiNumber tx_fee, byte[] tx_from, ulong tx_blockHeight, int tx_nonce)
+        public static Transaction multisigDelKeyTransaction(string orig_txid, byte[] disallowed_address, IxiNumber tx_fee, byte[] tx_from, ulong tx_blockHeight)
         {
             Transaction t = new Transaction
             {
@@ -655,8 +656,7 @@ namespace DLT
                 fee = tx_fee,
                 from = tx_from,
                 to = tx_from,
-                blockHeight = tx_blockHeight,
-                nonce = tx_nonce
+                blockHeight = tx_blockHeight
             };
             t.AddMultisigChWallet(orig_txid, disallowed_address, MultisigWalletChangeType.DelSigner);
             //
@@ -667,7 +667,7 @@ namespace DLT
             return t;
         }
 
-        public static Transaction multisigChangeReqSigs(string orig_txid, byte sigs, IxiNumber tx_fee, byte[] tx_from, ulong tx_blockHeight, int tx_nonce)
+        public static Transaction multisigChangeReqSigs(string orig_txid, byte sigs, IxiNumber tx_fee, byte[] tx_from, ulong tx_blockHeight)
         {
             Transaction t = new Transaction
             {
@@ -676,8 +676,7 @@ namespace DLT
                 fee = tx_fee,
                 from = tx_from,
                 to = tx_from,
-                blockHeight = tx_blockHeight,
-                nonce = tx_nonce,
+                blockHeight = tx_blockHeight
             };
             t.AddMultisigChReqSigs(orig_txid, sigs);
             //
