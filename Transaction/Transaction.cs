@@ -44,20 +44,20 @@ namespace DLT
             public string origTXId;
             public byte reqSigs;
         }
-        public int version;
-        public string id;
-        public int type;
-        public IxiNumber amount;
-        public IxiNumber fee;
-        public byte[] to;
-        public byte[] from;
-        public byte[] data;
-        public ulong blockHeight;
-        public int nonce;
-        public long timeStamp;
-        public byte[] checksum;
-        public byte[] signature;
-        public byte[] pubKey;
+        public int version; // 4
+        public string id; //  not sent as part of the tx but around 50 bytes
+        public int type; // 4
+        public IxiNumber amount; // 32
+        public IxiNumber fee; // 32
+        public byte[] to; // 36
+        public byte[] from; // 36
+        public byte[] data; // 0
+        public ulong blockHeight; // 8
+        public int nonce; // 4
+        public long timeStamp; // 8
+        public byte[] checksum; // 32
+        public byte[] signature; // 32
+        public byte[] pubKey; // 32
         public ulong applied;
 
         private readonly static byte[] multisigStartMarker = { 0x4d, 0x73 };
@@ -143,7 +143,8 @@ namespace DLT
                 {
                     using (BinaryReader reader = new BinaryReader(m))
                     {
-                        //id = reader.ReadString();
+                        version = reader.ReadInt32();
+
                         type = reader.ReadInt32();
                         amount = new IxiNumber(reader.ReadString());
                         fee = new IxiNumber(reader.ReadString());
@@ -176,8 +177,6 @@ namespace DLT
                             pubKey = reader.ReadBytes(pkLen);
                         }
 
-                        version = reader.ReadInt32();
-
                         id = generateID();
                     }
                 }
@@ -195,7 +194,8 @@ namespace DLT
             {
                 using (BinaryWriter writer = new BinaryWriter(m))
                 {
-                    //writer.Write(id);
+                    writer.Write(version);
+
                     writer.Write(type);
                     writer.Write(amount.ToString());
                     writer.Write(fee.ToString());
@@ -230,9 +230,6 @@ namespace DLT
                     {
                         writer.Write((int)0);
                     }
-
-                    writer.Write(version);
-
                 }
                 return m.ToArray();
             }
