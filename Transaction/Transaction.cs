@@ -97,10 +97,11 @@ namespace DLT
 
             timeStamp = Node.getCurrentTimestamp();
 
+            pubKey = tx_pubKey;
+
             id = generateID();
             checksum = calculateChecksum(this);
             signature = getSignature(checksum);
-            pubKey = tx_pubKey;
 
             version = 0;
         }
@@ -644,9 +645,9 @@ namespace DLT
             };
             t.AddMultisigChWallet(orig_txid, allowed_address, MultisigWalletChangeType.AddSigner);
             //
+            t.pubKey = Node.walletStorage.publicKey;
             t.id = t.generateID();
             t.checksum = calculateChecksum(t);
-            t.pubKey = Node.walletStorage.publicKey;
             t.signature = getSignature(t.checksum);
             return t;
         }
@@ -664,9 +665,9 @@ namespace DLT
             };
             t.AddMultisigChWallet(orig_txid, disallowed_address, MultisigWalletChangeType.DelSigner);
             //
+            t.pubKey = Node.walletStorage.publicKey;
             t.id = t.generateID();
             t.checksum = calculateChecksum(t);
-            t.pubKey = Node.walletStorage.publicKey;
             t.signature = getSignature(t.checksum);
             return t;
         }
@@ -684,9 +685,9 @@ namespace DLT
             };
             t.AddMultisigChReqSigs(orig_txid, sigs);
             //
+            t.pubKey = Node.walletStorage.publicKey;
             t.id = t.generateID();
             t.checksum = calculateChecksum(t);
-            t.pubKey = Node.walletStorage.publicKey;
             t.signature = getSignature(t.checksum);
             return t;
         }
