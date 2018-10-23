@@ -263,7 +263,7 @@ namespace DLT
             Address p_address = new Address(pubkey);
             bool allowed = false;
             Wallet from_wallet = Node.walletState.getWallet(from);
-            if(from_wallet.id.SequenceEqual(p_address.address))
+            if(from_wallet != null && from_wallet.id.SequenceEqual(p_address.address))
             {
                 allowed = true;
             } else if (type==(int)Transaction.Type.MultisigTX || type == (int)Transaction.Type.ChangeMultisigWallet)
@@ -381,6 +381,10 @@ namespace DLT
             rawData.AddRange(BitConverter.GetBytes(transaction.nonce));
             rawData.AddRange(BitConverter.GetBytes(transaction.timeStamp));
             rawData.AddRange(BitConverter.GetBytes(transaction.version));
+            if(transaction.pubKey != null)
+            {
+                rawData.AddRange(transaction.pubKey);
+            }
             return Crypto.sha512sqTrunc(rawData.ToArray());
         }
 

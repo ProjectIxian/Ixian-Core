@@ -22,7 +22,6 @@ namespace DLT
         public byte requiredSigs;
         public byte[][] allowedSigners;
         public byte[] data;
-        public ulong nonce;
         public byte[] publicKey;
 
         public byte countAllowedSigners
@@ -43,7 +42,6 @@ namespace DLT
             requiredSigs = 1;
             allowedSigners = null;
             data = null;
-            nonce = 0;
             publicKey = null;
         }
 
@@ -55,7 +53,6 @@ namespace DLT
             requiredSigs = 1;
             allowedSigners = null;
             data = null;
-            nonce = 0;
             publicKey = null;
         }
 
@@ -75,7 +72,6 @@ namespace DLT
                 }
             }
             data = wallet.data;
-            nonce = wallet.nonce;
             publicKey = wallet.publicKey;
         }
 
@@ -93,7 +89,6 @@ namespace DLT
                         balance = new IxiNumber(balance_str);
                         int dataLen = reader.ReadInt32();
                         data = reader.ReadBytes(dataLen);
-                        nonce = reader.ReadUInt64();
                         type = (WalletType)reader.ReadByte();
                         requiredSigs = reader.ReadByte();
                         byte num_allowed_sigs = reader.ReadByte();
@@ -135,7 +130,6 @@ namespace DLT
                         writer.Write(balance.ToString());
                         writer.Write(data.Length);
                         writer.Write(data);
-                        writer.Write(nonce);
                         writer.Write((byte)type);
                         writer.Write(requiredSigs);
                         if (allowedSigners != null)
@@ -172,7 +166,6 @@ namespace DLT
             {
                 rawData.AddRange(data);
             }
-            rawData.AddRange(BitConverter.GetBytes(nonce));
             if (publicKey != null)
             {
                 rawData.AddRange(publicKey);
