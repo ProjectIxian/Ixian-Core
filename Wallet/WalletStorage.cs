@@ -20,7 +20,7 @@ namespace DLT
 
         public WalletStorage()
         {
-            filename = "wallet.dat";
+            filename = "ixian.wal";
             readWallet();
         }
 
@@ -84,9 +84,9 @@ namespace DLT
                 {
                     Console.ForegroundColor = ConsoleColor.Red;
                     Console.WriteLine("");
-                    Console.WriteLine("!! Always remember to keep a backup of your wallet.dat file and your password.");
+                    Console.WriteLine("!! Always remember to keep a backup of your ixian.wal file and your password.");
                     Console.WriteLine("!! In case of a lost file you will not be able to access your funds.");
-                    Console.WriteLine("!! Never give your wallet.dat and/or password to anyone.");
+                    Console.WriteLine("!! Never give your ixian.wal and/or password to anyone.");
                     Console.WriteLine("");
                     Console.ResetColor();
 
@@ -218,9 +218,9 @@ namespace DLT
 
             Console.ForegroundColor = ConsoleColor.Red;
             Console.WriteLine("");
-            Console.WriteLine("!! Always remember to keep a backup of your wallet.dat file and your password.");
+            Console.WriteLine("!! Always remember to keep a backup of your ixian.wal file and your password.");
             Console.WriteLine("!! In case of a lost file you will not be able to access your funds.");
-            Console.WriteLine("!! Never give your wallet.dat and/or password to anyone.");
+            Console.WriteLine("!! Never give your ixian.wal and/or password to anyone.");
             Console.WriteLine("");
             Console.ResetColor();
 
