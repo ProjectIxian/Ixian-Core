@@ -6,6 +6,7 @@ using System.Reflection;
 using System.Linq;
 using System.Text;
 using System.Collections.Generic;
+using IXICore;
 
 namespace DLT
 {
@@ -185,7 +186,7 @@ namespace DLT
                         return;
                     }
                     var length = new FileInfo(logfilename).Length;
-                    if(length > Config.maxLogFileSize || (length > 0 && forceRoll))
+                    if(length > CoreConfig.maxLogFileSize || (length > 0 && forceRoll))
                     {
                         string[] logFileList = Directory.GetFiles(folderpath, wildcard, SearchOption.TopDirectoryOnly);
                         if (logFileList.Length > 0)

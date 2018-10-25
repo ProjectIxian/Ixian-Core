@@ -1,5 +1,6 @@
 ﻿using DLT;
 using DLT.Meta;
+using IXICore;
 using System;
 using System.Collections.Generic;
 using System.IO;
@@ -208,7 +209,7 @@ namespace DLT
             // Generate the private and public key pair
             try
             {
-                CryptoManager.lib.generateKeys(Config.defaultRsaKeySize);
+                CryptoManager.lib.generateKeys(CoreConfig.defaultRsaKeySize);
             }
             catch(Exception e)
             {

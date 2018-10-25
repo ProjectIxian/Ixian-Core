@@ -1,4 +1,5 @@
 using DLT.Meta;
+using IXICore;
 using System;
 using System.Collections.Generic;
 using System.IO;
@@ -367,7 +368,7 @@ namespace DLT
         public static byte[] calculateChecksum(Transaction transaction)
         {
             List<byte> rawData = new List<byte>();
-            rawData.AddRange(Config.ixianChecksumLock);
+            rawData.AddRange(CoreConfig.ixianChecksumLock);
             rawData.AddRange(Encoding.UTF8.GetBytes(transaction.id));
             rawData.AddRange(BitConverter.GetBytes(transaction.type));
             rawData.AddRange(Encoding.UTF8.GetBytes(transaction.amount.ToString()));
