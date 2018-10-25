@@ -68,7 +68,7 @@ namespace DLT
             // This constructor is used only for development purposes
             id = Guid.NewGuid().ToString();
             type = (int) Type.Normal;
-            timeStamp = Node.getCurrentTimestamp();
+            timeStamp = Core.getCurrentTimestamp();
             fee = new IxiNumber("0");
             blockHeight = 0;
 
@@ -96,7 +96,7 @@ namespace DLT
             Random r = new Random();
             nonce = (int) ((DateTimeOffset.Now.ToUnixTimeMilliseconds() - (DateTimeOffset.Now.ToUnixTimeSeconds() * 1000))*100) + r.Next(100);
 
-            timeStamp = Node.getCurrentTimestamp();
+            timeStamp = Core.getCurrentTimestamp();
 
             pubKey = tx_pubKey;
 

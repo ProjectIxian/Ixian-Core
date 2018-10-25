@@ -1,5 +1,6 @@
 ﻿using DLT.Meta;
 using DLT.Network;
+using IXICore;
 using System;
 using System.Collections.Generic;
 using System.IO;
@@ -27,7 +28,7 @@ namespace DLT
             address = string.Format("{0}:{1}", CoreNetworkUtils.GetLocalIPAddress(), Config.serverPort);
             type = 'M';
             nodeVersion = Config.version;
-            lastSeenTime = Node.getCurrentTimestamp();
+            lastSeenTime = Core.getCurrentTimestamp();
             signature = null;
         }
 

@@ -58,8 +58,6 @@ namespace DLT
             /*updateTransaction,*/
         }
 
-
-
         public enum RemoteEndpointState
         {
             Initial,
@@ -265,6 +263,7 @@ namespace DLT
                         "seedtest3.ixian.io:11234"
                     };
 
+            // Returns the list of seed nodes or test seed nodes if testnet
             public static string[] getSeedNodes(bool isTestNet)
             {
                 if(isTestNet)
@@ -273,7 +272,6 @@ namespace DLT
                 }
                 return seedNodes;
             }
-
 
             // Get the local accessible IP address of this node
             public static string GetLocalIPAddress()
@@ -377,7 +375,6 @@ namespace DLT
                     }
                 }
                 return ips;
-
             }
 
             public static bool PingAddressReachable(String full_hostname)

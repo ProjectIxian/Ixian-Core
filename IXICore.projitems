@@ -15,9 +15,11 @@
     <Compile Include="$(MSBuildThisFileDirectory)Crypto\CryptoLibs\BouncyCastle.cs" />
     <Compile Include="$(MSBuildThisFileDirectory)Crypto\CryptoManager.cs" />
     <Compile Include="$(MSBuildThisFileDirectory)Legacy\Legacy.cs" />
+    <Compile Include="$(MSBuildThisFileDirectory)Meta\Core.cs" />
     <Compile Include="$(MSBuildThisFileDirectory)Meta\CoreConfig.cs" />
     <Compile Include="$(MSBuildThisFileDirectory)Meta\Logging.cs" />
     <Compile Include="$(MSBuildThisFileDirectory)Network\Network.cs" />
+    <Compile Include="$(MSBuildThisFileDirectory)Network\NetworkClient.cs" />
     <Compile Include="$(MSBuildThisFileDirectory)Network\NetworkQueue.cs" />
     <Compile Include="$(MSBuildThisFileDirectory)Network\NetworkRemoteEndpoint.cs" />
     <Compile Include="$(MSBuildThisFileDirectory)Network\NetworkUtils.cs" />
@@ -34,9 +36,11 @@
     <Compile Include="$(MSBuildThisFileDirectory)Utils\IxiNumber.cs" />
     <Compile Include="$(MSBuildThisFileDirectory)Utils\KDTable.cs" />
     <Compile Include="$(MSBuildThisFileDirectory)Utils\Mnemonics.cs" />
+    <Compile Include="$(MSBuildThisFileDirectory)Utils\NetDump.cs" />
     <Compile Include="$(MSBuildThisFileDirectory)Utils\Wordlist.cs" />
     <Compile Include="$(MSBuildThisFileDirectory)Utils\WordlistSources.cs" />
     <Compile Include="$(MSBuildThisFileDirectory)Wallet\Wallet.cs" />
+    <Compile Include="$(MSBuildThisFileDirectory)Wallet\WalletState.cs" />
     <Compile Include="$(MSBuildThisFileDirectory)Wallet\WalletStorage.cs" />
   </ItemGroup>
   <ItemGroup>

@@ -68,7 +68,7 @@ namespace DLT
                     // Go through all addresses and add any missing ones
                     foreach (PresenceAddress local_addr in presence.addresses)
                     {
-                        long currentTime = Node.getCurrentTimestamp();
+                        long currentTime = Core.getCurrentTimestamp();
                         long lTimestamp = local_addr.lastSeenTime;
                         // Check for tampering. Includes a 200 second synchronization zone
                         if ((currentTime - lTimestamp) > 100 || (currentTime - lTimestamp) < -100)
@@ -293,7 +293,7 @@ namespace DLT
         public static bool receiveKeepAlive(byte[] bytes)
         {
             // Get the current timestamp
-            long currentTime = Node.getCurrentTimestamp();
+            long currentTime = Core.getCurrentTimestamp();
 
             try
             {
@@ -417,7 +417,7 @@ namespace DLT
         public static bool performCleanup()
         {
             // Get the current timestamp
-            long currentTime = Node.getCurrentTimestamp();
+            long currentTime = Core.getCurrentTimestamp();
             lock (presences)
             {
                 // Store a copy of the presence list to allow safe modifications while enumerating
