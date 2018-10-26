@@ -291,11 +291,10 @@ namespace DLT
             }
         }
 
-        public WsChunk[] getWalletStateChunks(int chunk_size)
+        public WsChunk[] getWalletStateChunks(int chunk_size, ulong block_num)
         {
             lock(stateLock)
-            {
-                ulong block_num = Node.blockChain.getLastBlockNum();
+            {                
                 int num_chunks = walletState.Count / chunk_size + 1;
                 Logging.info(String.Format("Preparing {0} chunks of walletState. Total wallets: {1}", num_chunks, walletState.Count));
                 WsChunk[] chunks = new WsChunk[num_chunks];

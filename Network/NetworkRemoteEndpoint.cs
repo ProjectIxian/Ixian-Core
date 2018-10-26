@@ -409,7 +409,7 @@ namespace DLT
         // Internal function that sends data through the socket
         protected void sendDataInternal(ProtocolMessageCode code, byte[] data, byte[] checksum)
         {
-            byte[] ba = ProtocolMessage.prepareProtocolMessage(code, data, checksum);
+            byte[] ba = CoreProtocolMessage.prepareProtocolMessage(code, data, checksum);
             NetDump.Instance.appendSent(clientSocket, ba, ba.Length);
             try
             {
@@ -580,7 +580,7 @@ namespace DLT
                         return -1;
                     }
 
-                    if (ProtocolMessage.getHeaderChecksum(header.Take(41).ToArray()) != checksum)
+                    if (CoreProtocolMessage.getHeaderChecksum(header.Take(41).ToArray()) != checksum)
                     {
                         Logging.warn(String.Format("Header checksum mismatch"));
                         return -1;

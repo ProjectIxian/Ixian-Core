@@ -19,6 +19,7 @@
     <Compile Include="$(MSBuildThisFileDirectory)Meta\Core.cs" />
     <Compile Include="$(MSBuildThisFileDirectory)Meta\CoreConfig.cs" />
     <Compile Include="$(MSBuildThisFileDirectory)Meta\Logging.cs" />
+    <Compile Include="$(MSBuildThisFileDirectory)Network\CoreNetworkProtocol.cs" />
     <Compile Include="$(MSBuildThisFileDirectory)Network\Network.cs" />
     <Compile Include="$(MSBuildThisFileDirectory)Network\NetworkClient.cs" />
     <Compile Include="$(MSBuildThisFileDirectory)Network\NetworkClientManager.cs" />
