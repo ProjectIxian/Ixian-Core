@@ -25,7 +25,7 @@ namespace DLT
             char type = 'M';
             if(Config.storeFullHistory)
             {
-                type = 'H';
+                type = 'M'; // TODO TODO TODO TODO this is only temporary until all nodes upgrade, changes this to 'H' later
             }
             // Initialize with the default presence state
             curNodePresenceAddress = new PresenceAddress(Config.device_id, string.Format("{0}:{1}", initial_ip, Config.serverPort), type, Config.version, 0, null);
