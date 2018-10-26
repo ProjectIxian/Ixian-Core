@@ -1,5 +1,4 @@
 ﻿using DLT.Meta;
-using DLTNode;
 using IXICore.Utils;
 using System;
 using System.Collections.Generic;
@@ -10,6 +9,13 @@ using System.Threading.Tasks;
 
 namespace DLT
 {
+    public class WsChunk
+    {
+        public ulong blockNum;
+        public int chunkNum;
+        public Wallet[] wallets;
+    }
+
     class WalletState
     {
         private readonly object stateLock = new object();

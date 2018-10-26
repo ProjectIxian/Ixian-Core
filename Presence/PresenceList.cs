@@ -19,14 +19,10 @@ namespace DLT
         public static Presence curNodePresence = null;
 
         // Generate an initial presence list
-        public static void generatePresenceList(string initial_ip)
+        public static void generatePresenceList(string initial_ip, char type = 'M')
         {
             Logging.info("Generating presence list.");
-            char type = 'M';
-            if(Config.storeFullHistory)
-            {
-                type = 'M'; // TODO TODO TODO TODO this is only temporary until all nodes upgrade, changes this to 'H' later
-            }
+
             // Initialize with the default presence state
             curNodePresenceAddress = new PresenceAddress(Config.device_id, string.Format("{0}:{1}", initial_ip, Config.serverPort), type, Config.version, 0, null);
             curNodePresence = new Presence(Node.walletStorage.address, Node.walletStorage.publicKey, null, curNodePresenceAddress);

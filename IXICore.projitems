@@ -10,6 +10,7 @@
   </PropertyGroup>
   <ItemGroup>
     <Compile Include="$(MSBuildThisFileDirectory)Address\Address.cs" />
+    <Compile Include="$(MSBuildThisFileDirectory)API\GenericAPIServer.cs" />
     <Compile Include="$(MSBuildThisFileDirectory)Crypto\Crypto.cs" />
     <Compile Include="$(MSBuildThisFileDirectory)Crypto\CryptoLib.cs" />
     <Compile Include="$(MSBuildThisFileDirectory)Crypto\CryptoLibs\BouncyCastle.cs" />
@@ -20,6 +21,7 @@
     <Compile Include="$(MSBuildThisFileDirectory)Meta\Logging.cs" />
     <Compile Include="$(MSBuildThisFileDirectory)Network\Network.cs" />
     <Compile Include="$(MSBuildThisFileDirectory)Network\NetworkClient.cs" />
+    <Compile Include="$(MSBuildThisFileDirectory)Network\NetworkClientManager.cs" />
     <Compile Include="$(MSBuildThisFileDirectory)Network\NetworkQueue.cs" />
     <Compile Include="$(MSBuildThisFileDirectory)Network\NetworkRemoteEndpoint.cs" />
     <Compile Include="$(MSBuildThisFileDirectory)Network\NetworkUtils.cs" />
