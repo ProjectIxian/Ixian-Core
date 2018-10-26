@@ -22,8 +22,13 @@ namespace DLT
         public static void generatePresenceList(string initial_ip)
         {
             Logging.info("Generating presence list.");
+            char type = 'M';
+            if(Config.storeFullHistory)
+            {
+                type = 'H';
+            }
             // Initialize with the default presence state
-            curNodePresenceAddress = new PresenceAddress(Config.device_id, string.Format("{0}:{1}", initial_ip, Config.serverPort), 'M', Config.version, 0, null);
+            curNodePresenceAddress = new PresenceAddress(Config.device_id, string.Format("{0}:{1}", initial_ip, Config.serverPort), type, Config.version, 0, null);
             curNodePresence = new Presence(Node.walletStorage.address, Node.walletStorage.publicKey, null, curNodePresenceAddress);
         }
 
@@ -370,7 +375,7 @@ namespace DLT
                                     pa.lastSeenTime = timestamp;
                                     pa.signature = signature;
 
-                                    if (pa.type == 'M')
+                                    if (pa.type == 'M' || pa.type == 'H')
                                     {
                                         PeerStorage.addPeerToPeerList(hostname, wallet);
                                     }

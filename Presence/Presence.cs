@@ -21,17 +21,6 @@ namespace DLT
         public long lastSeenTime;
         public byte[] signature;
 
-        public PresenceAddress()
-        {
-            version = 0;
-            device = Config.device_id;
-            address = string.Format("{0}:{1}", CoreNetworkUtils.GetLocalIPAddress(), Config.serverPort);
-            type = 'M';
-            nodeVersion = Config.version;
-            lastSeenTime = Core.getCurrentTimestamp();
-            signature = null;
-        }
-
         public PresenceAddress(string node_device, string node_address, char node_type, string node_version, long node_lastSeenTime, byte[] node_signature)
         {
             version = 0;
