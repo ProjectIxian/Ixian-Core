@@ -299,6 +299,9 @@ namespace DLT
         {
             lock (networkClients)
             {
+                if (networkClients.Count < 1)
+                    return;
+
                 long totalTimeDiff = 0;
 
                 foreach (NetworkClient client in networkClients)
