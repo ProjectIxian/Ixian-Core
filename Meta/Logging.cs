@@ -34,6 +34,8 @@ namespace DLT
             private static Thread thread = null;
             private static bool running = false;
 
+            private static FileStream logFileStream = null;
+
             private struct LogStatement
             {
                 public LogSeverity severity;
@@ -65,7 +67,8 @@ namespace DLT
                     roll(true);
 
                     // Create the main log file
-                    File.AppendAllText(logfilename, "Ixian Log" + Environment.NewLine, Encoding.UTF8);
+                    byte[] logMessage = Encoding.UTF8.GetBytes("Ixian Log" + Environment.NewLine);
+                    logFileStream.Write(logMessage, 0, logMessage.Length);
 
                     // Start thread
                     running = true;
@@ -84,6 +87,12 @@ namespace DLT
             {
                 running = false;
                 thread.Abort();
+                lock (logfilename)
+                {
+                    logFileStream.Flush();
+                    logFileStream.Close();
+                    logFileStream = null;
+                }
             }
 
             // Log a statement
@@ -135,7 +144,9 @@ namespace DLT
                     lock (logfilename)
                     {
                         Logging.roll();
-                        File.AppendAllText(logfilename, formattedMessage + Environment.NewLine, Encoding.UTF8);
+                        byte[] logMessage = Encoding.UTF8.GetBytes(formattedMessage + Environment.NewLine);
+                        logFileStream.Write(logMessage, 0, logMessage.Length);
+                        logFileStream.FlushAsync();
                     }
 
                 }
@@ -181,41 +192,48 @@ namespace DLT
             {
                 try
                 {
-                    if(!File.Exists(logfilename))
+                    if(File.Exists(logfilename))
                     {
-                        return;
-                    }
-                    var length = new FileInfo(logfilename).Length;
-                    if(length > CoreConfig.maxLogFileSize || (length > 0 && forceRoll))
-                    {
-                        string[] logFileList = Directory.GetFiles(folderpath, wildcard, SearchOption.TopDirectoryOnly);
-                        if (logFileList.Length > 0)
+                        var length = new FileInfo(logfilename).Length;
+                        if (length > CoreConfig.maxLogFileSize || (length > 0 && forceRoll))
                         {
-                            // + 2 because of the . and digit [0-9]
-                            var rolledLogFileList = logFileList.Where(fileName => Path.GetFileName(fileName).Length == (logfilename.Length + 2)).ToArray();
-                            Array.Sort(rolledLogFileList, 0, rolledLogFileList.Length);
-                            if (rolledLogFileList.Length >= 10)
+                            if (logFileStream != null)
                             {
-                                File.Delete(rolledLogFileList[9]);
-                                var list = rolledLogFileList.ToList();
-                                list.RemoveAt(9);
-                                rolledLogFileList = list.ToArray();
+                                logFileStream.Close();
+                                logFileStream = null;
                             }
-
-                            // Move remaining rolled files
-                            for (int i = rolledLogFileList.Length; i > 0; --i)
+                            string[] logFileList = Directory.GetFiles(folderpath, wildcard, SearchOption.TopDirectoryOnly);
+                            if (logFileList.Length > 0)
                             {
-                                File.Move(rolledLogFileList[i - 1], logfilepathpart + "." + i + Path.GetExtension(logfilename));
-                            }
+                                // + 2 because of the . and digit [0-9]
+                                var rolledLogFileList = logFileList.Where(fileName => Path.GetFileName(fileName).Length == (logfilename.Length + 2)).ToArray();
+                                Array.Sort(rolledLogFileList, 0, rolledLogFileList.Length);
+                                if (rolledLogFileList.Length >= 10)
+                                {
+                                    File.Delete(rolledLogFileList[9]);
+                                    var list = rolledLogFileList.ToList();
+                                    list.RemoveAt(9);
+                                    rolledLogFileList = list.ToArray();
+                                }
 
-                            // Move original file
-                            var targetPath = logfilepathpart + ".0" + Path.GetExtension(logfilename);
-                            File.Move(logfilename, targetPath);
+                                // Move remaining rolled files
+                                for (int i = rolledLogFileList.Length; i > 0; --i)
+                                {
+                                    File.Move(rolledLogFileList[i - 1], logfilepathpart + "." + i + Path.GetExtension(logfilename));
+                                }
+
+                                // Move original file
+                                var targetPath = logfilepathpart + ".0" + Path.GetExtension(logfilename);
+                                File.Move(logfilename, targetPath);
+                            }
                         }
                     }
-
+                    if (logFileStream == null)
+                    {
+                        logFileStream = File.Open(logfilename, FileMode.OpenOrCreate, FileAccess.Write, FileShare.Read);
+                    }
                 }
-                catch(Exception e)
+                catch (Exception e)
                 {
                     Console.WriteLine("Exception rolling log file: {0}", e.Message);
                 }
