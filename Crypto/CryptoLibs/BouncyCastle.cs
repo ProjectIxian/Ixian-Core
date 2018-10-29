@@ -26,6 +26,10 @@ namespace CryptoLibs
         private int PBKDF2_iterations = 10000;
         private string AES_algorithm = "AES/CBC/PKCS7Padding";
 
+        // Private variables used for Chacha
+        private readonly int chacha_rounds = 20;
+
+
         public BouncyCastle()
         {
             publicKeyBytes = null;
@@ -285,5 +289,57 @@ namespace CryptoLibs
             byte[] key = getPbkdf2BytesFromPassphrase(password, salt, PBKDF2_iterations, 16);
             return decryptDataAES(data, key, 16);
         }
+
+        // Encrypt data using Chacha engine
+        public byte[] encryptWithChacha(byte[] input, byte[] key)
+        {
+            // Create a buffer that will contain the encrypted output and an 8 byte nonce
+            byte[] outData = new byte[input.Length + 8];
+
+            // Generate the 8 byte nonce
+            Random rnd = new Random();
+            byte[] nonce = new byte[8];
+            rnd.NextBytes(nonce);
+
+            // Prevent leading 0 to avoid edge cases
+            if (nonce[0] == 0)
+                nonce[0] = 1;
+            
+            // Generate the Chacha engine
+            var parms = new ParametersWithIV(new KeyParameter(key), nonce);
+            var chacha = new ChaChaEngine(chacha_rounds);
+            chacha.Init(true, parms);
+
+            // Encrypt the input data while maintaing an 8 byte offset at the start
+            chacha.ProcessBytes(input, 0, input.Length, outData, 8);
+
+            // Copy the 8 byte nonce to the start of outData buffer
+            Buffer.BlockCopy(nonce, 0, outData, 0, 8);
+
+            // Return the encrypted data buffer
+            return outData;
+        }
+
+        // Decrypt data using Chacha engine
+        public byte[] decryptWithChacha(byte[] input, byte[] key)
+        {
+            // Extract the nonce from the input
+            byte[] nonce = input.Take(8).ToArray();
+
+            // Generate the Chacha engine
+            var parms = new ParametersWithIV(new KeyParameter(key), nonce);
+            var chacha = new ChaChaEngine(chacha_rounds);
+            chacha.Init(false, parms);
+
+            // Create a buffer that will contain the decrypted output
+            byte[] outData = new byte[input.Length - 8];
+
+            // Decrypt the input data
+            chacha.ProcessBytes(input, 8, input.Length - 8, outData, 0);
+
+            // Return the decrypted data buffer
+            return outData;
+        }
+
     }
 }

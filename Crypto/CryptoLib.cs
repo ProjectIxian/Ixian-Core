@@ -22,6 +22,10 @@ namespace DLT
 
         byte[] encryptWithPassword(byte[] data, string password);
         byte[] decryptWithPassword(byte[] data, string password);
+
+        byte[] encryptWithChacha(byte[] input, byte[] key);
+        byte[] decryptWithChacha(byte[] input, byte[] key);
+
     }
 
 
@@ -78,6 +82,16 @@ namespace DLT
         public byte[] decryptWithPassword(byte[] data, string password)
         {
             return _cryptoLib.decryptWithPassword(data, password);
+        }
+
+        public byte[] encryptWithChacha(byte[] input, byte[] key)
+        {
+            return _cryptoLib.encryptWithChacha(input, key);
+        }
+
+        public byte[] decryptWithChacha(byte[] input, byte[] key)
+        {
+            return _cryptoLib.decryptWithChacha(input, key);
         }
 
     }

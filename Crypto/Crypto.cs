@@ -30,7 +30,20 @@ namespace DLT
                 bytes[i / 2] = Convert.ToByte(data.Substring(i, 2), 16);
             return bytes;
         }
-        
+
+        public static byte[] sha256(byte[] data, int offset = 0, int count = 0)
+        {
+            using (var sha = new SHA256Managed())
+            {
+                if (count == 0)
+                {
+                    count = data.Length - offset;
+                }
+                var h = sha.ComputeHash(data, offset, count);
+                return sha.ComputeHash(h, 0, h.Length);
+            }
+        }
+
         public static byte[] sha512(byte[] data, int offset = 0, int count = 0)
         {
 #if USEBC || WINDOWS_UWP || NETCORE
