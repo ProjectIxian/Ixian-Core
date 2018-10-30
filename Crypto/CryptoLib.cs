@@ -17,6 +17,9 @@ namespace DLT
         byte[] getSignature(byte[] input, byte[] privateKey);
         bool verifySignature(byte[] input, byte[] publicKey, byte[] signature);
 
+        byte[] encryptWithRSA(byte[] input, byte[] publicKey);
+        byte[] decryptWithRSA(byte[] input, byte[] privateKey);
+
         byte[] encryptDataAES(byte[] input, byte[] key);
         byte[] decryptDataAES(byte[] input, byte[] key, int offset = 0);
 
@@ -62,6 +65,16 @@ namespace DLT
         public bool verifySignature(byte[] input, byte[] publicKey, byte[] signature)
         {
             return _cryptoLib.verifySignature(input, publicKey, signature);
+        }
+
+        public byte[] encryptWithRSA(byte[] input, byte[] publicKey)
+        {
+            return _cryptoLib.encryptWithRSA(input, publicKey);
+        }
+
+        public byte[] decryptWithRSA(byte[] input, byte[] privateKey)
+        {
+            return _cryptoLib.decryptWithRSA(input, privateKey);
         }
 
         public byte[] encryptDataAES(byte[] input, byte[] key)

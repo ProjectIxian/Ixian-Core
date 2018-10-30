@@ -189,6 +189,21 @@ namespace CryptoLibs
             return false;
         }
 
+        // Encrypt data using RSA
+        public byte[] encryptWithRSA(byte[] input, byte[] publicKey)
+        {
+            RSACryptoServiceProvider rsa = rsaKeyFromBytes(publicKey);
+            return rsa.Encrypt(input, false);
+        }
+
+
+        // Decrypt data using RSA
+        public byte[] decryptWithRSA(byte[] input, byte[] privateKey)
+        {
+            RSACryptoServiceProvider rsa = rsaKeyFromBytes(privateKey);
+            return rsa.Decrypt(input, false);
+        }
+
         // Encrypt data using AES
         public byte[] encryptDataAES(byte[] input, byte[] key)
         {
