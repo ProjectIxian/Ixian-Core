@@ -101,7 +101,12 @@ namespace DLT
                 
                 if(running == false)
                 {
-                    Console.WriteLine("Logging is not active.");
+                    String formattedMessage = String.Format("!!! {0}|{1}|Thread({2}): {3}",
+                            DateTime.Now.ToString("yyyy-MM-dd HH:mm:ss.ffff"),
+                            log_severity.ToString(),
+                            Thread.CurrentThread.ManagedThreadId,
+                            log_message);
+                    Console.WriteLine(formattedMessage);
                     return;
                 }
 
