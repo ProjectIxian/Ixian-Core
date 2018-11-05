@@ -248,7 +248,7 @@ namespace DLT
         {
             // The list of seed nodes to connect to first. 
             // Domain/IP seperated by : from the port
-            public static string[] seedNodes = new string[]
+            public static List<string> seedNodes = new List<string>
                     {
                         "seed1.ixian.io:10234",
                         "seed2.ixian.io:10234",
@@ -257,7 +257,7 @@ namespace DLT
                         "seed5.ixian.io:10234"
                     };
 
-            public static string[] seedTestNetNodes = new string[]
+            public static List<string> seedTestNetNodes = new List<string>
                     {
                         "seedtest1.ixian.io:11234",
                         "seedtest2.ixian.io:11234",
@@ -269,9 +269,9 @@ namespace DLT
             {
                 if(isTestNet)
                 {
-                    return seedTestNetNodes;
+                    return seedTestNetNodes.ToArray();
                 }
-                return seedNodes;
+                return seedNodes.ToArray();
             }
 
             // Get the local accessible IP address of this node

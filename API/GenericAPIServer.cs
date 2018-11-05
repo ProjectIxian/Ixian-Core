@@ -17,10 +17,10 @@ namespace IXICore
         protected bool continueRunning;
         protected string listenURL;
 
-        protected SortedList<string, string> authorizedUsers;
+        protected Dictionary<string, string> authorizedUsers;
 
         // Start the API server
-        public void start(string listen_url, SortedList<string, string> authorizedUsers = null)
+        public void start(string listen_url, Dictionary<string, string> authorizedUsers = null)
         {
             continueRunning = true;
 

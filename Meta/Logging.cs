@@ -187,9 +187,8 @@ namespace DLT
                         // Sleep for 25ms to prevent cpu waste
                         Thread.Sleep(25);
                     }
+                    Thread.Yield();
                 }
-
-                Thread.Yield();
             }
 
             // Rolls the log file
@@ -249,6 +248,12 @@ namespace DLT
             {
                 lock (logfilename)
                 {
+                    if (logFileStream != null)
+                    {
+                        logFileStream.Flush();
+                        logFileStream.Close();
+                        logFileStream = null;
+                    }
 
                     try
                     {
@@ -272,6 +277,7 @@ namespace DLT
                         Console.WriteLine("Exception clearing log files: {0}", e.Message);
                     }
 
+                    logFileStream = File.Open(logfilename, FileMode.OpenOrCreate, FileAccess.Write, FileShare.Read);
                 }
             }
 
