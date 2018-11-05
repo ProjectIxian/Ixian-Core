@@ -2,7 +2,6 @@
 using System;
 using System.Collections.Generic;
 using System.Net;
-using System.Text;
 using System.Threading;
 
 namespace IXICore
@@ -18,12 +17,17 @@ namespace IXICore
         protected bool continueRunning;
         protected string listenURL;
 
+        protected SortedList<string, string> authorizedUsers;
+
         // Start the API server
-        public void start(string listen_url)
+        public void start(string listen_url, SortedList<string, string> authorizedUsers = null)
         {
             continueRunning = true;
 
             listenURL = listen_url;
+
+            this.authorizedUsers = authorizedUsers;
+
             apiControllerThread = new Thread(apiLoop);
             apiControllerThread.Start();
         }
@@ -44,9 +48,34 @@ namespace IXICore
         }
 
         // Override the onUpdate handler
-        protected virtual void onUpdate()
+        protected virtual void onUpdate(HttpListenerContext context)
         {
 
+        }
+
+        protected bool isAuthorized(HttpListenerContext context)
+        {
+            if(authorizedUsers == null)
+            {
+                return true;
+            }
+
+            if(context.User == null)
+            {
+                return false;
+            }
+
+            HttpListenerBasicIdentity identity = (HttpListenerBasicIdentity)context.User.Identity;
+
+            if(authorizedUsers.ContainsKey(identity.Name))
+            {
+                if(authorizedUsers[identity.Name] == identity.Password)
+                {
+                    return true;
+                }
+            }
+
+            return false;
         }
 
         protected void apiLoop()
@@ -56,6 +85,7 @@ namespace IXICore
             try
             {
                 listener.Prefixes.Add(listenURL);
+                listener.AuthenticationSchemes = AuthenticationSchemes.Basic;
                 listener.Start();
             }
             catch (Exception ex)
@@ -66,10 +96,24 @@ namespace IXICore
 
             while (continueRunning)
             {
-                onUpdate();
+                HttpListenerContext context = listener.GetContext();
+
+                if(context != null)
+                {
+                    if(isAuthorized(context))
+                    {
+                        onUpdate(context);
+                    }else
+                    {
+                        context.Response.StatusCode = 401;
+                        context.Response.StatusDescription = "401 Unauthorized";
+                    }
+                    context.Response.Close();
+                }
+
+                Thread.Yield();
             }
 
-            Thread.Yield();
         }
 
         protected void sendError(HttpListenerContext context, string errorString)

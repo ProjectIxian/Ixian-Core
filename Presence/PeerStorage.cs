@@ -69,6 +69,14 @@ namespace DLT
             }
         }
 
+        public static void removePeer(string hostname)
+        {
+            if (peerList.RemoveAll(x => x.hostname == hostname) > 0)
+            {
+                savePeersFile();
+            }
+        }
+
         public static bool validateHostname(string address)
         {
             // Check if the address format is correct

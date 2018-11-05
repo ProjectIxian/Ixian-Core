@@ -331,5 +331,11 @@ namespace DLT
         {
             return address;
         }
+
+        public bool backup(string destination)
+        {
+            File.Copy(filename, destination);
+            return true;
+        }
     }
 }

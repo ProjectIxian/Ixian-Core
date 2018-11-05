@@ -65,6 +65,7 @@ namespace DLT
 
         public Transaction()
         {
+            version = 0;
             // This constructor is used only for development purposes
             id = Guid.NewGuid().ToString();
             type = (int) Type.Normal;
@@ -76,11 +77,12 @@ namespace DLT
             nonce = (int)((DateTimeOffset.Now.ToUnixTimeMilliseconds() - (DateTimeOffset.Now.ToUnixTimeSeconds() * 1000)) * 100) + r.Next(100);
 
             applied = 0;
-            version = 0;
         }
 
         public Transaction(IxiNumber tx_amount, IxiNumber tx_fee, byte[] tx_to, byte[] tx_from, byte[] tx_data, byte[] tx_pubKey, ulong tx_blockHeight)
         {
+            version = 0;
+
             //id = Guid.NewGuid().ToString();
             type = (int)Transaction.Type.Normal;
 
@@ -104,11 +106,11 @@ namespace DLT
             checksum = calculateChecksum(this);
             signature = getSignature(checksum);
 
-            version = 0;
         }
 
         public Transaction(Transaction tx_transaction)
         {
+            version = tx_transaction.version;
             id = tx_transaction.id;
             type = tx_transaction.type;
             amount = tx_transaction.amount;
@@ -136,7 +138,6 @@ namespace DLT
             pubKey = new byte[tx_transaction.pubKey.Length];
             Array.Copy(tx_transaction.pubKey, pubKey, pubKey.Length);
 
-            version = tx_transaction.version;
         }
 
         public Transaction(byte[] bytes)
@@ -173,8 +174,13 @@ namespace DLT
 
                         int crcLen = reader.ReadInt32();
                         checksum = reader.ReadBytes(crcLen);
+
                         int sigLen = reader.ReadInt32();
-                        signature = reader.ReadBytes(sigLen);
+                        if (sigLen > 0)
+                        {
+                            signature = reader.ReadBytes(sigLen);
+                        }
+
                         int pkLen = reader.ReadInt32();
                         if (pkLen > 0)
                         {
@@ -223,8 +229,14 @@ namespace DLT
                     writer.Write(checksum.Length);
                     writer.Write(checksum);
 
-                    writer.Write(signature.Length);
-                    writer.Write(signature);
+                    if (signature != null)
+                    {
+                        writer.Write(signature.Length);
+                        writer.Write(signature);
+                    }else
+                    {
+                        writer.Write((int)0);
+                    }
 
                     if (pubKey != null)
                     {
