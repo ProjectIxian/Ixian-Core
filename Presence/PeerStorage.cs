@@ -28,11 +28,11 @@ namespace DLT
 
         public static string peersFilename = "peers.dat";
 
-        public static void addPeerToPeerList(string hostname, byte[] walletAddress, bool storePeersFile = true)
+        public static bool addPeerToPeerList(string hostname, byte[] walletAddress, bool storePeersFile = true)
         {
             if(!validateHostname(hostname))
             {
-                return;
+                return false;
             }
             Peer p = new Peer(hostname, walletAddress, DateTime.Now, 0);
 
@@ -66,15 +66,19 @@ namespace DLT
             if (storePeersFile)
             {
                 savePeersFile();
+                return true;
             }
+            return false;
         }
 
-        public static void removePeer(string hostname)
+        public static bool removePeer(string hostname)
         {
             if (peerList.RemoveAll(x => x.hostname == hostname) > 0)
             {
                 savePeersFile();
+                return true;
             }
+            return false;
         }
 
         public static bool validateHostname(string address)
