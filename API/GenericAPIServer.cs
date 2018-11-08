@@ -96,7 +96,16 @@ namespace IXICore
 
             while (continueRunning)
             {
-                HttpListenerContext context = listener.GetContext();
+                HttpListenerContext context = null;
+                try
+                {
+                    context = listener.GetContext();
+                }
+                catch(Exception ex)
+                {
+                    Logging.error("Error in API server! " + ex.Message);
+                    return;
+                }
 
                 if(context != null)
                 {
