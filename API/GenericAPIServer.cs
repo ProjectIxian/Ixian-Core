@@ -60,6 +60,12 @@ namespace IXICore
                 return true;
             }
 
+            // No authorized users provided, allow access to everyone
+            if(authorizedUsers.Count < 1)
+            {
+                return true;
+            }
+
             if(context.User == null)
             {
                 return false;
