@@ -29,6 +29,8 @@ namespace DLT
         byte[] encryptWithChacha(byte[] input, byte[] key);
         byte[] decryptWithChacha(byte[] input, byte[] key);
 
+        byte[] generateChildKey(byte[] parentKey, int seed = 0);
+
     }
 
 
@@ -105,6 +107,11 @@ namespace DLT
         public byte[] decryptWithChacha(byte[] input, byte[] key)
         {
             return _cryptoLib.decryptWithChacha(input, key);
+        }
+
+        public byte[] generateChildKey(byte[] parentKey, int seed = 0)
+        {
+            return _cryptoLib.generateChildKey(parentKey, seed);
         }
 
     }

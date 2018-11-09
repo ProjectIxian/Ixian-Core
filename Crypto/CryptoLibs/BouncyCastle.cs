@@ -356,5 +356,41 @@ namespace CryptoLibs
             return outData;
         }
 
+        public byte[] generateChildKey(byte[] parentKey, int seed = 0)
+        {
+            RSACryptoServiceProvider origRsa = rsaKeyFromBytes(parentKey);
+            if(origRsa.PublicOnly)
+            {
+                Logging.error("Child key cannot be generated from a public key! Private key is also required.");
+                return null;
+            }
+            RSAParameters origKey = origRsa.ExportParameters(true);
+            RsaKeyPairGenerator kpGenerator = new RsaKeyPairGenerator();
+            int seed_len = origKey.P.Length + origKey.Q.Length;
+            if (seed != 0)
+            {
+                seed_len += 4;
+            }
+            byte[] child_seed = new byte[seed_len];
+            Array.Copy(origKey.P, 0, child_seed, 0, origKey.P.Length);
+            Array.Copy(origKey.Q, 0, child_seed, origKey.P.Length, origKey.Q.Length);
+            if(seed != 0)
+            {
+                Array.Copy(BitConverter.GetBytes(seed), 0, child_seed, origKey.P.Length + origKey.Q.Length, 4);
+            }
+
+            Org.BouncyCastle.Crypto.Digests.Sha512Digest key_digest = new Org.BouncyCastle.Crypto.Digests.Sha512Digest();
+            Org.BouncyCastle.Crypto.Prng.DigestRandomGenerator digest_rng = new Org.BouncyCastle.Crypto.Prng.DigestRandomGenerator(key_digest);
+            digest_rng.AddSeedMaterial(child_seed);
+            // TODO: Check if certainty of 80 is good enough for us
+            RsaKeyGenerationParameters keyParams = new RsaKeyGenerationParameters(BigInteger.ValueOf(0x10001), new SecureRandom(digest_rng), 4096, 80);
+            RsaKeyPairGenerator keyGen = new RsaKeyPairGenerator();
+            keyGen.Init(keyParams);
+            AsymmetricCipherKeyPair keyPair = keyGen.GenerateKeyPair();
+            //
+            RSACryptoServiceProvider newRsa = (RSACryptoServiceProvider)DotNetUtilities.ToRSA((RsaPrivateCrtKeyParameters)keyPair.Private);
+            return rsaKeyToBytes(newRsa, true);
+        }
+
     }
 }
