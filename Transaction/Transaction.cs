@@ -111,7 +111,7 @@ namespace DLT
 
             blockHeight = tx_blockHeight;
 
-            if (tx_nonce == 1)
+            if (tx_nonce == -1)
             {
                 Random r = new Random();
                 nonce = (int)((DateTimeOffset.Now.ToUnixTimeMilliseconds() - (DateTimeOffset.Now.ToUnixTimeSeconds() * 1000)) * 100) + r.Next(100);
@@ -163,7 +163,7 @@ namespace DLT
 
             blockHeight = tx_blockHeight;
 
-            if (tx_nonce == 1)
+            if (tx_nonce == -1)
             {
                 Random r = new Random();
                 nonce = (int)((DateTimeOffset.Now.ToUnixTimeMilliseconds() - (DateTimeOffset.Now.ToUnixTimeSeconds() * 1000)) * 100) + r.Next(100);

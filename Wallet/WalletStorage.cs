@@ -337,5 +337,10 @@ namespace DLT
             File.Copy(filename, destination);
             return true;
         }
+
+        public byte[] generateNewAddress()
+        {
+            return address;
+        }
     }
 }
