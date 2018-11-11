@@ -67,6 +67,7 @@ namespace DLT
 
         public Transaction(int tx_type)
         {
+            // we can remove version 0 when all nodes are updated
             if (Node.blockChain.getLastBlockNum() < Legacy.up20181111)
             {
                 version = 0;
@@ -90,6 +91,7 @@ namespace DLT
 
         public Transaction(int tx_type, IxiNumber tx_amount, IxiNumber tx_feePerKb, byte[] tx_to, byte[] tx_from, byte[] tx_data, byte[] tx_pubKey, ulong tx_blockHeight, int tx_nonce = -1)
         {
+            // we can remove version 0 when all nodes are updated
             if (Node.blockChain.getLastBlockNum() < Legacy.up20181111)
             {
                 version = 0;
@@ -138,6 +140,7 @@ namespace DLT
 
         public Transaction(int tx_type, IxiNumber tx_feePerKb, Dictionary<byte[], IxiNumber> tx_toList, byte[] tx_from, byte[] tx_data, byte[] tx_pubKey, ulong tx_blockHeight, int tx_nonce = -1)
         {
+            // we can remove version 0 when all nodes are updated
             if (Node.blockChain.getLastBlockNum() < Legacy.up20181111)
             {
                 version = 0;
@@ -240,6 +243,7 @@ namespace DLT
                         amount = new IxiNumber(reader.ReadString());
                         fee = new IxiNumber(reader.ReadString());
 
+                        // we can remove version 0 when all nodes are updated
                         if (version == 0)
                         {
                             int toLen = reader.ReadInt32();
@@ -317,6 +321,7 @@ namespace DLT
 
                     writer.Write(fee.ToString());
 
+                    // we can remove version 0 when all nodes are updated
                     if (version == 0)
                     {
                         writer.Write(toList.ToArray()[0].Key.Length);
