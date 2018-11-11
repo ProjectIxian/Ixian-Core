@@ -48,9 +48,11 @@ namespace DLT
         public int version; // 4
         public string id; //  not sent as part of the tx but around 50 bytes
         public int type; // 4
-        public IxiNumber amount; // 32
-        public IxiNumber fee; // 32
-        public byte[] to; // 36
+        public IxiNumber amount = new IxiNumber("0"); // 32
+        public IxiNumber fee = new IxiNumber("0"); // 32
+
+        public Dictionary<byte[], IxiNumber> toList = new Dictionary<byte[], IxiNumber>();
+
         public byte[] from; // 36
         public byte[] data; // 0
         public ulong blockHeight; // 8
@@ -63,13 +65,20 @@ namespace DLT
 
         private readonly static byte[] multisigStartMarker = { 0x4d, 0x73 };
 
-        public Transaction()
+        public Transaction(int tx_type)
         {
-            version = 0;
-            // This constructor is used only for development purposes
-            id = Guid.NewGuid().ToString();
-            type = (int) Type.Normal;
+            if (Node.blockChain.getLastBlockNum() < Legacy.up20181111)
+            {
+                version = 0;
+            }else
+            {
+                version = 1;
+            }
+
+            type = tx_type;
+
             timeStamp = Core.getCurrentTimestamp();
+            amount = new IxiNumber("0");
             fee = new IxiNumber("0");
             blockHeight = 0;
 
@@ -79,33 +88,104 @@ namespace DLT
             applied = 0;
         }
 
-        public Transaction(IxiNumber tx_amount, IxiNumber tx_fee, byte[] tx_to, byte[] tx_from, byte[] tx_data, byte[] tx_pubKey, ulong tx_blockHeight)
+        public Transaction(int tx_type, IxiNumber tx_amount, IxiNumber tx_feePerKb, byte[] tx_to, byte[] tx_from, byte[] tx_data, byte[] tx_pubKey, ulong tx_blockHeight, int tx_nonce = -1)
         {
-            version = 0;
+            if (Node.blockChain.getLastBlockNum() < Legacy.up20181111)
+            {
+                version = 0;
+            }
+            else
+            {
+                version = 1;
+            }
 
-            //id = Guid.NewGuid().ToString();
-            type = (int)Transaction.Type.Normal;
+            type = tx_type;
 
             amount = tx_amount;
-            fee = tx_fee;
-            to = tx_to;
+            toList.Add(tx_to, amount);
             from = tx_from;
 
             data = tx_data;
 
             blockHeight = tx_blockHeight;
 
-            Random r = new Random();
-            nonce = (int) ((DateTimeOffset.Now.ToUnixTimeMilliseconds() - (DateTimeOffset.Now.ToUnixTimeSeconds() * 1000))*100) + r.Next(100);
+            if (tx_nonce == 1)
+            {
+                Random r = new Random();
+                nonce = (int)((DateTimeOffset.Now.ToUnixTimeMilliseconds() - (DateTimeOffset.Now.ToUnixTimeSeconds() * 1000)) * 100) + r.Next(100);
+            }else
+            {
+                nonce = tx_nonce;
+            }
 
             timeStamp = Core.getCurrentTimestamp();
 
             pubKey = tx_pubKey;
 
-            id = generateID();
-            checksum = calculateChecksum(this);
-            signature = getSignature(checksum);
+            fee = calculateMinimumFee(tx_feePerKb);
 
+            generateChecksums();
+
+            if(type == (int)Transaction.Type.StakingReward)
+            {
+                signature = Encoding.UTF8.GetBytes("Stake");
+            }
+            else
+            {
+                signature = getSignature(checksum);
+            }
+        }
+
+        public Transaction(int tx_type, IxiNumber tx_feePerKb, Dictionary<byte[], IxiNumber> tx_toList, byte[] tx_from, byte[] tx_data, byte[] tx_pubKey, ulong tx_blockHeight, int tx_nonce = -1)
+        {
+            if (Node.blockChain.getLastBlockNum() < Legacy.up20181111)
+            {
+                version = 0;
+            }
+            else
+            {
+                version = 1;
+            }
+
+            type = tx_type;
+
+
+            toList = tx_toList;
+
+            amount = calculateTotalAmount();
+
+            from = tx_from;
+
+            data = tx_data;
+
+            blockHeight = tx_blockHeight;
+
+            if (tx_nonce == 1)
+            {
+                Random r = new Random();
+                nonce = (int)((DateTimeOffset.Now.ToUnixTimeMilliseconds() - (DateTimeOffset.Now.ToUnixTimeSeconds() * 1000)) * 100) + r.Next(100);
+            }
+            else
+            {
+                nonce = tx_nonce;
+            }
+
+            timeStamp = Core.getCurrentTimestamp();
+
+            pubKey = tx_pubKey;
+
+            fee = calculateMinimumFee(tx_feePerKb);
+
+            generateChecksums();
+
+            if (type == (int)Transaction.Type.StakingReward)
+            {
+                signature = Encoding.UTF8.GetBytes("Stake");
+            }
+            else
+            {
+                signature = getSignature(checksum);
+            }
         }
 
         public Transaction(Transaction tx_transaction)
@@ -113,11 +193,17 @@ namespace DLT
             version = tx_transaction.version;
             id = tx_transaction.id;
             type = tx_transaction.type;
-            amount = tx_transaction.amount;
-            fee = tx_transaction.fee;
+            amount = new IxiNumber(tx_transaction.amount.getAmount());
+            fee = new IxiNumber(tx_transaction.fee.getAmount());
 
-            to = new byte[tx_transaction.to.Length];
-            Array.Copy(tx_transaction.to, to, to.Length);
+            toList = new Dictionary<byte[], IxiNumber>();
+
+            foreach (var entry in tx_transaction.toList)
+            {
+                byte[] address = new byte[entry.Key.Length];
+                Array.Copy(entry.Key, address, address.Length);
+                toList.Add(address, new IxiNumber(entry.Value.getAmount()));
+            }
 
             from = new byte[tx_transaction.from.Length];
             Array.Copy(tx_transaction.from, from, from.Length);
@@ -154,8 +240,24 @@ namespace DLT
                         amount = new IxiNumber(reader.ReadString());
                         fee = new IxiNumber(reader.ReadString());
 
-                        int toLen = reader.ReadInt32();
-                        to = reader.ReadBytes(toLen);
+                        if (version == 0)
+                        {
+                            int toLen = reader.ReadInt32();
+                            byte[] to = reader.ReadBytes(toLen);
+
+                            toList.Add(to, amount);
+                        }
+                        else
+                        {
+                            int toListLen = reader.ReadInt32();
+                            for(int i = 0; i < toListLen; i++)
+                            {
+                                int addrLen = reader.ReadInt32();
+                                byte[] address = reader.ReadBytes(addrLen);
+                                IxiNumber amount = new IxiNumber(reader.ReadString());
+                                toList.Add(address, amount);
+                            }
+                        }
 
                         int fromLen = reader.ReadInt32();
                         from = reader.ReadBytes(fromLen);
@@ -173,7 +275,10 @@ namespace DLT
                         timeStamp = reader.ReadInt64();
 
                         int crcLen = reader.ReadInt32();
-                        checksum = reader.ReadBytes(crcLen);
+                        if (crcLen > 0)
+                        {
+                            checksum = reader.ReadBytes(crcLen);
+                        }
 
                         int sigLen = reader.ReadInt32();
                         if (sigLen > 0)
@@ -207,10 +312,26 @@ namespace DLT
                     writer.Write(version);
 
                     writer.Write(type);
+
                     writer.Write(amount.ToString());
+
                     writer.Write(fee.ToString());
-                    writer.Write(to.Length);
-                    writer.Write(to);
+
+                    if (version == 0)
+                    {
+                        writer.Write(toList.ToArray()[0].Key.Length);
+                        writer.Write(toList.ToArray()[0].Key);
+                    }else
+                    {
+                        writer.Write(toList.Count);
+                        foreach (var entry in toList)
+                        {
+                            writer.Write(entry.Key.Length);
+                            writer.Write(entry.Key);
+                            writer.Write(entry.Value.ToString());
+                        }
+
+                    }
                     writer.Write(from.Length);
                     writer.Write(from);
                     if (data != null)
@@ -226,8 +347,15 @@ namespace DLT
 
                     writer.Write(timeStamp);
 
-                    writer.Write(checksum.Length);
-                    writer.Write(checksum);
+                    if (checksum != null)
+                    {
+                        writer.Write(checksum.Length);
+                        writer.Write(checksum);
+                    }
+                    else
+                    {
+                        writer.Write((int)0);
+                    }
 
                     if (signature != null)
                     {
@@ -325,7 +453,18 @@ namespace DLT
             rawData.AddRange(BitConverter.GetBytes(type));
             rawData.AddRange(Encoding.UTF8.GetBytes(amount.ToString()));
             rawData.AddRange(Encoding.UTF8.GetBytes(fee.ToString()));
-            rawData.AddRange(to);
+            if (toList.Count == 1)
+            {
+                rawData.AddRange(toList.ToArray()[0].Key);
+            }
+            else
+            {
+                foreach (var entry in toList)
+                {
+                    rawData.AddRange(entry.Key);
+                    rawData.AddRange(entry.Value.getAmount().ToByteArray());
+                }
+            }
             rawData.AddRange(from);
             rawData.AddRange(BitConverter.GetBytes(blockHeight));
             rawData.AddRange(BitConverter.GetBytes(nonce));
@@ -337,45 +476,6 @@ namespace DLT
             return txid;
         }
 
-        public static bool verifyTransactionID(Transaction transaction)
-        {
-            string txid = "";
-
-            if (transaction.type == (int)Type.StakingReward)
-            {
-                if (transaction.data != null)
-                {
-                    ulong blockNum = BitConverter.ToUInt64(transaction.data, 0);
-                    if (blockNum > 0)
-                    {
-                        txid = "stk-" + blockNum + "-";
-                    }
-                }
-            }
-
-            txid += transaction.blockHeight + "-";
-
-            List<byte> rawData = new List<byte>();
-            rawData.AddRange(BitConverter.GetBytes(transaction.type));
-            rawData.AddRange(Encoding.UTF8.GetBytes(transaction.amount.ToString()));
-            rawData.AddRange(Encoding.UTF8.GetBytes(transaction.fee.ToString()));
-            rawData.AddRange(transaction.to);
-            rawData.AddRange(transaction.from);
-            rawData.AddRange(BitConverter.GetBytes(transaction.blockHeight));
-            rawData.AddRange(BitConverter.GetBytes(transaction.nonce));
-            rawData.AddRange(BitConverter.GetBytes(transaction.version));
-            string chk = Base58Check.Base58CheckEncoding.EncodePlain(Crypto.sha512sqTrunc(rawData.ToArray()));
-
-            txid += chk;
-
-            if (transaction.id.Equals(txid, StringComparison.Ordinal))
-            {
-                return true;
-            }
-
-            return false;
-        }
-
         // Calculate a transaction checksum 
         public static byte[] calculateChecksum(Transaction transaction)
         {
@@ -385,12 +485,26 @@ namespace DLT
             rawData.AddRange(BitConverter.GetBytes(transaction.type));
             rawData.AddRange(Encoding.UTF8.GetBytes(transaction.amount.ToString()));
             rawData.AddRange(Encoding.UTF8.GetBytes(transaction.fee.ToString()));
-            rawData.AddRange(transaction.to);
+            if (transaction.toList.Count == 1)
+            {
+                rawData.AddRange(transaction.toList.ToArray()[0].Key);
+            }
+            else
+            {
+                foreach (var entry in transaction.toList)
+                {
+                    rawData.AddRange(entry.Key);
+                    rawData.AddRange(entry.Value.getAmount().ToByteArray());
+                }
+            }
+
             rawData.AddRange(transaction.from);
+
             if (transaction.data != null)
             {
                 rawData.AddRange(transaction.data);
             }
+
             rawData.AddRange(BitConverter.GetBytes(transaction.blockHeight));
             rawData.AddRange(BitConverter.GetBytes(transaction.nonce));
             rawData.AddRange(BitConverter.GetBytes(transaction.timeStamp));
@@ -406,6 +520,39 @@ namespace DLT
         {
             return CryptoManager.lib.getSignature(checksum, Node.walletStorage.privateKey);
         }
+
+
+        public IxiNumber calculateTotalAmount()
+        {
+            IxiNumber total = new IxiNumber(0);
+            foreach(var entry in toList)
+            {
+                total += entry.Value;
+            }
+            return total;
+        }
+
+        public void generateChecksums()
+        {
+            id = generateID();
+            checksum = calculateChecksum(this);
+        }
+
+        public IxiNumber calculateMinimumFee(IxiNumber pricePerKb)
+        {
+            int bytesLen = getBytes().Length;
+            if (checksum == null)
+            {
+                bytesLen += 32;
+            }
+            if (signature == null)
+            {
+                bytesLen += 512;
+            }
+            IxiNumber expectedFee = pricePerKb * (ulong)Math.Ceiling((double)bytesLen / 1000);
+            return expectedFee;
+        }
+
 
         private void AddMultisigOrig(string orig_txid)
         {
@@ -635,74 +782,39 @@ namespace DLT
 
         public static Transaction multisigTransaction(string orig_txid, IxiNumber tx_amount, IxiNumber tx_fee, byte[] tx_to, byte[] tx_from, ulong tx_blockHeight)
         {
-            Transaction t = new Transaction(tx_amount, tx_fee, tx_to, tx_from, null, Node.walletStorage.publicKey, tx_blockHeight);
-            t.type = (int)Transaction.Type.MultisigTX;
+            Transaction t = new Transaction((int)Transaction.Type.MultisigTX, tx_amount, tx_fee, tx_to, tx_from, null, Node.walletStorage.publicKey, tx_blockHeight);
+
             t.AddMultisigOrig(orig_txid);
-            // overwrite invalid values where were calcualted before the multisig flag was set
-            t.id = t.generateID();
-            t.checksum = calculateChecksum(t);
-            t.signature = getSignature(t.checksum);
+
             return t;
         }
 
         public static Transaction multisigAddKeyTransaction(string orig_txid, byte[] allowed_address,  IxiNumber tx_fee, byte[] tx_from, ulong tx_blockHeight)
         {
-            Transaction t = new Transaction
-            {
-                type = (int)Transaction.Type.ChangeMultisigWallet,
-                amount = new IxiNumber(0),
-                fee = tx_fee,
-                from = tx_from,
-                to = tx_from,
-                blockHeight = tx_blockHeight
-            };
+            Transaction t = new Transaction((int)Transaction.Type.ChangeMultisigWallet, new IxiNumber(0), tx_fee, tx_from, tx_from, null, Node.walletStorage.publicKey, tx_blockHeight);
+
             t.AddMultisigChWallet(orig_txid, allowed_address, MultisigWalletChangeType.AddSigner);
-            //
-            t.pubKey = Node.walletStorage.publicKey;
-            t.id = t.generateID();
-            t.checksum = calculateChecksum(t);
-            t.signature = getSignature(t.checksum);
+
             return t;
         }
 
         public static Transaction multisigDelKeyTransaction(string orig_txid, byte[] disallowed_address, IxiNumber tx_fee, byte[] tx_from, ulong tx_blockHeight)
         {
-            Transaction t = new Transaction
-            {
-                type = (int)Transaction.Type.ChangeMultisigWallet,
-                amount = new IxiNumber(0),
-                fee = tx_fee,
-                from = tx_from,
-                to = tx_from,
-                blockHeight = tx_blockHeight
-            };
+            Transaction t = new Transaction((int)Transaction.Type.ChangeMultisigWallet, new IxiNumber(0), tx_fee, tx_from, tx_from, null, Node.walletStorage.publicKey, tx_blockHeight);
+
             t.AddMultisigChWallet(orig_txid, disallowed_address, MultisigWalletChangeType.DelSigner);
-            //
-            t.pubKey = Node.walletStorage.publicKey;
-            t.id = t.generateID();
-            t.checksum = calculateChecksum(t);
-            t.signature = getSignature(t.checksum);
+
             return t;
         }
 
         public static Transaction multisigChangeReqSigs(string orig_txid, byte sigs, IxiNumber tx_fee, byte[] tx_from, ulong tx_blockHeight)
         {
-            Transaction t = new Transaction
-            {
-                type = (int)Transaction.Type.ChangeMultisigWallet,
-                amount = new IxiNumber(0),
-                fee = tx_fee,
-                from = tx_from,
-                to = tx_from,
-                blockHeight = tx_blockHeight
-            };
+            Transaction t = new Transaction((int)Transaction.Type.ChangeMultisigWallet, new IxiNumber(0), tx_fee, tx_from, tx_from, null, Node.walletStorage.publicKey, tx_blockHeight);
+
             t.AddMultisigChReqSigs(orig_txid, sigs);
-            //
-            t.pubKey = Node.walletStorage.publicKey;
-            t.id = t.generateID();
-            t.checksum = calculateChecksum(t);
-            t.signature = getSignature(t.checksum);
+
             return t;
         }
+
     }
 }

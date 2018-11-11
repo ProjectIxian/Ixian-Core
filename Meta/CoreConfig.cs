@@ -30,7 +30,7 @@ namespace IXICore
 
         // Transactions and fees
         public static readonly IxiNumber minimumMasterNodeFunds = new IxiNumber("20000"); // Limit master nodes to this amount or above
-        public static readonly IxiNumber transactionPrice = 5000; // Per kB
+        public static readonly IxiNumber transactionPrice = new IxiNumber("0.00005000"); // Per kB
         public static readonly IxiNumber foundationFeePercent = 3; // 3% of transaction fees
         public static readonly byte[] foundationAddress = Base58Check.Base58CheckEncoding.DecodePlain("153xXfVi1sznPcRqJur8tutgrZecNVYGSzetp47bQvRfNuDix"); // Foundation wallet address
         public static readonly IxiNumber relayPriceInitial = new IxiNumber("0.0002"); // Per kB

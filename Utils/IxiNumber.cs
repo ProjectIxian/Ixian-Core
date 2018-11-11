@@ -10,7 +10,7 @@ namespace DLT
     public class IxiNumber
     {
         // A divisor corresponding to 8 decimals as per WhitePaper
-        private static BigInteger divisor = BigInteger.Parse("100000000");
+        private static BigInteger divisor = 100000000;
         private static int num_decimals = 8;
 
         // Set the initial value to 0
@@ -28,16 +28,17 @@ namespace DLT
 
         public IxiNumber(ulong number)
         {
-            amount = new BigInteger(number);
+            amount = BigInteger.Multiply(number, divisor);
         }
 
-        public IxiNumber(ulong number, bool no_decimals)
+        public IxiNumber(long number)
         {
-            amount = new BigInteger(number);
-            if (no_decimals == true)
-            {
-                amount = BigInteger.Multiply(amount, divisor);
-            }
+            amount = BigInteger.Multiply(number, divisor);
+        }
+
+        public IxiNumber(int number)
+        {
+            amount = BigInteger.Multiply(number, divisor);
         }
 
         public IxiNumber(string number)
@@ -152,14 +153,15 @@ namespace DLT
             amount = BigInteger.Subtract(amount, num.getAmount());
         }
 
+
         public void multiply(IxiNumber num)
         {
-            amount = BigInteger.Multiply(amount, num.getAmount());
+            amount = BigInteger.Divide(BigInteger.Multiply(amount, num.getAmount()), divisor);
         }
 
         public void divide(IxiNumber num)
         {
-            amount = BigInteger.Divide(amount, num.getAmount());
+            amount = BigInteger.Divide(BigInteger.Multiply(amount, divisor), num.getAmount());
         }
 
 
@@ -175,21 +177,20 @@ namespace DLT
 
         public static IxiNumber multiply(IxiNumber num1, IxiNumber num2)
         {
-            return new IxiNumber(BigInteger.Multiply(num1.getAmount(), num2.getAmount()));
+            return new IxiNumber(BigInteger.Divide(BigInteger.Multiply(num1.getAmount(), num2.getAmount()), divisor));
         }
 
         public static IxiNumber divide(IxiNumber num1, IxiNumber num2)
         {
-            return new IxiNumber(BigInteger.Divide(num1.getAmount(), num2.getAmount()));
+            return new IxiNumber(BigInteger.Divide(BigInteger.Multiply(num1.getAmount(), divisor), num2.getAmount()));
         }
-
+        
         public static IxiNumber divRem(IxiNumber num1, IxiNumber num2, out IxiNumber remainder)
         {
             BigInteger bi_remainder = 0;
-            BigInteger bi_quotient = BigInteger.DivRem(num1.getAmount(), num2.getAmount(), out bi_remainder);
+            BigInteger bi_quotient = BigInteger.DivRem(BigInteger.Multiply(num1.getAmount(), divisor), num2.getAmount(), out bi_remainder);
 
-            remainder = new IxiNumber(bi_remainder);
-
+            remainder = new IxiNumber(BigInteger.Divide(bi_remainder, divisor));
 
             return new IxiNumber(bi_quotient);
         }
@@ -204,6 +205,16 @@ namespace DLT
         }
 
         public static implicit operator IxiNumber(ulong value)
+        {
+            return new IxiNumber(value);
+        }
+
+        public static implicit operator IxiNumber(long value)
+        {
+            return new IxiNumber(value);
+        }
+
+        public static implicit operator IxiNumber(int value)
         {
             return new IxiNumber(value);
         }
@@ -313,6 +324,82 @@ namespace DLT
             return divide(a, b);
         }
 
+
+        public static void test()
+        {
+            IxiNumber num1 = new IxiNumber("2.00000000");
+            IxiNumber num2 = new IxiNumber("2.0");
+            ulong num3 = 2;
+            long num4 = 2;
+            int num5 = 2;
+
+            Console.WriteLine(num1);
+            Console.WriteLine(num2);
+            Console.WriteLine("div: " + (num1 / num2).ToString());
+            Console.WriteLine("mul: " + (num1 * num2).ToString());
+            Console.WriteLine("div: " + (num1 / num3).ToString());
+            Console.WriteLine("mul: " + (num1 * num3).ToString());
+            Console.WriteLine("div: " + (num1 / num4).ToString());
+            Console.WriteLine("mul: " + (num1 * num4).ToString());
+            Console.WriteLine("div: " + (num1 / num5).ToString());
+            Console.WriteLine("mul: " + (num1 * num5).ToString());
+            Console.WriteLine("");
+
+            num1 = new IxiNumber("0.5");
+            num2 = new IxiNumber("2");
+
+            Console.WriteLine(num1);
+            Console.WriteLine(num2);
+            Console.WriteLine("div: " + (num1 / num2).ToString());
+            Console.WriteLine("mul: " + (num1 * num2).ToString());
+            Console.WriteLine("div: " + (num1 / num3).ToString());
+            Console.WriteLine("mul: " + (num1 * num3).ToString());
+            Console.WriteLine("div: " + (num1 / num4).ToString());
+            Console.WriteLine("mul: " + (num1 * num4).ToString());
+            Console.WriteLine("div: " + (num1 / num5).ToString());
+            Console.WriteLine("mul: " + (num1 * num5).ToString());
+            Console.WriteLine("");
+
+            num1 = new IxiNumber(2);
+            num2 = new IxiNumber(2);
+
+            Console.WriteLine(num1);
+            Console.WriteLine(num2);
+            Console.WriteLine("div: " + (num1 / num2).ToString());
+            Console.WriteLine("mul: " + (num1 * num2).ToString());
+            Console.WriteLine("div: " + (num1 / num3).ToString());
+            Console.WriteLine("mul: " + (num1 * num3).ToString());
+            Console.WriteLine("div: " + (num1 / num4).ToString());
+            Console.WriteLine("mul: " + (num1 * num4).ToString());
+            Console.WriteLine("div: " + (num1 / num5).ToString());
+            Console.WriteLine("mul: " + (num1 * num5).ToString());
+            Console.WriteLine("");
+
+            num1 = new IxiNumber("1.23456789");
+            num2 = new IxiNumber("2.34567890");
+            double num1d = 1.23456789;
+            double num2d = 2.34567890;
+
+            Console.WriteLine(num1);
+            Console.WriteLine(num2);
+            Console.WriteLine("div: " + (num1 / num2).ToString());
+            Console.WriteLine("mul: " + (num1 * num2).ToString());
+            Console.WriteLine("div: " + (num1d / num2d).ToString());
+            Console.WriteLine("mul: " + (num1d * num2d).ToString());
+            Console.WriteLine("");
+
+            num1 = new IxiNumber("1.23456789");
+            num2 = new IxiNumber("2");
+            num3 = 2;
+
+            Console.WriteLine(num1);
+            Console.WriteLine(num2);
+            Console.WriteLine("div: " + (num1 / num2).ToString());
+            Console.WriteLine("mul: " + (num1 * num2).ToString());
+            Console.WriteLine("div: " + (num1 / num3).ToString());
+            Console.WriteLine("mul: " + (num1 * num3).ToString());
+            Console.WriteLine("");
+        }
 
     }
 }

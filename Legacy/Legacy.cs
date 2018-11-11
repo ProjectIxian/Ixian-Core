@@ -9,18 +9,18 @@ namespace DLT
     class Legacy
     {
         // List of upgrades and corresponding block heights
-        public static readonly ulong up20181017 = 15; 
+        public static readonly ulong up20181111 = 86400;
 
 
 
         // Quickly checks if a block number is within a legacy window
         public static bool isLegacy(ulong blocknum)
         {
-            if(blocknum < up20181017)
+            /*if(blocknum < up20181017)
             {
                 // Legacy code needed
                 return true;
-            }
+            }*/
 
             // This does not require legacy code
             return false;
@@ -29,7 +29,8 @@ namespace DLT
         // Returns the legacy level
         public static ulong getLegacyLevel()
         {
-            return up20181017;
+            //return up20181017;
+            return 0;
         }
 
     }

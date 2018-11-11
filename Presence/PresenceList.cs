@@ -425,8 +425,9 @@ namespace DLT
                     }
                 }
             }
-            catch(Exception)
+            catch(Exception e)
             {
+                Logging.error("Exception occured in receiveKeepAlive: " + e);
                 return false;
             }
 
@@ -475,9 +476,10 @@ namespace DLT
                             }
 
                         }
-                        catch(Exception)
+                        catch(Exception e)
                         {
                             // Ignore this entry for now
+                            Logging.error("Exception occured in PL performCleanup: " + e);
                             continue;
                         }
                     }
