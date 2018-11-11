@@ -9,7 +9,7 @@ namespace DLT
     class Legacy
     {
         // List of upgrades and corresponding block heights
-        public static readonly ulong up20181111 = 86400;
+        public static readonly ulong up20181111 = 43400;
 
 
 
