@@ -473,7 +473,7 @@ namespace DLT
             rawData.AddRange(from);
             rawData.AddRange(BitConverter.GetBytes(blockHeight));
             rawData.AddRange(BitConverter.GetBytes(nonce));
-            rawData.AddRange(BitConverter.GetBytes(version));
+            rawData.AddRange(BitConverter.GetBytes((int)0)); // version was replaced with this, as it's tx metadata and shouldn't be part of the ID
             string chk = Base58Check.Base58CheckEncoding.EncodePlain(Crypto.sha512sqTrunc(rawData.ToArray()));
 
             txid += chk;
