@@ -67,14 +67,7 @@ namespace DLT
 
         public Transaction(int tx_type)
         {
-            // we can remove version 0 when all nodes are updated
-            if (Node.getLastBlockHeight() < Legacy.up20181111)
-            {
-                version = 0;
-            }else
-            {
-                version = 1;
-            }
+            version = 1;
 
             type = tx_type;
 
@@ -91,15 +84,7 @@ namespace DLT
 
         public Transaction(int tx_type, IxiNumber tx_amount, IxiNumber tx_feePerKb, byte[] tx_to, byte[] tx_from, byte[] tx_data, byte[] tx_pubKey, ulong tx_blockHeight, int tx_nonce = -1)
         {
-            // we can remove version 0 when all nodes are updated
-            if (Node.getLastBlockHeight() < Legacy.up20181111)
-            {
-                version = 0;
-            }
-            else
-            {
-                version = 1;
-            }
+            version = 1;
 
             type = tx_type;
 
@@ -140,15 +125,7 @@ namespace DLT
 
         public Transaction(int tx_type, IxiNumber tx_feePerKb, Dictionary<byte[], IxiNumber> tx_toList, byte[] tx_from, byte[] tx_data, byte[] tx_pubKey, ulong tx_blockHeight, int tx_nonce = -1)
         {
-            // we can remove version 0 when all nodes are updated
-            if (Node.getLastBlockHeight() < Legacy.up20181111)
-            {
-                version = 0;
-            }
-            else
-            {
-                version = 1;
-            }
+            version = 1;
 
             type = tx_type;
 
@@ -243,24 +220,13 @@ namespace DLT
                         amount = new IxiNumber(reader.ReadString());
                         fee = new IxiNumber(reader.ReadString());
 
-                        // we can remove version 0 when all nodes are updated
-                        if (version == 0)
+                        int toListLen = reader.ReadInt32();
+                        for(int i = 0; i < toListLen; i++)
                         {
-                            int toLen = reader.ReadInt32();
-                            byte[] to = reader.ReadBytes(toLen);
-
-                            toList.Add(to, amount);
-                        }
-                        else
-                        {
-                            int toListLen = reader.ReadInt32();
-                            for(int i = 0; i < toListLen; i++)
-                            {
-                                int addrLen = reader.ReadInt32();
-                                byte[] address = reader.ReadBytes(addrLen);
-                                IxiNumber amount = new IxiNumber(reader.ReadString());
-                                toList.Add(address, amount);
-                            }
+                            int addrLen = reader.ReadInt32();
+                            byte[] address = reader.ReadBytes(addrLen);
+                            IxiNumber amount = new IxiNumber(reader.ReadString());
+                            toList.Add(address, amount);
                         }
 
                         int fromLen = reader.ReadInt32();
@@ -321,24 +287,17 @@ namespace DLT
 
                     writer.Write(fee.ToString());
 
-                    // we can remove version 0 when all nodes are updated
-                    if (version == 0)
+                    writer.Write(toList.Count);
+                    foreach (var entry in toList)
                     {
-                        writer.Write(toList.ToArray()[0].Key.Length);
-                        writer.Write(toList.ToArray()[0].Key);
-                    }else
-                    {
-                        writer.Write(toList.Count);
-                        foreach (var entry in toList)
-                        {
-                            writer.Write(entry.Key.Length);
-                            writer.Write(entry.Key);
-                            writer.Write(entry.Value.ToString());
-                        }
-
+                        writer.Write(entry.Key.Length);
+                        writer.Write(entry.Key);
+                        writer.Write(entry.Value.ToString());
                     }
+
                     writer.Write(from.Length);
                     writer.Write(from);
+
                     if (data != null)
                     {
                         writer.Write(data.Length);
