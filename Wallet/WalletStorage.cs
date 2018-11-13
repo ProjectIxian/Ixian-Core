@@ -44,12 +44,7 @@ namespace DLT
             }
 
             Logging.log(LogSeverity.info, "Wallet file found, reading data...");
-
-            // Sleep a bit for the logger to catch up
-            while (Logging.getRemainingStatementsCount() > 0)
-            {
-                Thread.Sleep(100);
-            }
+            Logging.flush();
 
             BinaryReader reader;
             try
@@ -103,10 +98,7 @@ namespace DLT
                     catch(Exception)
                     {
                         Logging.error(string.Format("Incorrect password"));
-                        while (Logging.getRemainingStatementsCount() > 0)
-                        {
-                            Thread.Sleep(100);
-                        }
+                        Logging.flush();
                         success = false;
                     }
                   
@@ -116,10 +108,7 @@ namespace DLT
                 address = addr.address;
 
                 // Wait for any pending log messages to be written
-                while (Logging.getRemainingStatementsCount() > 0)
-                {
-                    Thread.Sleep(100);
-                }
+                Logging.flush();
 
                 Console.WriteLine();
                 Console.Write("Your IXIAN address is ");
@@ -242,10 +231,7 @@ namespace DLT
             Logging.info(String.Format("Public Node Address: {0}", Base58Check.Base58CheckEncoding.EncodePlain(address)));
 
             // Wait for any pending log messages to be written
-            while (Logging.getRemainingStatementsCount() > 0)
-            {
-                Thread.Sleep(100);
-            }
+            Logging.flush();
 
             Console.WriteLine();
             Console.Write("Your IXIAN address is ");

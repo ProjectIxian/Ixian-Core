@@ -290,6 +290,14 @@ namespace DLT
                 }
             }
 
+            public static void flush()
+            {
+                while (getRemainingStatementsCount() > 0)
+                {
+                    Thread.Sleep(100);
+                }
+            }
+
             #region Convenience methods
             public static void trace(string message)
             {

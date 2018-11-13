@@ -91,7 +91,10 @@ namespace IXICore
             try
             {
                 listener.Prefixes.Add(listenURL);
-                listener.AuthenticationSchemes = AuthenticationSchemes.Basic;
+                if (authorizedUsers != null && authorizedUsers.Count > 0)
+                {
+                    listener.AuthenticationSchemes = AuthenticationSchemes.Basic;
+                }
                 listener.Start();
             }
             catch (Exception ex)
