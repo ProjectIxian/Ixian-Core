@@ -203,6 +203,7 @@ namespace DLT
                         {
                             if (logFileStream != null)
                             {
+                                logFileStream.Flush();
                                 logFileStream.Close();
                                 logFileStream = null;
                             }
@@ -232,6 +233,13 @@ namespace DLT
                             }
                         }
                     }
+                }
+                catch (Exception e)
+                {
+                    Console.WriteLine("Exception rolling log file: {0}", e.Message);
+                }
+                try
+                {
                     if (logFileStream == null)
                     {
                         logFileStream = File.Open(logfilename, FileMode.OpenOrCreate, FileAccess.Write, FileShare.Read);
@@ -239,7 +247,7 @@ namespace DLT
                 }
                 catch (Exception e)
                 {
-                    Console.WriteLine("Exception rolling log file: {0}", e.Message);
+                    Console.WriteLine("Exception opening log file: {0}", e.Message);
                 }
             }
 

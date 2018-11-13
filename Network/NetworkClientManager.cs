@@ -297,6 +297,11 @@ namespace DLT
 
         public static void recalculateLocalTimeDifference()
         {
+            if(Config.forceTimeOffset != int.MaxValue)
+            {
+                Core.networkTimeDifference = Config.forceTimeOffset;
+                return;
+            }
             lock (networkClients)
             {
                 if (networkClients.Count < 1)
