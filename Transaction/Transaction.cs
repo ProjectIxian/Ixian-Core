@@ -188,22 +188,33 @@ namespace DLT
             from = new byte[tx_transaction.from.Length];
             Array.Copy(tx_transaction.from, from, from.Length);
 
-            data = new byte[tx_transaction.data.Length];
-            Array.Copy(tx_transaction.data, data, data.Length);
+            if (tx_transaction.data != null)
+            {
+                data = new byte[tx_transaction.data.Length];
+                Array.Copy(tx_transaction.data, data, data.Length);
+            }
 
             blockHeight = tx_transaction.blockHeight;
             nonce = tx_transaction.nonce;
             timeStamp = tx_transaction.timeStamp;
 
-            checksum = new byte[tx_transaction.checksum.Length];
-            Array.Copy(tx_transaction.checksum, checksum, checksum.Length);
+            if (tx_transaction.checksum != null)
+            {
+                checksum = new byte[tx_transaction.checksum.Length];
+                Array.Copy(tx_transaction.checksum, checksum, checksum.Length);
+            }
 
-            signature = new byte[tx_transaction.signature.Length];
-            Array.Copy(tx_transaction.signature, signature, signature.Length);
+            if (tx_transaction.signature != null)
+            {
+                signature = new byte[tx_transaction.signature.Length];
+                Array.Copy(tx_transaction.signature, signature, signature.Length);
+            }
 
-            pubKey = new byte[tx_transaction.pubKey.Length];
-            Array.Copy(tx_transaction.pubKey, pubKey, pubKey.Length);
-
+            if (tx_transaction.pubKey != null)
+            {
+                pubKey = new byte[tx_transaction.pubKey.Length];
+                Array.Copy(tx_transaction.pubKey, pubKey, pubKey.Length);
+            }
         }
 
         public Transaction(byte[] bytes)
