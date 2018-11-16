@@ -128,32 +128,39 @@ namespace DLT
             // Internal log function called by the log thread
             private static void log_internal(LogSeverity severity, string message, int threadId, string time)
             {
-                if (severity >= currentSeverity)
+                try
                 {
-                    String formattedMessage = String.Format("{0}|{1}|Thread({2}): {3}",
-                        time,
-                        severity.ToString(),
-                        threadId,
-                        message);
-
-                    if (severity == LogSeverity.error)
-                        Console.ForegroundColor = ConsoleColor.Red;
-
-                    Console.WriteLine(formattedMessage);
-
-                    if (severity == LogSeverity.error)
-                        Console.ResetColor();
-
-                    Debug.WriteLine(formattedMessage);
-
-                    lock (logfilename)
+                    if (severity >= currentSeverity)
                     {
-                        Logging.roll();
-                        byte[] logMessage = Encoding.UTF8.GetBytes(formattedMessage + Environment.NewLine);
-                        logFileStream.Write(logMessage, 0, logMessage.Length);
-                        logFileStream.FlushAsync();
-                    }
+                        String formattedMessage = String.Format("{0}|{1}|Thread({2}): {3}",
+                            time,
+                            severity.ToString(),
+                            threadId,
+                            message);
 
+                        if (severity == LogSeverity.error)
+                            Console.ForegroundColor = ConsoleColor.Red;
+
+                        Console.WriteLine(formattedMessage);
+
+                        if (severity == LogSeverity.error)
+                            Console.ResetColor();
+
+                        Debug.WriteLine(formattedMessage);
+
+                        lock (logfilename)
+                        {
+                            Logging.roll();
+                            byte[] logMessage = Encoding.UTF8.GetBytes(formattedMessage + Environment.NewLine);
+                            logFileStream.Write(logMessage, 0, logMessage.Length);
+                            logFileStream.Flush();
+                        }
+
+                    }
+                }
+                catch(Exception e)
+                {
+                    Console.WriteLine("Logging exception: {0}", e.Message);
                 }
             }
 
@@ -237,6 +244,7 @@ namespace DLT
                 catch (Exception e)
                 {
                     Console.WriteLine("Exception rolling log file: {0}", e.Message);
+                    return;
                 }
                 try
                 {
