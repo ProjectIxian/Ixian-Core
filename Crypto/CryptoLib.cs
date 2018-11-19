@@ -7,7 +7,7 @@ using System.Threading.Tasks;
 
 namespace DLT
 {
-    interface ICryptoLib
+    public interface ICryptoLib
     {
         bool generateKeys(int keySize);
 
@@ -34,7 +34,7 @@ namespace DLT
     }
 
 
-    class CryptoLib
+    public class CryptoLib
     {
         private ICryptoLib _cryptoLib = null;
 

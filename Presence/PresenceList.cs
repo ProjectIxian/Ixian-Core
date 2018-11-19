@@ -75,6 +75,11 @@ namespace DLT
         {
             //Console.WriteLine("[PL] Received update entry for: {0}", presence.wallet);
 
+            if(presence == null)
+            {
+                return null;
+            }
+
             bool entryUpdated = false;
 
             Presence return_presence = null;
