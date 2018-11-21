@@ -129,12 +129,14 @@ namespace CryptoLibs
 
         public bool testKeys(byte[] plain)
         {
+            Logging.info("Testing generated keys.");
+
             byte[] encrypted = encryptWithRSA(plain, publicKeyBytes);
             byte[] signature = getSignature(plain, privateKeyBytes);
 
             if (!verifySignature(plain, publicKeyBytes, signature))
             {
-                Logging.warn(string.Format("Error verifying signatures while testing keys."));
+                Logging.warn(string.Format("Error verifying signature while testing keys."));
                 return false;
             }
 

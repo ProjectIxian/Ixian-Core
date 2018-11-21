@@ -14,7 +14,7 @@ namespace DLT
     public class RemoteEndpoint
     {
         public string fullAddress = "127.0.0.1:10000";
-        public string address = "";
+        public string address = "127.0.0.1";
         public int incomingPort = Config.serverPort;
 
         public bool helloReceived = false;
