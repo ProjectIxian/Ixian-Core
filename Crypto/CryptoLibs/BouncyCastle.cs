@@ -127,6 +127,26 @@ namespace CryptoLibs
             return null;
         }
 
+        public bool testKeys(byte[] plain)
+        {
+            byte[] encrypted = encryptWithRSA(plain, publicKeyBytes);
+            byte[] signature = getSignature(plain, privateKeyBytes);
+
+            if (!verifySignature(plain, publicKeyBytes, signature))
+            {
+                Logging.warn(string.Format("Error verifying signatures while testing keys."));
+                return false;
+            }
+
+            if (!decryptWithRSA(encrypted, privateKeyBytes).SequenceEqual(plain))
+            {
+                Logging.warn(string.Format("Error decrypting data while testing keys."));
+                return false;
+            }
+
+            return true;
+        }
+
         // Generates keys for RSA signing
         public bool generateKeys(int keySize)
         {
@@ -136,9 +156,18 @@ namespace CryptoLibs
                 privateKeyBytes = rsaKeyToBytes(rsa, true);
                 publicKeyBytes = rsaKeyToBytes(rsa, false);
 
+                byte[] plain = Encoding.UTF8.GetBytes("Plain text string");
+                if (!testKeys(plain))
+                {
+                    privateKeyBytes = null;
+                    publicKeyBytes = null;
+                    return false;
+                }
             }
             catch (Exception e)
             {
+                privateKeyBytes = null;
+                publicKeyBytes = null;
                 Logging.warn(string.Format("Exception while generating signature keys: {0}", e.ToString()));
                 return false;
             }
