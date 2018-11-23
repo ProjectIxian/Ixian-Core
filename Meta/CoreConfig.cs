@@ -23,7 +23,7 @@ namespace IXICore
         public static readonly int pingTimeout = 5; // how long to wait for data after sending ping 
         public static readonly int networkClientReconnectInterval = 10 * 1000; // Time in milliseconds
         public static readonly int keepAliveInterval = 45; // Number of seconds to wait until next keepalive ping
-        public static readonly int maximumNeighborReconnectCount = 5; // Number of retries before proceeding to a different neighbor node
+        public static readonly int maximumNeighborReconnectCount = 3; // Number of retries before proceeding to a different neighbor node
         public static readonly int simultaneousConnectedNeighbors = 6; // Desired number of simulatenously connected neighbor nodes
         public static readonly int maximumServerClients = 10; // Maximum number of clients this server can accept
         public static readonly double networkConsensusRatio = 0.75;

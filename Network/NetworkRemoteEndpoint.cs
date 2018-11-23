@@ -333,7 +333,7 @@ namespace DLT
                     sendDataInternal(active_message.code, active_message.data, active_message.checksum);
                     if(active_message.code == ProtocolMessageCode.bye)
                     {
-                        Thread.Sleep(2000); // grace sleep to get the message through
+                        Thread.Sleep(500); // grace sleep to get the message through
                         running = false;
                         fullyStopped = true;
                     }
@@ -421,7 +421,7 @@ namespace DLT
                         bytesToSendCount = 8000;
                     }
                     int curSentBytes = clientSocket.Send(ba, sentBytes, ba.Length - sentBytes, SocketFlags.None);
-                    
+
                     // Sleep a bit to allow other threads to do their thing
                     Thread.Yield();
 
