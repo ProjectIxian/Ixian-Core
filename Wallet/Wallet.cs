@@ -75,7 +75,7 @@ namespace DLT
             publicKey = wallet.publicKey;
         }
 
-        public Wallet(byte[] bytes, bool legacy = false)
+        public Wallet(byte[] bytes)
         {
             using (MemoryStream m = new MemoryStream(bytes))
             {
@@ -87,8 +87,13 @@ namespace DLT
                         id = reader.ReadBytes(idLen);
                         string balance_str = reader.ReadString();
                         balance = new IxiNumber(balance_str);
+
                         int dataLen = reader.ReadInt32();
-                        data = reader.ReadBytes(dataLen);
+                        if (dataLen > 0)
+                        {
+                            data = reader.ReadBytes(dataLen);
+                        }
+
                         type = (WalletType)reader.ReadByte();
                         requiredSigs = reader.ReadByte();
                         byte num_allowed_sigs = reader.ReadByte();
@@ -107,7 +112,10 @@ namespace DLT
                         }
 
                         int pkLen = reader.ReadInt32();
-                        publicKey = reader.ReadBytes(pkLen);
+                        if (pkLen > 0)
+                        {
+                            publicKey = reader.ReadBytes(pkLen);
+                        }
                     }
                     catch (Exception)
                     {
@@ -128,8 +136,16 @@ namespace DLT
                         writer.Write(id.Length);
                         writer.Write(id);
                         writer.Write(balance.ToString());
-                        writer.Write(data.Length);
-                        writer.Write(data);
+
+                        if (data != null)
+                        {
+                            writer.Write(data.Length);
+                            writer.Write(data);
+                        }else
+                        {
+                            writer.Write((int)0);
+                        }
+
                         writer.Write((byte)type);
                         writer.Write(requiredSigs);
                         if (allowedSigners != null)
@@ -145,8 +161,15 @@ namespace DLT
                         {
                             writer.Write((byte)0);
                         }
-                        writer.Write(publicKey.Length);
-                        writer.Write(publicKey);
+
+                        if (publicKey != null)
+                        {
+                            writer.Write(publicKey.Length);
+                            writer.Write(publicKey);
+                        }else
+                        {
+                            writer.Write((int)0);
+                        }
                     }
                     catch (Exception)
                     {

@@ -20,10 +20,17 @@ namespace DLT
         private static Thread reconnectThread;
         private static bool autoReconnect = true;
 
+        private static bool running = false;
+
         // Starts the Network Client Manager. First it connects to one of the seed nodes in order to fetch the Presence List.
         // Afterwards, it starts the reconnect and keepalive threads
         public static void start()
         {
+            if(running)
+            {
+                return;
+            }
+            running = true;
             networkClients = new List<NetworkClient>();
 
             PeerStorage.readPeersFile();
@@ -57,6 +64,11 @@ namespace DLT
 
         public static void stop()
         {
+            if(!running)
+            {
+                return;
+            }
+            running = false;
             autoReconnect = false;
             isolate();
 

@@ -294,7 +294,11 @@ namespace DLT
         public WsChunk[] getWalletStateChunks(int chunk_size, ulong block_num)
         {
             lock(stateLock)
-            {                
+            {
+                if(chunk_size == 0)
+                {
+                    chunk_size = walletState.Count;
+                }
                 int num_chunks = walletState.Count / chunk_size + 1;
                 Logging.info(String.Format("Preparing {0} chunks of walletState. Total wallets: {1}", num_chunks, walletState.Count));
                 WsChunk[] chunks = new WsChunk[num_chunks];
@@ -326,7 +330,10 @@ namespace DLT
                 }
                 foreach (Wallet w in wallets)
                 {
-                    walletState.AddOrReplace(w.id, w);
+                    if (w != null)
+                    {
+                        walletState.AddOrReplace(w.id, w);
+                    }
                 }
                 cachedChecksum = null;
                 cachedDeltaChecksum = null;
