@@ -85,6 +85,12 @@ namespace DLT
             // Stops the logging thread
             public static void stop()
             {
+                // Check if the logging is already stopped
+                if (running == false)
+                {
+                    return;
+                }
+
                 running = false;
                 thread.Abort();
                 lock (logfilename)
