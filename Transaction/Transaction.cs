@@ -1,5 +1,6 @@
 using DLT.Meta;
 using IXICore;
+using IXICore.Utils;
 using System;
 using System.Collections.Generic;
 using System.IO;
@@ -51,7 +52,7 @@ namespace DLT
         public IxiNumber amount = new IxiNumber("0"); // 32
         public IxiNumber fee = new IxiNumber("0"); // 32
 
-        public Dictionary<byte[], IxiNumber> toList = new Dictionary<byte[], IxiNumber>();
+        public SortedDictionary<byte[], IxiNumber> toList = new SortedDictionary<byte[], IxiNumber>(new ByteArrayComparer());
 
         public byte[] from; // 36
         public byte[] data; // 0
@@ -123,7 +124,7 @@ namespace DLT
             }
         }
 
-        public Transaction(int tx_type, IxiNumber tx_feePerKb, Dictionary<byte[], IxiNumber> tx_toList, byte[] tx_from, byte[] tx_data, byte[] tx_pubKey, ulong tx_blockHeight, int tx_nonce = -1)
+        public Transaction(int tx_type, IxiNumber tx_feePerKb, SortedDictionary<byte[], IxiNumber> tx_toList, byte[] tx_from, byte[] tx_data, byte[] tx_pubKey, ulong tx_blockHeight, int tx_nonce = -1)
         {
             version = 1;
 
@@ -176,7 +177,7 @@ namespace DLT
             amount = new IxiNumber(tx_transaction.amount.getAmount());
             fee = new IxiNumber(tx_transaction.fee.getAmount());
 
-            toList = new Dictionary<byte[], IxiNumber>();
+            toList = new SortedDictionary<byte[], IxiNumber>(new ByteArrayComparer());
 
             foreach (var entry in tx_transaction.toList)
             {
