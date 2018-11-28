@@ -10,8 +10,8 @@ namespace IXICore
         // Protocol
         public static readonly int protocolVersion = 5; // Ixian protocol version
         public static readonly int walletStateChunkSplit = 10000; // 10K wallets per chunk
-        public static readonly ulong redactedWindowSize = 43200; // approx 15 days. Represents the redacted window size of this node
-        public static readonly ulong minimumRedactedWindowSize = 43200; // Represents the minimum redacted window size on any node
+        public static ulong redactedWindowSize = 43200; // approx 15 days. Represents the redacted window size of this node
+        public static ulong minimumRedactedWindowSize = 43200; // Represents the minimum redacted window size on any node
         public static readonly byte[] ixianInfiniMineAddress = Base58Check.Base58CheckEncoding.DecodePlain("1ixianinfinimine234234234234234234234234234242HP");
         public static readonly int defaultRsaKeySize = 4096;
 

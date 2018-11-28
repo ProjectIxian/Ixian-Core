@@ -131,7 +131,13 @@ namespace DLT
                 {
                     foreach (Peer p in peerList)
                     {
-                        tw.WriteLine(p.hostname + ";" + Base58Check.Base58CheckEncoding.EncodePlain(p.walletAddress));
+                        if (p.walletAddress != null)
+                        {
+                            tw.WriteLine(p.hostname + ";" + Base58Check.Base58CheckEncoding.EncodePlain(p.walletAddress));
+                        }else
+                        {
+                            tw.WriteLine(p.hostname);
+                        }
                     }
                 }
             }
