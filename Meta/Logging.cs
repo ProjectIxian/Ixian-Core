@@ -38,6 +38,7 @@ namespace DLT
 
             private static int maxLogSize = 50 * 1024 * 1024;
             private static int maxLogCount = 10;
+            private static bool consoleOutput = true;
 
             private struct LogStatement
             {
@@ -49,10 +50,8 @@ namespace DLT
 
             private static List<LogStatement> statements = new List<LogStatement>();
 
-
             // Setup and start the logging thread
-            // specify max_log_size in megabytes
-            public static void start(int max_log_size = 50, int max_log_count = 10)
+            public static void start()
             {        
                 if(running)
                 {
@@ -61,9 +60,6 @@ namespace DLT
                 }
                 try
                 {
-                    maxLogSize = max_log_size * 1024 * 1024;
-                    maxLogCount = max_log_count;
-
                     // Obtain paths and cache them
                     folderpath = System.IO.Path.GetDirectoryName(Assembly.GetEntryAssembly().Location);
                     logfilepath = Path.Combine(folderpath, Path.GetFileNameWithoutExtension(logfilename));
@@ -108,6 +104,15 @@ namespace DLT
                 }
             }
 
+            // specify max_log_size in megabytes
+            public static void setOptions(int max_log_size = 50, int max_log_count = 10, bool console_output = true)
+            {
+                maxLogSize = max_log_size * 1024 * 1024;
+                maxLogCount = max_log_count;
+                consoleOutput = console_output;
+            }
+
+
             // Log a statement
             public static void log(LogSeverity log_severity, string log_message)
             {
@@ -119,7 +124,8 @@ namespace DLT
                             log_severity.ToString(),
                             Thread.CurrentThread.ManagedThreadId,
                             log_message);
-                    Console.WriteLine(formattedMessage);
+                    if(consoleOutput)
+                        Console.WriteLine(formattedMessage);
                     return;
                 }
 
@@ -154,7 +160,8 @@ namespace DLT
                         if (severity == LogSeverity.error)
                             Console.ForegroundColor = ConsoleColor.Red;
 
-                        Console.WriteLine(formattedMessage);
+                        if(consoleOutput)
+                            Console.WriteLine(formattedMessage);
 
                         if (severity == LogSeverity.error)
                             Console.ResetColor();
