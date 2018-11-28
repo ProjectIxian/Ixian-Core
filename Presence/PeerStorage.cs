@@ -131,7 +131,7 @@ namespace DLT
                 {
                     foreach (Peer p in peerList)
                     {
-                        tw.WriteLine(p.hostname);
+                        tw.WriteLine(p.hostname + ";" + Base58Check.Base58CheckEncoding.EncodePlain(p.walletAddress));
                     }
                 }
             }
@@ -158,7 +158,15 @@ namespace DLT
                     List<string> ips = File.ReadAllLines(peersFilename).ToList();
                     foreach (string ip in ips)
                     {
-                        addPeerToPeerList(ip, null, false);
+                        string[] split_hostname = ip.Split(';');
+                        if (split_hostname.Length == 2)
+                        {
+                            addPeerToPeerList(split_hostname[0], Base58Check.Base58CheckEncoding.DecodePlain(split_hostname[1]), false);
+                        }
+                        else
+                        {
+                            addPeerToPeerList(ip, null, false);
+                        }
                     }
                 }
             }
