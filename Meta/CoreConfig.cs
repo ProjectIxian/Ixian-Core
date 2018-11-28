@@ -41,7 +41,6 @@ namespace IXICore
         // Misc
         public static readonly byte[] ixianChecksumLock = Encoding.UTF8.GetBytes("Ixian");
         public static readonly string ixianChecksumLockString = "Ixian";
-        public static readonly int maxLogFileSize = 50 * 1024 * 1024; // 50MB
 
     }
 }

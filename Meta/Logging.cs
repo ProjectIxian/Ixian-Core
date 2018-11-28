@@ -36,6 +36,9 @@ namespace DLT
 
             private static FileStream logFileStream = null;
 
+            private static int maxLogSize = 50 * 1024 * 1024;
+            private static int maxLogCount = 10;
+
             private struct LogStatement
             {
                 public LogSeverity severity;
@@ -48,7 +51,8 @@ namespace DLT
 
 
             // Setup and start the logging thread
-            public static void start()
+            // specify max_log_size in megabytes
+            public static void start(int max_log_size = 50, int max_log_count = 10)
             {        
                 if(running)
                 {
@@ -57,6 +61,9 @@ namespace DLT
                 }
                 try
                 {
+                    maxLogSize = max_log_size * 1024 * 1024;
+                    maxLogCount = max_log_count;
+
                     // Obtain paths and cache them
                     folderpath = System.IO.Path.GetDirectoryName(Assembly.GetEntryAssembly().Location);
                     logfilepath = Path.Combine(folderpath, Path.GetFileNameWithoutExtension(logfilename));
@@ -212,7 +219,7 @@ namespace DLT
                     if(File.Exists(logfilename))
                     {
                         var length = new FileInfo(logfilename).Length;
-                        if (length > CoreConfig.maxLogFileSize || (length > 0 && forceRoll))
+                        if (length > maxLogSize || (length > 0 && forceRoll))
                         {
                             if (logFileStream != null)
                             {
@@ -226,7 +233,7 @@ namespace DLT
                                 // + 2 because of the . and digit [0-9]
                                 var rolledLogFileList = logFileList.Where(fileName => Path.GetFileName(fileName).Length == (logfilename.Length + 2)).ToArray();
                                 Array.Sort(rolledLogFileList, 0, rolledLogFileList.Length);
-                                if (rolledLogFileList.Length >= 10)
+                                if (rolledLogFileList.Length >= maxLogCount)
                                 {
                                     File.Delete(rolledLogFileList[9]);
                                     var list = rolledLogFileList.ToList();
