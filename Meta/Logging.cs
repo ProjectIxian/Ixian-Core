@@ -119,8 +119,8 @@ namespace DLT
                 
                 if(running == false)
                 {
-                    String formattedMessage = String.Format("!!! {0}|{1}|Thread({2}): {3}",
-                            DateTime.Now.ToString("yyyy-MM-dd HH:mm:ss.ffff"),
+                    String formattedMessage = String.Format("!!! {0}|{1}|({2}): {3}",
+                            DateTime.Now.ToString("MM-dd HH:mm:ss.ffff"),
                             log_severity.ToString(),
                             Thread.CurrentThread.ManagedThreadId,
                             log_message);
@@ -134,7 +134,7 @@ namespace DLT
                     threadId = Thread.CurrentThread.ManagedThreadId,
                     severity = log_severity,
                     message = log_message,
-                    time = DateTime.Now.ToString("yyyy-MM-dd HH:mm:ss.ffff")
+                    time = DateTime.Now.ToString("MM-dd HH:mm:ss.ffff")
                 };
 
                 lock (statements)
@@ -151,7 +151,7 @@ namespace DLT
                 {
                     if (severity >= currentSeverity)
                     {
-                        String formattedMessage = String.Format("{0}|{1}|Thread({2}): {3}",
+                        String formattedMessage = String.Format("{0}|{1}|({2}): {3}",
                             time,
                             severity.ToString(),
                             threadId,
