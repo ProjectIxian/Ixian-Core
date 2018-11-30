@@ -216,6 +216,8 @@ namespace DLT
                 pubKey = new byte[tx_transaction.pubKey.Length];
                 Array.Copy(tx_transaction.pubKey, pubKey, pubKey.Length);
             }
+
+            applied = tx_transaction.applied;
         }
 
         public Transaction(byte[] bytes)
