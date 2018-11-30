@@ -38,7 +38,7 @@ namespace DLT
 
             private static int maxLogSize = 50 * 1024 * 1024;
             private static int maxLogCount = 10;
-            private static bool consoleOutput = true;
+            public static bool consoleOutput = true;
 
             private struct LogStatement
             {
