@@ -351,6 +351,23 @@ namespace DLT
             {
                 Logging.log(LogSeverity.error, message);
             }
+
+            public static void trace(string format, params object[] arguments)
+            {
+                Logging.log(LogSeverity.trace, string.Format(format, arguments));
+            }
+            public static void info(string format, params object[] arguments)
+            {
+                Logging.log(LogSeverity.info, string.Format(format, arguments));
+            }
+            public static void warn(string format, params object[] arguments)
+            {
+                Logging.log(LogSeverity.warn, string.Format(format, arguments));
+            }
+            public static void error(string format, params object[] arguments)
+            {
+                Logging.log(LogSeverity.error, string.Format(format, arguments));
+            }
             #endregion
         }
     }
