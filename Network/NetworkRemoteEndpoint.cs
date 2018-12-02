@@ -466,7 +466,7 @@ namespace DLT
                 {
                     if (sendQueueMessagesHighPriority.Exists(x => x.code == message.code && message.checksum.SequenceEqual(x.checksum)))
                     {
-                        Logging.warn(string.Format("Attempting to add a duplicate message (code: {0}) to the high priority network queue", code));
+                        Logging.warn(string.Format("Attempting to add a duplicate message (code: {0}) to the high priority network queue for {1}", code, getFullAddress()));
                     }
                     else
                     {
@@ -485,7 +485,7 @@ namespace DLT
                 {
                     if (sendQueueMessagesNormalPriority.Exists(x => x.code == message.code && message.checksum.SequenceEqual(x.checksum)))
                     {
-                        Logging.warn(string.Format("Attempting to add a duplicate message (code: {0}) to the normal priority network queue", code));
+                        Logging.warn(string.Format("Attempting to add a duplicate message (code: {0}) to the normal priority network queue for {1}", code, getFullAddress()));
                     }
                     else
                     {
@@ -503,7 +503,7 @@ namespace DLT
                 {
                     if (sendQueueMessagesLowPriority.Exists(x => x.code == message.code && message.checksum.SequenceEqual(x.checksum)))
                     {
-                        Logging.warn(string.Format("Attempting to add a duplicate message (code: {0}) to the low priority network queue", code));
+                        Logging.warn(string.Format("Attempting to add a duplicate message (code: {0}) to the low priority network queue for{1}", code, getFullAddress()));
                     }
                     else
                     {
