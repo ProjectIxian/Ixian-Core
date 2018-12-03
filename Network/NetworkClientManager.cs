@@ -474,7 +474,7 @@ namespace DLT
                     {
                         netClients = new List<NetworkClient>(networkClients);
                     }
-
+                    CoreProtocolMessage.sendBye(netClients[0], 200, "Disconnected for shuffling purposes.", "", false);
                     // Disconnect the oldest connected node
                     netClients[0].stop();
 

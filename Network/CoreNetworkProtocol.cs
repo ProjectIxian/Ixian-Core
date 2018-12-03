@@ -67,5 +67,27 @@ namespace IXICore
 
             return result;
         }
+
+        public static void sendBye(RemoteEndpoint endpoint, int code, string message, string data, bool removeAddressEntry = true)
+        {
+            using (MemoryStream m2 = new MemoryStream())
+            {
+                using (BinaryWriter writer = new BinaryWriter(m2))
+                {
+                    writer.Write(code);
+                    writer.Write(message);
+                    writer.Write(data);
+                    endpoint.sendData(ProtocolMessageCode.bye, m2.ToArray());
+                }
+            }
+            if (removeAddressEntry)
+            {
+                if (endpoint.presence != null && endpoint.presence.wallet != null && endpoint.presenceAddress != null)
+                {
+                    PresenceList.removeAddressEntry(endpoint.presence.wallet, endpoint.presenceAddress);
+                }
+                //PeerStorage.removePeer(endpoint.getFullAddress(true));
+            }
+        }
     }
 }
