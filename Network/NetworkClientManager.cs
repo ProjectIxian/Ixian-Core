@@ -461,22 +461,23 @@ namespace DLT
 
                 handleDisconnectedClients();
 
-                List<NetworkClient> netClients = null;
-                lock (networkClients)
-                {
-                    netClients = new List<NetworkClient>(networkClients);
-                }
-
                 // Check if we need to connect to more neighbors
-                if (netClients.Count < CoreConfig.simultaneousConnectedNeighbors)
+                if (getConnectedClients().Count() < CoreConfig.simultaneousConnectedNeighbors)
                 {
                     // Scan for and connect to a new neighbor
                     connectToRandomNeighbor();
                 }
-                else if (netClients.Count > CoreConfig.simultaneousConnectedNeighbors)
+                else if (getConnectedClients().Count() > CoreConfig.simultaneousConnectedNeighbors)
                 {
+                    List<NetworkClient> netClients = null;
+                    lock (networkClients)
+                    {
+                        netClients = new List<NetworkClient>(networkClients);
+                    }
+
                     // Disconnect the oldest connected node
                     netClients[0].stop();
+
                     lock (networkClients)
                     {
                         networkClients.Remove(netClients[0]);
