@@ -11,10 +11,12 @@
   <ItemGroup>
     <Compile Include="$(MSBuildThisFileDirectory)Address\Address.cs" />
     <Compile Include="$(MSBuildThisFileDirectory)API\GenericAPIServer.cs" />
+    <Compile Include="$(MSBuildThisFileDirectory)Crypto\BigInteger.cs" />
     <Compile Include="$(MSBuildThisFileDirectory)Crypto\Crypto.cs" />
     <Compile Include="$(MSBuildThisFileDirectory)Crypto\CryptoLib.cs" />
     <Compile Include="$(MSBuildThisFileDirectory)Crypto\CryptoLibs\BouncyCastle.cs" />
     <Compile Include="$(MSBuildThisFileDirectory)Crypto\CryptoManager.cs" />
+    <Compile Include="$(MSBuildThisFileDirectory)Crypto\KeyDerivation.cs" />
     <Compile Include="$(MSBuildThisFileDirectory)Legacy\Legacy.cs" />
     <Compile Include="$(MSBuildThisFileDirectory)Meta\Core.cs" />
     <Compile Include="$(MSBuildThisFileDirectory)Meta\CoreConfig.cs" />

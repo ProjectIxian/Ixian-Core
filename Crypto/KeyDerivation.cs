@@ -34,7 +34,8 @@ namespace IXICore.CryptoKey
             uint counter = 0; // counter is increased for each encrypt operation
             int keyIndex = 0; // n-th splice of 'currentRandomState'
             AesManaged aes;
-            //
+            // stats
+            public ulong rngBytesRead { get; private set; }
 
             public PRNG(byte[] random_state, string password)
             {
@@ -54,6 +55,10 @@ namespace IXICore.CryptoKey
                 byte[] pwd_bytes = Encoding.Unicode.GetBytes(password);
                 passwordHash = sha.ComputeHash(pwd_bytes).Take(12).ToArray();
                 sha.Initialize();
+                //
+                aes = new AesManaged();
+                aes.Mode = CipherMode.ECB;
+                aes.Padding = PaddingMode.None;
             }
 
             private void twiddleRandomState()
@@ -83,6 +88,9 @@ namespace IXICore.CryptoKey
                 {
                     twiddleRandomState();
                 }
+                // generate at least the first random block
+                rngBytesRead = 0;
+                getNextRandomBlock();
             }
 
             private void getNextRandomBlock()
@@ -113,6 +121,7 @@ namespace IXICore.CryptoKey
                 {
                     getNextRandomBlock();
                 }
+                rngBytesRead++;
                 return currentRandomBlock[positionInBlock++];
             }
 
@@ -128,9 +137,9 @@ namespace IXICore.CryptoKey
                     }
                     int avail = 16 - positionInBlock;
                     int to_copy = 0;
-                    if(avail >= written)
+                    if(avail >= (num_bytes-written))
                     {
-                        to_copy = written;
+                        to_copy = (num_bytes-written);
                     } else
                     {
                         to_copy = avail;
@@ -139,15 +148,24 @@ namespace IXICore.CryptoKey
                     written += to_copy;
                     positionInBlock += to_copy;
                 }
+                rngBytesRead += (ulong)output.Length;
                 return output;
             }
         }
 
         private PRNG RandomSource;
+        private int statPrimeChecks;
+        private int statNumGens;
 
-        public KeyDerivation(byte[] entropy, string password, BigInteger public_exp)
+        public KeyDerivation(byte[] entropy, string password)
         {
             RandomSource = new PRNG(entropy, password);
+        }
+
+        private void clearStats()
+        {
+            statNumGens = 0;
+            statPrimeChecks = 0;
         }
 
         private BigInteger RandomPrime(int bit_len, BigInteger public_exp)
@@ -164,18 +182,30 @@ namespace IXICore.CryptoKey
                     if (rem == 0)
                     {
                         value[needed_bytes - 2] |= 0x80;
+                        value[needed_bytes - 1] = 0x00;
                     } else
                     {
                         value[needed_bytes - 1] |= (byte)(1 << (rem - 1));
                     }
                     // lowest bit should be 1, so we assure an odd number
                     value[0] |= 0x01;
-
+                    value = value.Reverse().ToArray();
                     candidate = new BigInteger(value);
+                    statPrimeChecks++;
                     if (candidate.isProbablePrime())
                     {
                         break;
                     }
+                    /*for(int i=1;i<value.Length-1;i++)
+                    {
+                        value[i] ^= RandomSource.NextByte();
+                        candidate = new BigInteger(value);
+                        statPrimeChecks++;
+                        if (candidate.isProbablePrime())
+                        {
+                            break;
+                        }
+                    }*/
                 }
                 // at this point, the number passed the Miller-Rabin test and is a probable prime
                 // Sanity checks
@@ -183,11 +213,14 @@ namespace IXICore.CryptoKey
                 {
                     continue;
                 }
-                BigInteger gcd = (candidate - 1).gcd(public_exp); //BigInteger.GreatestCommonDivisor(candidate - 1, public_exp);
-                if(gcd == One)
+                BigInteger gcd = (candidate - 1).gcd(public_exp);
+                if(gcd != One)
                 {
+                    // public_exp and Q-1 (or P-1) should be relatively prime
                     continue;
                 }
+                statNumGens++;
+                return candidate;
             }
         }
 
@@ -197,6 +230,7 @@ namespace IXICore.CryptoKey
             byte[] mod_bytes = modulus.getBytes();
             bytes.AddRange(BitConverter.GetBytes(mod_bytes.Length));
             bytes.AddRange(mod_bytes);
+
             byte[] exp_bytes = public_exp.getBytes();
             bytes.AddRange(BitConverter.GetBytes(exp_bytes.Length));
             bytes.AddRange(exp_bytes);
@@ -204,18 +238,23 @@ namespace IXICore.CryptoKey
             byte[] p_bytes = P.getBytes();
             bytes.AddRange(BitConverter.GetBytes(p_bytes.Length));
             bytes.AddRange(p_bytes);
+
             byte[] q_bytes = Q.getBytes();
             bytes.AddRange(BitConverter.GetBytes(q_bytes.Length));
             bytes.AddRange(q_bytes);
+
             byte[] dp_bytes = DP.getBytes();
             bytes.AddRange(BitConverter.GetBytes(dp_bytes.Length));
             bytes.AddRange(dp_bytes);
+
             byte[] dq_bytes = DQ.getBytes();
             bytes.AddRange(BitConverter.GetBytes(dq_bytes.Length));
             bytes.AddRange(dq_bytes);
+
             byte[] qinv_bytes = InvQ.getBytes();
             bytes.AddRange(BitConverter.GetBytes(qinv_bytes.Length));
             bytes.AddRange(qinv_bytes);
+
             byte[] d_bytes = D.getBytes();
             bytes.AddRange(BitConverter.GetBytes(d_bytes.Length));
             bytes.AddRange(d_bytes);
@@ -225,6 +264,7 @@ namespace IXICore.CryptoKey
 
         public byte[] deriveKey(int key_index, int key_length, ulong public_exponent)
         {
+            clearStats();
             // put the random source into appropriate state
             RandomSource.setIteration(key_index);
             BigInteger public_exp = new BigInteger(public_exponent);
@@ -276,9 +316,35 @@ namespace IXICore.CryptoKey
                 BigInteger dP = d % P_s1;
                 BigInteger dQ = d % Q_s1;
                 BigInteger qInv = Q.modInverse(P);
+                Logging.info(String.Format("Key generated, numbers: {0}, prime checks: {1}, entropy bytes read: {2}",
+                    statNumGens, statPrimeChecks, RandomSource.rngBytesRead));
                 // Return values
                 return buildIXIANKey(modulus, public_exp, P, Q, dP, dQ, qInv, d);
             }
+        }
+
+        public static void BenchmarkKeyGeneration(int num_iterations, int key_size)
+        {
+            // Testing some key generation features
+            Logging.info("Preparing entropy to benchmark key generation speed...");
+            byte[] entropy = new byte[16 * 1024];
+            System.Security.Cryptography.RNGCryptoServiceProvider rngCSP = new System.Security.Cryptography.RNGCryptoServiceProvider();
+            rngCSP.GetBytes(entropy);
+            IXICore.CryptoKey.KeyDerivation kd = new IXICore.CryptoKey.KeyDerivation(entropy, "IXIAN");
+            DLT.CryptoManager.initLib();
+            Logging.info(String.Format("Starting key generation. Iterations: {0}", num_iterations));
+            for (int i = 0; i < num_iterations; i++)
+            {
+                DateTime start = DateTime.Now;
+                Logging.info(String.Format("Generating key {0}...", i));
+                byte[] ixi_key = kd.deriveKey(i, key_size, 65537);
+                Logging.info(String.Format("Key generated. ({0:0.00} ms)",
+                    (DateTime.Now-start).TotalMilliseconds));
+                DLT.CryptoManager.lib.importKeys(ixi_key);
+                bool success = DLT.CryptoManager.lib.testKeys(Encoding.Unicode.GetBytes("TEST TEST"));
+                Logging.info(String.Format("Key test: {0}", success ? "success" : "failure"));
+            }
+            return;
 
         }
     }

@@ -141,7 +141,7 @@ namespace IXICore.CryptoKey
         // maximum length of the BigInteger in uint (4 bytes)
         // change this to suit the required level of precision.
 
-        private const int maxLength = 70;
+        private const int maxLength = 512;
 
         // primes smaller than 2000 to test the generated prime number
 
@@ -2672,10 +2672,13 @@ namespace IXICore.CryptoKey
                 result[pos++] = (byte)tempVal;
             if ((tempVal = (val >> 16 & 0xFF)) != 0)
                 result[pos++] = (byte)tempVal;
+            else if (pos > 0) pos++;
             if ((tempVal = (val >> 8 & 0xFF)) != 0)
                 result[pos++] = (byte)tempVal;
+            else if (pos > 0) pos++;
             if ((tempVal = (val & 0xFF)) != 0)
                 result[pos++] = (byte)tempVal;
+            else if (pos > 0) pos++;
 
             for (int i = dataLength - 2; i >= 0; i--, pos += 4)
             {

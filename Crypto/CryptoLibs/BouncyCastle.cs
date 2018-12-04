@@ -120,9 +120,9 @@ namespace CryptoLibs
                 RSACryptoServiceProvider rcsp = new RSACryptoServiceProvider();
                 rcsp.ImportParameters(rsaParams);
                 return rcsp;
-            }catch(Exception)
+            }catch(Exception e)
             {
-                Logging.warn("An exception occured while trying to reconstruct PKI from bytes");
+                Logging.warn(String.Format("An exception occured while trying to reconstruct PKI from bytes:", e.Message));
             }
             return null;
         }
@@ -134,17 +134,18 @@ namespace CryptoLibs
             byte[] encrypted = encryptWithRSA(plain, publicKeyBytes);
             byte[] signature = getSignature(plain, privateKeyBytes);
 
+            if (!decryptWithRSA(encrypted, privateKeyBytes).SequenceEqual(plain))
+            {
+                Logging.warn(string.Format("Error decrypting data while testing keys."));
+                return false;
+            }
+
             if (!verifySignature(plain, publicKeyBytes, signature))
             {
                 Logging.warn(string.Format("Error verifying signature while testing keys."));
                 return false;
             }
 
-            if (!decryptWithRSA(encrypted, privateKeyBytes).SequenceEqual(plain))
-            {
-                Logging.warn(string.Format("Error decrypting data while testing keys."));
-                return false;
-            }
 
             return true;
         }
@@ -175,6 +176,13 @@ namespace CryptoLibs
             }
 
             return true;
+        }
+
+        public void importKeys(byte[] priv_key)
+        {
+            RSACryptoServiceProvider rsa = rsaKeyFromBytes(priv_key);
+            privateKeyBytes = rsaKeyToBytes(rsa, true);
+            publicKeyBytes = rsaKeyToBytes(rsa, false);
         }
 
         public byte[] getPublicKey()

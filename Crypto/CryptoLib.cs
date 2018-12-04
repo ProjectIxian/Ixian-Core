@@ -31,6 +31,9 @@ namespace DLT
 
         byte[] generateChildKey(byte[] parentKey, int seed = 0);
 
+        bool testKeys(byte[] keypair);
+        void importKeys(byte[] priv_key);
+
     }
 
 
@@ -112,6 +115,16 @@ namespace DLT
         public byte[] generateChildKey(byte[] parentKey, int seed = 0)
         {
             return _cryptoLib.generateChildKey(parentKey, seed);
+        }
+
+        public bool testKeys(byte[] plaintext)
+        {
+            return _cryptoLib.testKeys(plaintext);
+        }
+
+        public void importKeys(byte[] priv_key)
+        {
+            _cryptoLib.importKeys(priv_key);
         }
 
     }
