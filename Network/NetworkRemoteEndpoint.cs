@@ -110,27 +110,37 @@ namespace DLT
             if (recvThread != null)
             {
                 recvThread.Abort();
+                recvThread = null;
             }
             if (sendThread != null)
             {
                 sendThread.Abort();
+                sendThread = null;
             }
             if (parseThread != null)
             {
                 parseThread.Abort();
+                parseThread = null;
             }
 
-            // Start receive thread
-            recvThread = new Thread(new ThreadStart(recvLoop));
-            recvThread.Start();
+            try
+            {
+                // Start receive thread
+                recvThread = new Thread(new ThreadStart(recvLoop));
+                recvThread.Start();
 
-            // Start send thread
-            sendThread = new Thread(new ThreadStart(sendLoop));
-            sendThread.Start();
+                // Start send thread
+                sendThread = new Thread(new ThreadStart(sendLoop));
+                sendThread.Start();
 
-            // Start parse thread
-            parseThread = new Thread(new ThreadStart(parseLoop));
-            parseThread.Start();
+                // Start parse thread
+                parseThread = new Thread(new ThreadStart(parseLoop));
+                parseThread.Start();
+            }
+            catch (Exception e)
+            {
+                Logging.error("Exception start remote endpoint: {0}", e.Message);
+            }
         }
 
         // Aborts all related endpoint threads and data
@@ -169,14 +179,17 @@ namespace DLT
             if (recvThread != null)
             {
                 recvThread.Abort();
+                recvThread = null;
             }
             if (sendThread != null)
             {
                 sendThread.Abort();
+                sendThread = null;
             }
             if (parseThread != null)
             {
                 parseThread.Abort();
+                parseThread = null;
             }
 
             disconnect();
