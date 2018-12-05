@@ -15,6 +15,8 @@ namespace DLT
     {
         public static List<Presence> presences = new List<Presence> { }; // The presence list
 
+        private static Dictionary<char, long> presenceCount = new Dictionary<char, long>();
+
         public static PresenceAddress curNodePresenceAddress = null;
         public static Presence curNodePresence = null;
 
@@ -146,6 +148,15 @@ namespace DLT
                     //Console.WriteLine("[PL] Adding new entry for {0}", presence.wallet);
                     presences.Add(presence);
 
+                    lock (presenceCount)
+                    {
+                        if (!presenceCount.ContainsKey(presence.addresses[0].type))
+                        {
+                            presenceCount.Add(presence.addresses[0].type, 0);
+                        }
+                        presenceCount[presence.addresses[0].type]++;
+                    }
+
                     return_presence = presence;
                 }
             }
@@ -163,7 +174,16 @@ namespace DLT
                 // Check if there is such an entry in the presence list
                 if (listEntry != null)
                 {
-                    
+
+                    lock (presenceCount)
+                    {
+                        if (!presenceCount.ContainsKey(address.type))
+                        {
+                            presenceCount.Add(address.type, 0);
+                        }
+                        presenceCount[address.type]++;
+                    }
+
                     listEntry.addresses.RemoveAll(x => x.address == address.address);
 
                     int address_count = listEntry.addresses.Count;
@@ -283,6 +303,17 @@ namespace DLT
                             lock (presences)
                             {
                                 presences.Add(new_presence);
+                            }
+                            lock (presenceCount)
+                            {
+                                foreach (PresenceAddress pa in new_presence.addresses)
+                                {
+                                    if (!presenceCount.ContainsKey(pa.type))
+                                    {
+                                        presenceCount.Add(pa.type, 0);
+                                    }
+                                    presenceCount[pa.type]++;
+                                }
                             }
 
                         }
@@ -521,6 +552,25 @@ namespace DLT
             }
         }
 
+        public static long countPresences(char type)
+        {
+            lock(presenceCount)
+            {
+                if (presenceCount.ContainsKey(type))
+                {
+                    return presenceCount[type];
+                }
+            }
+            return 0;
+        }
+
+        public static Presence getPresenceByAddress(byte[] address)
+        {
+            lock(presences)
+            {
+                return presences.Find(x => x.wallet.SequenceEqual(address));
+            }
+        }
 
     }
 }

@@ -823,7 +823,7 @@ namespace DLT
 
             if (data != null)
             {
-                tDic.Add("data", data.ToString());
+                tDic.Add("data", Crypto.hashToString(data));
             }
 
             tDic.Add("timeStamp", timeStamp.ToString());

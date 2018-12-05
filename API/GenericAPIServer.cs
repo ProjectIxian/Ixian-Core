@@ -152,7 +152,7 @@ namespace IXICore
             }
             catch (Exception e)
             {
-                Logging.error(String.Format("APIServer: {0}", e.ToString()));
+                Logging.error(String.Format("APIServer: {0}", e));
             }
         }
     }
