@@ -1,7 +1,6 @@
 using DLT.Meta;
 using IXICore;
 using IXICore.Utils;
-using Newtonsoft.Json;
 using System;
 using System.Collections.Generic;
 using System.IO;
@@ -842,11 +841,5 @@ namespace DLT
 
             return tDic;
         }
-
-        public string toJson()
-        {
-            return JsonConvert.SerializeObject(toDictionary());
-        }
-
     }
 }
