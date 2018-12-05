@@ -130,6 +130,15 @@ namespace DLT
                             //Console.WriteLine("[PL] Adding new address for {0}", presence.wallet);
                             pr.addresses.Add(local_addr);
                             entryUpdated = true;
+
+                            lock (presenceCount)
+                            {
+                                if (!presenceCount.ContainsKey(local_addr.type))
+                                {
+                                    presenceCount.Add(local_addr.type, 0);
+                                }
+                                presenceCount[local_addr.type]++;
+                            }
                         }
 
                     }
@@ -150,11 +159,14 @@ namespace DLT
 
                     lock (presenceCount)
                     {
-                        if (!presenceCount.ContainsKey(presence.addresses[0].type))
+                        foreach (PresenceAddress pa in presence.addresses)
                         {
-                            presenceCount.Add(presence.addresses[0].type, 0);
+                            if (!presenceCount.ContainsKey(pa.type))
+                            {
+                                presenceCount.Add(pa.type, 0);
+                            }
+                            presenceCount[pa.type]++;
                         }
-                        presenceCount[presence.addresses[0].type]++;
                     }
 
                     return_presence = presence;
@@ -177,11 +189,10 @@ namespace DLT
 
                     lock (presenceCount)
                     {
-                        if (!presenceCount.ContainsKey(address.type))
+                        if (presenceCount.ContainsKey(address.type))
                         {
-                            presenceCount.Add(address.type, 0);
+                            presenceCount[address.type]--;
                         }
-                        presenceCount[address.type]++;
                     }
 
                     listEntry.addresses.RemoveAll(x => x.address == address.address);
