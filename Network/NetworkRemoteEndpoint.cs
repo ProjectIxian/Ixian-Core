@@ -100,7 +100,7 @@ namespace DLT
             presenceAddress = null;
 
             lastPing = 0;
-            lastDataReceivedTime = Clock.getTimestamp(DateTime.Now);
+            lastDataReceivedTime = Clock.getTimestamp();
 
             state = RemoteEndpointState.Established;
 
@@ -264,7 +264,7 @@ namespace DLT
 
             while (running)
             {
-                long curTime = Clock.getTimestamp(DateTime.Now);
+                long curTime = Clock.getTimestamp();
                 if (curTime - lastDataReceivedTime > CoreConfig.pingInterval)
                 {
                     if (lastPing == 0)
@@ -657,7 +657,7 @@ namespace DLT
                     NetDump.Instance.appendReceived(socket, socketReadBuffer, byteCounter);
                     if (byteCounter > 0)
                     {
-                        lastDataReceivedTime = Clock.getTimestamp(DateTime.Now);
+                        lastDataReceivedTime = Clock.getTimestamp();
                         lastPing = 0;
                         if (big_buffer.Count > 0)
                         {

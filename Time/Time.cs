@@ -6,7 +6,7 @@ namespace DLT
     public class Clock
     {
         // Obtain the unix timestamp
-        public static long getTimestamp(DateTime value)
+        public static long getTimestamp()
         {
             double unixTimestamp = (DateTime.UtcNow.Subtract(new DateTime(1970, 1, 1))).TotalSeconds;
             return (long)unixTimestamp;
@@ -14,7 +14,7 @@ namespace DLT
 
         public static string getRelativeTime(DateTime targetTime)
         {
-            var span = new TimeSpan(DateTime.Now.Ticks - targetTime.Ticks);
+            var span = new TimeSpan(DateTime.UtcNow.Ticks - targetTime.Ticks);
             double delta = Math.Abs(span.TotalSeconds);
 
             if (delta < 1 * 60)

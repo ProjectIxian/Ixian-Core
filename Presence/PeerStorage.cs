@@ -34,7 +34,7 @@ namespace DLT
             {
                 return false;
             }
-            Peer p = new Peer(hostname, walletAddress, DateTime.Now, 0);
+            Peer p = new Peer(hostname, walletAddress, DateTime.UtcNow, 0);
 
             lock (peerList)
             {
@@ -105,7 +105,7 @@ namespace DLT
             List<Peer> connectableList = null;
             lock (peerList)
             {
-                long curTime = Clock.getTimestamp(DateTime.Now);
+                long curTime = Clock.getTimestamp();
                 connectableList = peerList.FindAll(x => curTime - x.lastConnectAttempt > 30);
                 if (connectableList != null && connectableList.Count > 0)
                 {

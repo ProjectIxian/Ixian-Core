@@ -13,7 +13,7 @@ namespace IXICore
         // TODO everything connected to networkTimeDifference can probably be solved better
         public static long getCurrentTimestamp()
         {
-            return (long)(Clock.getTimestamp(DateTime.Now) - networkTimeDifference);
+            return (long)(Clock.getTimestamp() - networkTimeDifference);
         }
 
 
