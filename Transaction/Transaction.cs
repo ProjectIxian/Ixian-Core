@@ -1,6 +1,7 @@
 using DLT.Meta;
 using IXICore;
 using IXICore.Utils;
+using Newtonsoft.Json;
 using System;
 using System.Collections.Generic;
 using System.IO;
@@ -767,6 +768,15 @@ namespace DLT
             return t;
         }
 
+        public static Transaction multisigTransaction(string orig_txid, IxiNumber tx_fee, SortedDictionary<byte[], IxiNumber> tx_to_list, byte[] tx_from, ulong tx_blockHeight)
+        {
+            Transaction t = new Transaction((int)Transaction.Type.MultisigTX, tx_fee, tx_to_list, tx_from, null, Node.walletStorage.publicKey, tx_blockHeight);
+
+            t.AddMultisigOrig(orig_txid);
+
+            return t;
+        }
+
         public static Transaction multisigAddKeyTransaction(string orig_txid, byte[] allowed_address,  IxiNumber tx_fee, byte[] tx_from, ulong tx_blockHeight)
         {
             Transaction t = new Transaction((int)Transaction.Type.ChangeMultisigWallet, new IxiNumber(0), tx_fee, tx_from, tx_from, null, Node.walletStorage.publicKey, tx_blockHeight);
@@ -792,6 +802,50 @@ namespace DLT
             t.AddMultisigChReqSigs(orig_txid, sigs);
 
             return t;
+        }
+
+        public Dictionary<string, object> toDictionary()
+        {
+            Dictionary<string, object> tDic = new Dictionary<string, object>();
+            tDic.Add("id", id);
+            tDic.Add("blockHeight", blockHeight.ToString());
+            tDic.Add("nonce", nonce.ToString());
+
+            if (signature != null)
+            {
+                tDic.Add("signature", Crypto.hashToString(signature));
+            }
+
+            if (pubKey != null)
+            {
+                tDic.Add("pubKey", Base58Check.Base58CheckEncoding.EncodePlain(pubKey));
+            }
+
+            if (data != null)
+            {
+                tDic.Add("data", data.ToString());
+            }
+
+            tDic.Add("timeStamp", timeStamp.ToString());
+            tDic.Add("type", type.ToString());
+            tDic.Add("amount", amount.ToString());
+            tDic.Add("applied", applied.ToString());
+            tDic.Add("checksum", Crypto.hashToString(checksum));
+            tDic.Add("from", Base58Check.Base58CheckEncoding.EncodePlain(from));
+            Dictionary<string, string> toListDic = new Dictionary<string, string>();
+            foreach (var entry in toList)
+            {
+                toListDic.Add(Base58Check.Base58CheckEncoding.EncodePlain(entry.Key), entry.Value.ToString());
+            }
+            tDic.Add("to", toListDic);
+            tDic.Add("fee", fee.ToString());
+
+            return tDic;
+        }
+
+        public string toJson()
+        {
+            return JsonConvert.SerializeObject(toDictionary());
         }
 
     }
