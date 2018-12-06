@@ -40,6 +40,8 @@ namespace DLT
             private static int maxLogCount = 10;
             public static bool consoleOutput = true;
 
+            private static long currentLogSize = 0;
+
             private struct LogStatement
             {
                 public LogSeverity severity;
@@ -101,6 +103,7 @@ namespace DLT
                     logFileStream.Flush();
                     logFileStream.Close();
                     logFileStream = null;
+                    currentLogSize = 0;
                 }
             }
 
@@ -174,6 +177,7 @@ namespace DLT
                             byte[] logMessage = Encoding.UTF8.GetBytes(formattedMessage + Environment.NewLine);
                             logFileStream.Write(logMessage, 0, logMessage.Length);
                             logFileStream.Flush();
+                            currentLogSize += logMessage.Length;
                         }
 
                     }
@@ -223,6 +227,10 @@ namespace DLT
             {
                 try
                 {
+                    if(logFileStream != null && currentLogSize < maxLogSize)
+                    {
+                        return;
+                    }
                     if(File.Exists(logfilename))
                     {
                         var length = new FileInfo(logfilename).Length;
@@ -233,6 +241,7 @@ namespace DLT
                                 logFileStream.Flush();
                                 logFileStream.Close();
                                 logFileStream = null;
+                                currentLogSize = 0;
                             }
                             string[] logFileList = Directory.GetFiles(folderpath, wildcard, SearchOption.TopDirectoryOnly);
                             if (logFileList.Length > 0)
@@ -289,6 +298,7 @@ namespace DLT
                         logFileStream.Flush();
                         logFileStream.Close();
                         logFileStream = null;
+                        currentLogSize = 0;
                     }
 
                     try

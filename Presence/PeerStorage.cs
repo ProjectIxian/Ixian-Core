@@ -139,6 +139,8 @@ namespace DLT
                             tw.WriteLine(p.hostname);
                         }
                     }
+                    tw.Flush();
+                    tw.Close();
                 }
             }
         }
