@@ -64,6 +64,8 @@ namespace DLT
         public byte[] pubKey; // 0 or 512
         public ulong applied;
 
+        public bool fromLocalStorage = false;
+
         private readonly static byte[] multisigStartMarker = { 0x4d, 0x73 };
 
         public Transaction(int tx_type)
@@ -218,6 +220,8 @@ namespace DLT
             }
 
             applied = tx_transaction.applied;
+
+            fromLocalStorage = tx_transaction.fromLocalStorage;
         }
 
         public Transaction(byte[] bytes)
