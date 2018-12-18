@@ -186,16 +186,19 @@ namespace DLT
                 // Check if there is such an entry in the presence list
                 if (listEntry != null)
                 {
+                    var addresses_to_remove = listEntry.addresses.FindAll(x => x == address);
 
-                    lock (presenceCount)
+                    foreach (var addr in addresses_to_remove)
                     {
-                        if (presenceCount.ContainsKey(address.type))
+                        lock (presenceCount)
                         {
-                            presenceCount[address.type]--;
+                            if (presenceCount.ContainsKey(addr.type))
+                            {
+                                presenceCount[addr.type]--;
+                            }
                         }
+                        listEntry.addresses.Remove(addr);
                     }
-
-                    listEntry.addresses.RemoveAll(x => x.address == address.address);
 
                     int address_count = listEntry.addresses.Count;
                     //Console.WriteLine("[PL] --->> Addresses: {0}", address_count);
@@ -516,7 +519,8 @@ namespace DLT
                             {
                                 Logging.info(string.Format("Expired lastseen for {0} / {1}", pa.address, pa.device));
                                 removeAddressEntry(pr.wallet, pa);
-                            }else if ((currentTime - pa.lastSeenTime) < -20) // future time + 20 seconds amortization?
+                            }
+                            else if ((currentTime - pa.lastSeenTime) < -20) // future time + 20 seconds amortization?
                             {
                                 Logging.info(string.Format("Expired future lastseen for {0} / {1}", pa.address, pa.device));
                                 removeAddressEntry(pr.wallet, pa);
