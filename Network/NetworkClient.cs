@@ -46,6 +46,7 @@ namespace DLT
             }
 
             helloReceived = false;
+            blockHeight = 0;
 
             tcpHostname = hostname;
             tcpPort = port;

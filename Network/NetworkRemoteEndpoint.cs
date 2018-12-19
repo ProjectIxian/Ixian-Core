@@ -18,6 +18,7 @@ namespace DLT
         public int incomingPort = Config.serverPort;
 
         public bool helloReceived = false;
+        public ulong blockHeight = 0;
 
         protected long lastDataReceivedTime = 0;
         protected long lastPing = 0;

@@ -14,7 +14,7 @@ namespace DLT
 {
     class NetworkClientManager
     {
-        private static List<NetworkClient> networkClients = new List<NetworkClient>();
+        public static List<NetworkClient> networkClients = new List<NetworkClient>();
         private static List<string> connectingClients = new List<string>(); // A list of clients that we're currently connecting
 
         private static Thread reconnectThread;
