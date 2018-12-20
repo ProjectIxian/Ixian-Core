@@ -402,7 +402,7 @@ namespace DLT
                                         writer.Write(wallet.Length);
                                         writer.Write(wallet);
 
-                                        ProtocolMessage.broadcastProtocolMessage(ProtocolMessageCode.getPresence, mw.ToArray());
+                                        ProtocolMessage.broadcastProtocolMessage(new char[] { 'M', 'R' }, ProtocolMessageCode.getPresence, mw.ToArray());
                                     }
                                 }
                                 return false;
@@ -465,7 +465,7 @@ namespace DLT
                                             writer.Write(wallet.Length);
                                             writer.Write(wallet);
 
-                                            ProtocolMessage.broadcastProtocolMessage(ProtocolMessageCode.getPresence, mw.ToArray());
+                                            ProtocolMessage.broadcastProtocolMessage(new char[] { 'M', 'R' }, ProtocolMessageCode.getPresence, mw.ToArray());
                                         }
                                     }
                                     return false;

@@ -113,7 +113,7 @@ namespace DLT
             {
                 if (wsDelta != null)
                 {
-                    Logging.info(String.Format("Committing WalletState snapshot. Wallets in snapshot: {0}.", wsDelta.Count));
+                    //Logging.info(String.Format("Committing WalletState snapshot. Wallets in snapshot: {0}.", wsDelta.Count));
                     foreach (var wallet in wsDelta)
                     {
                         walletState.AddOrReplace(wallet.Key, wallet.Value);

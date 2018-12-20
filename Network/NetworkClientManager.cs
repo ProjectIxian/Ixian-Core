@@ -3,12 +3,8 @@ using DLT.Network;
 using IXICore;
 using System;
 using System.Collections.Generic;
-using System.IO;
 using System.Linq;
-using System.Net.Sockets;
-using System.Text;
 using System.Threading;
-using System.Threading.Tasks;
 
 namespace DLT
 {
@@ -227,29 +223,40 @@ namespace DLT
 
         // Send data to all connected nodes
         // Returns true if the data was sent to at least one client
-        public static bool broadcastData(ProtocolMessageCode code, byte[] data, RemoteEndpoint skipEndpoint = null)
+        public static bool broadcastData(char[] types, ProtocolMessageCode code, byte[] data, RemoteEndpoint skipEndpoint = null)
         {
             bool result = false;
             lock (networkClients)
             {
                 foreach (NetworkClient client in networkClients)
                 {
-                    if (client.isConnected())
+                    if (skipEndpoint != null)
                     {
-                        if (skipEndpoint != null)
-                        {
-                            if (client == skipEndpoint)
-                                continue;
-                        }
+                        if (client == skipEndpoint)
+                            continue;
+                    }
 
-                        if (client.helloReceived == false)
+                    if (!client.isConnected())
+                    {
+                        continue;
+                    }
+
+                    if (client.helloReceived == false)
+                    {
+                        continue;
+                    }
+
+                    if (types != null)
+                    {
+                        if (client.presenceAddress == null || !types.Contains(client.presenceAddress.type))
                         {
                             continue;
                         }
-
-                        client.sendData(code, data);
-                        result = true;
                     }
+
+
+                    client.sendData(code, data);
+                    result = true;
                 }
             }
             return result;
