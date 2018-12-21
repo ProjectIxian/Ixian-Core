@@ -434,7 +434,7 @@ namespace DLT
                     {
                         bytesToSendCount = 8000;
                     }
-                    int curSentBytes = clientSocket.Send(ba, sentBytes, ba.Length - sentBytes, SocketFlags.None);
+                    int curSentBytes = clientSocket.Send(ba, sentBytes, bytesToSendCount, SocketFlags.None);
 
                     // Sleep a bit to allow other threads to do their thing
                     Thread.Yield();
