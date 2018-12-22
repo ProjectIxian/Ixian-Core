@@ -368,7 +368,7 @@ namespace DLT
             return total;
         }
 
-        // only returns 10 wallets from base state (no snapshotting)
+        // only returns 50 wallets from base state (no snapshotting)
         public Wallet[] debugGetWallets()
         {
             lock (stateLock)

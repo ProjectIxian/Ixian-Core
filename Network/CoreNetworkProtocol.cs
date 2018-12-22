@@ -78,6 +78,7 @@ namespace IXICore
                     writer.Write(message);
                     writer.Write(data);
                     endpoint.sendData(ProtocolMessageCode.bye, m2.ToArray());
+                    Logging.info("Sending bye to {0} with message '{1}' and data '{2}'", endpoint.getFullAddress(), message, data);
                 }
             }
             if (removeAddressEntry)
