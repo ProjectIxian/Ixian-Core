@@ -22,7 +22,6 @@ namespace DLT
 
         protected long lastDataReceivedTime = 0;
         protected long lastDataSentTime = 0;
-        protected long lastPing = 0;
 
         public bool fullyStopped = false;
 
@@ -101,8 +100,8 @@ namespace DLT
             presence = null;
             presenceAddress = null;
 
-            lastPing = 0;
             lastDataReceivedTime = Clock.getTimestamp();
+            lastDataSentTime = Clock.getTimestamp();
 
             state = RemoteEndpointState.Established;
 
@@ -276,10 +275,8 @@ namespace DLT
                 }
                 if(curTime - lastDataSentTime > CoreConfig.pongInterval)
                 {
-                    if (clientSocket.Send(new byte[1] { 0 }, SocketFlags.None) > 0)
-                    {
-                        lastDataSentTime = curTime;
-                    }
+                    clientSocket.Send(new byte[1] { 1 }, SocketFlags.None);
+                    lastDataSentTime = curTime;
                     continue;
                 }
 
@@ -433,12 +430,12 @@ namespace DLT
                     {
                         bytesToSendCount = 8000;
                     }
+
+
                     int curSentBytes = clientSocket.Send(ba, sentBytes, bytesToSendCount, SocketFlags.None);
 
-                    if(curSentBytes > 0)
-                    {
-                        lastDataSentTime = Clock.getTimestamp();
-                    }
+                    lastDataSentTime = Clock.getTimestamp();
+
 
                     // Sleep a bit to allow other threads to do their thing
                     Thread.Yield();
@@ -662,7 +659,6 @@ namespace DLT
                     if (byteCounter > 0)
                     {
                         lastDataReceivedTime = Clock.getTimestamp();
-                        lastPing = 0;
                         if (big_buffer.Count > 0)
                         {
                             big_buffer.AddRange(socketReadBuffer.Take(byteCounter));
