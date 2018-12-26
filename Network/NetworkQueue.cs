@@ -113,8 +113,7 @@ namespace DLT
                         queueMessages.Insert(0, message);
                         return;
                     }else if (code == ProtocolMessageCode.keepAlivePresence || code == ProtocolMessageCode.getPresence
-                        || code == ProtocolMessageCode.updatePresence || code == ProtocolMessageCode.ping
-                        || code == ProtocolMessageCode.pong)
+                        || code == ProtocolMessageCode.updatePresence)
                     {
                         // Prioritize if queue is large
                         if (queueMessages.Count > 10)

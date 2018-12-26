@@ -21,6 +21,7 @@ namespace DLT
         public ulong blockHeight = 0;
 
         protected long lastDataReceivedTime = 0;
+        protected long lastDataSentTime = 0;
         protected long lastPing = 0;
 
         public bool fullyStopped = false;
@@ -266,22 +267,20 @@ namespace DLT
             while (running)
             {
                 long curTime = Clock.getTimestamp();
-                if (curTime - lastDataReceivedTime > CoreConfig.pingInterval)
+                if(curTime - lastDataReceivedTime > CoreConfig.pingTimeout)
                 {
-                    if (lastPing == 0)
+                    // haven't received any data for 10 seconds, stop running
+                    Logging.warn(String.Format("Node {0} hasn't received any data from remote endpoint for over {1} seconds, disconnecting.", getFullAddress(), CoreConfig.pingTimeout));
+                    running = false;
+                    break;
+                }
+                if(curTime - lastDataSentTime > CoreConfig.pongInterval)
+                {
+                    if (clientSocket.Send(new byte[1] { 0 }, SocketFlags.None) > 0)
                     {
-                        lastPing = curTime;
-                        byte[] pingBytes = new byte[1];
-                        sendDataInternal(ProtocolMessageCode.ping, pingBytes, Crypto.sha512sqTrunc(pingBytes));
-                        Thread.Sleep(1);
-                        continue;
-                    }else if(curTime - lastPing > CoreConfig.pingTimeout)
-                    {
-                        // haven't received any data for 10 seconds, stop running
-                        Logging.warn(String.Format("Node {0} hasn't received any data from remote endpoint for over {1} seconds, disconnecting.", getFullAddress(), CoreConfig.pingInterval + CoreConfig.pingTimeout));
-                        running = false;
-                        break;
+                        lastDataSentTime = curTime;
                     }
+                    continue;
                 }
 
                 bool message_found = false;
@@ -436,6 +435,11 @@ namespace DLT
                     }
                     int curSentBytes = clientSocket.Send(ba, sentBytes, bytesToSendCount, SocketFlags.None);
 
+                    if(curSentBytes > 0)
+                    {
+                        lastDataSentTime = Clock.getTimestamp();
+                    }
+
                     // Sleep a bit to allow other threads to do their thing
                     Thread.Yield();
 
@@ -473,8 +477,7 @@ namespace DLT
             message.skipEndpoint = null;
 
             if(code == ProtocolMessageCode.bye || code == ProtocolMessageCode.keepAlivePresence 
-                || code == ProtocolMessageCode.getPresence || code == ProtocolMessageCode.updatePresence 
-                || code == ProtocolMessageCode.ping || code == ProtocolMessageCode.pong)
+                || code == ProtocolMessageCode.getPresence || code == ProtocolMessageCode.updatePresence)
             {
                 lock (sendQueueMessagesHighPriority)
                 {

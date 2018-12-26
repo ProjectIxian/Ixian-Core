@@ -19,8 +19,8 @@ namespace IXICore
         public static readonly int maxNetworkQueue = 10000; // Maximum number of received messages in network queue before throttling starts
         public static readonly int maxSendQueue = 10000; // Maximum number of sent messages in queue per endpoint
         public static readonly int maxMessageSize = 5000000; // Maximum message size in bytes
-        public static readonly int pingInterval = 5; // how long to wait for data before sending ping
-        public static readonly int pingTimeout = 5; // how long to wait for data after sending ping 
+        public static readonly int pongInterval = 2; // pong interval in seconds (if no data is sent for x seconds, pong will be sent)
+        public static readonly int pingTimeout = 10; // how long to wait in seconds for data before disconnecting a node
         public static readonly int networkClientReconnectInterval = 10 * 1000; // Time in milliseconds
         public static readonly int keepAliveInterval = 45; // Number of seconds to wait until next keepalive ping
         public static readonly int maximumNeighborReconnectCount = 3; // Number of retries before proceeding to a different neighbor node
