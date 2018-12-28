@@ -270,14 +270,24 @@ namespace DLT
                 {
                     // haven't received any data for 10 seconds, stop running
                     Logging.warn(String.Format("Node {0} hasn't received any data from remote endpoint for over {1} seconds, disconnecting.", getFullAddress(), CoreConfig.pingTimeout));
+                    state = RemoteEndpointState.Closed;
                     running = false;
                     break;
                 }
                 if(curTime - lastDataSentTime > CoreConfig.pongInterval)
                 {
-                    clientSocket.Send(new byte[1] { 1 }, SocketFlags.None);
-                    lastDataSentTime = curTime;
-                    continue;
+                    try
+                    {
+                        clientSocket.Send(new byte[1] { 1 }, SocketFlags.None);
+                        lastDataSentTime = curTime;
+                        continue;
+                    }
+                    catch (Exception)
+                    {
+                        state = RemoteEndpointState.Closed;
+                        running = false;
+                        break;
+                    }
                 }
 
                 bool message_found = false;
