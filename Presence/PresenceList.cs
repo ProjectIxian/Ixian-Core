@@ -360,8 +360,11 @@ namespace DLT
 
         // Called when receiving a keepalive network message. The PresenceList will update the appropriate entry based on the timestamp.
         // Returns TRUE if it updated an entry in the PL
-        public static bool receiveKeepAlive(byte[] bytes)
+        // Sets the out address parameter to be the KA wallet's address or null if an error occured
+        public static bool receiveKeepAlive(byte[] bytes, out byte[] address)
         {
+            address = null;
+
             // Get the current timestamp
             long currentTime = Core.getCurrentTimestamp();
 
@@ -374,6 +377,10 @@ namespace DLT
                         int keepAliveVersion = reader.ReadInt32();
                         int walletLen = reader.ReadInt32();
                         byte[] wallet = reader.ReadBytes(walletLen);
+                        
+                        // Assign the out address parameter
+                        address = wallet;
+
                         string deviceid = reader.ReadString();
                         long timestamp = reader.ReadInt64();
                         string hostname = reader.ReadString();
