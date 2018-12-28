@@ -15,6 +15,10 @@ namespace DLT
     {
         private string filename;
 
+        private byte[] masterSeed = null;
+
+        public readonly Dictionary<byte[], byte[][]> myWallets = new Dictionary<byte[], byte[][]>(new IXICore.Utils.ByteArrayComparer()); // The entire wallet list
+
         public byte[] privateKey = null;
         public byte[] publicKey = null;
         public byte[] address = null;
@@ -29,6 +33,122 @@ namespace DLT
         {
             filename = file_name;
             readWallet();
+        }
+
+        private void displayBackupText()
+        {
+            Console.ForegroundColor = ConsoleColor.Red;
+            Console.WriteLine("");
+            Console.WriteLine("!! Always remember to keep a backup of your ixian.wal file and your password.");
+            Console.WriteLine("!! In case of a lost file you will not be able to access your funds.");
+            Console.WriteLine("!! Never give your ixian.wal and/or password to anyone.");
+            Console.WriteLine("");
+            Console.ResetColor();
+        }
+
+        private void readV1Wallet(BinaryReader reader)
+        {
+
+            // Read the encrypted keys
+            int b_privateKeyLength = reader.ReadInt32();
+            byte[] b_privateKey = reader.ReadBytes(b_privateKeyLength);
+
+            int b_publicKeyLength = reader.ReadInt32();
+            byte[] b_publicKey = reader.ReadBytes(b_publicKeyLength);
+
+            bool success = false;
+            while (!success)
+            {
+                displayBackupText();
+
+                Console.Write("Enter wallet password: ");
+                string password = getPasswordInput();
+                success = true;
+                try
+                {
+                    // Decrypt
+                    privateKey = CryptoManager.lib.decryptWithPassword(b_privateKey, password);
+                    publicKey = CryptoManager.lib.decryptWithPassword(b_publicKey, password);
+                }
+                catch (Exception)
+                {
+                    Logging.error(string.Format("Incorrect password"));
+                    Logging.flush();
+                    success = false;
+                }
+
+            }
+
+            Address addr = new Address(publicKey);
+            address = addr.address;
+        }
+
+        private void readV2Wallet(BinaryReader reader)
+        {
+            // Read the master seed
+            int b_master_seed_length = reader.ReadInt32();
+            byte[] b_master_seed = reader.ReadBytes(b_master_seed_length);
+
+            // Read the primary encrypted keys
+            int b_privateKeyLength = reader.ReadInt32();
+            byte[] b_privateKey = reader.ReadBytes(b_privateKeyLength);
+
+            int b_publicKeyLength = reader.ReadInt32();
+            byte[] b_publicKey = reader.ReadBytes(b_publicKeyLength);
+
+            string password = "";
+
+            bool success = false;
+            while (!success)
+            {
+                displayBackupText();
+
+                Console.Write("Enter wallet password: ");
+                password = getPasswordInput();
+                success = true;
+                try
+                {
+                    // Decrypt
+                    masterSeed = CryptoManager.lib.decryptWithPassword(b_master_seed, password);
+                    privateKey = CryptoManager.lib.decryptWithPassword(b_privateKey, password);
+                    publicKey = CryptoManager.lib.decryptWithPassword(b_publicKey, password);
+                    Address addr = new Address(publicKey);
+                    address = addr.address;
+                    myWallets.Add(address, new byte[2][] { privateKey, publicKey });
+                }
+                catch (Exception)
+                {
+                    Logging.error(string.Format("Incorrect password"));
+                    Logging.flush();
+                    success = false;
+                }
+
+            }
+
+            while (reader.BaseStream.Length > reader.BaseStream.Position)
+            {
+                int len = reader.ReadInt32();
+                if (reader.BaseStream.Position + len > reader.BaseStream.Length)
+                {
+                    Logging.warn("Wallet file is corrupt, expected more data than available.");
+                    break;
+                }
+                byte[] enc_private_key = reader.ReadBytes(len);
+
+                len = reader.ReadInt32();
+                if (reader.BaseStream.Position + len > reader.BaseStream.Length)
+                {
+                    Logging.warn("Wallet file is corrupt, expected more data than available.");
+                    break;
+                }
+                byte[] enc_public_key = reader.ReadBytes(len);
+
+                byte[] dec_private_key = CryptoManager.lib.decryptWithPassword(enc_private_key, password);
+                byte[] dec_public_key = CryptoManager.lib.decryptWithPassword(enc_public_key, password);
+                byte[] tmp_address = (new Address(dec_public_key)).address;
+
+                myWallets.Add(tmp_address, new byte[2][] { dec_private_key, dec_public_key });
+            }
         }
 
         // Try to read wallet information from the file
@@ -68,44 +188,13 @@ namespace DLT
                     return false;
                 }
 
-                // Read the encrypted keys
-                int b_privateKeyLength = reader.ReadInt32();
-                byte[] b_privateKey = reader.ReadBytes(b_privateKeyLength);
-
-                int b_publicKeyLength = reader.ReadInt32();
-                byte[] b_publicKey = reader.ReadBytes(b_publicKeyLength);
-
-                bool success = false;
-                while (!success)
+                if(version == 1)
                 {
-                    Console.ForegroundColor = ConsoleColor.Red;
-                    Console.WriteLine("");
-                    Console.WriteLine("!! Always remember to keep a backup of your ixian.wal file and your password.");
-                    Console.WriteLine("!! In case of a lost file you will not be able to access your funds.");
-                    Console.WriteLine("!! Never give your ixian.wal and/or password to anyone.");
-                    Console.WriteLine("");
-                    Console.ResetColor();
-
-                    Console.Write("Enter wallet password: ");
-                    string password = getPasswordInput();
-                    success = true;
-                    try
-                    {
-                        // Decrypt
-                        privateKey = CryptoManager.lib.decryptWithPassword(b_privateKey, password);
-                        publicKey = CryptoManager.lib.decryptWithPassword(b_publicKey, password);
-                    }
-                    catch(Exception)
-                    {
-                        Logging.error(string.Format("Incorrect password"));
-                        Logging.flush();
-                        success = false;
-                    }
-                  
+                    readV1Wallet(reader);
+                }else if(version == 2)
+                {
+                    readV2Wallet(reader);
                 }
-
-                Address addr = new Address(publicKey);
-                address = addr.address;
 
                 // Wait for any pending log messages to be written
                 Logging.flush();
@@ -136,7 +225,7 @@ namespace DLT
                     new_password = requestNewPassword("Enter a new password for your wallet: ");
                 }
 
-                writeWallet(new_password);
+                writeWallet_v2(new_password);
             }
 
             Logging.log(LogSeverity.info, String.Format("Public Node Address: {0}", Base58Check.Base58CheckEncoding.EncodePlain(address)));
@@ -145,7 +234,7 @@ namespace DLT
         }
 
         // Write the wallet to the file
-        private bool writeWallet(string password)
+        private bool writeWallet_v1(string password)
         {
             if (password.Length < 10)
                 return false;
@@ -190,6 +279,51 @@ namespace DLT
             return true;
         }
 
+        // Write the wallet to the file
+        private bool writeWallet_v2(string password)
+        {
+            if (password.Length < 10)
+                return false;
+
+            // Encrypt data first
+            byte[] b_privateKey = CryptoManager.lib.encryptWithPassword(privateKey, password);
+            byte[] b_publicKey = CryptoManager.lib.encryptWithPassword(publicKey, password);
+
+            BinaryWriter writer;
+            try
+            {
+                writer = new BinaryWriter(new FileStream(filename, FileMode.Create));
+            }
+            catch (IOException e)
+            {
+                Logging.log(LogSeverity.error, String.Format("Cannot create wallet file. {0}", e.Message));
+                return false;
+            }
+
+            try
+            {
+                System.Int32 version = 1; // Set the wallet version
+                writer.Write(version);
+
+                // Write the address keypair
+                writer.Write(b_privateKey.Length);
+                writer.Write(b_privateKey);
+
+                writer.Write(b_publicKey.Length);
+                writer.Write(b_publicKey);
+
+            }
+
+            catch (IOException e)
+            {
+                Logging.log(LogSeverity.error, String.Format("Cannot write to wallet file. {0}", e.Message));
+                return false;
+            }
+
+            writer.Close();
+
+            return true;
+        }
         // Generate a new wallet with matching private/public key pairs
         private bool generateWallet()
         {
@@ -206,13 +340,7 @@ namespace DLT
                 return false;
             }
 
-            Console.ForegroundColor = ConsoleColor.Red;
-            Console.WriteLine("");
-            Console.WriteLine("!! Always remember to keep a backup of your ixian.wal file and your password.");
-            Console.WriteLine("!! In case of a lost file you will not be able to access your funds.");
-            Console.WriteLine("!! Never give your ixian.wal and/or password to anyone.");
-            Console.WriteLine("");
-            Console.ResetColor();
+            displayBackupText();
 
             // Request a password
             string password = "";
@@ -241,7 +369,7 @@ namespace DLT
             Console.WriteLine();
 
             // Write the new wallet data to the file
-            return writeWallet(password);
+            return writeWallet_v2(password);
         }
 
         // Requests the user to type a new password
