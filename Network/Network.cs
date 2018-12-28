@@ -56,7 +56,9 @@ namespace DLT
             getBlockTransactions,
             transactionsChunk,
             getUnappliedTransactions,
-            extend
+            extend,
+            attachEvent,
+            detachEvent
         }
 
         public enum RemoteEndpointState

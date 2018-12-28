@@ -39,6 +39,9 @@ namespace DLT
 
         protected bool running = false;
 
+        // Maintain a list of subscribed event addresses with event type
+        private Dictionary<byte[], int> subscribedAddresses = new Dictionary<byte[], int>();
+
         // Maintain a queue of messages to send
         private List<QueueMessage> sendQueueMessagesHighPriority = new List<QueueMessage>();
         private List<QueueMessage> sendQueueMessagesNormalPriority = new List<QueueMessage>();
@@ -747,5 +750,58 @@ namespace DLT
         {
             return legacyNode;
         }
+
+
+        // Subscribe to event
+        public bool attachEvent(int type, byte[] data)
+        {
+            using (MemoryStream m = new MemoryStream(data))
+            {
+                using (BinaryReader reader = new BinaryReader(m))
+                {
+                    int addrCount = reader.ReadInt32();
+                    for (int i = 0; i < addrCount; i++)
+                    {
+                        int addrLen = reader.ReadInt32();
+                        byte[] address = reader.ReadBytes(addrLen);
+
+                        // Check if we're subscribed already to this event
+                        if(subscribedAddresses.ContainsKey(address) == false)
+                        {
+                            subscribedAddresses.Add(address, type);
+                        }                        
+                    }
+                }
+            }
+
+            return true;
+        }
+
+
+        // Unsubscribe from event
+        public bool detachEvent(int type, byte[] data)
+        {
+            using (MemoryStream m = new MemoryStream(data))
+            {
+                using (BinaryReader reader = new BinaryReader(m))
+                {
+                    int addrCount = reader.ReadInt32();
+                    for (int i = 0; i < addrCount; i++)
+                    {
+                        int addrLen = reader.ReadInt32();
+                        byte[] address = reader.ReadBytes(addrLen);
+
+                        // Check if we're subscribed already to this event
+                        if (subscribedAddresses.ContainsKey(address) == true)
+                        {
+                            subscribedAddresses.Remove(address);
+                        }
+                    }
+                }
+            }
+            return true;
+        }
+
+
     }
 }
