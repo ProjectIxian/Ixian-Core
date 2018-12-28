@@ -765,7 +765,7 @@ namespace DLT
                         int addrLen = reader.ReadInt32();
                         byte[] address = reader.ReadBytes(addrLen);
 
-                        // Check if we're subscribed already to this event
+                        // Check if we're subscribed already to this address
                         if(subscribedAddresses.ContainsKey(address) == false)
                         {
                             subscribedAddresses.Add(address, type);
@@ -791,7 +791,7 @@ namespace DLT
                         int addrLen = reader.ReadInt32();
                         byte[] address = reader.ReadBytes(addrLen);
 
-                        // Check if we're subscribed already to this event
+                        // Check if we're subscribed already to this address
                         if (subscribedAddresses.ContainsKey(address) == true)
                         {
                             subscribedAddresses.Remove(address);
@@ -800,6 +800,25 @@ namespace DLT
                 }
             }
             return true;
+        }
+
+        // Check if the remote endpoint is subscribed to an event for a specific address
+        // Returns true if subscribed
+        public bool isSubscribedToEvent(int type, byte[] address)
+        {
+            if (address == null)
+                return false;
+
+            // Check if we're subscribed to this address
+            if (subscribedAddresses.ContainsKey(address) == true)
+            {
+                // Check for the specific event type
+                if(subscribedAddresses[address] == type)
+                {
+                    return true;
+                }
+            }
+            return false;
         }
 
 
