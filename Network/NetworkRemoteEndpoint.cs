@@ -762,6 +762,10 @@ namespace DLT
                     int addrCount = reader.ReadInt32();
                     for (int i = 0; i < addrCount; i++)
                     {
+                        // Check the quota
+                        if (subscribedAddresses.Count > CoreConfig.maximumSubscribableEvents)
+                            return false;
+
                         int addrLen = reader.ReadInt32();
                         byte[] address = reader.ReadBytes(addrLen);
 
