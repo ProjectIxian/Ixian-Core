@@ -17,6 +17,7 @@ namespace DLT
         private string filename;
 
         private int walletVersion = 0;
+        private string walletPassword = ""; // TODO TODO TODO TODO wallet password, seed and keys should be encrypted in memory
 
         private byte[] masterSeed = null;
         private byte[] derivedMasterSeed = null;
@@ -74,6 +75,7 @@ namespace DLT
                     // Decrypt
                     privateKey = CryptoManager.lib.decryptWithPassword(b_privateKey, password);
                     publicKey = CryptoManager.lib.decryptWithPassword(b_publicKey, password);
+                    walletPassword = password;
                 }
                 catch (Exception)
                 {
@@ -102,13 +104,6 @@ namespace DLT
             int b_master_seed_length = reader.ReadInt32();
             byte[] b_master_seed = reader.ReadBytes(b_master_seed_length);
 
-            // Read the primary encrypted keys
-            int b_privateKeyLength = reader.ReadInt32();
-            byte[] b_privateKey = reader.ReadBytes(b_privateKeyLength);
-
-            int b_publicKeyLength = reader.ReadInt32();
-            byte[] b_publicKey = reader.ReadBytes(b_publicKeyLength);
-
             string password = "";
 
             bool success = false;
@@ -123,17 +118,7 @@ namespace DLT
                 {
                     // Decrypt
                     masterSeed = CryptoManager.lib.decryptWithPassword(b_master_seed, password);
-                    privateKey = CryptoManager.lib.decryptWithPassword(b_privateKey, password);
-                    publicKey = CryptoManager.lib.decryptWithPassword(b_publicKey, password);
-
-                    Address addr = new Address(publicKey);
-                    address = addr.address;
-
-                    IxianKeyPair kp = new IxianKeyPair();
-                    kp.privateKeyBytes = privateKey;
-                    kp.publicKeyBytes = publicKey;
-
-                    myWallets.Add(address, kp);
+                    walletPassword = password;
                 }
                 catch (Exception)
                 {
@@ -170,6 +155,13 @@ namespace DLT
                 IxianKeyPair kp = new IxianKeyPair();
                 kp.privateKeyBytes = dec_private_key;
                 kp.publicKeyBytes = dec_public_key;
+
+                if(privateKey == null)
+                {
+                    privateKey = dec_private_key;
+                    publicKey = dec_public_key;
+                    address = tmp_address;
+                }
 
                 myWallets.Add(tmp_address, kp);
             }
@@ -250,8 +242,7 @@ namespace DLT
                 {
                     new_password = requestNewPassword("Enter a new password for your wallet: ");
                 }
-
-                writeWallet_v2(new_password);
+                writeWallet(new_password);
             }
 
             Logging.info("Public Node Address: {0}", Base58Check.Base58CheckEncoding.EncodePlain(address));
@@ -311,10 +302,6 @@ namespace DLT
             if (password.Length < 10)
                 return false;
 
-            // Encrypt data first
-            byte[] b_privateKey = CryptoManager.lib.encryptWithPassword(privateKey, password);
-            byte[] b_publicKey = CryptoManager.lib.encryptWithPassword(publicKey, password);
-
             BinaryWriter writer;
             try
             {
@@ -331,13 +318,27 @@ namespace DLT
                 System.Int32 version = 2; // Set the wallet version
                 writer.Write(version);
 
-                // Write the address keypair
-                writer.Write(b_privateKey.Length);
-                writer.Write(b_privateKey);
+                // Write the master seed
+                byte[] enc_master_seed = CryptoManager.lib.encryptWithPassword(masterSeed, password);
+                writer.Write(enc_master_seed.Length);
+                writer.Write(enc_master_seed);
 
-                writer.Write(b_publicKey.Length);
-                writer.Write(b_publicKey);
+                writer.Write(myWallets.Count());
 
+                foreach(var entry in myWallets)
+                {
+                    byte[] enc_private_key = CryptoManager.lib.encryptWithPassword(entry.Value.privateKeyBytes, password);
+                    writer.Write(enc_private_key.Length);
+                    writer.Write(enc_private_key);
+
+                    byte[] enc_public_key = CryptoManager.lib.encryptWithPassword(entry.Value.publicKeyBytes, password);
+                    writer.Write(enc_public_key.Length);
+                    writer.Write(enc_public_key);
+                }
+
+                byte[] enc_derived_master_seed = CryptoManager.lib.encryptWithPassword(derivedMasterSeed, password);
+                writer.Write(enc_derived_master_seed.Length);
+                writer.Write(enc_derived_master_seed);
             }
 
             catch (IOException e)
@@ -353,42 +354,45 @@ namespace DLT
         // Generate a new wallet with matching private/public key pairs
         private bool generateWallet()
         {
-            Logging.log(LogSeverity.info, "Generating new wallet keys, this may take a while, please wait...");
+            Logging.info("A new wallet will be generated for you.");
 
-            // Generate the private and public key pair
-            try
-            {
-                CryptoManager.lib.generateKeys(CoreConfig.defaultRsaKeySize);
-            }
-            catch(Exception e)
-            {
-                Logging.error(string.Format("Error generating wallet: {0}", e.ToString()));
-                return false;
-            }
+            Logging.flush();
 
             displayBackupText();
+
+            Logging.flush();
 
             // Request a password
             string password = "";
             while(password.Length < 10)
             {
-                password = requestNewPassword("Enter a password for your wallet: ");
+                password = requestNewPassword("Enter a password for your new wallet: ");
             }
+
+
+            walletVersion = 2;
+            walletPassword = password;
+
+            Logging.log(LogSeverity.info, "Generating master seed, this may take a while, please wait...");
 
             masterSeed = KeyDerivation.getNewRandomSeed(1024 * 1024);
             derivedMasterSeed = masterSeed;
 
-            IXICore.CryptoKey.KeyDerivation kd = new IXICore.CryptoKey.KeyDerivation(masterSeed, "IXIAN");
+            Logging.log(LogSeverity.info, "Generating primary wallet keys, this may take a while, please wait...");
 
-            IxianKeyPair kp = kd.deriveKey(0, CoreConfig.defaultRsaKeySize, 65537);
+            IxianKeyPair kp = generateNewKeyPair(false);
+
+            if (kp == null)
+            {
+                Logging.error("Error creating wallet, unable to generate a new keypair.");
+                return false;
+            }
 
             privateKey = kp.privateKeyBytes;
             publicKey = kp.publicKeyBytes;
 
             Address addr = new Address(publicKey);
             address = addr.address;
-
-            myWallets.Add(address, kp);
 
             Logging.info(String.Format("Public Key: {0}", Crypto.hashToString(publicKey)));
             Logging.info(String.Format("Public Node Address: {0}", Base58Check.Base58CheckEncoding.EncodePlain(address)));
@@ -404,7 +408,7 @@ namespace DLT
             Console.WriteLine();
 
             // Write the new wallet data to the file
-            return writeWallet_v2(password);
+            return writeWallet(password);
         }
 
         // Requests the user to type a new password
@@ -487,9 +491,68 @@ namespace DLT
             return true;
         }
 
-        public byte[] generateNewAddress()
+        public bool writeWallet(string password)
         {
-            return address;
+            // TODO TODO TODO TODO TODO TODO backup the wallet first.
+            if (walletVersion == 1)
+            {
+                return writeWallet_v1(walletPassword);
+            }
+            if (walletVersion == 2)
+            {
+                return writeWallet_v2(walletPassword);
+            }
+            return false;
+        }
+
+        public IxianKeyPair generateNewKeyPair(bool writeToFile = true)
+        {
+            if (walletVersion < 2)
+            {
+                return myWallets.First().Value;
+            }
+
+            IXICore.CryptoKey.KeyDerivation kd = new IXICore.CryptoKey.KeyDerivation(masterSeed, "IXIAN");
+
+            IxianKeyPair kp = kd.deriveKey(myWallets.Count(), CoreConfig.defaultRsaKeySize, 65537);
+
+            if (kp == null)
+            {
+                Logging.error("An error occured generating new key pair, unable to derive key.");
+                return null;
+            }
+
+            if (!DLT.CryptoManager.lib.testKeys(Encoding.Unicode.GetBytes("TEST TEST"), kp))
+            {
+                Logging.error("An error occured while testing the newly generated keypair, unable to produce a valid address.");
+                return null;
+            }
+            Address addr = new Address(kp.publicKeyBytes);
+            address = addr.address;
+
+            if (addr.address == null)
+            {
+                Logging.error("An error occured generating new key pair, unable to produce a valid address.");
+                return null;
+            }
+            if (!writeToFile)
+            {
+                myWallets.Add(address, kp);
+            }
+            else
+            {
+                if (writeWallet(walletPassword))
+                {
+                    myWallets.Add(address, kp);
+                }
+                else
+                {
+                    Logging.error("An error occured while writing wallet file.");
+                    return null;
+                }
+            }
+
+            return kp;
         }
     }
 }
