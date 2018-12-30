@@ -1,6 +1,7 @@
 ﻿using DLT;
 using DLT.Meta;
 using IXICore;
+using IXICore.CryptoKey;
 using System;
 using System.Collections.Generic;
 using System.IO;
@@ -15,9 +16,12 @@ namespace DLT
     {
         private string filename;
 
-        private byte[] masterSeed = null;
+        private int walletVersion = 0;
 
-        public readonly Dictionary<byte[], byte[][]> myWallets = new Dictionary<byte[], byte[][]>(new IXICore.Utils.ByteArrayComparer()); // The entire wallet list
+        private byte[] masterSeed = null;
+        private byte[] derivedMasterSeed = null;
+
+        public readonly Dictionary<byte[], IxianKeyPair> myWallets = new Dictionary<byte[], IxianKeyPair>(new IXICore.Utils.ByteArrayComparer()); // The entire wallet list
 
         public byte[] privateKey = null;
         public byte[] publicKey = null;
@@ -48,6 +52,7 @@ namespace DLT
 
         private void readV1Wallet(BinaryReader reader)
         {
+            walletVersion = 1;
 
             // Read the encrypted keys
             int b_privateKeyLength = reader.ReadInt32();
@@ -81,10 +86,18 @@ namespace DLT
 
             Address addr = new Address(publicKey);
             address = addr.address;
+
+            IxianKeyPair kp = new IxianKeyPair();
+            kp.privateKeyBytes = privateKey;
+            kp.publicKeyBytes = publicKey;
+
+            myWallets.Add(address, kp);
         }
 
         private void readV2Wallet(BinaryReader reader)
         {
+            walletVersion = 2;
+
             // Read the master seed
             int b_master_seed_length = reader.ReadInt32();
             byte[] b_master_seed = reader.ReadBytes(b_master_seed_length);
@@ -112,9 +125,15 @@ namespace DLT
                     masterSeed = CryptoManager.lib.decryptWithPassword(b_master_seed, password);
                     privateKey = CryptoManager.lib.decryptWithPassword(b_privateKey, password);
                     publicKey = CryptoManager.lib.decryptWithPassword(b_publicKey, password);
+
                     Address addr = new Address(publicKey);
                     address = addr.address;
-                    myWallets.Add(address, new byte[2][] { privateKey, publicKey });
+
+                    IxianKeyPair kp = new IxianKeyPair();
+                    kp.privateKeyBytes = privateKey;
+                    kp.publicKeyBytes = publicKey;
+
+                    myWallets.Add(address, kp);
                 }
                 catch (Exception)
                 {
@@ -125,12 +144,13 @@ namespace DLT
 
             }
 
-            while (reader.BaseStream.Length > reader.BaseStream.Position)
+            int key_count = reader.ReadInt32();
+            for (int i = 0; i < key_count; i++)
             {
                 int len = reader.ReadInt32();
                 if (reader.BaseStream.Position + len > reader.BaseStream.Length)
                 {
-                    Logging.warn("Wallet file is corrupt, expected more data than available.");
+                    Logging.error("Wallet file is corrupt, expected more data than available.");
                     break;
                 }
                 byte[] enc_private_key = reader.ReadBytes(len);
@@ -138,7 +158,7 @@ namespace DLT
                 len = reader.ReadInt32();
                 if (reader.BaseStream.Position + len > reader.BaseStream.Length)
                 {
-                    Logging.warn("Wallet file is corrupt, expected more data than available.");
+                    Logging.error("Wallet file is corrupt, expected more data than available.");
                     break;
                 }
                 byte[] enc_public_key = reader.ReadBytes(len);
@@ -147,8 +167,16 @@ namespace DLT
                 byte[] dec_public_key = CryptoManager.lib.decryptWithPassword(enc_public_key, password);
                 byte[] tmp_address = (new Address(dec_public_key)).address;
 
-                myWallets.Add(tmp_address, new byte[2][] { dec_private_key, dec_public_key });
+                IxianKeyPair kp = new IxianKeyPair();
+                kp.privateKeyBytes = dec_private_key;
+                kp.publicKeyBytes = dec_public_key;
+
+                myWallets.Add(tmp_address, kp);
             }
+
+            int seed_len = reader.ReadInt32();
+            byte[] enc_derived_seed = reader.ReadBytes(seed_len);
+            derivedMasterSeed = CryptoManager.lib.decryptWithPassword(enc_derived_seed, password);
         }
 
         // Try to read wallet information from the file
@@ -181,12 +209,6 @@ namespace DLT
             {
                 // Read the wallet version
                 System.Int32 version = reader.ReadInt32();
-                
-                if(version != 1)
-                {
-                    Logging.error(string.Format("Wallet version mismatch, expecting {0}, got {1}", 1, version));
-                    return false;
-                }
 
                 if(version == 1)
                 {
@@ -194,6 +216,10 @@ namespace DLT
                 }else if(version == 2)
                 {
                     readV2Wallet(reader);
+                }else
+                {
+                    Logging.error("Unknown wallet version {0}", version);
+                    return false;
                 }
 
                 // Wait for any pending log messages to be written
@@ -209,7 +235,7 @@ namespace DLT
             }
             catch (IOException e)
             {
-                Logging.log(LogSeverity.error, String.Format("Cannot read from wallet file. {0}", e.Message));
+                Logging.error("Cannot read from wallet file. {0}", e.Message);
                 return false;
             }
 
@@ -228,7 +254,7 @@ namespace DLT
                 writeWallet_v2(new_password);
             }
 
-            Logging.log(LogSeverity.info, String.Format("Public Node Address: {0}", Base58Check.Base58CheckEncoding.EncodePlain(address)));
+            Logging.info("Public Node Address: {0}", Base58Check.Base58CheckEncoding.EncodePlain(address));
 
             return true;
         }
@@ -250,7 +276,7 @@ namespace DLT
             }
             catch (IOException e)
             {
-                Logging.log(LogSeverity.error, String.Format("Cannot create wallet file. {0}", e.Message));
+                Logging.error("Cannot create wallet file. {0}", e.Message);
                 return false;
             }
 
@@ -270,7 +296,7 @@ namespace DLT
 
             catch (IOException e)
             {
-                Logging.log(LogSeverity.error, String.Format("Cannot write to wallet file. {0}", e.Message));
+                Logging.error("Cannot write to wallet file. {0}", e.Message);
                 return false;
             }
 
@@ -296,13 +322,13 @@ namespace DLT
             }
             catch (IOException e)
             {
-                Logging.log(LogSeverity.error, String.Format("Cannot create wallet file. {0}", e.Message));
+                Logging.error("Cannot create wallet file. {0}", e.Message);
                 return false;
             }
 
             try
             {
-                System.Int32 version = 1; // Set the wallet version
+                System.Int32 version = 2; // Set the wallet version
                 writer.Write(version);
 
                 // Write the address keypair
@@ -316,7 +342,7 @@ namespace DLT
 
             catch (IOException e)
             {
-                Logging.log(LogSeverity.error, String.Format("Cannot write to wallet file. {0}", e.Message));
+                Logging.error("Cannot write to wallet file. {0}", e.Message);
                 return false;
             }
 
@@ -349,11 +375,20 @@ namespace DLT
                 password = requestNewPassword("Enter a password for your wallet: ");
             }
 
-            privateKey = CryptoManager.lib.getPrivateKey();
-            publicKey = CryptoManager.lib.getPublicKey();
+            masterSeed = KeyDerivation.getNewRandomSeed(1024 * 1024);
+            derivedMasterSeed = masterSeed;
+
+            IXICore.CryptoKey.KeyDerivation kd = new IXICore.CryptoKey.KeyDerivation(masterSeed, "IXIAN");
+
+            IxianKeyPair kp = kd.deriveKey(0, CoreConfig.defaultRsaKeySize, 65537);
+
+            privateKey = kp.privateKeyBytes;
+            publicKey = kp.publicKeyBytes;
 
             Address addr = new Address(publicKey);
             address = addr.address;
+
+            myWallets.Add(address, kp);
 
             Logging.info(String.Format("Public Key: {0}", Crypto.hashToString(publicKey)));
             Logging.info(String.Format("Public Node Address: {0}", Base58Check.Base58CheckEncoding.EncodePlain(address)));

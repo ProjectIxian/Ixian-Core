@@ -7,12 +7,15 @@ using System.Threading.Tasks;
 
 namespace DLT
 {
+    public class IxianKeyPair
+    {
+        public byte[] publicKeyBytes = null;
+        public byte[] privateKeyBytes = null;
+    }
+
     public interface ICryptoLib
     {
-        bool generateKeys(int keySize);
-
-        byte[] getPublicKey();
-        byte[] getPrivateKey();
+        IxianKeyPair generateKeys(int keySize);
 
         byte[] getSignature(byte[] input, byte[] privateKey);
         bool verifySignature(byte[] input, byte[] publicKey, byte[] signature);
@@ -31,9 +34,7 @@ namespace DLT
 
         byte[] generateChildKey(byte[] parentKey, int seed = 0);
 
-        bool testKeys(byte[] keypair);
-        void importKeys(byte[] priv_key);
-
+        bool testKeys(byte[] keypair, IxianKeyPair kp);
     }
 
 
@@ -46,20 +47,10 @@ namespace DLT
             _cryptoLib = crypto_lib;
         }
 
-        public bool generateKeys(int keySize)
+        public IxianKeyPair generateKeys(int keySize)
         {
             Trace.Assert(_cryptoLib != null);
             return _cryptoLib.generateKeys(keySize);
-        }
-
-        public byte[] getPublicKey()
-        {
-            return _cryptoLib.getPublicKey();
-        }
-
-        public byte[] getPrivateKey()
-        {
-            return _cryptoLib.getPrivateKey();
         }
 
         public byte[] getSignature(byte[] input, byte[] privateKey)
@@ -117,15 +108,9 @@ namespace DLT
             return _cryptoLib.generateChildKey(parentKey, seed);
         }
 
-        public bool testKeys(byte[] plaintext)
+        public bool testKeys(byte[] plaintext, IxianKeyPair kp)
         {
-            return _cryptoLib.testKeys(plaintext);
+            return _cryptoLib.testKeys(plaintext, kp);
         }
-
-        public void importKeys(byte[] priv_key)
-        {
-            _cryptoLib.importKeys(priv_key);
-        }
-
     }
 }

@@ -1,4 +1,5 @@
-﻿using DLT.Meta;
+﻿using DLT;
+using DLT.Meta;
 using System;
 using System.Collections.Generic;
 using System.Linq;
@@ -262,7 +263,26 @@ namespace IXICore.CryptoKey
             return bytes.ToArray();
         }
 
-        public byte[] deriveKey(int key_index, int key_length, ulong public_exponent)
+        private IxianKeyPair buildIxianKeyPair(BigInteger modulus, BigInteger public_exp, BigInteger P, BigInteger Q, BigInteger DP, BigInteger DQ, BigInteger InvQ, BigInteger D)
+        {
+            IxianKeyPair kp = new IxianKeyPair();
+            kp.privateKeyBytes = buildIXIANKey(modulus, public_exp, P, Q, DP, DQ, InvQ, D);
+
+            List<byte> key_bytes = new List<byte>();
+            byte[] mod_bytes = modulus.getBytes();
+            key_bytes.AddRange(BitConverter.GetBytes(mod_bytes.Length));
+            key_bytes.AddRange(mod_bytes);
+
+            byte[] exp_bytes = public_exp.getBytes();
+            key_bytes.AddRange(BitConverter.GetBytes(exp_bytes.Length));
+            key_bytes.AddRange(exp_bytes);
+
+            kp.publicKeyBytes = key_bytes.ToArray();
+
+            return kp;
+        }
+
+        public IxianKeyPair deriveKey(int key_index, int key_length, ulong public_exponent)
         {
             clearStats();
             // put the random source into appropriate state
@@ -319,17 +339,23 @@ namespace IXICore.CryptoKey
                 Logging.info(String.Format("Key generated, numbers: {0}, prime checks: {1}, entropy bytes read: {2}",
                     statNumGens, statPrimeChecks, RandomSource.rngBytesRead));
                 // Return values
-                return buildIXIANKey(modulus, public_exp, P, Q, dP, dQ, qInv, d);
+                return buildIxianKeyPair(modulus, public_exp, P, Q, dP, dQ, qInv, d);
             }
+        }
+
+        public static byte[] getNewRandomSeed(int seed_len)
+        {
+            byte[] entropy = new byte[seed_len];
+            System.Security.Cryptography.RNGCryptoServiceProvider rngCSP = new System.Security.Cryptography.RNGCryptoServiceProvider();
+            rngCSP.GetBytes(entropy);
+            return entropy;
         }
 
         public static void BenchmarkKeyGeneration(int num_iterations, int key_size)
         {
             // Testing some key generation features
             Logging.info("Preparing entropy to benchmark key generation speed...");
-            byte[] entropy = new byte[16 * 1024];
-            System.Security.Cryptography.RNGCryptoServiceProvider rngCSP = new System.Security.Cryptography.RNGCryptoServiceProvider();
-            rngCSP.GetBytes(entropy);
+            byte[] entropy = getNewRandomSeed(1024 * 1024);
             IXICore.CryptoKey.KeyDerivation kd = new IXICore.CryptoKey.KeyDerivation(entropy, "IXIAN");
             DLT.CryptoManager.initLib();
             Logging.info(String.Format("Starting key generation. Iterations: {0}", num_iterations));
@@ -337,11 +363,10 @@ namespace IXICore.CryptoKey
             {
                 DateTime start = DateTime.Now;
                 Logging.info(String.Format("Generating key {0}...", i));
-                byte[] ixi_key = kd.deriveKey(i, key_size, 65537);
+                IxianKeyPair kp = kd.deriveKey(i, key_size, 65537);
                 Logging.info(String.Format("Key generated. ({0:0.00} ms)",
                     (DateTime.Now-start).TotalMilliseconds));
-                DLT.CryptoManager.lib.importKeys(ixi_key);
-                bool success = DLT.CryptoManager.lib.testKeys(Encoding.Unicode.GetBytes("TEST TEST"));
+                bool success = DLT.CryptoManager.lib.testKeys(Encoding.Unicode.GetBytes("TEST TEST"), kp);
                 Logging.info(String.Format("Key test: {0}", success ? "success" : "failure"));
             }
             return;
