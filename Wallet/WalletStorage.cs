@@ -52,7 +52,7 @@ namespace DLT
             Console.ResetColor();
         }
 
-        private void readV1Wallet(BinaryReader reader)
+        private void readWallet_v1(BinaryReader reader)
         {
             walletVersion = 1;
 
@@ -99,7 +99,7 @@ namespace DLT
             }
         }
 
-        private void readV2Wallet(BinaryReader reader)
+        private void readWallet_v2(BinaryReader reader)
         {
             walletVersion = 2;
 
@@ -211,10 +211,10 @@ namespace DLT
 
                 if(version == 1)
                 {
-                    readV1Wallet(reader);
+                    readWallet_v1(reader);
                 }else if(version == 2)
                 {
-                    readV2Wallet(reader);
+                    readWallet_v2(reader);
                 }else
                 {
                     Logging.error("Unknown wallet version {0}", version);
