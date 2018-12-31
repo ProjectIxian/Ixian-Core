@@ -625,5 +625,32 @@ namespace DLT
                 return null;
             }
         }
+
+        public bool isMyAddress(byte[] address)
+        {
+            lock (myWallets)
+            {
+                if (myWallets.ContainsKey(address))
+                {
+                    return true;
+                }
+            }
+            return false;
+        }
+
+        public byte[] isMyAddress(SortedDictionary<byte[], IxiNumber> address_list)
+        {
+            lock (myWallets)
+            {
+                foreach (var entry in address_list)
+                {
+                    if (myWallets.ContainsKey(entry.Key))
+                    {
+                        return entry.Key;
+                    }
+                }
+            }
+            return null;
+        }
     }
 }
