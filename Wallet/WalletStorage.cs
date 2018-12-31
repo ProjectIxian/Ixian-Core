@@ -19,14 +19,15 @@ namespace DLT
         private int walletVersion = 0;
         private string walletPassword = ""; // TODO TODO TODO TODO wallet password, seed and keys should be encrypted in memory
 
+        private byte[] seedHash = null;
         private byte[] masterSeed = null;
         private byte[] derivedMasterSeed = null;
 
-        public readonly Dictionary<byte[], IxianKeyPair> myWallets = new Dictionary<byte[], IxianKeyPair>(new IXICore.Utils.ByteArrayComparer()); // The entire wallet list
+        private readonly Dictionary<byte[], IxianKeyPair> myWallets = new Dictionary<byte[], IxianKeyPair>(new IXICore.Utils.ByteArrayComparer()); // The entire wallet list
 
-        public byte[] privateKey = null;
-        public byte[] publicKey = null;
-        public byte[] address = null;
+        private byte[] privateKey = null;
+        private byte[] publicKey = null;
+        private byte[] address = null;
 
         public WalletStorage()
         {
@@ -92,8 +93,10 @@ namespace DLT
             IxianKeyPair kp = new IxianKeyPair();
             kp.privateKeyBytes = privateKey;
             kp.publicKeyBytes = publicKey;
-
-            myWallets.Add(address, kp);
+            lock (myWallets)
+            {
+                myWallets.Add(address, kp);
+            }
         }
 
         private void readV2Wallet(BinaryReader reader)
@@ -118,6 +121,7 @@ namespace DLT
                 {
                     // Decrypt
                     masterSeed = CryptoManager.lib.decryptWithPassword(b_master_seed, password);
+                    seedHash = Crypto.sha512sqTrunc(masterSeed);
                     walletPassword = password;
                 }
                 catch (Exception)
@@ -163,7 +167,10 @@ namespace DLT
                     address = tmp_address;
                 }
 
-                myWallets.Add(tmp_address, kp);
+                lock (myWallets)
+                {
+                    myWallets.Add(tmp_address, kp);
+                }
             }
 
             int seed_len = reader.ReadInt32();
@@ -323,17 +330,20 @@ namespace DLT
                 writer.Write(enc_master_seed.Length);
                 writer.Write(enc_master_seed);
 
-                writer.Write(myWallets.Count());
-
-                foreach(var entry in myWallets)
+                lock (myWallets)
                 {
-                    byte[] enc_private_key = CryptoManager.lib.encryptWithPassword(entry.Value.privateKeyBytes, password);
-                    writer.Write(enc_private_key.Length);
-                    writer.Write(enc_private_key);
+                    writer.Write(myWallets.Count());
 
-                    byte[] enc_public_key = CryptoManager.lib.encryptWithPassword(entry.Value.publicKeyBytes, password);
-                    writer.Write(enc_public_key.Length);
-                    writer.Write(enc_public_key);
+                    foreach (var entry in myWallets)
+                    {
+                        byte[] enc_private_key = CryptoManager.lib.encryptWithPassword(entry.Value.privateKeyBytes, password);
+                        writer.Write(enc_private_key.Length);
+                        writer.Write(enc_private_key);
+
+                        byte[] enc_public_key = CryptoManager.lib.encryptWithPassword(entry.Value.publicKeyBytes, password);
+                        writer.Write(enc_public_key.Length);
+                        writer.Write(enc_public_key);
+                    }
                 }
 
                 byte[] enc_derived_master_seed = CryptoManager.lib.encryptWithPassword(derivedMasterSeed, password);
@@ -376,6 +386,7 @@ namespace DLT
             Logging.log(LogSeverity.info, "Generating master seed, this may take a while, please wait...");
 
             masterSeed = KeyDerivation.getNewRandomSeed(1024 * 1024);
+            seedHash = Crypto.sha512sqTrunc(masterSeed);
             derivedMasterSeed = masterSeed;
 
             Logging.log(LogSeverity.info, "Generating primary wallet keys, this may take a while, please wait...");
@@ -479,10 +490,32 @@ namespace DLT
             return sb.ToString();
         }
 
-        // Obtain the mnemonic address
-        public byte[] getWalletAddress()
+        public byte[] getPrimaryAddress()
         {
             return address;
+        }
+
+        public byte[] getPrimaryPrivateKey()
+        {
+            return privateKey;
+        }
+
+        public byte[] getPrimaryPublicKey()
+        {
+            return publicKey;
+        }
+
+        public byte[] getLastAddress()
+        {
+            lock (myWallets)
+            {
+                return myWallets.Last().Key;
+            }
+        }
+
+        public byte[] getSeedHash()
+        {
+            return seedHash;
         }
 
         public bool backup(string destination)
@@ -505,16 +538,39 @@ namespace DLT
             return false;
         }
 
+        public IxiNumber getMyTotalBalance()
+        {
+            IxiNumber balance = 0;
+            lock (myWallets)
+            {
+                foreach (var entry in myWallets)
+                {
+                    balance += Node.walletState.getWalletBalance(entry.Key);
+                }
+            }
+            return balance;
+        }
+
         public IxianKeyPair generateNewKeyPair(bool writeToFile = true)
         {
             if (walletVersion < 2)
             {
-                return myWallets.First().Value;
+                lock (myWallets)
+                {
+                    return myWallets.First().Value;
+                }
             }
 
             IXICore.CryptoKey.KeyDerivation kd = new IXICore.CryptoKey.KeyDerivation(masterSeed, "IXIAN");
 
-            IxianKeyPair kp = kd.deriveKey(myWallets.Count(), CoreConfig.defaultRsaKeySize, 65537);
+            int wallet_count = 0;
+
+            lock (myWallets)
+            {
+                wallet_count = myWallets.Count();
+            }
+
+            IxianKeyPair kp = kd.deriveKey(wallet_count, CoreConfig.defaultRsaKeySize, 65537);
 
             if (kp == null)
             {
@@ -535,24 +591,39 @@ namespace DLT
                 Logging.error("An error occured generating new key pair, unable to produce a valid address.");
                 return null;
             }
-            if (!writeToFile)
+            lock (myWallets)
             {
-                myWallets.Add(address, kp);
-            }
-            else
-            {
-                if (writeWallet(walletPassword))
+                if (!writeToFile)
                 {
                     myWallets.Add(address, kp);
                 }
                 else
                 {
-                    Logging.error("An error occured while writing wallet file.");
-                    return null;
+                    if (writeWallet(walletPassword))
+                    {
+                        myWallets.Add(address, kp);
+                    }
+                    else
+                    {
+                        Logging.error("An error occured while writing wallet file.");
+                        return null;
+                    }
                 }
             }
 
             return kp;
+        }
+
+        public IxianKeyPair getKeyPair(byte[] address)
+        {
+            lock (myWallets)
+            {
+                if (myWallets.ContainsKey(address))
+                {
+                    return myWallets[address];
+                }
+                return null;
+            }
         }
     }
 }

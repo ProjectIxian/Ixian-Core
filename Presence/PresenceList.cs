@@ -27,7 +27,7 @@ namespace DLT
 
             // Initialize with the default presence state
             curNodePresenceAddress = new PresenceAddress(Config.device_id, string.Format("{0}:{1}", initial_ip, Config.serverPort), type, Config.version, 0, null);
-            curNodePresence = new Presence(Node.walletStorage.address, Node.walletStorage.publicKey, null, curNodePresenceAddress);
+            curNodePresence = new Presence(Node.walletStorage.getPrimaryAddress(), Node.walletStorage.getPrimaryPublicKey(), null, curNodePresenceAddress);
         }
 
         // Searches through the entire presence list to find a matching IP with a specific type.
@@ -391,7 +391,7 @@ namespace DLT
                         lock (presences)
                         {
                             Presence listEntry = presences.Find(x => x.wallet.SequenceEqual(wallet));
-                            if (listEntry == null && wallet.SequenceEqual(Node.walletStorage.address))
+                            if (listEntry == null && wallet.SequenceEqual(Node.walletStorage.getPrimaryAddress()))
                             {
                                 Logging.error(string.Format("My entry was removed from local PL, readding."));
                                 updateEntry(curNodePresence);
@@ -458,7 +458,7 @@ namespace DLT
                             }
                             else
                             {
-                                if (wallet.SequenceEqual(Node.walletStorage.address))
+                                if (wallet.SequenceEqual(Node.walletStorage.getPrimaryAddress()))
                                 {
                                     updateEntry(curNodePresence);
                                     return true;

@@ -498,9 +498,9 @@ namespace DLT
             return Crypto.sha512sqTrunc(rawData.ToArray());
         }
 
-        public static byte[] getSignature(byte[] checksum)
+        public byte[] getSignature(byte[] checksum)
         {
-            return CryptoManager.lib.getSignature(checksum, Node.walletStorage.privateKey);
+            return CryptoManager.lib.getSignature(checksum, Node.walletStorage.getKeyPair(from).privateKeyBytes);
         }
 
 
@@ -764,7 +764,7 @@ namespace DLT
 
         public static Transaction multisigTransaction(string orig_txid, IxiNumber tx_amount, IxiNumber tx_fee, byte[] tx_to, byte[] tx_from, ulong tx_blockHeight)
         {
-            Transaction t = new Transaction((int)Transaction.Type.MultisigTX, tx_amount, tx_fee, tx_to, tx_from, null, Node.walletStorage.publicKey, tx_blockHeight);
+            Transaction t = new Transaction((int)Transaction.Type.MultisigTX, tx_amount, tx_fee, tx_to, tx_from, null, Node.walletStorage.getKeyPair(tx_from).publicKeyBytes, tx_blockHeight);
 
             t.AddMultisigOrig(orig_txid);
 
@@ -773,7 +773,7 @@ namespace DLT
 
         public static Transaction multisigTransaction(string orig_txid, IxiNumber tx_fee, SortedDictionary<byte[], IxiNumber> tx_to_list, byte[] tx_from, ulong tx_blockHeight)
         {
-            Transaction t = new Transaction((int)Transaction.Type.MultisigTX, tx_fee, tx_to_list, tx_from, null, Node.walletStorage.publicKey, tx_blockHeight);
+            Transaction t = new Transaction((int)Transaction.Type.MultisigTX, tx_fee, tx_to_list, tx_from, null, Node.walletStorage.getKeyPair(tx_from).publicKeyBytes, tx_blockHeight);
 
             t.AddMultisigOrig(orig_txid);
 
@@ -782,7 +782,7 @@ namespace DLT
 
         public static Transaction multisigAddKeyTransaction(string orig_txid, byte[] allowed_address,  IxiNumber tx_fee, byte[] tx_from, ulong tx_blockHeight)
         {
-            Transaction t = new Transaction((int)Transaction.Type.ChangeMultisigWallet, new IxiNumber(0), tx_fee, tx_from, tx_from, null, Node.walletStorage.publicKey, tx_blockHeight);
+            Transaction t = new Transaction((int)Transaction.Type.ChangeMultisigWallet, new IxiNumber(0), tx_fee, tx_from, tx_from, null, Node.walletStorage.getKeyPair(tx_from).publicKeyBytes, tx_blockHeight);
 
             t.AddMultisigChWallet(orig_txid, allowed_address, MultisigWalletChangeType.AddSigner);
 
@@ -791,7 +791,7 @@ namespace DLT
 
         public static Transaction multisigDelKeyTransaction(string orig_txid, byte[] disallowed_address, IxiNumber tx_fee, byte[] tx_from, ulong tx_blockHeight)
         {
-            Transaction t = new Transaction((int)Transaction.Type.ChangeMultisigWallet, new IxiNumber(0), tx_fee, tx_from, tx_from, null, Node.walletStorage.publicKey, tx_blockHeight);
+            Transaction t = new Transaction((int)Transaction.Type.ChangeMultisigWallet, new IxiNumber(0), tx_fee, tx_from, tx_from, null, Node.walletStorage.getKeyPair(tx_from).publicKeyBytes, tx_blockHeight);
 
             t.AddMultisigChWallet(orig_txid, disallowed_address, MultisigWalletChangeType.DelSigner);
 
@@ -800,7 +800,7 @@ namespace DLT
 
         public static Transaction multisigChangeReqSigs(string orig_txid, byte sigs, IxiNumber tx_fee, byte[] tx_from, ulong tx_blockHeight)
         {
-            Transaction t = new Transaction((int)Transaction.Type.ChangeMultisigWallet, new IxiNumber(0), tx_fee, tx_from, tx_from, null, Node.walletStorage.publicKey, tx_blockHeight);
+            Transaction t = new Transaction((int)Transaction.Type.ChangeMultisigWallet, new IxiNumber(0), tx_fee, tx_from, tx_from, null, Node.walletStorage.getKeyPair(tx_from).publicKeyBytes, tx_blockHeight);
 
             t.AddMultisigChReqSigs(orig_txid, sigs);
 
