@@ -11,6 +11,7 @@
   <ItemGroup>
     <Compile Include="$(MSBuildThisFileDirectory)Address\Address.cs" />
     <Compile Include="$(MSBuildThisFileDirectory)API\GenericAPIServer.cs" />
+    <Compile Include="$(MSBuildThisFileDirectory)Crypto\ASNParser.cs" />
     <Compile Include="$(MSBuildThisFileDirectory)Crypto\BigInteger.cs" />
     <Compile Include="$(MSBuildThisFileDirectory)Crypto\Crypto.cs" />
     <Compile Include="$(MSBuildThisFileDirectory)Crypto\CryptoLib.cs" />

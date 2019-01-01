@@ -561,7 +561,7 @@ namespace DLT
                 }
             }
 
-            IXICore.CryptoKey.KeyDerivation kd = new IXICore.CryptoKey.KeyDerivation(masterSeed, "IXIAN");
+            IXICore.CryptoKey.KeyDerivation kd = new IXICore.CryptoKey.KeyDerivation(masterSeed);
 
             int wallet_count = 0;
 
