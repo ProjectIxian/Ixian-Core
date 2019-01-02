@@ -325,9 +325,13 @@ namespace CryptoLibs
             byte[] outData = new byte[input.Length + 8];
 
             // Generate the 8 byte nonce
-            Random rnd = new Random();
             byte[] nonce = new byte[8];
-            rnd.NextBytes(nonce);
+
+            using (RNGCryptoServiceProvider rngCsp = new RNGCryptoServiceProvider())
+            {
+                // Fill the array with a random value.
+                rngCsp.GetBytes(nonce);
+            }
 
             // Prevent leading 0 to avoid edge cases
             if (nonce[0] == 0)
@@ -336,7 +340,16 @@ namespace CryptoLibs
             // Generate the Chacha engine
             var parms = new ParametersWithIV(new KeyParameter(key), nonce);
             var chacha = new ChaChaEngine(chacha_rounds);
-            chacha.Init(true, parms);
+            
+            try
+            {
+                chacha.Init(true, parms);
+            }
+            catch (Exception e)
+            {
+                Logging.error(string.Format("Error in chacha encryption. {0}", e.ToString()));
+                return null;
+            }
 
             // Encrypt the input data while maintaing an 8 byte offset at the start
             chacha.ProcessBytes(input, 0, input.Length, outData, 8);
@@ -357,7 +370,15 @@ namespace CryptoLibs
             // Generate the Chacha engine
             var parms = new ParametersWithIV(new KeyParameter(key), nonce);
             var chacha = new ChaChaEngine(chacha_rounds);
-            chacha.Init(false, parms);
+            try
+            {
+                chacha.Init(false, parms);
+            }
+            catch (Exception e)
+            {
+                Logging.error(string.Format("Error in chacha decryption. {0}", e.ToString()));
+                return null;
+            }
 
             // Create a buffer that will contain the decrypted output
             byte[] outData = new byte[input.Length - 8];
