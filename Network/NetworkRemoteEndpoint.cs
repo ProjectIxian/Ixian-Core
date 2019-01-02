@@ -65,8 +65,8 @@ namespace DLT
             socket.NoDelay = true;
 
             //tcpClient.Client.ReceiveTimeout = 5000;
-            socket.ReceiveBufferSize = 1024 * 64;
-            socket.SendBufferSize = 1024 * 64;
+            //socket.ReceiveBufferSize = 1024 * 64;
+            //socket.SendBufferSize = 1024 * 64;
             //tcpClient.Client.SendTimeout = 5000;
 
             socket.Blocking = true;

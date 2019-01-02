@@ -16,14 +16,15 @@ namespace DLT
             address = null;
         }
 
-        public Address(byte[] publicKeyOrAddress)
+        public Address(byte[] public_key_or_address, byte[] nonce = null)
         {
-            if (publicKeyOrAddress.Length != 36)
+            if (public_key_or_address.Length != 36)
             {
-                //  the public key using SHA512 squared truncated
                 byte[] hashed_key = new byte[33];
                 hashed_key[0] = 0;
-                Array.Copy(Crypto.sha512sqTrunc(publicKeyOrAddress), 0, hashed_key, 1, 32);
+
+                // received the public key, using SHA512 squared truncated to generate address
+                Array.Copy(Crypto.sha512sqTrunc(public_key_or_address), 0, hashed_key, 1, 32);
 
                 checksum = Crypto.sha512(hashed_key);
 
@@ -36,8 +37,29 @@ namespace DLT
             }
             else
             {
-                address = publicKeyOrAddress;
-                checksum = address.Skip(33).Take(3).ToArray();
+                if (nonce == null)
+                {
+                    address = public_key_or_address;
+                    checksum = address.Skip(33).Take(3).ToArray();
+                }
+                else
+                {
+                    byte[] hashed_key = new byte[33];
+                    hashed_key[0] = 0;
+
+                    // received the public key with nonce, deriving the address from nonce and public key
+                    List<byte> derived_key = public_key_or_address.ToList();
+                    derived_key.AddRange(nonce);
+
+                    Array.Copy(Crypto.sha512sqTrunc(derived_key.ToArray()), 0, hashed_key, 1, 32);
+
+                    checksum = Crypto.sha512(hashed_key);
+
+                    address = new byte[hashed_key.Length + 3];
+                    Array.Copy(hashed_key, address, hashed_key.Length);
+                    Array.Copy(checksum, 0, address, hashed_key.Length, 3);
+                }
+
             }
         }
 

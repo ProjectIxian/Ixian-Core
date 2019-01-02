@@ -1,9 +1,4 @@
-﻿using System;
-using System.Collections.Generic;
-using System.Diagnostics;
-using System.Linq;
-using System.Text;
-using System.Threading.Tasks;
+﻿using System.Diagnostics;
 
 namespace DLT
 {
@@ -11,6 +6,7 @@ namespace DLT
     {
         public byte[] publicKeyBytes = null;
         public byte[] privateKeyBytes = null;
+        public byte[] lastNonceBytes = null; // nonce for generating new addresses
     }
 
     public interface ICryptoLib

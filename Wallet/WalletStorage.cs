@@ -1,5 +1,4 @@
-﻿using DLT;
-using DLT.Meta;
+﻿using DLT.Meta;
 using IXICore;
 using IXICore.CryptoKey;
 using System;
@@ -7,11 +6,15 @@ using System.Collections.Generic;
 using System.IO;
 using System.Linq;
 using System.Text;
-using System.Threading;
-using System.Threading.Tasks;
 
 namespace DLT
 {
+    public class AddressData
+    {
+        public byte[] nonce = null;
+        public IxianKeyPair keyPair = null;
+    }
+
     class WalletStorage
     {
         private string filename;
@@ -23,7 +26,8 @@ namespace DLT
         private byte[] masterSeed = null;
         private byte[] derivedMasterSeed = null;
 
-        private readonly Dictionary<byte[], IxianKeyPair> myWallets = new Dictionary<byte[], IxianKeyPair>(new IXICore.Utils.ByteArrayComparer()); // The entire wallet list
+        private readonly Dictionary<byte[], IxianKeyPair> myKeys = new Dictionary<byte[], IxianKeyPair>(new IXICore.Utils.ByteArrayComparer());
+        private readonly Dictionary<byte[], AddressData> myAddresses = new Dictionary<byte[], AddressData>(new IXICore.Utils.ByteArrayComparer());
 
         private byte[] privateKey = null;
         private byte[] publicKey = null;
@@ -93,9 +97,14 @@ namespace DLT
             IxianKeyPair kp = new IxianKeyPair();
             kp.privateKeyBytes = privateKey;
             kp.publicKeyBytes = publicKey;
-            lock (myWallets)
+            lock (myKeys)
             {
-                myWallets.Add(address, kp);
+                myKeys.Add(address, kp);
+            }
+            lock (myAddresses)
+            {
+                AddressData ad = new AddressData() { nonce = null, keyPair = kp };
+                myAddresses.Add(address, ad);
             }
         }
 
@@ -167,9 +176,14 @@ namespace DLT
                     address = tmp_address;
                 }
 
-                lock (myWallets)
+                lock (myKeys)
                 {
-                    myWallets.Add(tmp_address, kp);
+                    myKeys.Add(tmp_address, kp);
+                }
+                lock (myAddresses)
+                {
+                    AddressData ad = new AddressData() { nonce = null, keyPair = kp };
+                    myAddresses.Add(tmp_address, ad);
                 }
             }
 
@@ -330,11 +344,11 @@ namespace DLT
                 writer.Write(enc_master_seed.Length);
                 writer.Write(enc_master_seed);
 
-                lock (myWallets)
+                lock (myKeys)
                 {
-                    writer.Write(myWallets.Count());
+                    writer.Write(myKeys.Count());
 
-                    foreach (var entry in myWallets)
+                    foreach (var entry in myKeys)
                     {
                         byte[] enc_private_key = CryptoManager.lib.encryptWithPassword(entry.Value.privateKeyBytes, password);
                         writer.Write(enc_private_key.Length);
@@ -380,7 +394,7 @@ namespace DLT
             }
 
 
-            walletVersion = 2;
+            walletVersion = 1;
             walletPassword = password;
 
             Logging.log(LogSeverity.info, "Generating master seed, this may take a while, please wait...");
@@ -391,7 +405,8 @@ namespace DLT
 
             Logging.log(LogSeverity.info, "Generating primary wallet keys, this may take a while, please wait...");
 
-            IxianKeyPair kp = generateNewKeyPair(false);
+            //IxianKeyPair kp = generateNewKeyPair(false);
+            IxianKeyPair kp = CryptoManager.lib.generateKeys(CoreConfig.defaultRsaKeySize);
 
             if (kp == null)
             {
@@ -404,6 +419,10 @@ namespace DLT
 
             Address addr = new Address(publicKey);
             address = addr.address;
+
+            myKeys.Add(address, kp);
+            myAddresses.Add(address, new AddressData() { keyPair = kp, nonce = null });
+
 
             Logging.info(String.Format("Public Key: {0}", Crypto.hashToString(publicKey)));
             Logging.info(String.Format("Public Node Address: {0}", Base58Check.Base58CheckEncoding.EncodePlain(address)));
@@ -507,9 +526,10 @@ namespace DLT
 
         public byte[] getLastAddress()
         {
-            lock (myWallets)
+            // TODO TODO TODO TODO TODO this doesn't do what it's intended
+            lock (myAddresses)
             {
-                return myWallets.Last().Key;
+                return myAddresses.Last().Key;
             }
         }
 
@@ -541,9 +561,9 @@ namespace DLT
         public IxiNumber getMyTotalBalance()
         {
             IxiNumber balance = 0;
-            lock (myWallets)
+            lock (myAddresses)
             {
-                foreach (var entry in myWallets)
+                foreach (var entry in myAddresses)
                 {
                     balance += Node.walletState.getWalletBalance(entry.Key);
                 }
@@ -551,26 +571,69 @@ namespace DLT
             return balance;
         }
 
+        public Address generateNewAddress(Address key_primary_address)
+        {
+            if (walletVersion < 2)
+            {
+                lock (myKeys)
+                {
+                    return new Address(myAddresses.First().Value.keyPair.publicKeyBytes);
+                }
+            }
+
+            lock (myKeys)
+            {
+                if(!myKeys.ContainsKey(key_primary_address.address))
+                {
+                    return null;
+                }
+
+                IxianKeyPair kp = myKeys[key_primary_address.address];
+
+                byte[] base_nonce = Crypto.sha512sqTrunc(masterSeed.Take(64).ToArray());
+                byte[] last_nonce = kp.lastNonceBytes;
+
+                List<byte> new_nonce = base_nonce.ToList();
+                if (last_nonce != null)
+                {
+                    new_nonce.AddRange(last_nonce);
+                }
+                kp.lastNonceBytes = Crypto.sha512sqTrunc(new_nonce.ToArray()).Take(16).ToArray();
+
+                Address new_address = new Address(key_primary_address.address, kp.lastNonceBytes);
+
+                lock (myAddresses)
+                {
+                    AddressData ad = new AddressData() { nonce = kp.lastNonceBytes, keyPair = kp };
+                    myAddresses.Add(new_address.address, ad);
+                }
+
+                writeWallet(walletPassword);
+
+                return new_address;
+            }
+        }
+
         public IxianKeyPair generateNewKeyPair(bool writeToFile = true)
         {
             if (walletVersion < 2)
             {
-                lock (myWallets)
+                lock (myKeys)
                 {
-                    return myWallets.First().Value;
+                    return myKeys.First().Value;
                 }
             }
 
             IXICore.CryptoKey.KeyDerivation kd = new IXICore.CryptoKey.KeyDerivation(masterSeed, "IXIAN");
 
-            int wallet_count = 0;
+            int key_count = 0;
 
-            lock (myWallets)
+            lock (myKeys)
             {
-                wallet_count = myWallets.Count();
+                key_count = myKeys.Count();
             }
 
-            IxianKeyPair kp = kd.deriveKey(wallet_count, CoreConfig.defaultRsaKeySize, 65537);
+            IxianKeyPair kp = kd.deriveKey(key_count, CoreConfig.defaultRsaKeySize, 65537);
 
             if (kp == null)
             {
@@ -591,22 +654,29 @@ namespace DLT
                 Logging.error("An error occured generating new key pair, unable to produce a valid address.");
                 return null;
             }
-            lock (myWallets)
+            lock (myKeys)
             {
-                if (!writeToFile)
+                lock (myAddresses)
                 {
-                    myWallets.Add(address, kp);
-                }
-                else
-                {
-                    if (writeWallet(walletPassword))
+                    if (!writeToFile)
                     {
-                        myWallets.Add(address, kp);
+                        myKeys.Add(address, kp);
+                        AddressData ad = new AddressData() { nonce = kp.lastNonceBytes, keyPair = kp };
+                        myAddresses.Add(address, ad);
                     }
                     else
                     {
-                        Logging.error("An error occured while writing wallet file.");
-                        return null;
+                        if (writeWallet(walletPassword))
+                        {
+                            myKeys.Add(address, kp);
+                            AddressData ad = new AddressData() { nonce = kp.lastNonceBytes, keyPair = kp };
+                            myAddresses.Add(address, ad);
+                        }
+                        else
+                        {
+                            Logging.error("An error occured while writing wallet file.");
+                            return null;
+                        }
                     }
                 }
             }
@@ -616,11 +686,11 @@ namespace DLT
 
         public IxianKeyPair getKeyPair(byte[] address)
         {
-            lock (myWallets)
+            lock (myKeys)
             {
-                if (myWallets.ContainsKey(address))
+                if (myKeys.ContainsKey(address))
                 {
-                    return myWallets[address];
+                    return myKeys[address];
                 }
                 return null;
             }
@@ -628,9 +698,9 @@ namespace DLT
 
         public bool isMyAddress(byte[] address)
         {
-            lock (myWallets)
+            lock (myAddresses)
             {
-                if (myWallets.ContainsKey(address))
+                if (myAddresses.ContainsKey(address))
                 {
                     return true;
                 }
@@ -640,11 +710,11 @@ namespace DLT
 
         public byte[] isMyAddress(SortedDictionary<byte[], IxiNumber> address_list)
         {
-            lock (myWallets)
+            lock (myAddresses)
             {
                 foreach (var entry in address_list)
                 {
-                    if (myWallets.ContainsKey(entry.Key))
+                    if (myAddresses.ContainsKey(entry.Key))
                     {
                         return entry.Key;
                     }
