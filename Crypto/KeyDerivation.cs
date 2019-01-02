@@ -3,6 +3,7 @@ using DLT.Meta;
 using System;
 using System.Collections.Generic;
 using System.Linq;
+using System.Runtime.InteropServices;
 using System.Security.Cryptography;
 using System.Text;
 
@@ -27,23 +28,12 @@ namespace IXICore.CryptoKey
             int currentIteration;
             SHA512Managed sha;
             //
-            // Key size: 32B
-            // Block size: 16B
-            byte[] currentRandomBlock;
-            int positionInBlock; // for reading random bytes
-            byte[] passwordHash; // password is hashed down to 12B
-            uint counter = 0; // counter is increased for each encrypt operation
-            int keyIndex = 0; // n-th splice of 'currentRandomState'
-            AesManaged aes;
-            // stats
-            public ulong rngBytesRead { get; private set; }
-
-            public PRNG(byte[] random_state, string password)
+            public PRNG(byte[] random_state)
             {
                 int total_len = random_state.Length;
-                if(total_len % 32 != 0)
+                if(total_len % 64 != 0)
                 {
-                    throw new Exception("Random data must be divisible by the PRNG block size (32).");
+                    throw new Exception("Random data must be divisible by the PRNG block size (64).");
                 }
                 initialRandomState = new byte[total_len];
                 currentRandomState = new byte[total_len];
@@ -53,13 +43,6 @@ namespace IXICore.CryptoKey
                 //
                 sha = new SHA512Managed();
                 sha.Initialize();
-                byte[] pwd_bytes = Encoding.Unicode.GetBytes(password);
-                passwordHash = sha.ComputeHash(pwd_bytes).Take(12).ToArray();
-                sha.Initialize();
-                //
-                aes = new AesManaged();
-                aes.Mode = CipherMode.ECB;
-                aes.Padding = PaddingMode.None;
             }
 
             private void twiddleRandomState()
@@ -89,258 +72,88 @@ namespace IXICore.CryptoKey
                 {
                     twiddleRandomState();
                 }
-                // generate at least the first random block
-                rngBytesRead = 0;
-                getNextRandomBlock();
             }
 
-            private void getNextRandomBlock()
+            public byte[] getRandomState()
             {
-                byte[] ency_block = new byte[16];
-                Array.Copy(passwordHash, 0, ency_block, 0, 12);
-                byte[] counter_data = BitConverter.GetBytes(counter);
-                Array.Copy(counter_data, 0, ency_block, 12, 4);
-                byte[] iv = new byte[16]; // IV is zero
-                byte[] key = new byte[32];
-                if(keyIndex*32 >= currentRandomState.Length)
-                {
-                    keyIndex = 0;
-                }
-                Array.Copy(currentRandomState, keyIndex * 32, key, 0, 32);
-                ICryptoTransform crypt = aes.CreateEncryptor(key, iv);
-                currentRandomBlock = crypt.TransformFinalBlock(ency_block, 0, 16);
-                positionInBlock = 0;
-                // bookkeeping
-                keyIndex += 1;
-                counter += 1;
-            }
-
-
-            public byte NextByte()
-            {
-                if(positionInBlock >= 16)
-                {
-                    getNextRandomBlock();
-                }
-                rngBytesRead++;
-                return currentRandomBlock[positionInBlock++];
-            }
-
-            public byte[] NextBytes(int num_bytes)
-            {
-                byte[] output = new byte[num_bytes];
-                int written = 0;
-                while(written < num_bytes)
-                {
-                    if(positionInBlock >= 16)
-                    {
-                        getNextRandomBlock();
-                    }
-                    int avail = 16 - positionInBlock;
-                    int to_copy = 0;
-                    if(avail >= (num_bytes-written))
-                    {
-                        to_copy = (num_bytes-written);
-                    } else
-                    {
-                        to_copy = avail;
-                    }
-                    Array.Copy(currentRandomBlock, positionInBlock, output, written, to_copy);
-                    written += to_copy;
-                    positionInBlock += to_copy;
-                }
-                rngBytesRead += (ulong)output.Length;
-                return output;
+                return currentRandomState;
             }
         }
+
+        [StructLayout(LayoutKind.Sequential)]
+        struct IXI_RSA_KEY
+        {
+            public uint len;
+            public IntPtr data;
+        }
+
 
         private PRNG RandomSource;
-        private int statPrimeChecks;
-        private int statNumGens;
 
-        public KeyDerivation(byte[] entropy, string password)
+        public KeyDerivation(byte[] entropy)
         {
-            RandomSource = new PRNG(entropy, password);
+            RandomSource = new PRNG(entropy);
         }
 
-        private void clearStats()
-        {
-            statNumGens = 0;
-            statPrimeChecks = 0;
-        }
-
-        private BigInteger RandomPrime(int bit_len, BigInteger public_exp)
-        {
-            while (true) {
-                BigInteger candidate;
-                BigInteger One = new BigInteger(1);
-                while (true)
-                {
-                    int needed_bytes = (bit_len / 8) + 1;
-                    byte[] value = RandomSource.NextBytes(needed_bytes);
-                    // leading byte - this is to ensure an appropriate bit length
-                    int rem = bit_len % 8;
-                    if (rem == 0)
-                    {
-                        value[needed_bytes - 2] |= 0x80;
-                        value[needed_bytes - 1] = 0x00;
-                    } else
-                    {
-                        value[needed_bytes - 1] |= (byte)(1 << (rem - 1));
-                    }
-                    // lowest bit should be 1, so we assure an odd number
-                    value[0] |= 0x01;
-                    value = value.Reverse().ToArray();
-                    candidate = new BigInteger(value);
-                    statPrimeChecks++;
-                    if (candidate.isProbablePrime())
-                    {
-                        break;
-                    }
-                    /*for(int i=1;i<value.Length-1;i++)
-                    {
-                        value[i] ^= RandomSource.NextByte();
-                        candidate = new BigInteger(value);
-                        statPrimeChecks++;
-                        if (candidate.isProbablePrime())
-                        {
-                            break;
-                        }
-                    }*/
-                }
-                // at this point, the number passed the Miller-Rabin test and is a probable prime
-                // Sanity checks
-                if (candidate % public_exp == One)
-                {
-                    continue;
-                }
-                BigInteger gcd = (candidate - 1).gcd(public_exp);
-                if(gcd != One)
-                {
-                    // public_exp and Q-1 (or P-1) should be relatively prime
-                    continue;
-                }
-                statNumGens++;
-                return candidate;
-            }
-        }
-
-        private byte[] buildIXIANKey(BigInteger modulus, BigInteger public_exp, BigInteger P, BigInteger Q, BigInteger DP, BigInteger DQ, BigInteger InvQ, BigInteger D)
-        {
-            List<byte> bytes = new List<byte>();
-            byte[] mod_bytes = modulus.getBytes();
-            bytes.AddRange(BitConverter.GetBytes(mod_bytes.Length));
-            bytes.AddRange(mod_bytes);
-
-            byte[] exp_bytes = public_exp.getBytes();
-            bytes.AddRange(BitConverter.GetBytes(exp_bytes.Length));
-            bytes.AddRange(exp_bytes);
-            //
-            byte[] p_bytes = P.getBytes();
-            bytes.AddRange(BitConverter.GetBytes(p_bytes.Length));
-            bytes.AddRange(p_bytes);
-
-            byte[] q_bytes = Q.getBytes();
-            bytes.AddRange(BitConverter.GetBytes(q_bytes.Length));
-            bytes.AddRange(q_bytes);
-
-            byte[] dp_bytes = DP.getBytes();
-            bytes.AddRange(BitConverter.GetBytes(dp_bytes.Length));
-            bytes.AddRange(dp_bytes);
-
-            byte[] dq_bytes = DQ.getBytes();
-            bytes.AddRange(BitConverter.GetBytes(dq_bytes.Length));
-            bytes.AddRange(dq_bytes);
-
-            byte[] qinv_bytes = InvQ.getBytes();
-            bytes.AddRange(BitConverter.GetBytes(qinv_bytes.Length));
-            bytes.AddRange(qinv_bytes);
-
-            byte[] d_bytes = D.getBytes();
-            bytes.AddRange(BitConverter.GetBytes(d_bytes.Length));
-            bytes.AddRange(d_bytes);
-            //
-            return bytes.ToArray();
-        }
-
-        private IxianKeyPair buildIxianKeyPair(BigInteger modulus, BigInteger public_exp, BigInteger P, BigInteger Q, BigInteger DP, BigInteger DQ, BigInteger InvQ, BigInteger D)
+        private IxianKeyPair buildIxianKeyPair(byte[] rsa_key)
         {
             IxianKeyPair kp = new IxianKeyPair();
-            kp.privateKeyBytes = buildIXIANKey(modulus, public_exp, P, Q, DP, DQ, InvQ, D);
+            AsnKeyParser parser = new AsnKeyParser(rsa_key);
+            RSAParameters rsaParams = parser.ParseRSAPrivateKey();
+            List<byte> pubKey = new List<byte>();
 
-            List<byte> key_bytes = new List<byte>();
-            byte[] mod_bytes = modulus.getBytes();
-            key_bytes.AddRange(BitConverter.GetBytes(mod_bytes.Length));
-            key_bytes.AddRange(mod_bytes);
+            pubKey.AddRange(BitConverter.GetBytes(rsaParams.Modulus.Length));
+            pubKey.AddRange(rsaParams.Modulus);
+            pubKey.AddRange(BitConverter.GetBytes(rsaParams.Exponent.Length));
+            pubKey.AddRange(rsaParams.Exponent);
+            kp.publicKeyBytes = pubKey.ToArray();
 
-            byte[] exp_bytes = public_exp.getBytes();
-            key_bytes.AddRange(BitConverter.GetBytes(exp_bytes.Length));
-            key_bytes.AddRange(exp_bytes);
-
-            kp.publicKeyBytes = key_bytes.ToArray();
+            List<byte> privKey = new List<byte>();
+            privKey.AddRange(BitConverter.GetBytes(rsaParams.Modulus.Length));
+            privKey.AddRange(rsaParams.Modulus);
+            privKey.AddRange(BitConverter.GetBytes(rsaParams.Exponent.Length));
+            privKey.AddRange(rsaParams.Exponent);
+            privKey.AddRange(BitConverter.GetBytes(rsaParams.P.Length));
+            privKey.AddRange(rsaParams.P);
+            privKey.AddRange(BitConverter.GetBytes(rsaParams.Q.Length));
+            privKey.AddRange(rsaParams.Q);
+            privKey.AddRange(BitConverter.GetBytes(rsaParams.DP.Length));
+            privKey.AddRange(rsaParams.DP);
+            privKey.AddRange(BitConverter.GetBytes(rsaParams.DQ.Length));
+            privKey.AddRange(rsaParams.DQ);
+            privKey.AddRange(BitConverter.GetBytes(rsaParams.InverseQ.Length));
+            privKey.AddRange(rsaParams.InverseQ);
+            privKey.AddRange(BitConverter.GetBytes(rsaParams.D.Length));
+            privKey.AddRange(rsaParams.D);
+            kp.privateKeyBytes = privKey.ToArray();
 
             return kp;
         }
 
+        [DllImport("IXICrypt.dll", CallingConvention = CallingConvention.Cdecl)]
+        static extern IntPtr ix_generate_rsa(IntPtr entropy, uint entropy_len, int key_size_bits, ulong pub_exponent);
+
+        [DllImport("IXICrypt.dll", CallingConvention = CallingConvention.Cdecl)]
+        static extern void ix_free_key(IntPtr key);
+
+
         public IxianKeyPair deriveKey(int key_index, int key_length, ulong public_exponent)
         {
-            clearStats();
-            // put the random source into appropriate state
+            DateTime start = DateTime.Now;
             RandomSource.setIteration(key_index);
-            BigInteger public_exp = new BigInteger(public_exponent);
-
-            int p_len = (key_length + 1) / 2;
-            int q_len = key_length - p_len;
-
-            BigInteger P = RandomPrime(p_len, public_exp);
-            BigInteger minDifference = new BigInteger("10000000000", 10);
-
-            while(true)
-            {
-                BigInteger Q = RandomPrime(q_len, public_exp);
-                BigInteger diff = (P - Q).abs();
-                // primes should not be too near each other, otherwise vulnerable to Fermat factoring (http://deweger.xs4all.nl/papers/%5b33%5ddW-SmlPrDif-AAECC%5b2002%5d.pdf)
-                if (diff < minDifference)
-                {
-                    continue;
-                }
-                BigInteger modulus = P * Q;
-                if(modulus.bitCount() != key_length)
-                {
-                    // retry - we want exactly the same bit length as requested
-                    P = P.max(Q);
-                    continue;
-                }
-                // TODO: Possibly NAF check
-                // P should be the larger prime, by convention
-                if(P < Q)
-                {
-                    BigInteger tmp = P;
-                    P = Q;
-                    Q = tmp;
-                }
-                BigInteger P_s1 = P - 1;
-                BigInteger Q_s1 = Q - 1;
-                BigInteger gcd = P_s1.gcd(Q_s1);
-                BigInteger lcm = (P_s1 / gcd) * Q_s1;
-
-                // private exponent
-                BigInteger d = public_exp.modInverse(lcm);
-                // should be large enough
-                if(d.bitCount() <= q_len)
-                {
-                    continue;
-                }
-
-                // CRT factors
-                BigInteger dP = d % P_s1;
-                BigInteger dQ = d % Q_s1;
-                BigInteger qInv = Q.modInverse(P);
-                Logging.info(String.Format("Key generated, numbers: {0}, prime checks: {1}, entropy bytes read: {2}",
-                    statNumGens, statPrimeChecks, RandomSource.rngBytesRead));
-                // Return values
-                return buildIxianKeyPair(modulus, public_exp, P, Q, dP, dQ, qInv, d);
-            }
+            byte[] entropy = RandomSource.getRandomState();
+            IntPtr c_entropy = Marshal.AllocHGlobal(entropy.Length);
+            Marshal.Copy(entropy, 0, c_entropy, entropy.Length);
+            IntPtr c_rsa_key = ix_generate_rsa(c_entropy, (uint)entropy.Length, key_length, public_exponent);
+            IXI_RSA_KEY rsa_key = (IXI_RSA_KEY)Marshal.PtrToStructure(c_rsa_key, typeof(IXI_RSA_KEY));
+            byte[] returned_key = new byte[rsa_key.len];
+            Marshal.Copy(rsa_key.data, returned_key, 0, (int)rsa_key.len);
+            Marshal.FreeHGlobal(c_entropy);
+            ix_free_key(c_rsa_key);
+            Console.WriteLine(String.Format("Duration: {0} ms.", (DateTime.Now - start).TotalMilliseconds));
+            //
+            // returned_key is in pkcs #1 format
+            return buildIxianKeyPair(returned_key);            
         }
 
         public static byte[] getNewRandomSeed(int seed_len)
@@ -356,7 +169,7 @@ namespace IXICore.CryptoKey
             // Testing some key generation features
             Logging.info("Preparing entropy to benchmark key generation speed...");
             byte[] entropy = getNewRandomSeed(1024 * 1024);
-            IXICore.CryptoKey.KeyDerivation kd = new IXICore.CryptoKey.KeyDerivation(entropy, "IXIAN");
+            IXICore.CryptoKey.KeyDerivation kd = new IXICore.CryptoKey.KeyDerivation(entropy);
             DLT.CryptoManager.initLib();
             Logging.info(String.Format("Starting key generation. Iterations: {0}", num_iterations));
             for (int i = 0; i < num_iterations; i++)
