@@ -344,16 +344,46 @@ namespace DLT
             return true;
         }
 
+        public static bool verifyPresence(Presence presence)
+        {
+            if (presence.wallet.Length == 0)
+            {
+                return false;
+            }
+
+            foreach (var entry in presence.addresses)
+            {
+                if (entry.device.Length > 16)
+                {
+                    return false;
+                }
+
+                if (entry.nodeVersion.Length > 64)
+                {
+                    return false;
+                }
+
+                if (entry.address.Length > 24 && entry.address.Length < 9)
+                {
+                    return false;
+                }
+
+            }
+
+            return true;
+        }
+
         // Update a presence from a byte array
         public static bool updateFromBytes(byte[] bytes)
         {
             Presence presence = new Presence(bytes);
 
-            if(presence.wallet.Length > 0)
+            if(verifyPresence(presence))
             {
                 updateEntry(presence);
                 return true;
             }
+
 
             return false;
         }
