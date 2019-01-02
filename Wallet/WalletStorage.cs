@@ -67,6 +67,13 @@ namespace DLT
             int b_publicKeyLength = reader.ReadInt32();
             byte[] b_publicKey = reader.ReadBytes(b_publicKeyLength);
 
+            byte[] b_last_nonce = null;
+            if(reader.BaseStream.Position < reader.BaseStream.Length)
+            {
+                int b_last_nonceLength = reader.ReadInt32();
+                b_last_nonce = reader.ReadBytes(b_last_nonceLength);
+            }
+
             bool success = false;
             while (!success)
             {
@@ -105,6 +112,15 @@ namespace DLT
             {
                 AddressData ad = new AddressData() { nonce = null, keyPair = kp };
                 myAddresses.Add(address, ad);
+
+                if (b_last_nonce != null)
+                {
+                    byte[] last_nonce_bytes = CryptoManager.lib.decryptWithPassword(b_last_nonce, walletPassword);
+                    while (!last_nonce_bytes.SequenceEqual(kp.lastNonceBytes))
+                    {
+                        generateNewAddress(addr, false);
+                    }
+                }
             }
         }
 
@@ -161,6 +177,18 @@ namespace DLT
                 }
                 byte[] enc_public_key = reader.ReadBytes(len);
 
+                len = reader.ReadInt32();
+                if (reader.BaseStream.Position + len > reader.BaseStream.Length)
+                {
+                    Logging.error("Wallet file is corrupt, expected more data than available.");
+                    break;
+                }
+                byte[] enc_nonce = null;
+                if (len > 0)
+                {
+                    enc_nonce = reader.ReadBytes(len);
+                }
+
                 byte[] dec_private_key = CryptoManager.lib.decryptWithPassword(enc_private_key, password);
                 byte[] dec_public_key = CryptoManager.lib.decryptWithPassword(enc_public_key, password);
                 byte[] tmp_address = (new Address(dec_public_key)).address;
@@ -168,8 +196,12 @@ namespace DLT
                 IxianKeyPair kp = new IxianKeyPair();
                 kp.privateKeyBytes = dec_private_key;
                 kp.publicKeyBytes = dec_public_key;
+                if(enc_nonce != null)
+                {
+                    kp.lastNonceBytes = CryptoManager.lib.decryptWithPassword(enc_nonce, password);
+                }
 
-                if(privateKey == null)
+                if (privateKey == null)
                 {
                     privateKey = dec_private_key;
                     publicKey = dec_public_key;
@@ -294,7 +326,7 @@ namespace DLT
 
             try
             {
-                System.Int32 version = 1; // Set the wallet version
+                int version = 1; // Set the wallet version
                 writer.Write(version);
 
                 // Write the address keypair
@@ -303,6 +335,13 @@ namespace DLT
 
                 writer.Write(b_publicKey.Length);
                 writer.Write(b_publicKey);
+
+                if (myKeys.First().Value.lastNonceBytes != null)
+                {
+                    byte[] b_last_nonce = CryptoManager.lib.encryptWithPassword(myKeys.First().Value.lastNonceBytes, password);
+                    writer.Write(b_last_nonce.Length);
+                    writer.Write(b_last_nonce);
+                }
 
             }
 
@@ -336,7 +375,7 @@ namespace DLT
 
             try
             {
-                System.Int32 version = 2; // Set the wallet version
+                int version = 2; // Set the wallet version
                 writer.Write(version);
 
                 // Write the master seed
@@ -357,6 +396,16 @@ namespace DLT
                         byte[] enc_public_key = CryptoManager.lib.encryptWithPassword(entry.Value.publicKeyBytes, password);
                         writer.Write(enc_public_key.Length);
                         writer.Write(enc_public_key);
+
+                        if (entry.Value.lastNonceBytes != null)
+                        {
+                            byte[] enc_nonce = CryptoManager.lib.encryptWithPassword(entry.Value.lastNonceBytes, password);
+                            writer.Write(enc_nonce.Length);
+                            writer.Write(enc_nonce);
+                        }else
+                        {
+                            writer.Write((int) 0);
+                        }
                     }
                 }
 
@@ -527,6 +576,7 @@ namespace DLT
         public byte[] getLastAddress()
         {
             // TODO TODO TODO TODO TODO this doesn't do what it's intended
+            // Also you have to take into account what happens when loading from file and the difference between v1 and v2 wallets (key related)
             lock (myAddresses)
             {
                 return myAddresses.Last().Key;
@@ -571,16 +621,8 @@ namespace DLT
             return balance;
         }
 
-        public Address generateNewAddress(Address key_primary_address)
+        public Address generateNewAddress(Address key_primary_address, bool write_to_file = true)
         {
-            if (walletVersion < 2)
-            {
-                lock (myKeys)
-                {
-                    return new Address(myAddresses.First().Value.keyPair.publicKeyBytes);
-                }
-            }
-
             lock (myKeys)
             {
                 if(!myKeys.ContainsKey(key_primary_address.address))
@@ -590,7 +632,16 @@ namespace DLT
 
                 IxianKeyPair kp = myKeys[key_primary_address.address];
 
-                byte[] base_nonce = Crypto.sha512sqTrunc(masterSeed.Take(64).ToArray());
+                byte[] base_nonce = null;
+                if (walletVersion < 2)
+                {
+                    base_nonce = Crypto.sha512sqTrunc(privateKey.Skip(publicKey.Length).Take(64).ToArray());
+                }
+                else
+                {
+                    base_nonce = Crypto.sha512sqTrunc(masterSeed.Take(64).ToArray());
+                }
+
                 byte[] last_nonce = kp.lastNonceBytes;
 
                 List<byte> new_nonce = base_nonce.ToList();
@@ -608,7 +659,10 @@ namespace DLT
                     myAddresses.Add(new_address.address, ad);
                 }
 
-                writeWallet(walletPassword);
+                if (write_to_file)
+                {
+                    writeWallet(walletPassword);
+                }
 
                 return new_address;
             }

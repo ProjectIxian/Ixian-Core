@@ -47,7 +47,7 @@ namespace DLT
                     byte[] hashed_key = new byte[33];
                     hashed_key[0] = 0;
 
-                    // received the public key with nonce, deriving the address from nonce and public key
+                    // received the address with nonce, deriving the new address from nonce and base address
                     List<byte> derived_key = public_key_or_address.ToList();
                     derived_key.AddRange(nonce);
 
