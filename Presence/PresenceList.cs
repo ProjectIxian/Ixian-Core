@@ -353,7 +353,7 @@ namespace DLT
 
             foreach (var entry in presence.addresses)
             {
-                if (entry.device.Length > 16)
+                if (entry.device.Length > 64)
                 {
                     return false;
                 }
