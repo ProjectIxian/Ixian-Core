@@ -52,9 +52,9 @@ namespace DLT
         public IxiNumber amount = new IxiNumber("0"); // 32
         public IxiNumber fee = new IxiNumber("0"); // 32
 
+        public SortedDictionary<byte[], IxiNumber> fromList = new SortedDictionary<byte[], IxiNumber>(new ByteArrayComparer());
         public SortedDictionary<byte[], IxiNumber> toList = new SortedDictionary<byte[], IxiNumber>(new ByteArrayComparer());
 
-        public byte[] from; // 36
         public byte[] data; // 0
         public ulong blockHeight; // 8
         public int nonce; // 4
@@ -93,7 +93,7 @@ namespace DLT
 
             amount = tx_amount;
             toList.Add(tx_to, amount);
-            from = tx_from;
+            fromList.Add(new byte[1] { 0 }, amount);
 
             data = tx_data;
 
@@ -111,8 +111,13 @@ namespace DLT
             timeStamp = Core.getCurrentTimestamp();
 
             pubKey = tx_pubKey;
+            if(pubKey == null)
+            {
+                pubKey = tx_from;
+            }
 
             fee = calculateMinimumFee(tx_feePerKb);
+            fromList[new byte[1] { 0 }] = amount + fee;
 
             generateChecksums();
 
@@ -137,7 +142,58 @@ namespace DLT
 
             amount = calculateTotalAmount();
 
-            from = tx_from;
+            fromList.Add(new byte[1] { 0 }, amount);
+
+            data = tx_data;
+
+            blockHeight = tx_blockHeight;
+
+            if (tx_nonce == -1)
+            {
+                Random r = new Random();
+                nonce = (int)((DateTimeOffset.Now.ToUnixTimeMilliseconds() - (DateTimeOffset.Now.ToUnixTimeSeconds() * 1000)) * 100) + r.Next(100);
+            }
+            else
+            {
+                nonce = tx_nonce;
+            }
+
+            timeStamp = Core.getCurrentTimestamp();
+
+            pubKey = tx_pubKey;
+            if (pubKey == null)
+            {
+                pubKey = tx_from;
+            }
+
+            fee = calculateMinimumFee(tx_feePerKb);
+            fromList[new byte[1] { 0 }] = amount + fee;
+
+            generateChecksums();
+
+            if (type == (int)Transaction.Type.StakingReward)
+            {
+                signature = Encoding.UTF8.GetBytes("Stake");
+            }
+            else
+            {
+                signature = getSignature(checksum);
+            }
+        }
+
+
+        public Transaction(int tx_type, IxiNumber tx_feePerKb, SortedDictionary<byte[], IxiNumber> tx_toList, SortedDictionary<byte[], IxiNumber> tx_fromList, byte[] tx_data, byte[] tx_pubKey, ulong tx_blockHeight, int tx_nonce = -1)
+        {
+            version = 2;
+
+            type = tx_type;
+
+
+            toList = tx_toList;
+
+            amount = calculateTotalAmount();
+
+            toList = tx_fromList;
 
             data = tx_data;
 
@@ -188,8 +244,15 @@ namespace DLT
                 toList.Add(address, new IxiNumber(entry.Value.getAmount()));
             }
 
-            from = new byte[tx_transaction.from.Length];
-            Array.Copy(tx_transaction.from, from, from.Length);
+            fromList = new SortedDictionary<byte[], IxiNumber>(new ByteArrayComparer());
+
+            foreach (var entry in tx_transaction.fromList)
+            {
+                byte[] address = new byte[entry.Key.Length];
+                Array.Copy(entry.Key, address, address.Length);
+                fromList.Add(address, new IxiNumber(entry.Value.getAmount()));
+            }
+
 
             if (tx_transaction.data != null)
             {
@@ -247,8 +310,22 @@ namespace DLT
                             toList.Add(address, amount);
                         }
 
-                        int fromLen = reader.ReadInt32();
-                        from = reader.ReadBytes(fromLen);
+                        if (version <= 1)
+                        {
+                            int fromLen = reader.ReadInt32();
+                            pubKey = reader.ReadBytes(fromLen);
+                            fromList.Add(new byte[1] { 0 }, amount + fee);
+                        }else
+                        {
+                            int fromListLen = reader.ReadInt32();
+                            for (int i = 0; i < fromListLen; i++)
+                            {
+                                int addrLen = reader.ReadInt32();
+                                byte[] address = reader.ReadBytes(addrLen);
+                                IxiNumber amount = new IxiNumber(reader.ReadString());
+                                fromList.Add(address, amount);
+                            }
+                        }
 
                         int  dataLen = reader.ReadInt32();
                         if (dataLen > 0)
@@ -313,8 +390,21 @@ namespace DLT
                         writer.Write(entry.Value.ToString());
                     }
 
-                    writer.Write(from.Length);
-                    writer.Write(from);
+                    if (version <= 1)
+                    {
+                        byte[] tmp_address = (new Address(pubKey)).address;
+                        writer.Write(tmp_address.Length);
+                        writer.Write(tmp_address);
+                    }else
+                    {
+                        writer.Write(fromList.Count);
+                        foreach (var entry in fromList)
+                        {
+                            writer.Write(entry.Key.Length);
+                            writer.Write(entry.Key);
+                            writer.Write(entry.Value.ToString());
+                        }
+                    }
 
                     if (data != null)
                     {
@@ -348,7 +438,8 @@ namespace DLT
                         writer.Write((int)0);
                     }
 
-                    if (pubKey != null)
+                    if ((version <= 1 && pubKey != null && pubKey.Length > 36)
+                        || version >= 2)
                     {
                         writer.Write(pubKey.Length);
                         writer.Write(pubKey);
@@ -386,7 +477,7 @@ namespace DLT
 
             Address p_address = new Address(pubkey);
             bool allowed = false;
-            Wallet from_wallet = Node.walletState.getWallet(from);
+            Wallet from_wallet = Node.walletState.getWallet((new Address(this.pubKey)).address);
             if(from_wallet != null && from_wallet.id.SequenceEqual(p_address.address))
             {
                 allowed = true;
@@ -435,6 +526,7 @@ namespace DLT
             rawData.AddRange(BitConverter.GetBytes(type));
             rawData.AddRange(Encoding.UTF8.GetBytes(amount.ToString()));
             rawData.AddRange(Encoding.UTF8.GetBytes(fee.ToString()));
+
             if (toList.Count == 1)
             {
                 rawData.AddRange(toList.ToArray()[0].Key);
@@ -447,7 +539,20 @@ namespace DLT
                     rawData.AddRange(entry.Value.getAmount().ToByteArray());
                 }
             }
-            rawData.AddRange(from);
+
+            if (fromList.Count == 1)
+            {
+                rawData.AddRange(new Address(pubKey).address);
+            }
+            else
+            {
+                foreach (var entry in fromList)
+                {
+                    rawData.AddRange(entry.Key);
+                    rawData.AddRange(entry.Value.getAmount().ToByteArray());
+                }
+            }
+
             rawData.AddRange(BitConverter.GetBytes(blockHeight));
             rawData.AddRange(BitConverter.GetBytes(nonce));
             rawData.AddRange(BitConverter.GetBytes((int)0)); // version was replaced with this, as it's tx metadata and shouldn't be part of the ID
@@ -480,7 +585,17 @@ namespace DLT
                 }
             }
 
-            rawData.AddRange(transaction.from);
+            if (transaction.fromList.Count == 1)
+            {
+                rawData.AddRange(new Address(transaction.pubKey).address);
+            }else
+            {
+                foreach (var entry in transaction.fromList)
+                {
+                    rawData.AddRange(entry.Key);
+                    rawData.AddRange(entry.Value.getAmount().ToByteArray());
+                }
+            }
 
             if (transaction.data != null)
             {
@@ -491,7 +606,8 @@ namespace DLT
             rawData.AddRange(BitConverter.GetBytes(transaction.nonce));
             rawData.AddRange(BitConverter.GetBytes(transaction.timeStamp));
             rawData.AddRange(BitConverter.GetBytes(transaction.version));
-            if(transaction.pubKey != null)
+            if((transaction.version <= 1 && transaction.pubKey != null && transaction.pubKey.Length > 36)
+                || transaction.version >= 2)
             {
                 rawData.AddRange(transaction.pubKey);
             }
@@ -500,7 +616,15 @@ namespace DLT
 
         public byte[] getSignature(byte[] checksum)
         {
-            return CryptoManager.lib.getSignature(checksum, Node.walletStorage.getKeyPair(from).privateKeyBytes);
+            byte[] address = null;
+            if(pubKey.Length == 36)
+            {
+                address = pubKey;
+            }else
+            {
+                address = new Address(pubKey).address;
+            }
+            return CryptoManager.lib.getSignature(checksum, Node.walletStorage.getKeyPair(address).privateKeyBytes);
         }
 
 
@@ -811,6 +935,7 @@ namespace DLT
         {
             Dictionary<string, object> tDic = new Dictionary<string, object>();
             tDic.Add("id", id);
+            tDic.Add("version", version);
             tDic.Add("blockHeight", blockHeight.ToString());
             tDic.Add("nonce", nonce.ToString());
 
@@ -834,13 +959,21 @@ namespace DLT
             tDic.Add("amount", amount.ToString());
             tDic.Add("applied", applied.ToString());
             tDic.Add("checksum", Crypto.hashToString(checksum));
-            tDic.Add("from", Base58Check.Base58CheckEncoding.EncodePlain(from));
+
+            Dictionary<string, string> fromListDic = new Dictionary<string, string>();
+            foreach (var entry in fromList)
+            {
+                fromListDic.Add(Base58Check.Base58CheckEncoding.EncodePlain(entry.Key), entry.Value.ToString());
+            }
+            tDic.Add("from", fromListDic);
+
             Dictionary<string, string> toListDic = new Dictionary<string, string>();
             foreach (var entry in toList)
             {
                 toListDic.Add(Base58Check.Base58CheckEncoding.EncodePlain(entry.Key), entry.Value.ToString());
             }
             tDic.Add("to", toListDic);
+
             tDic.Add("fee", fee.ToString());
 
             return tDic;

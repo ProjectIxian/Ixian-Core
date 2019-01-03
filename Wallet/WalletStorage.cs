@@ -776,5 +776,13 @@ namespace DLT
             }
             return null;
         }
+
+        public List<Address> getMyAddresses()
+        {
+            lock(myAddresses)
+            {
+                return myAddresses.Select(x => new Address(x.Key)).ToList();
+            }
+        }
     }
 }

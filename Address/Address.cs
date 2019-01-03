@@ -18,7 +18,7 @@ namespace DLT
 
         public Address(byte[] public_key_or_address, byte[] nonce = null)
         {
-            if (public_key_or_address.Length != 36)
+            if (public_key_or_address.Length != 36 && nonce == null)
             {
                 byte[] hashed_key = new byte[33];
                 hashed_key[0] = 0;
@@ -47,17 +47,32 @@ namespace DLT
                     byte[] hashed_key = new byte[33];
                     hashed_key[0] = 0;
 
-                    // received the address with nonce, deriving the new address from nonce and base address
-                    List<byte> derived_key = public_key_or_address.ToList();
-                    derived_key.AddRange(nonce);
 
-                    Array.Copy(Crypto.sha512sqTrunc(derived_key.ToArray()), 0, hashed_key, 1, 32);
+                    if (nonce.SequenceEqual(new byte[1] { 0 }))
+                    {
+                        Address tmp_address = null;
+                        tmp_address = new Address(public_key_or_address);
+                        checksum = tmp_address.checksum;
+                        address = tmp_address.address;
+                    }
+                    else
+                    {
+                        if (public_key_or_address.Length != 36)
+                        {
+                            public_key_or_address = (new Address(public_key_or_address)).address;
+                        }
+                        // received the address with nonce, deriving the new address from nonce and base address
+                        List<byte> derived_key = public_key_or_address.ToList();
+                        derived_key.AddRange(nonce);
 
-                    checksum = Crypto.sha512(hashed_key);
+                        Array.Copy(Crypto.sha512sqTrunc(derived_key.ToArray()), 0, hashed_key, 1, 32);
 
-                    address = new byte[hashed_key.Length + 3];
-                    Array.Copy(hashed_key, address, hashed_key.Length);
-                    Array.Copy(checksum, 0, address, hashed_key.Length, 3);
+                        checksum = Crypto.sha512(hashed_key);
+
+                        address = new byte[hashed_key.Length + 3];
+                        Array.Copy(hashed_key, address, hashed_key.Length);
+                        Array.Copy(checksum, 0, address, hashed_key.Length, 3);
+                    }
                 }
 
             }
