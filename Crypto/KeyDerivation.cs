@@ -2,6 +2,7 @@
 using DLT.Meta;
 using System;
 using System.Collections.Generic;
+using System.IO;
 using System.Linq;
 using System.Runtime.InteropServices;
 using System.Security.Cryptography;
@@ -150,7 +151,7 @@ namespace IXICore.CryptoKey
             Marshal.Copy(rsa_key.data, returned_key, 0, (int)rsa_key.len);
             Marshal.FreeHGlobal(c_entropy);
             ix_free_key(c_rsa_key);
-            Console.WriteLine(String.Format("Duration: {0} ms.", (DateTime.Now - start).TotalMilliseconds));
+            //Console.WriteLine(String.Format("Duration: {0} ms.", (DateTime.Now - start).TotalMilliseconds));
             //
             // returned_key is in pkcs #1 format
             return buildIxianKeyPair(returned_key);            
@@ -164,26 +165,131 @@ namespace IXICore.CryptoKey
             return entropy;
         }
 
-        public static void BenchmarkKeyGeneration(int num_iterations, int key_size)
+        public static void BenchmarkKeyGeneration(int num_iterations, int key_size, string output_file = "")
         {
+            StreamWriter output = null;
+            if(output_file != "")
+            {
+                output = File.CreateText(output_file);
+            }
             // Testing some key generation features
             Logging.info("Preparing entropy to benchmark key generation speed...");
             byte[] entropy = getNewRandomSeed(1024 * 1024);
             IXICore.CryptoKey.KeyDerivation kd = new IXICore.CryptoKey.KeyDerivation(entropy);
             DLT.CryptoManager.initLib();
             Logging.info(String.Format("Starting key generation. Iterations: {0}", num_iterations));
+            List<TimeSpan> generationTimes = new List<TimeSpan>();
             for (int i = 0; i < num_iterations; i++)
             {
                 DateTime start = DateTime.Now;
                 Logging.info(String.Format("Generating key {0}...", i));
                 IxianKeyPair kp = kd.deriveKey(i, key_size, 65537);
-                Logging.info(String.Format("Key generated. ({0:0.00} ms)",
-                    (DateTime.Now-start).TotalMilliseconds));
+                TimeSpan generationTime = DateTime.Now - start;
                 bool success = DLT.CryptoManager.lib.testKeys(Encoding.Unicode.GetBytes("TEST TEST"), kp);
+                double key_entropy = calculateBytestreamEntropy(kp.privateKeyBytes);
+                if (success && output != null)
+                {
+                    RSACryptoServiceProvider rsaCSP = rsaKeyFromBytes(kp.privateKeyBytes);
+                    RSAParameters rsaP = rsaCSP.ExportParameters(true);
+                    BigInteger n = new BigInteger(rsaP.Modulus);
+                    output.WriteLine(String.Format("{0}|{1}", n.ToString(), key_entropy));
+                }
+                Logging.info(String.Format("Key generated. ({0:0.00} ms)",
+                    generationTime.TotalMilliseconds));
+                generationTimes.Add(generationTime);
                 Logging.info(String.Format("Key test: {0}", success ? "success" : "failure"));
+                Logging.info(String.Format("Key entropy: {0}", key_entropy));
             }
+            if(output != null)
+            {
+                output.Flush();
+                output.Close();
+            }
+            Logging.info(String.Format("Average time to generate a key: {0:0.00} ms", generationTimes.Average(x => x.TotalMilliseconds)));
+            Logging.info(String.Format("Maximum time to generate a key: {0:0.00} ms", generationTimes.Max().TotalMilliseconds));
             return;
 
         }
+
+        public static double calculateBytestreamEntropy(byte[] data)
+        {
+            int[] occurences = Enumerable.Repeat(0, 256).ToArray();
+            foreach(byte b in data)
+            {
+                occurences[b]++;
+            }
+            double[] probs = Enumerable.Repeat(0.0, 256).ToArray();
+            for(int i = 0; i < 256; i++)
+            {
+                probs[i] = (double)occurences[i] / (double)data.Length;
+            }
+            return probs.Where(p => p > 0).Select(p => -1* p * Math.Log(p, 2)).Sum() / 8.0;
+        }
+
+        // this is not a nice way to get this function out of crypto provider
+        // it should only be used to test the quality of key derivation and updated if the key format changes
+        private static RSACryptoServiceProvider rsaKeyFromBytes(byte[] keyBytes)
+        {
+            try
+            {
+                RSAParameters rsaParams = new RSAParameters();
+
+                int offset = 0;
+                int dataLen = 0;
+
+                dataLen = BitConverter.ToInt32(keyBytes, offset);
+                offset += 4;
+                rsaParams.Modulus = keyBytes.Skip(offset).Take(dataLen).ToArray();
+                offset += dataLen;
+
+                dataLen = BitConverter.ToInt32(keyBytes, offset);
+                offset += 4;
+                rsaParams.Exponent = keyBytes.Skip(offset).Take(dataLen).ToArray();
+                offset += dataLen;
+
+                if (keyBytes.Length > offset)
+                {
+                    dataLen = BitConverter.ToInt32(keyBytes, offset);
+                    offset += 4;
+                    rsaParams.P = keyBytes.Skip(offset).Take(dataLen).ToArray();
+                    offset += dataLen;
+
+                    dataLen = BitConverter.ToInt32(keyBytes, offset);
+                    offset += 4;
+                    rsaParams.Q = keyBytes.Skip(offset).Take(dataLen).ToArray();
+                    offset += dataLen;
+
+                    dataLen = BitConverter.ToInt32(keyBytes, offset);
+                    offset += 4;
+                    rsaParams.DP = keyBytes.Skip(offset).Take(dataLen).ToArray();
+                    offset += dataLen;
+
+                    dataLen = BitConverter.ToInt32(keyBytes, offset);
+                    offset += 4;
+                    rsaParams.DQ = keyBytes.Skip(offset).Take(dataLen).ToArray();
+                    offset += dataLen;
+
+                    dataLen = BitConverter.ToInt32(keyBytes, offset);
+                    offset += 4;
+                    rsaParams.InverseQ = keyBytes.Skip(offset).Take(dataLen).ToArray();
+                    offset += dataLen;
+
+                    dataLen = BitConverter.ToInt32(keyBytes, offset);
+                    offset += 4;
+                    rsaParams.D = keyBytes.Skip(offset).Take(dataLen).ToArray();
+                    offset += dataLen;
+                }
+
+                RSACryptoServiceProvider rcsp = new RSACryptoServiceProvider();
+                rcsp.ImportParameters(rsaParams);
+                return rcsp;
+            }
+            catch (Exception e)
+            {
+                Logging.warn(String.Format("An exception occured while trying to reconstruct PKI from bytes:", e.Message));
+            }
+            return null;
+        }
+
     }
 }

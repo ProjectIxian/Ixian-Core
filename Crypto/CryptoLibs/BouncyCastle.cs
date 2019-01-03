@@ -117,7 +117,7 @@ namespace CryptoLibs
                 return rcsp;
             }catch(Exception e)
             {
-                Logging.warn(String.Format("An exception occured while trying to reconstruct PKI from bytes:", e.Message));
+                Logging.warn(String.Format("An exception occured while trying to reconstruct PKI from bytes: {0}", e.Message));
             }
             return null;
         }
@@ -125,6 +125,12 @@ namespace CryptoLibs
         public bool testKeys(byte[] plain, IxianKeyPair key_pair)
         {
             Logging.info("Testing generated keys.");
+            // Try if RSACryptoServiceProvider considers them a valid key
+            if(rsaKeyFromBytes(key_pair.privateKeyBytes) == null)
+            {
+                Logging.warn("RSA key is considered invalid by RSACryptoServiceProvider!");
+                return false;
+            }
 
             byte[] encrypted = encryptWithRSA(plain, key_pair.publicKeyBytes);
             byte[] signature = getSignature(plain, key_pair.privateKeyBytes);
