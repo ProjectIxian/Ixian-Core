@@ -34,22 +34,34 @@ namespace DLT
 
         public PresenceAddress(byte[] bytes)
         {
-            using (MemoryStream m = new MemoryStream(bytes))
+            try
             {
-                using (BinaryReader reader = new BinaryReader(m))
+                if (bytes.Length > 1024)
                 {
-                    version = reader.ReadInt32();
-                    device = reader.ReadString();
-                    address = reader.ReadString();
-                    type = reader.ReadChar();
-                    nodeVersion = reader.ReadString();
-                    lastSeenTime = reader.ReadInt64();
-                    int sigLen = reader.ReadInt32();
-                    if (sigLen > 0)
+                    throw new Exception("PresenceAddress size is bigger than 1kB.");
+                }
+                using (MemoryStream m = new MemoryStream(bytes))
+                {
+                    using (BinaryReader reader = new BinaryReader(m))
                     {
-                        signature = reader.ReadBytes(sigLen);
+                        version = reader.ReadInt32();
+                        device = reader.ReadString();
+                        address = reader.ReadString();
+                        type = reader.ReadChar();
+                        nodeVersion = reader.ReadString();
+                        lastSeenTime = reader.ReadInt64();
+                        int sigLen = reader.ReadInt32();
+                        if (sigLen > 0)
+                        {
+                            signature = reader.ReadBytes(sigLen);
+                        }
                     }
                 }
+            }
+            catch (Exception e)
+            {
+                Logging.error("Exception occured while trying to construct PresenceAddress from bytes: " + e);
+                throw;
             }
         }
 
@@ -168,55 +180,68 @@ namespace DLT
 
         public Presence(byte[] bytes)
         {
-            // Prepare addresses
-            addresses = new List<PresenceAddress> { };
-
-            wallet = null;
-            pubkey = null;
-            metadata = null;
-            owner = string.Empty;
-
-
-            using (MemoryStream m = new MemoryStream(bytes))
+            try
             {
-                using (BinaryReader reader = new BinaryReader(m))
+                if (bytes.Length > 102400)
                 {
-                    version = reader.ReadInt32();
-
-                    int walletLen = reader.ReadInt32();
-                    if (walletLen > 0)
-                    {
-                        wallet = reader.ReadBytes(walletLen);
-                    }
-                    int pubkeyLen = reader.ReadInt32();
-                    if (pubkeyLen > 0)
-                    {
-                        pubkey = reader.ReadBytes(pubkeyLen);
-                    }
-                    int mdLen = reader.ReadInt32();
-                    if (mdLen > 0)
-                    {
-                        metadata = reader.ReadBytes(mdLen);
-                    }
-
-
-                    // Read number of addresses
-                    UInt16 number_of_addresses = reader.ReadUInt16();
-
-                    // Read addresses
-                    for(UInt16 i = 0; i < number_of_addresses; i++)
-                    {
-                        int byte_count = reader.ReadInt32();
-                        if (byte_count > 0)
-                        {
-                            byte[] address_bytes = reader.ReadBytes(byte_count);
-
-                            addresses.Add(new PresenceAddress(address_bytes));
-                        }
-                    }
-
-                    owner = reader.ReadString();
+                    throw new Exception("Presence size is bigger than 100kB.");
                 }
+
+                // Prepare addresses
+                addresses = new List<PresenceAddress> { };
+
+                wallet = null;
+                pubkey = null;
+                metadata = null;
+                owner = string.Empty;
+
+
+                using (MemoryStream m = new MemoryStream(bytes))
+                {
+                    using (BinaryReader reader = new BinaryReader(m))
+                    {
+                        version = reader.ReadInt32();
+
+                        int walletLen = reader.ReadInt32();
+                        if (walletLen > 0)
+                        {
+                            wallet = reader.ReadBytes(walletLen);
+                        }
+                        int pubkeyLen = reader.ReadInt32();
+                        if (pubkeyLen > 0)
+                        {
+                            pubkey = reader.ReadBytes(pubkeyLen);
+                        }
+                        int mdLen = reader.ReadInt32();
+                        if (mdLen > 0)
+                        {
+                            metadata = reader.ReadBytes(mdLen);
+                        }
+
+
+                        // Read number of addresses
+                        UInt16 number_of_addresses = reader.ReadUInt16();
+
+                        // Read addresses
+                        for(UInt16 i = 0; i < number_of_addresses; i++)
+                        {
+                            int byte_count = reader.ReadInt32();
+                            if (byte_count > 0)
+                            {
+                                byte[] address_bytes = reader.ReadBytes(byte_count);
+
+                                addresses.Add(new PresenceAddress(address_bytes));
+                            }
+                        }
+
+                        owner = reader.ReadString();
+                    }
+                }
+            }
+            catch (Exception e)
+            {
+                Logging.error("Exception occured while trying to construct Presence from bytes: " + e);
+                throw;
             }
         }
 

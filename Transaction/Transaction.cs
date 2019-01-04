@@ -291,6 +291,10 @@ namespace DLT
         {
             try
             {
+                if (bytes.Length > 102400)
+                {
+                    throw new Exception("Transaction size is bigger then 100kB.");
+                }
                 using (MemoryStream m = new MemoryStream(bytes))
                 {
                     using (BinaryReader reader = new BinaryReader(m))
