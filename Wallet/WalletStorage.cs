@@ -499,7 +499,16 @@ namespace DLT
             Console.WriteLine();
 
             // Write the new wallet data to the file
-            return writeWallet(password);
+            if(writeWallet(password))
+            {
+                // create a backup of the new wallet file
+                if(!File.Exists(filename + ".bak"))
+                {
+                    File.Copy(filename, filename + ".bak");
+                }
+                return true;
+            }
+            return false;
         }
 
         // Requests the user to type a new password
