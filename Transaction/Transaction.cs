@@ -193,7 +193,7 @@ namespace DLT
 
             amount = calculateTotalAmount();
 
-            toList = tx_fromList;
+            fromList = tx_fromList;
 
             data = tx_data;
 
@@ -502,6 +502,12 @@ namespace DLT
 
             if (!allowed) return false;
 
+            if(signature == null || pubkey == null)
+            {
+                Logging.warn("Signature or pubkey for received txid {0} was null, verification failed.", id);
+                return false;
+            }
+
             // Verify the signature
             return CryptoManager.lib.verifySignature(checksum, pubkey, signature);
         }
@@ -555,6 +561,7 @@ namespace DLT
                     rawData.AddRange(entry.Key);
                     rawData.AddRange(entry.Value.getAmount().ToByteArray());
                 }
+                rawData.AddRange(new Address(pubKey).address);
             }
 
             rawData.AddRange(BitConverter.GetBytes(blockHeight));
@@ -628,7 +635,12 @@ namespace DLT
             {
                 address = new Address(pubKey).address;
             }
-            return CryptoManager.lib.getSignature(checksum, Node.walletStorage.getKeyPair(address).privateKeyBytes);
+            IxianKeyPair kp = Node.walletStorage.getKeyPair(address);
+            if (kp != null)
+            {
+                return CryptoManager.lib.getSignature(checksum, kp.privateKeyBytes);
+            }
+            return null;
         }
 
 

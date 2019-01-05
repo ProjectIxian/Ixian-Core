@@ -7,6 +7,7 @@ namespace DLT
         public byte[] publicKeyBytes = null;
         public byte[] privateKeyBytes = null;
         public byte[] lastNonceBytes = null; // nonce for generating new addresses
+        public byte[] addressBytes = null;
     }
 
     public interface ICryptoLib

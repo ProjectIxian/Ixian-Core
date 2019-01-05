@@ -108,6 +108,7 @@ namespace IXICore.CryptoKey
             pubKey.AddRange(BitConverter.GetBytes(rsaParams.Exponent.Length));
             pubKey.AddRange(rsaParams.Exponent);
             kp.publicKeyBytes = pubKey.ToArray();
+            kp.addressBytes = (new Address(kp.publicKeyBytes)).address;
 
             List<byte> privKey = new List<byte>();
             privKey.AddRange(BitConverter.GetBytes(rsaParams.Modulus.Length));

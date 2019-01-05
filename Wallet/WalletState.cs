@@ -260,14 +260,16 @@ namespace DLT
                     return cachedDeltaChecksum;
                 }
                 // TODO: This could get unwieldy above ~100M wallet addresses. We have to implement sharding by then.
-                SortedSet<byte[]> eligible_addresses = new SortedSet<byte[]>(walletState.Keys, new ByteArrayComparer());
+                SortedSet<byte[]> eligible_addresses = null;
+                eligible_addresses = new SortedSet<byte[]>(walletState.Keys, new ByteArrayComparer());
+
                 if (snapshot == true)
                 {
                     if (wsDelta != null)
                     {
-                        foreach (byte[] addr in wsDelta.Keys)
+                        foreach (var entry in wsDelta)
                         {
-                            eligible_addresses.Add(addr);
+                            eligible_addresses.Add(entry.Key);
                         }
                     }
                 }

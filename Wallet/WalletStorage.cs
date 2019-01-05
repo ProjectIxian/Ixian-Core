@@ -1,6 +1,7 @@
 ﻿using DLT.Meta;
 using IXICore;
 using IXICore.CryptoKey;
+using IXICore.Utils;
 using System;
 using System.Collections.Generic;
 using System.IO;
@@ -32,6 +33,7 @@ namespace DLT
         private byte[] privateKey = null;
         private byte[] publicKey = null;
         private byte[] address = null;
+        private byte[] lastAddress = null;
 
         public WalletStorage()
         {
@@ -99,26 +101,35 @@ namespace DLT
             }
 
             Address addr = new Address(publicKey);
-            address = addr.address;
+            lastAddress = address = addr.address;
 
             IxianKeyPair kp = new IxianKeyPair();
             kp.privateKeyBytes = privateKey;
             kp.publicKeyBytes = publicKey;
+            kp.addressBytes = address;
             lock (myKeys)
             {
                 myKeys.Add(address, kp);
             }
             lock (myAddresses)
             {
-                AddressData ad = new AddressData() { nonce = null, keyPair = kp };
+                AddressData ad = new AddressData() { nonce = new byte[1] { 0 }, keyPair = kp };
                 myAddresses.Add(address, ad);
 
                 if (b_last_nonce != null)
                 {
                     byte[] last_nonce_bytes = CryptoManager.lib.decryptWithPassword(b_last_nonce, walletPassword);
-                    while (!last_nonce_bytes.SequenceEqual(kp.lastNonceBytes))
+                    bool last_address_found = false;
+                    while (last_address_found == false)
                     {
-                        generateNewAddress(addr, false);
+                        if (kp.lastNonceBytes != null && last_nonce_bytes.SequenceEqual(kp.lastNonceBytes))
+                        {
+                            last_address_found = true;
+                        }
+                        else
+                        {
+                            generateNewAddress(addr, false);
+                        }
                     }
                 }
             }
@@ -196,7 +207,8 @@ namespace DLT
                 IxianKeyPair kp = new IxianKeyPair();
                 kp.privateKeyBytes = dec_private_key;
                 kp.publicKeyBytes = dec_public_key;
-                if(enc_nonce != null)
+                kp.addressBytes = tmp_address;
+                if (enc_nonce != null)
                 {
                     kp.lastNonceBytes = CryptoManager.lib.decryptWithPassword(enc_nonce, password);
                 }
@@ -205,7 +217,7 @@ namespace DLT
                 {
                     privateKey = dec_private_key;
                     publicKey = dec_public_key;
-                    address = tmp_address;
+                    lastAddress = address = tmp_address;
                 }
 
                 lock (myKeys)
@@ -214,7 +226,7 @@ namespace DLT
                 }
                 lock (myAddresses)
                 {
-                    AddressData ad = new AddressData() { nonce = null, keyPair = kp };
+                    AddressData ad = new AddressData() { nonce = new byte[1] { 0 }, keyPair = kp };
                     myAddresses.Add(tmp_address, ad);
                 }
             }
@@ -467,10 +479,10 @@ namespace DLT
             publicKey = kp.publicKeyBytes;
 
             Address addr = new Address(publicKey);
-            address = addr.address;
+            lastAddress = address = addr.address;
 
             myKeys.Add(address, kp);
-            myAddresses.Add(address, new AddressData() { keyPair = kp, nonce = null });
+            myAddresses.Add(address, new AddressData() { keyPair = kp, nonce = new byte[1] { 0 } });
 
 
             Logging.info(String.Format("Public Key: {0}", Crypto.hashToString(publicKey)));
@@ -575,11 +587,11 @@ namespace DLT
 
         public byte[] getLastAddress()
         {
-            // TODO TODO TODO TODO TODO this doesn't do what it's intended
+            // TODO TODO TODO TODO TODO improve if possible for v2 wallets
             // Also you have to take into account what happens when loading from file and the difference between v1 and v2 wallets (key related)
             lock (myAddresses)
             {
-                return myAddresses.Last().Key;
+                return lastAddress;
             }
         }
 
@@ -608,14 +620,23 @@ namespace DLT
             return false;
         }
 
-        public IxiNumber getMyTotalBalance()
+        public IxiNumber getMyTotalBalance(byte[] primary_address)
         {
             IxiNumber balance = 0;
             lock (myAddresses)
             {
                 foreach (var entry in myAddresses)
                 {
-                    balance += Node.walletState.getWalletBalance(entry.Key);
+                    if (primary_address != null && !entry.Value.keyPair.addressBytes.SequenceEqual(primary_address))
+                    {
+                        continue;
+                    }
+                    IxiNumber amount = Node.walletState.getWalletBalance(entry.Key);
+                    if (amount == 0)
+                    {
+                        continue;
+                    }
+                    balance += amount;
                 }
             }
             return balance;
@@ -657,6 +678,7 @@ namespace DLT
                 {
                     AddressData ad = new AddressData() { nonce = kp.lastNonceBytes, keyPair = kp };
                     myAddresses.Add(new_address.address, ad);
+                    lastAddress = new_address.address;
                 }
 
                 if (write_to_file)
@@ -701,7 +723,6 @@ namespace DLT
                 return null;
             }
             Address addr = new Address(kp.publicKeyBytes);
-            address = addr.address;
 
             if (addr.address == null)
             {
@@ -714,17 +735,17 @@ namespace DLT
                 {
                     if (!writeToFile)
                     {
-                        myKeys.Add(address, kp);
+                        myKeys.Add(addr.address, kp);
                         AddressData ad = new AddressData() { nonce = kp.lastNonceBytes, keyPair = kp };
-                        myAddresses.Add(address, ad);
+                        myAddresses.Add(addr.address, ad);
                     }
                     else
                     {
                         if (writeWallet(walletPassword))
                         {
-                            myKeys.Add(address, kp);
+                            myKeys.Add(addr.address, kp);
                             AddressData ad = new AddressData() { nonce = kp.lastNonceBytes, keyPair = kp };
-                            myAddresses.Add(address, ad);
+                            myAddresses.Add(addr.address, ad);
                         }
                         else
                         {
@@ -779,9 +800,66 @@ namespace DLT
 
         public List<Address> getMyAddresses()
         {
-            lock(myAddresses)
+            lock (myAddresses)
             {
                 return myAddresses.Select(x => new Address(x.Key)).ToList();
+            }
+        }
+
+        public List<string> getMyAddressesBase58()
+        {
+            lock (myAddresses)
+            {
+                return myAddresses.Select(x => (new Address(x.Key)).ToString()).ToList();
+            }
+        }
+
+        public SortedDictionary<byte[], IxiNumber> generateFromList(byte[] primary_address, IxiNumber total_amount_with_fee, List<byte[]> skip_addresses)
+        {
+            lock(myAddresses)
+            {
+                Dictionary<byte[], IxiNumber> tmp_from_list = new Dictionary<byte[], IxiNumber>(new ByteArrayComparer());
+                foreach (var entry in myAddresses)
+                {
+                    if(!entry.Value.keyPair.addressBytes.SequenceEqual(primary_address))
+                    {
+                        continue;
+                    }
+                    if(skip_addresses.Contains(entry.Value.keyPair.addressBytes, new ByteArrayComparer()))
+                    {
+                        continue;
+                    }
+                    IxiNumber amount = Node.walletState.getWalletBalance(entry.Key);
+                    if(amount == 0)
+                    {
+                        continue;
+                    }
+                    tmp_from_list.Add(entry.Value.nonce, amount);
+                }
+
+                var tmp_from_list_ordered = tmp_from_list.OrderBy(x => x.Value.getAmount());
+
+                SortedDictionary<byte[], IxiNumber> from_list = new SortedDictionary<byte[], IxiNumber>(new ByteArrayComparer());
+
+                IxiNumber tmp_total_amount = 0;
+                foreach (var entry in tmp_from_list_ordered)
+                {
+                    if (tmp_total_amount + entry.Value >= total_amount_with_fee)
+                    {
+                        IxiNumber tmp_amount = total_amount_with_fee - tmp_total_amount;
+                        from_list.Add(entry.Key, tmp_amount);
+                        tmp_total_amount += tmp_amount;
+                        break;
+                    }
+                    from_list.Add(entry.Key, entry.Value);
+                    tmp_total_amount += entry.Value;
+                }
+
+                if (from_list.Count > 0 && tmp_total_amount == total_amount_with_fee)
+                {
+                    return from_list;
+                }
+                return null;
             }
         }
     }
