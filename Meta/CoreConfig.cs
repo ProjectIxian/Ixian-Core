@@ -11,7 +11,9 @@ namespace IXICore
         public static readonly int protocolVersion = 5; // Ixian protocol version
         public static readonly int walletStateChunkSplit = 10000; // 10K wallets per chunk
         public static ulong redactedWindowSize = 43200; // approx 15 days. Represents the redacted window size of this node
-        public static ulong minimumRedactedWindowSize = 43200; // Represents the minimum redacted window size on any node
+        public static ulong minRedactedWindowSize = 43200; // Represents the minimum redacted window size on any node
+        private static readonly ulong minRedactedWindowSize_v0 = 43200; // approx 15 days. Represents the redacted window size of v0 and v1 blocks
+        private static readonly ulong minRedactedWindowSize_v2 = 20000; // approx 7 days. Represents the redacted window size of v2 blocks
         public static readonly byte[] ixianInfiniMineAddress = Base58Check.Base58CheckEncoding.DecodePlain("1ixianinfinimine234234234234234234234234234242HP");
         public static readonly int defaultRsaKeySize = 4096;
 
@@ -43,5 +45,22 @@ namespace IXICore
         public static readonly byte[] ixianChecksumLock = Encoding.UTF8.GetBytes("Ixian");
         public static readonly string ixianChecksumLockString = "Ixian";
 
+
+        public static ulong getRedactedWindowSize(int block_version = -1)
+        {
+            if(block_version == -1)
+            {
+                return minRedactedWindowSize;
+            }
+            if (block_version < 2)
+            {
+                return minRedactedWindowSize_v0;
+            }
+            if(block_version >= 2)
+            {
+                return minRedactedWindowSize_v2;
+            }
+            return minRedactedWindowSize;
+        }
     }
 }

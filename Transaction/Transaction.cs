@@ -68,6 +68,8 @@ namespace DLT
 
         private readonly static byte[] multisigStartMarker = { 0x4d, 0x73 };
 
+        public static int maxVersion = 2;
+
         public Transaction(int tx_type)
         {
             version = 1;
@@ -182,9 +184,9 @@ namespace DLT
         }
 
 
-        public Transaction(int tx_type, IxiNumber tx_feePerKb, SortedDictionary<byte[], IxiNumber> tx_toList, SortedDictionary<byte[], IxiNumber> tx_fromList, byte[] tx_data, byte[] tx_pubKey, ulong tx_blockHeight, int tx_nonce = -1)
+        public Transaction(int tx_type, IxiNumber tx_feePerKb, SortedDictionary<byte[], IxiNumber> tx_toList, SortedDictionary<byte[], IxiNumber> tx_fromList, byte[] tx_data, byte[] tx_pubKey, ulong tx_blockHeight, int tx_nonce = -1, int tmp_version = 1)
         {
-            version = 2;
+            version = tmp_version;
 
             type = tx_type;
 
@@ -301,67 +303,72 @@ namespace DLT
                     {
                         version = reader.ReadInt32();
 
-                        type = reader.ReadInt32();
-                        amount = new IxiNumber(reader.ReadString());
-                        fee = new IxiNumber(reader.ReadString());
+                        if (version <= maxVersion)
+                        {
 
-                        int toListLen = reader.ReadInt32();
-                        for(int i = 0; i < toListLen; i++)
-                        {
-                            int addrLen = reader.ReadInt32();
-                            byte[] address = reader.ReadBytes(addrLen);
-                            IxiNumber amount = new IxiNumber(reader.ReadString());
-                            toList.Add(address, amount);
-                        }
+                            type = reader.ReadInt32();
+                            amount = new IxiNumber(reader.ReadString());
+                            fee = new IxiNumber(reader.ReadString());
 
-                        if (version <= 1)
-                        {
-                            int fromLen = reader.ReadInt32();
-                            pubKey = reader.ReadBytes(fromLen);
-                            fromList.Add(new byte[1] { 0 }, amount + fee);
-                        }else
-                        {
-                            int fromListLen = reader.ReadInt32();
-                            for (int i = 0; i < fromListLen; i++)
+                            int toListLen = reader.ReadInt32();
+                            for (int i = 0; i < toListLen; i++)
                             {
                                 int addrLen = reader.ReadInt32();
                                 byte[] address = reader.ReadBytes(addrLen);
                                 IxiNumber amount = new IxiNumber(reader.ReadString());
-                                fromList.Add(address, amount);
+                                toList.Add(address, amount);
                             }
+
+                            if (version <= 1)
+                            {
+                                int fromLen = reader.ReadInt32();
+                                pubKey = reader.ReadBytes(fromLen);
+                                fromList.Add(new byte[1] { 0 }, amount + fee);
+                            }
+                            else
+                            {
+                                int fromListLen = reader.ReadInt32();
+                                for (int i = 0; i < fromListLen; i++)
+                                {
+                                    int addrLen = reader.ReadInt32();
+                                    byte[] address = reader.ReadBytes(addrLen);
+                                    IxiNumber amount = new IxiNumber(reader.ReadString());
+                                    fromList.Add(address, amount);
+                                }
+                            }
+
+                            int dataLen = reader.ReadInt32();
+                            if (dataLen > 0)
+                            {
+                                data = reader.ReadBytes(dataLen);
+                            }
+
+                            blockHeight = reader.ReadUInt64();
+
+                            nonce = reader.ReadInt32();
+
+                            timeStamp = reader.ReadInt64();
+
+                            int crcLen = reader.ReadInt32();
+                            if (crcLen > 0)
+                            {
+                                checksum = reader.ReadBytes(crcLen);
+                            }
+
+                            int sigLen = reader.ReadInt32();
+                            if (sigLen > 0)
+                            {
+                                signature = reader.ReadBytes(sigLen);
+                            }
+
+                            int pkLen = reader.ReadInt32();
+                            if (pkLen > 0)
+                            {
+                                pubKey = reader.ReadBytes(pkLen);
+                            }
+
+                            id = generateID();
                         }
-
-                        int  dataLen = reader.ReadInt32();
-                        if (dataLen > 0)
-                        {
-                            data = reader.ReadBytes(dataLen);
-                        }
-
-                        blockHeight = reader.ReadUInt64();
-
-                        nonce = reader.ReadInt32();
-
-                        timeStamp = reader.ReadInt64();
-
-                        int crcLen = reader.ReadInt32();
-                        if (crcLen > 0)
-                        {
-                            checksum = reader.ReadBytes(crcLen);
-                        }
-
-                        int sigLen = reader.ReadInt32();
-                        if (sigLen > 0)
-                        {
-                            signature = reader.ReadBytes(sigLen);
-                        }
-
-                        int pkLen = reader.ReadInt32();
-                        if (pkLen > 0)
-                        {
-                            pubKey = reader.ReadBytes(pkLen);
-                        }
-
-                        id = generateID();
                     }
                 }
             }
