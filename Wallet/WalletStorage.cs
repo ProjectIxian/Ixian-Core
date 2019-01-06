@@ -248,6 +248,12 @@ namespace DLT
                 return generateWallet();
             }
 
+            // create a backup of the new wallet file
+            if (!File.Exists(filename + ".bak"))
+            {
+                File.Copy(filename, filename + ".bak");
+            }
+
             Logging.log(LogSeverity.info, "Wallet file found, reading data...");
             Logging.flush();
 
