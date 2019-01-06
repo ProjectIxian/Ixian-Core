@@ -1,12 +1,8 @@
 using DLT.Meta;
-using DLT;
 using System;
 using System.Collections.Generic;
-using System.IO;
-using System.Linq;
 using System.Net;
 using System.Net.Sockets;
-using System.Threading;
 using System.Net.NetworkInformation;
 using IXICore;
 
@@ -58,7 +54,10 @@ namespace DLT
             getUnappliedTransactions,
             extend,
             attachEvent,
-            detachEvent
+            detachEvent,
+            newBlockSignature,
+            getBlockSignatures,
+            blockSignatureChunk
         }
 
         public enum RemoteEndpointState
