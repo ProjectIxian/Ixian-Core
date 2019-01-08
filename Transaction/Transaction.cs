@@ -33,19 +33,33 @@ namespace DLT
         {
             public string origTXId;
             public byte[] addrToAdd;
+            public byte[] signerPubKey;
+            public byte[] signerNonce;
         }
 
         public struct MultisigAddrDel
         {
             public string origTXId;
             public byte[] addrToDel;
+            public byte[] signerPubKey;
+            public byte[] signerNonce;
         }
 
         public struct MultisigChSig
         {
             public string origTXId;
             public byte reqSigs;
+            public byte[] signerPubKey;
+            public byte[] signerNonce;
         }
+
+        public struct MultisigTxData
+        {
+            public string origTXId;
+            public byte[] signerPubKey;
+            public byte[] signerNonce;
+        }
+
         public int version; // 4
         public string id; //  not sent as part of the tx but around 50 bytes
         public int type; // 4
@@ -95,7 +109,14 @@ namespace DLT
 
             amount = tx_amount;
             toList.Add(tx_to, amount);
-            fromList.Add(new byte[1] { 0 }, amount);
+            if (tx_type == (int)Transaction.Type.ChangeMultisigWallet || tx_type == (int)Transaction.Type.MultisigTX)
+            {
+                fromList = Node.walletStorage.generateFromListFromAddress(tx_from, amount);
+            }
+            else
+            {
+                fromList.Add(new byte[1] { 0 }, amount);
+            }
 
             data = tx_data;
 
@@ -119,7 +140,7 @@ namespace DLT
             }
 
             fee = calculateMinimumFee(tx_feePerKb);
-            fromList[new byte[1] { 0 }] = amount + fee;
+            fromList[fromList.First().Key] = amount + fee;
 
             generateChecksums();
 
@@ -169,7 +190,7 @@ namespace DLT
             }
 
             fee = calculateMinimumFee(tx_feePerKb);
-            fromList[new byte[1] { 0 }] = amount + fee;
+            fromList[fromList.First().Key] = amount + fee;
 
             generateChecksums();
 
@@ -683,7 +704,7 @@ namespace DLT
         }
 
 
-        private void AddMultisigOrig(string orig_txid)
+        private void AddMultisigOrig(string orig_txid, byte[] signer_pub_key, byte[] signer_nonce)
         {
             byte[] orig_txid_bytes = Encoding.UTF8.GetBytes(orig_txid);
             using (MemoryStream ms = new MemoryStream(4 + orig_txid_bytes.Length))
@@ -701,12 +722,19 @@ namespace DLT
                         bw.Write(orig_txid_bytes.Length);
                         bw.Write(orig_txid_bytes);
                     }
+
+                    bw.Write(signer_pub_key.Length);
+                    bw.Write(signer_pub_key);
+
+                    bw.Write(signer_nonce.Length);
+                    bw.Write(signer_nonce);
+
                     data = ms.ToArray();
                 }
             }
         }
 
-        private void AddMultisigChWallet (string orig_txid, byte[] addr, MultisigWalletChangeType change_type)
+        private void AddMultisigChWallet (string orig_txid, byte[] addr, MultisigWalletChangeType change_type, byte[] signer_pub_key, byte[] signer_nonce)
         {
             byte[] orig_txid_bytes = Encoding.UTF8.GetBytes(orig_txid);
             using (MemoryStream ms = new MemoryStream(4 + orig_txid_bytes.Length))
@@ -725,14 +753,22 @@ namespace DLT
                         bw.Write(orig_txid_bytes);
                     }
                     bw.Write((byte)change_type);
+
                     bw.Write(addr.Length);
                     bw.Write(addr);
+
+                    bw.Write(signer_pub_key.Length);
+                    bw.Write(signer_pub_key);
+
+                    bw.Write(signer_nonce.Length);
+                    bw.Write(signer_nonce);
+
                     data = ms.ToArray();
                 }
             }
         }
 
-        private void AddMultisigChReqSigs(string orig_txid, byte num_sigs)
+        private void AddMultisigChReqSigs(string orig_txid, byte num_sigs, byte[] signer_pub_key, byte[] signer_nonce)
         {
             byte[] orig_txid_bytes = Encoding.UTF8.GetBytes(orig_txid);
             using (MemoryStream ms = new MemoryStream(4 + orig_txid_bytes.Length))
@@ -752,6 +788,13 @@ namespace DLT
                     }
                     bw.Write((byte)MultisigWalletChangeType.ChangeReqSigs);
                     bw.Write(num_sigs);
+
+                    bw.Write(signer_pub_key.Length);
+                    bw.Write(signer_pub_key);
+
+                    bw.Write(signer_nonce.Length);
+                    bw.Write(signer_nonce);
+
                     data = ms.ToArray();
                 }
             }
@@ -778,23 +821,49 @@ namespace DLT
                                 Logging.warn(String.Format("Multisig transaction: Invalid multisig transaction: Data start marker does not match! ({0}, {1})", start_marker_1, start_marker_2));
                                 return null;
                             }
+
                             int orig_tx_len = rd.ReadInt32();
                             if (orig_tx_len < 0 || orig_tx_len > 100)
                             {
                                 Logging.warn(String.Format("Multisig transaction: Invalid origin TXID length stored in data: {0}", orig_tx_len));
                                 return null;
                             }
-                            if (orig_tx_len == 0)
+                            byte[] orig_txid = null;
+                            if (orig_tx_len > 0)
                             {
-                                return "";
+                                orig_txid = rd.ReadBytes(orig_tx_len);
+                                if (orig_txid == null || orig_txid.Length < orig_tx_len)
+                                {
+                                    Logging.warn(String.Format("Multisig transaction: Invalid or missing origin txid!"));
+                                    return null;
+                                }
+                            }else
+                            {
+                                orig_txid = Encoding.UTF8.GetBytes("");
                             }
-                            byte[] orig_txid = rd.ReadBytes(orig_tx_len);
-                            if (orig_txid == null || orig_txid.Length < orig_tx_len)
+
+                            int signer_pub_key_len = rd.ReadInt32();
+                            if (signer_pub_key_len < 0 || (signer_pub_key_len != 523 && signer_pub_key_len != 36))
                             {
-                                Logging.warn(String.Format("Multisig transaction: Invalid or missing origin txid!"));
+                                Logging.warn(String.Format("Multisig transaction: Invalid signer pub key length stored in data: {0}", orig_tx_len));
                                 return null;
                             }
-                            return Encoding.UTF8.GetString(orig_txid);
+                            if (signer_pub_key_len == 0)
+                            {
+                                return null;
+                            }
+                            byte[] signer_pub_key = rd.ReadBytes(signer_pub_key_len);
+                            if (signer_pub_key == null || signer_pub_key.Length < signer_pub_key_len)
+                            {
+                                Logging.warn(String.Format("Multisig transaction: Invalid or missing signer pub key!"));
+                                return null;
+                            }
+
+                            return new MultisigTxData
+                            {
+                                origTXId = Encoding.UTF8.GetString(orig_txid),
+                                signerPubKey = signer_pub_key
+                            };
                         } catch(Exception)
                         {
                             // early EOF or some strange data error
@@ -860,10 +929,19 @@ namespace DLT
                                         Logging.warn("Multisig change transaction: Adding signer, but the address data was corrupted.");
                                         return null;
                                     }
+
+                                    int signer_pub_key_len = rd.ReadInt32();
+                                    byte[] signer_pub_key = rd.ReadBytes(signer_pub_key_len);
+
+                                    int signer_nonce_len = rd.ReadInt32();
+                                    byte[] signer_nonce = rd.ReadBytes(signer_nonce_len);
+
                                     return new MultisigAddrAdd
                                     {
                                         origTXId = orig_txid,
-                                        addrToAdd = ch_addr
+                                        addrToAdd = ch_addr,
+                                        signerPubKey = signer_pub_key,
+                                        signerNonce = signer_nonce
                                     };
                                 case MultisigWalletChangeType.DelSigner:
                                     ch_addr_len = rd.ReadInt32();
@@ -878,17 +956,35 @@ namespace DLT
                                         Logging.warn("Multisig change transaction: Deleting signer, but the address data was corrupted.");
                                         return null;
                                     }
+
+                                    signer_pub_key_len = rd.ReadInt32();
+                                    signer_pub_key = rd.ReadBytes(signer_pub_key_len);
+
+                                    signer_nonce_len = rd.ReadInt32();
+                                    signer_nonce = rd.ReadBytes(signer_nonce_len);
+
                                     return new MultisigAddrDel
                                     {
                                         origTXId = orig_txid,
-                                        addrToDel = ch_addr
+                                        addrToDel = ch_addr,
+                                        signerPubKey = signer_pub_key,
+                                        signerNonce = signer_nonce
                                     };
                                 case MultisigWalletChangeType.ChangeReqSigs:
                                     byte new_req_sigs = rd.ReadByte();
+
+                                    signer_pub_key_len = rd.ReadInt32();
+                                    signer_pub_key = rd.ReadBytes(signer_pub_key_len);
+
+                                    signer_nonce_len = rd.ReadInt32();
+                                    signer_nonce = rd.ReadBytes(signer_nonce_len);
+
                                     return new MultisigChSig
                                     {
                                         origTXId = orig_txid,
-                                        reqSigs = new_req_sigs
+                                        reqSigs = new_req_sigs,
+                                        signerPubKey = signer_pub_key,
+                                        signerNonce = signer_nonce
                                     };
                                 default:
                                     Logging.warn(String.Format("Invalid MultisigWalletChangeType for a multisig change transaction {{ {0} }}.", id));
@@ -909,47 +1005,146 @@ namespace DLT
             }
         }
 
-        public static Transaction multisigTransaction(string orig_txid, IxiNumber tx_amount, IxiNumber tx_fee, byte[] tx_to, byte[] tx_from, ulong tx_blockHeight)
+        public static AddressData findMyMultisigAddressData(byte[] multisig_address)
         {
-            Transaction t = new Transaction((int)Transaction.Type.MultisigTX, tx_amount, tx_fee, tx_to, tx_from, null, Node.walletStorage.getKeyPair(tx_from).publicKeyBytes, tx_blockHeight);
+            Wallet w = Node.walletState.getWallet(multisig_address);
+            if (w == null)
+            {
+                return null;
+            }
 
-            t.AddMultisigOrig(orig_txid);
+            if(w.allowedSigners == null)
+            {
+                return Node.walletStorage.getAddress(multisig_address);
+            }
+
+            foreach(var entry in w.allowedSigners)
+            {
+                AddressData ad = Node.walletStorage.getAddress(entry);
+                if(ad != null)
+                {
+                    return ad;
+                }
+            }
+            return null;
+        }
+
+        public static Transaction multisigTransaction(string orig_txid, IxiNumber tx_amount, IxiNumber tx_fee, byte[] tx_to, byte[] tx_from, ulong tx_blockHeight, byte[] base_address)
+        {
+            Transaction t = new Transaction((int)Transaction.Type.MultisigTX, tx_amount, tx_fee, tx_to, tx_from, null, base_address, tx_blockHeight);
+
+            // TODO TODO TODO TODO TODO TODO make this compatible with wallet v2
+
+            AddressData ad = findMyMultisigAddressData(tx_from);
+            if(ad == null)
+            {
+                return null;
+            }
+
+            t.AddMultisigOrig(orig_txid, ad.keyPair.publicKeyBytes, ad.nonce);
+
+            t.fee = t.calculateMinimumFee(tx_fee);
+            t.fromList[t.fromList.First().Key] = tx_amount + t.fee;
+
+            t.generateChecksums();
+
+            t.signature = t.getSignature(t.checksum);
 
             return t;
         }
 
-        public static Transaction multisigTransaction(string orig_txid, IxiNumber tx_fee, SortedDictionary<byte[], IxiNumber> tx_to_list, byte[] tx_from, ulong tx_blockHeight)
+        public static Transaction multisigTransaction(string orig_txid, IxiNumber tx_fee, SortedDictionary<byte[], IxiNumber> tx_to_list, byte[] tx_from, ulong tx_blockHeight, byte[] base_address)
         {
-            Transaction t = new Transaction((int)Transaction.Type.MultisigTX, tx_fee, tx_to_list, tx_from, null, Node.walletStorage.getKeyPair(tx_from).publicKeyBytes, tx_blockHeight);
+            Transaction t = new Transaction((int)Transaction.Type.MultisigTX, tx_fee, tx_to_list, tx_from, null, base_address, tx_blockHeight);
 
-            t.AddMultisigOrig(orig_txid);
+            // TODO TODO TODO TODO TODO TODO make this compatible with wallet v2
+
+            AddressData ad = findMyMultisigAddressData(tx_from);
+            if (ad == null)
+            {
+                return null;
+            }
+
+            t.AddMultisigOrig(orig_txid, ad.keyPair.publicKeyBytes, ad.nonce);
+
+            t.fee = t.calculateMinimumFee(tx_fee);
+            t.fromList[t.fromList.First().Key] = t.fee;
+
+            t.generateChecksums();
+
+            t.signature = t.getSignature(t.checksum);
 
             return t;
         }
 
-        public static Transaction multisigAddKeyTransaction(string orig_txid, byte[] allowed_address,  IxiNumber tx_fee, byte[] tx_from, ulong tx_blockHeight)
+        public static Transaction multisigAddKeyTransaction(string orig_txid, byte[] allowed_address,  IxiNumber tx_fee, byte[] tx_from, ulong tx_blockHeight, byte[] base_address)
         {
-            Transaction t = new Transaction((int)Transaction.Type.ChangeMultisigWallet, new IxiNumber(0), tx_fee, tx_from, tx_from, null, Node.walletStorage.getKeyPair(tx_from).publicKeyBytes, tx_blockHeight);
+            Transaction t = new Transaction((int)Transaction.Type.ChangeMultisigWallet, new IxiNumber(0), tx_fee, tx_from, tx_from, null, base_address, tx_blockHeight);
 
-            t.AddMultisigChWallet(orig_txid, allowed_address, MultisigWalletChangeType.AddSigner);
+            // TODO TODO TODO TODO TODO TODO make this compatible with wallet v2
+
+            AddressData ad = findMyMultisigAddressData(tx_from);
+            if (ad == null)
+            {
+                return null;
+            }
+
+            t.AddMultisigChWallet(orig_txid, allowed_address, MultisigWalletChangeType.AddSigner, ad.keyPair.publicKeyBytes, ad.nonce);
+
+            t.fee = t.calculateMinimumFee(tx_fee);
+            t.fromList[t.fromList.First().Key] = t.fee;
+
+            t.generateChecksums();
+
+            t.signature = t.getSignature(t.checksum);
 
             return t;
         }
 
-        public static Transaction multisigDelKeyTransaction(string orig_txid, byte[] disallowed_address, IxiNumber tx_fee, byte[] tx_from, ulong tx_blockHeight)
+        public static Transaction multisigDelKeyTransaction(string orig_txid, byte[] disallowed_address, IxiNumber tx_fee, byte[] tx_from, ulong tx_blockHeight, byte[] base_address)
         {
-            Transaction t = new Transaction((int)Transaction.Type.ChangeMultisigWallet, new IxiNumber(0), tx_fee, tx_from, tx_from, null, Node.walletStorage.getKeyPair(tx_from).publicKeyBytes, tx_blockHeight);
+            Transaction t = new Transaction((int)Transaction.Type.ChangeMultisigWallet, new IxiNumber(0), tx_fee, tx_from, tx_from, null, base_address, tx_blockHeight);
 
-            t.AddMultisigChWallet(orig_txid, disallowed_address, MultisigWalletChangeType.DelSigner);
+            // TODO TODO TODO TODO TODO TODO make this compatible with wallet v2
+
+            AddressData ad = findMyMultisigAddressData(tx_from);
+            if (ad == null)
+            {
+                return null;
+            }
+
+            t.AddMultisigChWallet(orig_txid, disallowed_address, MultisigWalletChangeType.DelSigner, ad.keyPair.publicKeyBytes, ad.nonce);
+
+            t.fee = t.calculateMinimumFee(tx_fee);
+            t.fromList[t.fromList.First().Key] = t.fee;
+
+            t.generateChecksums();
+
+            t.signature = t.getSignature(t.checksum);
 
             return t;
         }
 
-        public static Transaction multisigChangeReqSigs(string orig_txid, byte sigs, IxiNumber tx_fee, byte[] tx_from, ulong tx_blockHeight)
+        public static Transaction multisigChangeReqSigs(string orig_txid, byte sigs, IxiNumber tx_fee, byte[] tx_from, ulong tx_blockHeight, byte[] base_address)
         {
-            Transaction t = new Transaction((int)Transaction.Type.ChangeMultisigWallet, new IxiNumber(0), tx_fee, tx_from, tx_from, null, Node.walletStorage.getKeyPair(tx_from).publicKeyBytes, tx_blockHeight);
+            Transaction t = new Transaction((int)Transaction.Type.ChangeMultisigWallet, new IxiNumber(0), tx_fee, tx_from, tx_from, null, base_address, tx_blockHeight);
 
-            t.AddMultisigChReqSigs(orig_txid, sigs);
+            // TODO TODO TODO TODO TODO TODO make this compatible with wallet v2
+
+            AddressData ad = findMyMultisigAddressData(tx_from);
+            if (ad == null)
+            {
+                return null;
+            }
+
+            t.AddMultisigChReqSigs(orig_txid, sigs, ad.keyPair.publicKeyBytes, ad.nonce);
+
+            t.fee = t.calculateMinimumFee(tx_fee);
+            t.fromList[t.fromList.First().Key] = t.fee;
+
+            t.generateChecksums();
+
+            t.signature = t.getSignature(t.checksum);
 
             return t;
         }

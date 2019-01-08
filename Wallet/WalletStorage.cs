@@ -786,6 +786,18 @@ namespace DLT
             }
         }
 
+        public AddressData getAddress(byte[] address)
+        {
+            lock (myAddresses)
+            {
+                if (myAddresses.ContainsKey(address))
+                {
+                    return myAddresses[address];
+                }
+            }
+            return null;
+        }
+
         public bool isMyAddress(byte[] address)
         {
             lock (myAddresses)
@@ -829,7 +841,21 @@ namespace DLT
             }
         }
 
-        public SortedDictionary<byte[], IxiNumber> generateFromList(byte[] primary_address, IxiNumber total_amount_with_fee, List<byte[]> skip_addresses)
+        public SortedDictionary<byte[], IxiNumber> generateFromListFromAddress(byte[] from_address, IxiNumber total_amount_with_fee)
+        {
+            lock (myAddresses)
+            {
+                SortedDictionary<byte[], IxiNumber> tmp_from_list = new SortedDictionary<byte[], IxiNumber>(new ByteArrayComparer());
+                if (myAddresses.ContainsKey(from_address))
+                {
+                    tmp_from_list.Add(myAddresses[from_address].nonce, total_amount_with_fee);
+                    return tmp_from_list;
+                }
+                return null;
+            }
+        }
+
+            public SortedDictionary<byte[], IxiNumber> generateFromList(byte[] primary_address, IxiNumber total_amount_with_fee, List<byte[]> skip_addresses)
         {
             lock(myAddresses)
             {
@@ -840,15 +866,24 @@ namespace DLT
                     {
                         continue;
                     }
-                    if(skip_addresses.Contains(entry.Value.keyPair.addressBytes, new ByteArrayComparer()))
+
+                    if (skip_addresses.Contains(entry.Value.keyPair.addressBytes, new ByteArrayComparer()))
                     {
                         continue;
                     }
-                    IxiNumber amount = Node.walletState.getWalletBalance(entry.Key);
+
+                    Wallet wallet = Node.walletState.getWallet(entry.Key);
+                    if(wallet.type != WalletType.Normal)
+                    {
+                        continue;
+                    }
+
+                    IxiNumber amount = wallet.balance;
                     if(amount == 0)
                     {
                         continue;
                     }
+
                     tmp_from_list.Add(entry.Value.nonce, amount);
                 }
 

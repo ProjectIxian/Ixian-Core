@@ -1,5 +1,3 @@
-using DLT.Meta;
-using IXICore.Utils;
 using System;
 using System.Collections.Generic;
 using System.IO;
@@ -183,18 +181,31 @@ namespace DLT
         public byte[] calculateChecksum()
         {
             List<byte> rawData = new List<byte>();
+
             rawData.AddRange(id);
             rawData.AddRange(Encoding.UTF8.GetBytes(balance.ToString()));
+
             if (data != null)
             {
                 rawData.AddRange(data);
             }
+
             if (publicKey != null)
             {
                 rawData.AddRange(publicKey);
             }
+
             rawData.AddRange(BitConverter.GetBytes((int)type));
             rawData.AddRange(BitConverter.GetBytes(requiredSigs));
+
+            if (allowedSigners != null)
+            {
+                foreach (var entry in allowedSigners)
+                {
+                    rawData.AddRange(entry);
+                }
+            }
+
             return Crypto.sha512sqTrunc(rawData.ToArray());
         }
 
