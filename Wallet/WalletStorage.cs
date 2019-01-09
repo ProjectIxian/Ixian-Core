@@ -846,16 +846,12 @@ namespace DLT
             lock (myAddresses)
             {
                 SortedDictionary<byte[], IxiNumber> tmp_from_list = new SortedDictionary<byte[], IxiNumber>(new ByteArrayComparer());
-                if (myAddresses.ContainsKey(from_address))
-                {
-                    tmp_from_list.Add(myAddresses[from_address].nonce, total_amount_with_fee);
-                    return tmp_from_list;
-                }
-                return null;
+                tmp_from_list.Add(new byte[1] { 0 }, total_amount_with_fee);
+                return tmp_from_list;
             }
         }
 
-            public SortedDictionary<byte[], IxiNumber> generateFromList(byte[] primary_address, IxiNumber total_amount_with_fee, List<byte[]> skip_addresses)
+        public SortedDictionary<byte[], IxiNumber> generateFromList(byte[] primary_address, IxiNumber total_amount_with_fee, List<byte[]> skip_addresses)
         {
             lock(myAddresses)
             {

@@ -165,7 +165,14 @@ namespace DLT
 
             amount = calculateTotalAmount();
 
-            fromList.Add(new byte[1] { 0 }, amount);
+            if (tx_type == (int)Transaction.Type.ChangeMultisigWallet || tx_type == (int)Transaction.Type.MultisigTX)
+            {
+                fromList = Node.walletStorage.generateFromListFromAddress(tx_from, amount);
+            }
+            else
+            {
+                fromList.Add(new byte[1] { 0 }, amount);
+            }
 
             data = tx_data;
 
@@ -494,7 +501,7 @@ namespace DLT
         }
 
         // Verifies the transaction signature and returns true if valid
-        public bool verifySignature(byte[] pubkey)
+        public bool verifySignature(byte[] pubkey, byte[] nonce)
         {
             if(pubkey == null)
             {
@@ -507,7 +514,7 @@ namespace DLT
                 return true;
             }
 
-            Address p_address = new Address(pubkey);
+            Address p_address = new Address(pubkey, nonce);
             bool allowed = false;
             Wallet from_wallet = Node.walletState.getWallet((new Address(this.pubKey)).address);
             if(from_wallet != null && from_wallet.id.SequenceEqual(p_address.address))
@@ -653,8 +660,13 @@ namespace DLT
             return Crypto.sha512sqTrunc(rawData.ToArray());
         }
 
-        public byte[] getSignature(byte[] checksum)
+        public byte[] getSignature(byte[] checksum, byte[] private_key = null)
         {
+            if(private_key != null)
+            {
+                return CryptoManager.lib.getSignature(checksum, private_key);
+            }
+
             byte[] address = null;
             if(pubKey.Length == 36)
             {
@@ -859,10 +871,14 @@ namespace DLT
                                 return null;
                             }
 
+                            int signer_nonce_len = rd.ReadInt32();
+                            byte[] signer_nonce = rd.ReadBytes(signer_nonce_len);
+
                             return new MultisigTxData
                             {
                                 origTXId = Encoding.UTF8.GetString(orig_txid),
-                                signerPubKey = signer_pub_key
+                                signerPubKey = signer_pub_key,
+                                signerNonce = signer_nonce
                             };
                         } catch(Exception)
                         {
@@ -1068,11 +1084,11 @@ namespace DLT
             t.AddMultisigOrig(orig_txid, ad.keyPair.publicKeyBytes, ad.nonce);
 
             t.fee = t.calculateMinimumFee(tx_fee);
-            t.fromList[t.fromList.First().Key] = t.fee;
+            t.fromList[t.fromList.First().Key] = t.amount + t.fee;
 
             t.generateChecksums();
 
-            t.signature = t.getSignature(t.checksum);
+            t.signature = t.getSignature(t.checksum, ad.keyPair.privateKeyBytes);
 
             return t;
         }
@@ -1096,7 +1112,7 @@ namespace DLT
 
             t.generateChecksums();
 
-            t.signature = t.getSignature(t.checksum);
+            t.signature = t.getSignature(t.checksum, ad.keyPair.privateKeyBytes);
 
             return t;
         }
@@ -1120,7 +1136,7 @@ namespace DLT
 
             t.generateChecksums();
 
-            t.signature = t.getSignature(t.checksum);
+            t.signature = t.getSignature(t.checksum, ad.keyPair.privateKeyBytes);
 
             return t;
         }
@@ -1144,7 +1160,7 @@ namespace DLT
 
             t.generateChecksums();
 
-            t.signature = t.getSignature(t.checksum);
+            t.signature = t.getSignature(t.checksum, ad.keyPair.privateKeyBytes);
 
             return t;
         }
