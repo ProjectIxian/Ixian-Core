@@ -81,18 +81,8 @@ namespace DLT
             {
                 displayBackupText();
 
-                // NOTE: This is only permitted on the testnet for dev/testing purposes!
-                string password = "";
-                if(Config.isTestNet)
-                {
-                    Logging.warn("Attempting to unlock the wallet with a password from commandline!");
-                    password = Config.dangerCommandlinePasswordCleartextUnsafe;
-                }
-                if (password.Length < 10)
-                {
-                    Console.Write("Enter wallet password: ");
-                    password = getPasswordInput();
-                }
+                Console.Write("Enter wallet password: ");
+                string password = getPasswordInput();
                 success = true;
                 try
                 {
@@ -159,17 +149,9 @@ namespace DLT
             while (!success)
             {
                 displayBackupText();
-                // NOTE: This is only permitted on the testnet for dev/testing purposes!
-                if (Config.isTestNet)
-                {
-                    Logging.warn("Attempting to unlock the wallet with a password from commandline!");
-                    password = Config.dangerCommandlinePasswordCleartextUnsafe;
-                }
-                if (password.Length < 10)
-                {
-                    Console.Write("Enter wallet password: ");
-                    password = getPasswordInput();
-                }
+
+                Console.Write("Enter wallet password: ");
+                password = getPasswordInput();
                 success = true;
                 try
                 {
@@ -472,14 +454,7 @@ namespace DLT
             Logging.flush();
 
             // Request a password
-            // NOTE: This can only be done in testnet to enable automatic testing!
             string password = "";
-            if(Config.isTestNet)
-            {
-                Logging.warn("TestNet detected and wallet password has been specified on the command line!");
-                password = Config.dangerCommandlinePasswordCleartextUnsafe;
-                // Also note that the commandline password still has to be >= 10 characters
-            }
             while(password.Length < 10)
             {
                 password = requestNewPassword("Enter a password for your new wallet: ");
