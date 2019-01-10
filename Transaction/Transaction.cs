@@ -799,6 +799,7 @@ namespace DLT
                         bw.Write(orig_txid_bytes);
                     }
                     bw.Write((byte)MultisigWalletChangeType.ChangeReqSigs);
+
                     bw.Write(num_sigs);
 
                     bw.Write(signer_pub_key.Length);
@@ -1023,23 +1024,29 @@ namespace DLT
 
         public static AddressData findMyMultisigAddressData(byte[] multisig_address)
         {
+            AddressData ad = Node.walletStorage.getAddress(multisig_address);
+            if (ad != null)
+            {
+                return ad;
+            }
+
             Wallet w = Node.walletState.getWallet(multisig_address);
             if (w == null)
             {
                 return null;
             }
 
-            if(w.allowedSigners == null)
+            if (w.allowedSigners == null)
             {
                 return Node.walletStorage.getAddress(multisig_address);
             }
 
             foreach(var entry in w.allowedSigners)
             {
-                AddressData ad = Node.walletStorage.getAddress(entry);
-                if(ad != null)
+                AddressData tmp_ad = Node.walletStorage.getAddress(entry);
+                if(tmp_ad != null)
                 {
-                    return ad;
+                    return tmp_ad;
                 }
             }
             return null;
