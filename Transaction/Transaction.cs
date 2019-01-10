@@ -109,14 +109,7 @@ namespace DLT
 
             amount = tx_amount;
             toList.Add(tx_to, amount);
-            if (tx_type == (int)Transaction.Type.ChangeMultisigWallet || tx_type == (int)Transaction.Type.MultisigTX)
-            {
-                fromList = Node.walletStorage.generateFromListFromAddress(tx_from, amount);
-            }
-            else
-            {
-                fromList.Add(new byte[1] { 0 }, amount);
-            }
+            fromList.Add(new byte[1] { 0 }, amount);
 
             data = tx_data;
 
@@ -165,14 +158,7 @@ namespace DLT
 
             amount = calculateTotalAmount();
 
-            if (tx_type == (int)Transaction.Type.ChangeMultisigWallet || tx_type == (int)Transaction.Type.MultisigTX)
-            {
-                fromList = Node.walletStorage.generateFromListFromAddress(tx_from, amount);
-            }
-            else
-            {
-                fromList.Add(new byte[1] { 0 }, amount);
-            }
+            fromList.Add(new byte[1] { 0 }, amount);
 
             data = tx_data;
 
@@ -1052,9 +1038,11 @@ namespace DLT
             return null;
         }
 
-        public static Transaction multisigTransaction(string orig_txid, IxiNumber tx_amount, IxiNumber tx_fee, byte[] tx_to, byte[] tx_from, ulong tx_blockHeight, byte[] base_address)
+        public static Transaction multisigTransaction(string orig_txid, IxiNumber tx_amount, IxiNumber tx_fee, byte[] tx_to, byte[] tx_from, ulong tx_blockHeight)
         {
-            Transaction t = new Transaction((int)Transaction.Type.MultisigTX, tx_amount, tx_fee, tx_to, tx_from, null, base_address, tx_blockHeight);
+            Transaction t = new Transaction((int)Transaction.Type.MultisigTX, tx_amount, tx_fee, tx_to, tx_from, null, tx_from, tx_blockHeight);
+
+            t.version = 2;
 
             // TODO TODO TODO TODO TODO TODO make this compatible with wallet v2
 
@@ -1076,9 +1064,11 @@ namespace DLT
             return t;
         }
 
-        public static Transaction multisigTransaction(string orig_txid, IxiNumber tx_fee, SortedDictionary<byte[], IxiNumber> tx_to_list, byte[] tx_from, ulong tx_blockHeight, byte[] base_address)
+        public static Transaction multisigTransaction(string orig_txid, IxiNumber tx_fee, SortedDictionary<byte[], IxiNumber> tx_to_list, byte[] tx_from, ulong tx_blockHeight)
         {
-            Transaction t = new Transaction((int)Transaction.Type.MultisigTX, tx_fee, tx_to_list, tx_from, null, base_address, tx_blockHeight);
+            Transaction t = new Transaction((int)Transaction.Type.MultisigTX, tx_fee, tx_to_list, tx_from, null, tx_from, tx_blockHeight);
+
+            t.version = 2;
 
             // TODO TODO TODO TODO TODO TODO make this compatible with wallet v2
 
@@ -1100,9 +1090,11 @@ namespace DLT
             return t;
         }
 
-        public static Transaction multisigAddKeyTransaction(string orig_txid, byte[] allowed_address,  IxiNumber tx_fee, byte[] tx_from, ulong tx_blockHeight, byte[] base_address)
+        public static Transaction multisigAddKeyTransaction(string orig_txid, byte[] allowed_address,  IxiNumber tx_fee, byte[] tx_from, ulong tx_blockHeight)
         {
-            Transaction t = new Transaction((int)Transaction.Type.ChangeMultisigWallet, new IxiNumber(0), tx_fee, tx_from, tx_from, null, base_address, tx_blockHeight);
+            Transaction t = new Transaction((int)Transaction.Type.ChangeMultisigWallet, new IxiNumber(0), tx_fee, tx_from, tx_from, null, tx_from, tx_blockHeight);
+
+            t.version = 2;
 
             // TODO TODO TODO TODO TODO TODO make this compatible with wallet v2
 
@@ -1124,9 +1116,11 @@ namespace DLT
             return t;
         }
 
-        public static Transaction multisigDelKeyTransaction(string orig_txid, byte[] disallowed_address, IxiNumber tx_fee, byte[] tx_from, ulong tx_blockHeight, byte[] base_address)
+        public static Transaction multisigDelKeyTransaction(string orig_txid, byte[] disallowed_address, IxiNumber tx_fee, byte[] tx_from, ulong tx_blockHeight)
         {
-            Transaction t = new Transaction((int)Transaction.Type.ChangeMultisigWallet, new IxiNumber(0), tx_fee, tx_from, tx_from, null, base_address, tx_blockHeight);
+            Transaction t = new Transaction((int)Transaction.Type.ChangeMultisigWallet, new IxiNumber(0), tx_fee, tx_from, tx_from, null, tx_from, tx_blockHeight);
+
+            t.version = 2;
 
             // TODO TODO TODO TODO TODO TODO make this compatible with wallet v2
 
@@ -1148,9 +1142,11 @@ namespace DLT
             return t;
         }
 
-        public static Transaction multisigChangeReqSigs(string orig_txid, byte sigs, IxiNumber tx_fee, byte[] tx_from, ulong tx_blockHeight, byte[] base_address)
+        public static Transaction multisigChangeReqSigs(string orig_txid, byte sigs, IxiNumber tx_fee, byte[] tx_from, ulong tx_blockHeight)
         {
-            Transaction t = new Transaction((int)Transaction.Type.ChangeMultisigWallet, new IxiNumber(0), tx_fee, tx_from, tx_from, null, base_address, tx_blockHeight);
+            Transaction t = new Transaction((int)Transaction.Type.ChangeMultisigWallet, new IxiNumber(0), tx_fee, tx_from, tx_from, null, tx_from, tx_blockHeight);
+
+            t.version = 2;
 
             // TODO TODO TODO TODO TODO TODO make this compatible with wallet v2
 

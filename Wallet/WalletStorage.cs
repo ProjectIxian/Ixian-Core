@@ -841,12 +841,24 @@ namespace DLT
             }
         }
 
-        public SortedDictionary<byte[], IxiNumber> generateFromListFromAddress(byte[] from_address, IxiNumber total_amount_with_fee)
+        public SortedDictionary<byte[], IxiNumber> generateFromListFromAddress(byte[] from_address, IxiNumber total_amount_with_fee, bool full_pubkey = false)
         {
             lock (myAddresses)
             {
                 SortedDictionary<byte[], IxiNumber> tmp_from_list = new SortedDictionary<byte[], IxiNumber>(new ByteArrayComparer());
-                tmp_from_list.Add(new byte[1] { 0 }, total_amount_with_fee);
+                if (full_pubkey)
+                {
+                    if (!myAddresses.ContainsKey(from_address))
+                    {
+                        return null;
+                    }
+                    AddressData ad = myAddresses[from_address];
+                    tmp_from_list.Add(ad.nonce, total_amount_with_fee);
+                }
+                else
+                {
+                    tmp_from_list.Add(new byte[1] { 0 }, total_amount_with_fee);
+                }
                 return tmp_from_list;
             }
         }
