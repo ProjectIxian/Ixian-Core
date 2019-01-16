@@ -835,16 +835,21 @@ namespace DLT
             return false;
         }
 
-        public byte[] isMyAddress(SortedDictionary<byte[], IxiNumber> address_list)
+        public List<byte[]> extractMyAddressesFromAddressList(SortedDictionary<byte[], IxiNumber> address_list)
         {
             lock (myAddresses)
             {
+                List<byte[]> found_address_list = new List<byte[]>();
                 foreach (var entry in address_list)
                 {
                     if (myAddresses.ContainsKey(entry.Key))
                     {
-                        return entry.Key;
+                        found_address_list.Add(entry.Key);
                     }
+                }
+                if(found_address_list.Count > 0)
+                {
+                    return found_address_list;
                 }
             }
             return null;
