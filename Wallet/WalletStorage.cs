@@ -950,5 +950,17 @@ namespace DLT
                 return null;
             }
         }
+
+        public byte[] getNonceFromAddress(byte[] address)
+        {
+            foreach(var addr in myAddresses)
+            {
+                if(addr.Key.SequenceEqual(address))
+                {
+                    return addr.Value.nonce;
+                }
+            }
+            return null;
+        }
     }
 }
