@@ -31,13 +31,17 @@ namespace CryptoLibs
         {
         }
 
-        private byte[] rsaKeyToBytes(RSACryptoServiceProvider rsaKey, bool includePrivateParameters)
+        private byte[] rsaKeyToBytes(RSACryptoServiceProvider rsaKey, bool includePrivateParameters, bool skip_header)
         {
             List<byte> bytes = new List<byte>();
 
             RSAParameters rsaParams = rsaKey.ExportParameters(includePrivateParameters);
 
-            bytes.AddRange(BitConverter.GetBytes((int)0)); // prepend pub key version
+            // TODO TODO TODO TODO TODO skip header can be later removed after the upgrade/hard fork
+            if (!skip_header)
+            {
+                bytes.AddRange(BitConverter.GetBytes((int)0)); // prepend pub key version
+            }
 
             bytes.AddRange(BitConverter.GetBytes(rsaParams.Modulus.Length));
             bytes.AddRange(rsaParams.Modulus);
@@ -163,14 +167,14 @@ namespace CryptoLibs
         }
 
         // Generates keys for RSA signing
-        public IxianKeyPair generateKeys(int keySize)
+        public IxianKeyPair generateKeys(int keySize, bool skip_header = false)
         {
             try
             {
                 IxianKeyPair kp = new IxianKeyPair();
                 RSACryptoServiceProvider rsa = new RSACryptoServiceProvider(keySize);
-                kp.privateKeyBytes = rsaKeyToBytes(rsa, true);
-                kp.publicKeyBytes = rsaKeyToBytes(rsa, false);
+                kp.privateKeyBytes = rsaKeyToBytes(rsa, true, skip_header);
+                kp.publicKeyBytes = rsaKeyToBytes(rsa, false, skip_header);
 
                 byte[] plain = Encoding.UTF8.GetBytes("Plain text string");
                 if (!testKeys(plain, kp))
@@ -440,7 +444,7 @@ namespace CryptoLibs
             AsymmetricCipherKeyPair keyPair = keyGen.GenerateKeyPair();
             //
             RSACryptoServiceProvider newRsa = (RSACryptoServiceProvider)DotNetUtilities.ToRSA((RsaPrivateCrtKeyParameters)keyPair.Private);
-            return rsaKeyToBytes(newRsa, true);
+            return rsaKeyToBytes(newRsa, true, false);
         }
 
     }
