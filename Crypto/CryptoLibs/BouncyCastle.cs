@@ -37,6 +37,8 @@ namespace CryptoLibs
 
             RSAParameters rsaParams = rsaKey.ExportParameters(includePrivateParameters);
 
+            bytes.AddRange(BitConverter.GetBytes((int)0)); // prepend pub key version
+
             bytes.AddRange(BitConverter.GetBytes(rsaParams.Modulus.Length));
             bytes.AddRange(rsaParams.Modulus);
             bytes.AddRange(BitConverter.GetBytes(rsaParams.Exponent.Length));
@@ -68,6 +70,15 @@ namespace CryptoLibs
 
                 int offset = 0;
                 int dataLen = 0;
+                int version = 0;
+
+                if(keyBytes.Length != 523 && keyBytes.Length != 2339)
+                {
+                    offset += 1;
+                    version = BitConverter.ToInt32(keyBytes, offset);
+                    offset += 4;
+                    
+                }
 
                 dataLen = BitConverter.ToInt32(keyBytes, offset);
                 offset += 4;

@@ -8,7 +8,6 @@ namespace DLT
     {
         public int version = 0;
         public byte[] address;
-        private byte[] checksum;
 
         public Address()
         {
@@ -21,7 +20,7 @@ namespace DLT
 
             if (public_key_or_address == null)
             {
-                throw new Exception("Cannot construct address, nonce is null");
+                throw new Exception("Cannot construct address, public_key_or_address is null");
             }
             else
             {
@@ -55,14 +54,16 @@ namespace DLT
                 byte[] raw_address = new byte[36];
                 raw_address[0] = 0; // version
 
-                byte[] hashed_pub_key = Crypto.sha512quTrunc(public_key_or_address, 0, public_key_or_address.Length, 33);
+                byte[] hashed_pub_key = Crypto.sha512quTrunc(public_key_or_address, 0, public_key_or_address.Length, 32);
                 Array.Copy(hashed_pub_key, 0, raw_address, 1, hashed_pub_key.Length);
 
-                checksum = Crypto.sha512sqTrunc(raw_address, 0, 33, 3);
-                Array.Copy(checksum, 0, raw_address, 32, 3);
+                byte[] checksum = Crypto.sha512sqTrunc(raw_address, 0, 33, 3);
+                Array.Copy(checksum, 0, raw_address, 33, 3);
+
+                base_address = raw_address;
             }
 
-            if (nonce.Length == 1 && nonce[0] == 0)
+            if (nonce == null || (nonce.Length == 1 && nonce[0] == 0))
             {
                 address = base_address;
             }
@@ -74,11 +75,13 @@ namespace DLT
                 List<byte> tmp_address = base_address.ToList();
                 tmp_address.AddRange(nonce);
 
-                byte[] hashed_pub_key = Crypto.sha512quTrunc(tmp_address.ToArray(), 0, tmp_address.Count, 33);
+                byte[] hashed_pub_key = Crypto.sha512quTrunc(tmp_address.ToArray(), 0, tmp_address.Count, 32);
                 Array.Copy(hashed_pub_key, 0, raw_address, 1, hashed_pub_key.Length);
 
-                checksum = Crypto.sha512sqTrunc(raw_address, 0, 33, 3);
-                Array.Copy(checksum, 0, raw_address, 32, 3);
+                byte[] checksum = Crypto.sha512sqTrunc(raw_address, 0, 33, 3);
+                Array.Copy(checksum, 0, raw_address, 33, 3);
+
+                address = raw_address;
             }
         }
 
@@ -94,14 +97,16 @@ namespace DLT
                 byte[] raw_address = new byte[48];
                 raw_address[0] = 1; // version
 
-                byte[] hashed_pub_key = Crypto.sha512sqTrunc(public_key_or_address, 0, public_key_or_address.Length, 43);
+                byte[] hashed_pub_key = Crypto.sha512sqTrunc(public_key_or_address, 5, 0, 44);
                 Array.Copy(hashed_pub_key, 0, raw_address, 1, hashed_pub_key.Length);
 
-                checksum = Crypto.sha512sqTrunc(raw_address, 0, 43, 3);
-                Array.Copy(checksum, 0, raw_address, 42, 3);
+                byte[] checksum = Crypto.sha512sqTrunc(raw_address, 0, 45, 3);
+                Array.Copy(checksum, 0, raw_address, 45, 3);
+
+                base_address = raw_address;
             }
 
-            if (nonce.Length == 2 && nonce[1] == 0)
+            if (nonce == null || (nonce.Length == 1 && nonce[0] == 0))
             {
                 address = base_address;
             }else
@@ -112,11 +117,13 @@ namespace DLT
                 List<byte> tmp_address = base_address.ToList();
                 tmp_address.AddRange(nonce);
 
-                byte[] hashed_pub_key = Crypto.sha512sqTrunc(tmp_address.ToArray(), 0, tmp_address.Count, 43);
+                byte[] hashed_pub_key = Crypto.sha512sqTrunc(tmp_address.ToArray(), 5, 0, 44);
                 Array.Copy(hashed_pub_key, 0, raw_address, 1, hashed_pub_key.Length);
 
-                checksum = Crypto.sha512sqTrunc(raw_address, 0, 43, 3);
-                Array.Copy(checksum, 0, raw_address, 42, 3);
+                byte[] checksum = Crypto.sha512sqTrunc(raw_address, 0, 45, 3);
+                Array.Copy(checksum, 0, raw_address, 45, 3);
+
+                address = raw_address;
             }
         }
 

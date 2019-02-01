@@ -276,10 +276,10 @@ namespace DLT
                 byte[] checksum = null;
                 if (Node.getLastBlockVersion() <= 2)
                 {
-                    Crypto.sha512quTrunc(Encoding.UTF8.GetBytes("IXIAN-DLT" + version));
+                    checksum = Crypto.sha512quTrunc(Encoding.UTF8.GetBytes("IXIAN-DLT" + version));
                 }else
                 {
-                    Crypto.sha512sqTrunc(Encoding.UTF8.GetBytes("IXIAN-DLT" + version), 0, 0, 64);
+                    checksum = Crypto.sha512sqTrunc(Encoding.UTF8.GetBytes("IXIAN-DLT" + version), 0, 0, 64);
                 }
                 // TODO: This is probably not the optimal way to do this. Maybe we could do it by blocks to reduce calls to sha256
                 // Note: addresses are not fixed size

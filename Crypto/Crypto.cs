@@ -88,7 +88,7 @@ namespace DLT
 #endif
         }
 
-        public static byte[] sha512sqTrunc(byte[] data, int offset = 0, int count = 0, int hash_length = 43)
+        public static byte[] sha512sqTrunc(byte[] data, int offset = 0, int count = 0, int hash_length = 44)
         {
             byte[] shaTrunc = new byte[hash_length];
             Array.Copy(sha512sq(data, offset, count), shaTrunc, hash_length);
