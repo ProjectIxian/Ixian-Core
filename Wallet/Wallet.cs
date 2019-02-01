@@ -1,3 +1,4 @@
+using DLT.Meta;
 using System;
 using System.Collections.Generic;
 using System.IO;
@@ -205,8 +206,13 @@ namespace DLT
                     rawData.AddRange(entry);
                 }
             }
-
-            return Crypto.sha512sqTrunc(rawData.ToArray());
+            if (Node.getLastBlockVersion() <= 2)
+            {
+                return Crypto.sha512quTrunc(rawData.ToArray());
+            }else
+            {
+                return Crypto.sha512sqTrunc(rawData.ToArray(), 0, 0, 64);
+            }
         }
 
         public bool isValidSigner(byte[] address)

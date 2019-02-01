@@ -483,7 +483,14 @@ namespace DLT
             QueueMessage message = new QueueMessage();
             message.code = code;
             message.data = data;
-            message.checksum = Crypto.sha512sqTrunc(data);
+            if (Node.getLastBlockVersion() <= 2)
+            {
+                message.checksum = Crypto.sha512quTrunc(data);
+            }
+            else
+            {
+                message.checksum = Crypto.sha512sqTrunc(data, 0, 0, 16);
+            }
             message.skipEndpoint = null;
 
             if(code == ProtocolMessageCode.bye || code == ProtocolMessageCode.keepAlivePresence 

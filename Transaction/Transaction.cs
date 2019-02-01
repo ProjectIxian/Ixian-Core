@@ -588,7 +588,14 @@ namespace DLT
             rawData.AddRange(BitConverter.GetBytes(blockHeight));
             rawData.AddRange(BitConverter.GetBytes(nonce));
             rawData.AddRange(BitConverter.GetBytes((int)0)); // version was replaced with this, as it's tx metadata and shouldn't be part of the ID
-            string chk = Base58Check.Base58CheckEncoding.EncodePlain(Crypto.sha512sqTrunc(rawData.ToArray()));
+            string chk = null;
+            if (version <= 2)
+            {
+                chk = Base58Check.Base58CheckEncoding.EncodePlain(Crypto.sha512quTrunc(rawData.ToArray()));
+            }else
+            {
+                chk = Base58Check.Base58CheckEncoding.EncodePlain(Crypto.sha512sqTrunc(rawData.ToArray()));
+            }
 
             txid += chk;
 
@@ -643,7 +650,13 @@ namespace DLT
             {
                 rawData.AddRange(transaction.pubKey);
             }
-            return Crypto.sha512sqTrunc(rawData.ToArray());
+            if (transaction.version <= 2)
+            {
+                return Crypto.sha512quTrunc(rawData.ToArray());
+            }else
+            {
+                return Crypto.sha512sqTrunc(rawData.ToArray());
+            }
         }
 
         public byte[] getSignature(byte[] checksum, byte[] private_key = null)
@@ -1191,7 +1204,7 @@ namespace DLT
                 tDic.Add("data", Crypto.hashToString(data));
             }
 
-            tDic.Add("timeStamp", timeStamp.ToString());
+            tDic.Add("timestamp", timeStamp.ToString());
             tDic.Add("type", type.ToString());
             tDic.Add("amount", amount.ToString());
             tDic.Add("applied", applied.ToString());

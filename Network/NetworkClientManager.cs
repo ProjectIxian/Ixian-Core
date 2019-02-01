@@ -482,8 +482,6 @@ namespace DLT
                         netClients = new List<NetworkClient>(networkClients);
                     }
                     CoreProtocolMessage.sendBye(netClients[0], 200, "Disconnected for shuffling purposes.", "", false);
-                    // Disconnect the oldest connected node
-                    netClients[0].stop();
 
                     lock (networkClients)
                     {
@@ -491,8 +489,8 @@ namespace DLT
                     }
                 }
 
-                // Connect randomly to a new node. Currently a 5% chance to reconnect during this iteration
-                if (rnd.Next(20) == 1)
+                // Connect randomly to a new node. Currently a 1% chance to reconnect during this iteration
+                if (rnd.Next(100) == 1)
                 {
                     connectToRandomNeighbor();
                 }

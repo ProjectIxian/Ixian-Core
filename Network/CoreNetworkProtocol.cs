@@ -39,7 +39,13 @@ namespace IXICore
 
             if (checksum == null)
             {
-                data_checksum = Crypto.sha512sqTrunc(data);
+                if (Node.getLastBlockVersion() <= 2)
+                {
+                    data_checksum = Crypto.sha512quTrunc(data);
+                }else
+                {
+                    data_checksum = Crypto.sha512sqTrunc(data, 0, 0, 16);
+                }
             }
 
             using (MemoryStream m = new MemoryStream())

@@ -1,13 +1,12 @@
 ﻿using System;
 using System.Collections.Generic;
 using System.Linq;
-using System.Text;
-using System.Threading.Tasks;
 
 namespace DLT
 {
     class Address
     {
+        public int version = 0;
         public byte[] address;
         private byte[] checksum;
 
@@ -18,63 +17,106 @@ namespace DLT
 
         public Address(byte[] public_key_or_address, byte[] nonce = null)
         {
-            if (public_key_or_address.Length != 36 && nonce == null)
+            version = 0;
+
+            if (public_key_or_address == null)
             {
-                byte[] hashed_key = new byte[33];
-                hashed_key[0] = 0;
-
-                // received the public key, using SHA512 squared truncated to generate address
-                Array.Copy(Crypto.sha512sqTrunc(public_key_or_address), 0, hashed_key, 1, 32);
-
-                checksum = Crypto.sha512(hashed_key);
-
-                address = new byte[hashed_key.Length + 3];
-                Array.Copy(hashed_key, address, hashed_key.Length);
-                Array.Copy(checksum, 0, address, hashed_key.Length, 3);
-
-                //Mnemonic mnemonic_addr = new Mnemonic(Wordlist.English, Encoding.ASCII.GetBytes(hashed_key.ToString()));
-                //address = mnemonic_addr.ToString();
+                throw new Exception("Cannot construct address, nonce is null");
             }
             else
             {
-                if (nonce == null)
+                if (public_key_or_address.Length == 523)
                 {
-                    address = public_key_or_address;
-                    checksum = address.Skip(33).Take(3).ToArray();
-                }
-                else
+                    version = 0;
+                }else
                 {
-                    byte[] hashed_key = new byte[33];
-                    hashed_key[0] = 0;
-
-
-                    if (nonce.SequenceEqual(new byte[1] { 0 }))
-                    {
-                        Address tmp_address = null;
-                        tmp_address = new Address(public_key_or_address);
-                        checksum = tmp_address.checksum;
-                        address = tmp_address.address;
-                    }
-                    else
-                    {
-                        if (public_key_or_address.Length != 36)
-                        {
-                            public_key_or_address = (new Address(public_key_or_address)).address;
-                        }
-                        // received the address with nonce, deriving the new address from nonce and base address
-                        List<byte> derived_key = public_key_or_address.ToList();
-                        derived_key.AddRange(nonce);
-
-                        Array.Copy(Crypto.sha512sqTrunc(derived_key.ToArray()), 0, hashed_key, 1, 32);
-
-                        checksum = Crypto.sha512(hashed_key);
-
-                        address = new byte[hashed_key.Length + 3];
-                        Array.Copy(hashed_key, address, hashed_key.Length);
-                        Array.Copy(checksum, 0, address, hashed_key.Length, 3);
-                    }
+                    version = public_key_or_address[0];
                 }
+            }
 
+            if(version == 0)
+            {
+                constructAddress_v0(public_key_or_address, nonce);
+            }else
+            {
+                constructAddress_v1(public_key_or_address, nonce);
+            }
+        }
+
+        private void constructAddress_v0(byte[] public_key_or_address, byte[] nonce)
+        {
+            byte[] base_address = null;
+            if (public_key_or_address.Length == 36)
+            {
+                base_address = public_key_or_address;
+            }
+            else
+            {
+                byte[] raw_address = new byte[36];
+                raw_address[0] = 0; // version
+
+                byte[] hashed_pub_key = Crypto.sha512quTrunc(public_key_or_address, 0, public_key_or_address.Length, 33);
+                Array.Copy(hashed_pub_key, 0, raw_address, 1, hashed_pub_key.Length);
+
+                checksum = Crypto.sha512sqTrunc(raw_address, 0, 33, 3);
+                Array.Copy(checksum, 0, raw_address, 32, 3);
+            }
+
+            if (nonce.Length == 1 && nonce[0] == 0)
+            {
+                address = base_address;
+            }
+            else
+            {
+                byte[] raw_address = new byte[36];
+                raw_address[0] = 0; // version
+
+                List<byte> tmp_address = base_address.ToList();
+                tmp_address.AddRange(nonce);
+
+                byte[] hashed_pub_key = Crypto.sha512quTrunc(tmp_address.ToArray(), 0, tmp_address.Count, 33);
+                Array.Copy(hashed_pub_key, 0, raw_address, 1, hashed_pub_key.Length);
+
+                checksum = Crypto.sha512sqTrunc(raw_address, 0, 33, 3);
+                Array.Copy(checksum, 0, raw_address, 32, 3);
+            }
+        }
+
+        private void constructAddress_v1(byte[] public_key_or_address, byte[] nonce)
+        {
+            byte[] base_address = null;
+            if (public_key_or_address.Length == 48)
+            {
+                base_address = public_key_or_address;
+            }
+            else
+            {
+                byte[] raw_address = new byte[48];
+                raw_address[0] = 1; // version
+
+                byte[] hashed_pub_key = Crypto.sha512sqTrunc(public_key_or_address, 0, public_key_or_address.Length, 43);
+                Array.Copy(hashed_pub_key, 0, raw_address, 1, hashed_pub_key.Length);
+
+                checksum = Crypto.sha512sqTrunc(raw_address, 0, 43, 3);
+                Array.Copy(checksum, 0, raw_address, 42, 3);
+            }
+
+            if (nonce.Length == 2 && nonce[1] == 0)
+            {
+                address = base_address;
+            }else
+            {
+                byte[] raw_address = new byte[48];
+                raw_address[0] = 1; // version
+
+                List<byte> tmp_address = base_address.ToList();
+                tmp_address.AddRange(nonce);
+
+                byte[] hashed_pub_key = Crypto.sha512sqTrunc(tmp_address.ToArray(), 0, tmp_address.Count, 43);
+                Array.Copy(hashed_pub_key, 0, raw_address, 1, hashed_pub_key.Length);
+
+                checksum = Crypto.sha512sqTrunc(raw_address, 0, 43, 3);
+                Array.Copy(checksum, 0, raw_address, 42, 3);
             }
         }
 
@@ -89,21 +131,15 @@ namespace DLT
             try
             {
                 // Check the address length
-                if (address.Length != 36)
+                if (address.Length < 4 || address.Length > 128)
                 {
                     return false;
                 }
+                int version = address[0];
+                byte[] in_addr = address.Take(address.Length - 3).ToArray();
+                byte[] in_chk = address.Skip(address.Length - 3).Take(3).ToArray();
 
-                if(address[0] != 0)
-                {
-                    return false;
-                }
-
-                byte[] in_addr = address.Take(33).ToArray();
-                byte[] in_chk = address.Skip(33).Take(3).ToArray();
-
-                byte[] checksum = Crypto.sha512(in_addr);
-                checksum = checksum.Take(3).ToArray();
+                byte[] checksum = checksum = Crypto.sha512sqTrunc(in_addr, 0, 0, 3);
 
                 if (checksum.SequenceEqual(in_chk))
                 {

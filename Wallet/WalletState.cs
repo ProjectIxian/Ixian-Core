@@ -273,13 +273,28 @@ namespace DLT
                         }
                     }
                 }
+                byte[] checksum = null;
+                if (Node.getLastBlockVersion() <= 2)
+                {
+                    Crypto.sha512quTrunc(Encoding.UTF8.GetBytes("IXIAN-DLT" + version));
+                }else
+                {
+                    Crypto.sha512sqTrunc(Encoding.UTF8.GetBytes("IXIAN-DLT" + version), 0, 0, 64);
+                }
                 // TODO: This is probably not the optimal way to do this. Maybe we could do it by blocks to reduce calls to sha256
-                // Note: addresses are fixed size
-                byte[] checksum = Crypto.sha512sqTrunc(Encoding.UTF8.GetBytes("IXIAN-DLT" + version));
+                // Note: addresses are not fixed size
                 foreach (byte[] addr in eligible_addresses)
                 {
                     byte[] wallet_checksum = getWallet(addr, snapshot).calculateChecksum();
-                    checksum = Crypto.sha512sqTrunc(Encoding.UTF8.GetBytes(Crypto.hashToString(checksum) + Crypto.hashToString(wallet_checksum)));
+                    if (Node.getLastBlockVersion() <= 2)
+                    {
+                        checksum = Crypto.sha512quTrunc(Encoding.UTF8.GetBytes(Crypto.hashToString(checksum) + Crypto.hashToString(wallet_checksum)));
+                    }else
+                    {
+                        List<byte> tmp_hash = checksum.ToList();
+                        tmp_hash.AddRange(wallet_checksum);
+                        checksum = Crypto.sha512sqTrunc(tmp_hash.ToArray(), 0, 0, 64);
+                    }
                 }
                 if (snapshot == false)
                 {
