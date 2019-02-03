@@ -1057,7 +1057,7 @@ namespace DLT
 
             t.version = 2;
 
-            // TODO TODO TODO TODO TODO TODO make this compatible with wallet v2
+            // TODO TODO TODO TODO TODO TODO make this compatible with wallet v3
 
             AddressData ad = findMyMultisigAddressData(tx_from);
             if(ad == null)
@@ -1083,7 +1083,7 @@ namespace DLT
 
             t.version = 2;
 
-            // TODO TODO TODO TODO TODO TODO make this compatible with wallet v2
+            // TODO TODO TODO TODO TODO TODO make this compatible with wallet v3
 
             AddressData ad = findMyMultisigAddressData(tx_from);
             if (ad == null)
@@ -1109,7 +1109,7 @@ namespace DLT
 
             t.version = 2;
 
-            // TODO TODO TODO TODO TODO TODO make this compatible with wallet v2
+            // TODO TODO TODO TODO TODO TODO make this compatible with wallet v3
 
             AddressData ad = findMyMultisigAddressData(tx_from);
             if (ad == null)
@@ -1135,7 +1135,7 @@ namespace DLT
 
             t.version = 2;
 
-            // TODO TODO TODO TODO TODO TODO make this compatible with wallet v2
+            // TODO TODO TODO TODO TODO TODO make this compatible with wallet v3
 
             AddressData ad = findMyMultisigAddressData(tx_from);
             if (ad == null)
@@ -1161,7 +1161,7 @@ namespace DLT
 
             t.version = 2;
 
-            // TODO TODO TODO TODO TODO TODO make this compatible with wallet v2
+            // TODO TODO TODO TODO TODO TODO make this compatible with wallet v3
 
             AddressData ad = findMyMultisigAddressData(tx_from);
             if (ad == null)

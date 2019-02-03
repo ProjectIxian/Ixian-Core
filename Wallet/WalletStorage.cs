@@ -374,7 +374,7 @@ namespace DLT
         }
 
         // Write the wallet to the file
-        private bool writeWallet_v2(string password)
+        private bool writeWallet_v3(string password)
         {
             if (password.Length < 10)
                 return false;
@@ -636,7 +636,7 @@ namespace DLT
             }
             if (walletVersion == 3)
             {
-                return writeWallet_v2(walletPassword);
+                return writeWallet_v3(walletPassword);
             }
             return false;
         }
