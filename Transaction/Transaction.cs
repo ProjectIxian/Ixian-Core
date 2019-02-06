@@ -504,7 +504,7 @@ namespace DLT
             if(from_wallet != null && from_wallet.id.SequenceEqual(p_address.address))
             {
                 allowed = true;
-            } else if (type==(int)Transaction.Type.MultisigTX || type == (int)Transaction.Type.ChangeMultisigWallet)
+            } else if (type == (int)Transaction.Type.MultisigTX || type == (int)Transaction.Type.ChangeMultisigWallet || type == (int)Transaction.Type.MultisigAddTxSignature)
             {
                 // pubkey must be one of the allowed signers on wallet
                 if(from_wallet.allowedSigners != null)
