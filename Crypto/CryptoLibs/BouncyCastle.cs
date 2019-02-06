@@ -78,7 +78,7 @@ namespace CryptoLibs
 
                 if(keyBytes.Length != 523 && keyBytes.Length != 2339)
                 {
-                    offset += 1;
+                    offset += 1; // skip address version
                     version = BitConverter.ToInt32(keyBytes, offset);
                     offset += 4;
                     
