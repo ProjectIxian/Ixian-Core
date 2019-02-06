@@ -896,6 +896,10 @@ namespace DLT
         {
             lock (timeSyncs)
             {
+                if(timeSyncs.Count == 0)
+                {
+                    return 0;
+                }
                 long time_diff = timeSyncs.OrderBy(x => x.timeDifference).First().timeDifference;
                 return time_diff;
             }
