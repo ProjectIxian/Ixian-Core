@@ -86,7 +86,7 @@ namespace DLT
 
         public Transaction(int tx_type)
         {
-            version = 1;
+            version = maxVersion;
 
             type = tx_type;
 
@@ -103,7 +103,7 @@ namespace DLT
 
         public Transaction(int tx_type, IxiNumber tx_amount, IxiNumber tx_feePerKb, byte[] tx_to, byte[] tx_from, byte[] tx_data, byte[] tx_pubKey, ulong tx_blockHeight, int tx_nonce = -1)
         {
-            version = 1;
+            version = maxVersion;
 
             type = tx_type;
 
@@ -149,7 +149,7 @@ namespace DLT
 
         public Transaction(int tx_type, IxiNumber tx_feePerKb, SortedDictionary<byte[], IxiNumber> tx_toList, byte[] tx_from, byte[] tx_data, byte[] tx_pubKey, ulong tx_blockHeight, int tx_nonce = -1)
         {
-            version = 1;
+            version = maxVersion;
 
             type = tx_type;
 
@@ -1055,7 +1055,7 @@ namespace DLT
         {
             Transaction t = new Transaction((int)Transaction.Type.MultisigTX, tx_amount, tx_fee, tx_to, tx_from, null, tx_from, tx_blockHeight);
 
-            t.version = 2;
+            t.version = maxVersion;
 
             // TODO TODO TODO TODO TODO TODO make this compatible with wallet v3
 
@@ -1081,7 +1081,7 @@ namespace DLT
         {
             Transaction t = new Transaction((int)Transaction.Type.MultisigTX, tx_fee, tx_to_list, tx_from, null, tx_from, tx_blockHeight);
 
-            t.version = 2;
+            t.version = maxVersion;
 
             // TODO TODO TODO TODO TODO TODO make this compatible with wallet v3
 
@@ -1107,7 +1107,7 @@ namespace DLT
         {
             Transaction t = new Transaction((int)Transaction.Type.ChangeMultisigWallet, new IxiNumber(0), tx_fee, tx_from, tx_from, null, tx_from, tx_blockHeight);
 
-            t.version = 2;
+            t.version = maxVersion;
 
             // TODO TODO TODO TODO TODO TODO make this compatible with wallet v3
 
@@ -1133,7 +1133,7 @@ namespace DLT
         {
             Transaction t = new Transaction((int)Transaction.Type.ChangeMultisigWallet, new IxiNumber(0), tx_fee, tx_from, tx_from, null, tx_from, tx_blockHeight);
 
-            t.version = 2;
+            t.version = maxVersion;
 
             // TODO TODO TODO TODO TODO TODO make this compatible with wallet v3
 
@@ -1159,7 +1159,7 @@ namespace DLT
         {
             Transaction t = new Transaction((int)Transaction.Type.ChangeMultisigWallet, new IxiNumber(0), tx_fee, tx_from, tx_from, null, tx_from, tx_blockHeight);
 
-            t.version = 2;
+            t.version = maxVersion;
 
             // TODO TODO TODO TODO TODO TODO make this compatible with wallet v3
 
