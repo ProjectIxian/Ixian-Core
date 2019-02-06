@@ -11,11 +11,19 @@ using System.Threading;
 
 namespace DLT
 {
+    public class TimeSyncData
+    {
+        public long timeDifference = 0;
+        public long processedTime = 0;
+    }
+
     public class RemoteEndpoint
     {
         public string fullAddress = "127.0.0.1:10000";
         public string address = "127.0.0.1";
         public int incomingPort = Config.serverPort;
+
+        public long timeDifference = 0;
 
         public bool helloReceived = false;
         public ulong blockHeight = 0;
@@ -28,7 +36,7 @@ namespace DLT
         public IPEndPoint remoteIP;
         public Socket clientSocket;
         public RemoteEndpointState state;
-        public bool inIO;
+
         // Maintain two threads for handling data receiving and sending
         protected Thread recvThread = null;
         protected Thread sendThread = null;
@@ -53,7 +61,11 @@ namespace DLT
         private byte[] socketReadBuffer = null;
 
         // Flag to determine if the connected node is running legacy code
-        private bool legacyNode = false;    
+        private bool legacyNode = false;
+
+        protected List<TimeSyncData> timeSyncs = new List<TimeSyncData>();
+
+        protected bool enableSendTimeSyncMessages = true;
 
         protected void prepareSocket(Socket socket)
         {
@@ -257,12 +269,30 @@ namespace DLT
             }
         }
 
+        protected void sendTimeSyncMessages()
+        {
+            // send 5 messages with current network timestamp
+            List<byte> time_sync_data = new List<byte>();
+            for (int i = 0; i < 5; i++)
+            {
+                time_sync_data.Clear();
+                time_sync_data.Add(2);
+                time_sync_data.AddRange(BitConverter.GetBytes(Core.getCurrentTimestamp()));
+                clientSocket.Send(time_sync_data.ToArray(), SocketFlags.None);
+            }
+        }
+
 
         // Send thread
         protected void sendLoop()
         {
             // Prepare an special message object to use while sending, without locking up the queue messages
             QueueMessage active_message = new QueueMessage();
+
+            if (enableSendTimeSyncMessages)
+            {
+                sendTimeSyncMessages();
+            }
 
             int messageCount = 0;
 
@@ -636,6 +666,30 @@ namespace DLT
             return data_length;
         }
 
+        protected void readTimeSyncData()
+        {
+            Socket socket = clientSocket;
+
+            int rcv_count = 0;
+            for (int i = 0; i < rcv_count && socket.Connected;)
+            {
+                i += socket.Receive(socketReadBuffer, i, 8 - i, SocketFlags.None);
+                Thread.Yield();
+            }
+            lock (timeSyncs)
+            {
+                TimeSyncData prev_tsd = timeSyncs.Last();
+                long my_cur_time = Clock.getTimestamp();
+                long time_difference = my_cur_time - BitConverter.ToInt64(socketReadBuffer, 0);
+                if (prev_tsd != null)
+                {
+                    time_difference -= my_cur_time - prev_tsd.processedTime;
+                }
+                TimeSyncData tsd = new TimeSyncData() { timeDifference = time_difference, processedTime = my_cur_time };
+                timeSyncs.Add(tsd);
+            }
+        }
+
         // Reads data from a socket and returns a byte array
         protected byte[] readSocketData()
         {
@@ -719,6 +773,12 @@ namespace DLT
                             {
                                 big_buffer.Add(socketReadBuffer[0]);
                                 bytesToRead = header_length - 1; // header length - start byte
+                            }else if(helloReceived == false)
+                            {
+                                if(socketReadBuffer[0] == '2')
+                                {
+                                    readTimeSyncData();
+                                }
                             }
                         }
                         Thread.Yield();
@@ -832,6 +892,13 @@ namespace DLT
             return false;
         }
 
-
+        public long calculateTimeDifference()
+        {
+            lock (timeSyncs)
+            {
+                long time_diff = timeSyncs.OrderBy(x => x.timeDifference).First().timeDifference;
+                return time_diff;
+            }
+        }
     }
 }
