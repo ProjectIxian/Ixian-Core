@@ -278,7 +278,15 @@ namespace DLT
                 time_sync_data.Clear();
                 time_sync_data.Add(2);
                 time_sync_data.AddRange(BitConverter.GetBytes(Core.getCurrentTimestamp()));
-                clientSocket.Send(time_sync_data.ToArray(), SocketFlags.None);
+                try
+                {
+                    clientSocket.Send(time_sync_data.ToArray(), SocketFlags.None);
+                }
+                catch (Exception ex)
+                {
+                    // this may sometimes happen if clients/servers drop the connection from their side
+                    Logging.warn(String.Format("Exception while attempting to send time sync: {0}.", ex.Message));
+                }
             }
         }
 
