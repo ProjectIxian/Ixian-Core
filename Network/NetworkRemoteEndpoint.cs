@@ -281,7 +281,8 @@ namespace DLT
                 try
                 {
                     clientSocket.Send(time_sync_data.ToArray(), SocketFlags.None);
-                } catch (Exception ex)
+                }
+                catch (Exception ex)
                 {
                     // this may sometimes happen if clients/servers drop the connection from their side
                     Logging.warn(String.Format("Exception while attempting to send time sync: {0}.", ex.Message));
