@@ -10,10 +10,14 @@ namespace IXICore
         public static long networkTimeDifference = 0;
 
 
-        // TODO everything connected to networkTimeDifference can probably be solved better
         public static long getCurrentTimestamp()
         {
             return (long)(Clock.getTimestamp() - networkTimeDifference);
+        }
+
+        public static long getCurrentTimestampMillis()
+        {
+            return (long)(Clock.getTimestampMillis() - (networkTimeDifference * 1000));
         }
 
 

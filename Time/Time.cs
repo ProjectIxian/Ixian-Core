@@ -12,6 +12,13 @@ namespace DLT
             return (long)unixTimestamp;
         }
 
+        // Obtain the unix timestamp
+        public static long getTimestampMillis()
+        {
+            double unixTimestamp = (DateTime.UtcNow.Subtract(new DateTime(1970, 1, 1))).TotalMilliseconds;
+            return (long)unixTimestamp;
+        }
+
         public static string getRelativeTime(DateTime targetTime)
         {
             var span = new TimeSpan(DateTime.UtcNow.Ticks - targetTime.Ticks);

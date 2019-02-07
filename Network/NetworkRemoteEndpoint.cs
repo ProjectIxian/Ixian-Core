@@ -277,7 +277,7 @@ namespace DLT
             {
                 time_sync_data.Clear();
                 time_sync_data.Add(2);
-                time_sync_data.AddRange(BitConverter.GetBytes(Core.getCurrentTimestamp()));
+                time_sync_data.AddRange(BitConverter.GetBytes(Core.getCurrentTimestampMillis()));
                 try
                 {
                     clientSocket.Send(time_sync_data.ToArray(), SocketFlags.None);
@@ -687,7 +687,7 @@ namespace DLT
             lock (timeSyncs)
             {
                 TimeSyncData prev_tsd = timeSyncs.Last();
-                long my_cur_time = Clock.getTimestamp();
+                long my_cur_time = Clock.getTimestampMillis();
                 long time_difference = my_cur_time - BitConverter.ToInt64(socketReadBuffer, 0);
                 if (prev_tsd != null)
                 {
@@ -909,7 +909,7 @@ namespace DLT
                     return 0;
                 }
                 long time_diff = timeSyncs.OrderBy(x => x.timeDifference).First().timeDifference;
-                return time_diff;
+                return time_diff / 1000;
             }
         }
     }
