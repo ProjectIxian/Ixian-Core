@@ -48,6 +48,10 @@ namespace DLT
             if (public_key_or_address.Length == 36)
             {
                 base_address = public_key_or_address;
+                if(!validateChecksum(base_address))
+                {
+                    throw new Exception("Invalid address was specified (checksum error).");
+                }
             }
             else
             {
@@ -91,6 +95,10 @@ namespace DLT
             if (public_key_or_address.Length == 48)
             {
                 base_address = public_key_or_address;
+                if (!validateChecksum(base_address))
+                {
+                    throw new Exception("Invalid address was specified (checksum error).");
+                }
             }
             else
             {
@@ -143,10 +151,10 @@ namespace DLT
                     return false;
                 }
                 int version = address[0];
-                byte[] in_addr = address.Take(address.Length - 3).ToArray();
-                byte[] in_chk = address.Skip(address.Length - 3).Take(3).ToArray();
+                int raw_address_len = address.Length - 3;
+                byte[] in_chk = address.Skip(raw_address_len).Take(3).ToArray();
 
-                byte[] checksum = checksum = Crypto.sha512sqTrunc(in_addr, 0, 0, 3);
+                byte[] checksum = Crypto.sha512sqTrunc(address, 0, raw_address_len, 3);
 
                 if (checksum.SequenceEqual(in_chk))
                 {
