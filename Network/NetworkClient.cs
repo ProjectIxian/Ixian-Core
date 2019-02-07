@@ -9,9 +9,6 @@ namespace DLT
     {
         public TcpClient tcpClient = null;
 
-        public long timeDifference = 0;
-
-
         private string tcpHostname = "";
         private int tcpPort = 0;
         private int totalReconnects = 0;
@@ -44,6 +41,8 @@ namespace DLT
                 Logging.error("Can't start a fully stopped RemoteEndpoint");
                 return false;
             }
+
+            enableSendTimeSyncMessages = false;
 
             helloReceived = false;
             blockHeight = 0;

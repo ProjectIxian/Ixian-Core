@@ -12,7 +12,7 @@ namespace DLT
 
     public interface ICryptoLib
     {
-        IxianKeyPair generateKeys(int keySize);
+        IxianKeyPair generateKeys(int keySize, bool skip_header = false);
 
         byte[] getSignature(byte[] input, byte[] privateKey);
         bool verifySignature(byte[] input, byte[] publicKey, byte[] signature);
@@ -44,10 +44,10 @@ namespace DLT
             _cryptoLib = crypto_lib;
         }
 
-        public IxianKeyPair generateKeys(int keySize)
+        public IxianKeyPair generateKeys(int keySize, bool skip_header = false)
         {
             Trace.Assert(_cryptoLib != null);
-            return _cryptoLib.generateKeys(keySize);
+            return _cryptoLib.generateKeys(keySize, skip_header);
         }
 
         public byte[] getSignature(byte[] input, byte[] privateKey)

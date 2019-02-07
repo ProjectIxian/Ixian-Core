@@ -60,8 +60,6 @@ namespace DLT
 
         private void readWallet_v1(BinaryReader reader)
         {
-            walletVersion = 1;
-
             // Read the encrypted keys
             int b_privateKeyLength = reader.ReadInt32();
             byte[] b_privateKey = reader.ReadBytes(b_privateKeyLength);
@@ -113,6 +111,10 @@ namespace DLT
             Address addr = new Address(publicKey);
             lastAddress = address = addr.address;
 
+            masterSeed = address;
+            seedHash = address;
+            derivedMasterSeed = masterSeed;
+
             IxianKeyPair kp = new IxianKeyPair();
             kp.privateKeyBytes = privateKey;
             kp.publicKeyBytes = publicKey;
@@ -145,10 +147,8 @@ namespace DLT
             }
         }
 
-        private void readWallet_v2(BinaryReader reader)
+        private void readWallet_v3(BinaryReader reader)
         {
-            walletVersion = 2;
-
             // Read the master seed
             int b_master_seed_length = reader.ReadInt32();
             byte[] b_master_seed = reader.ReadBytes(b_master_seed_length);
@@ -289,17 +289,17 @@ namespace DLT
             try
             {
                 // Read the wallet version
-                System.Int32 version = reader.ReadInt32();
-
-                if(version == 1)
+                walletVersion = reader.ReadInt32();
+                if(walletVersion == 1 || walletVersion == 2)
                 {
                     readWallet_v1(reader);
-                }else if(version == 2)
+                }else if(walletVersion == 3)
                 {
-                    readWallet_v2(reader);
+                    readWallet_v3(reader);
                 }else
                 {
-                    Logging.error("Unknown wallet version {0}", version);
+                    Logging.error("Unknown wallet version {0}", walletVersion);
+                    walletVersion = 0;
                     return false;
                 }
 
@@ -362,8 +362,7 @@ namespace DLT
 
             try
             {
-                int version = 1; // Set the wallet version
-                writer.Write(version);
+                writer.Write(walletVersion);
 
                 // Write the address keypair
                 writer.Write(b_privateKey.Length);
@@ -393,7 +392,7 @@ namespace DLT
         }
 
         // Write the wallet to the file
-        private bool writeWallet_v2(string password)
+        private bool writeWallet_v3(string password)
         {
             if (password.Length < 10)
                 return false;
@@ -411,8 +410,7 @@ namespace DLT
 
             try
             {
-                int version = 2; // Set the wallet version
-                writer.Write(version);
+                writer.Write(walletVersion);
 
                 // Write the master seed
                 byte[] enc_master_seed = CryptoManager.lib.encryptWithPassword(masterSeed, password);
@@ -460,6 +458,7 @@ namespace DLT
 
             return true;
         }
+
         // Generate a new wallet with matching private/public key pairs
         private bool generateWallet()
         {
@@ -489,16 +488,10 @@ namespace DLT
             walletVersion = 1;
             walletPassword = password;
 
-            Logging.log(LogSeverity.info, "Generating master seed, this may take a while, please wait...");
-
-            masterSeed = KeyDerivation.getNewRandomSeed(1024 * 1024);
-            seedHash = Crypto.sha512sqTrunc(masterSeed);
-            derivedMasterSeed = masterSeed;
-
             Logging.log(LogSeverity.info, "Generating primary wallet keys, this may take a while, please wait...");
 
             //IxianKeyPair kp = generateNewKeyPair(false);
-            IxianKeyPair kp = CryptoManager.lib.generateKeys(CoreConfig.defaultRsaKeySize);
+            IxianKeyPair kp = CryptoManager.lib.generateKeys(CoreConfig.defaultRsaKeySize, true);
 
             if (kp == null)
             {
@@ -507,10 +500,24 @@ namespace DLT
             }
 
             privateKey = kp.privateKeyBytes;
-            publicKey = kp.publicKeyBytes;
+            if (walletVersion <= 1)
+            {
+                publicKey = kp.publicKeyBytes;
+            }else
+            {
+                List<byte> tmp_pub_key = kp.publicKeyBytes.ToList();
+                tmp_pub_key.Insert(0, 1); // prepend address version
+                publicKey = tmp_pub_key.ToArray();
+            }
 
             Address addr = new Address(publicKey);
             lastAddress = address = addr.address;
+
+            masterSeed = address;
+            seedHash = address;
+            derivedMasterSeed = masterSeed;
+
+            kp.addressBytes = address;
 
             myKeys.Add(address, kp);
             myAddresses.Add(address, new AddressData() { keyPair = kp, nonce = new byte[1] { 0 } });
@@ -627,7 +634,7 @@ namespace DLT
 
         public byte[] getLastAddress()
         {
-            // TODO TODO TODO TODO TODO improve if possible for v2 wallets
+            // TODO TODO TODO TODO TODO improve if possible for v3 wallets
             // Also you have to take into account what happens when loading from file and the difference between v1 and v2 wallets (key related)
             lock (myAddresses)
             {
@@ -648,14 +655,13 @@ namespace DLT
 
         public bool writeWallet(string password)
         {
-            // TODO TODO TODO TODO TODO TODO backup the wallet first.
-            if (walletVersion == 1)
+            if (walletVersion == 1 || walletVersion == 2)
             {
                 return writeWallet_v1(walletPassword);
             }
-            if (walletVersion == 2)
+            if (walletVersion == 3)
             {
-                return writeWallet_v2(walletPassword);
+                return writeWallet_v3(walletPassword);
             }
             return false;
         }
@@ -684,24 +690,28 @@ namespace DLT
 
         public Address generateNewAddress(Address key_primary_address, bool write_to_file = true)
         {
+            if(walletVersion < 2)
+            {
+                return generateNewAddress_v0(key_primary_address, write_to_file);
+            }
+            else
+            {
+                return generateNewAddress_v1(key_primary_address, write_to_file);
+            }
+        }
+
+        public Address generateNewAddress_v0(Address key_primary_address, bool write_to_file = true)
+        {
             lock (myKeys)
             {
-                if(!myKeys.ContainsKey(key_primary_address.address))
+                if (!myKeys.ContainsKey(key_primary_address.address))
                 {
                     return null;
                 }
 
                 IxianKeyPair kp = myKeys[key_primary_address.address];
 
-                byte[] base_nonce = null;
-                if (walletVersion < 2)
-                {
-                    base_nonce = Crypto.sha512sqTrunc(privateKey.Skip(publicKey.Length).Take(64).ToArray());
-                }
-                else
-                {
-                    base_nonce = Crypto.sha512sqTrunc(masterSeed.Take(64).ToArray());
-                }
+                byte[] base_nonce = Crypto.sha512quTrunc(privateKey, publicKey.Length, 64);
 
                 byte[] last_nonce = kp.lastNonceBytes;
 
@@ -710,7 +720,47 @@ namespace DLT
                 {
                     new_nonce.AddRange(last_nonce);
                 }
-                kp.lastNonceBytes = Crypto.sha512sqTrunc(new_nonce.ToArray()).Take(16).ToArray();
+                kp.lastNonceBytes = Crypto.sha512quTrunc(new_nonce.ToArray(), 0, 0, 16);
+
+                Address new_address = new Address(key_primary_address.address, kp.lastNonceBytes);
+
+                lock (myAddresses)
+                {
+                    AddressData ad = new AddressData() { nonce = kp.lastNonceBytes, keyPair = kp };
+                    myAddresses.Add(new_address.address, ad);
+                    lastAddress = new_address.address;
+                }
+
+                if (write_to_file)
+                {
+                    writeWallet(walletPassword);
+                }
+
+                return new_address;
+            }
+        }
+
+        public Address generateNewAddress_v1(Address key_primary_address, bool write_to_file = true)
+        {
+            lock (myKeys)
+            {
+                if (!myKeys.ContainsKey(key_primary_address.address))
+                {
+                    return null;
+                }
+
+                IxianKeyPair kp = myKeys[key_primary_address.address];
+
+                byte[] base_nonce = Crypto.sha512sqTrunc(privateKey, publicKey.Length, 64);
+
+                byte[] last_nonce = kp.lastNonceBytes;
+
+                List<byte> new_nonce = base_nonce.ToList();
+                if (last_nonce != null)
+                {
+                    new_nonce.AddRange(last_nonce);
+                }
+                kp.lastNonceBytes = Crypto.sha512sqTrunc(new_nonce.ToArray(), 0, 0, 16);
 
                 Address new_address = new Address(key_primary_address.address, kp.lastNonceBytes);
 
@@ -732,7 +782,7 @@ namespace DLT
 
         public IxianKeyPair generateNewKeyPair(bool writeToFile = true)
         {
-            if (walletVersion < 2)
+            if (walletVersion < 3)
             {
                 lock (myKeys)
                 {
