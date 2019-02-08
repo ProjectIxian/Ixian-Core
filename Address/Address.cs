@@ -36,9 +36,12 @@ namespace DLT
             if(version == 0)
             {
                 constructAddress_v0(public_key_or_address, nonce);
-            }else
+            }else if(version == 1)
             {
                 constructAddress_v1(public_key_or_address, nonce);
+            }else
+            {
+                throw new Exception("Cannot construct address, unknown address version");
             }
         }
 
@@ -48,13 +51,22 @@ namespace DLT
             if (public_key_or_address.Length == 36)
             {
                 base_address = public_key_or_address;
+                if(!validateChecksum(base_address))
+                {
+                    throw new Exception("Invalid address was specified (checksum error).");
+                }
             }
             else
             {
                 byte[] raw_address = new byte[36];
                 raw_address[0] = 0; // version
 
-                byte[] hashed_pub_key = Crypto.sha512quTrunc(public_key_or_address, 0, public_key_or_address.Length, 32);
+                int public_key_offset = 5;
+                if (public_key_or_address.Length == 523)
+                {
+                    public_key_offset = 0;
+                }
+                byte[] hashed_pub_key = Crypto.sha512quTrunc(public_key_or_address, public_key_offset, 0, 32);
                 Array.Copy(hashed_pub_key, 0, raw_address, 1, hashed_pub_key.Length);
 
                 byte[] checksum = Crypto.sha512sqTrunc(raw_address, 0, 33, 3);
@@ -91,13 +103,17 @@ namespace DLT
             if (public_key_or_address.Length == 48)
             {
                 base_address = public_key_or_address;
+                if (!validateChecksum(base_address))
+                {
+                    throw new Exception("Invalid address was specified (checksum error).");
+                }
             }
             else
             {
                 byte[] raw_address = new byte[48];
                 raw_address[0] = 1; // version
 
-                byte[] hashed_pub_key = Crypto.sha512sqTrunc(public_key_or_address, 5, 0, 44);
+                byte[] hashed_pub_key = Crypto.sha512sqTrunc(public_key_or_address, 1, 0, 44);
                 Array.Copy(hashed_pub_key, 0, raw_address, 1, hashed_pub_key.Length);
 
                 byte[] checksum = Crypto.sha512sqTrunc(raw_address, 0, 45, 3);
@@ -143,10 +159,10 @@ namespace DLT
                     return false;
                 }
                 int version = address[0];
-                byte[] in_addr = address.Take(address.Length - 3).ToArray();
-                byte[] in_chk = address.Skip(address.Length - 3).Take(3).ToArray();
+                int raw_address_len = address.Length - 3;
+                byte[] in_chk = address.Skip(raw_address_len).Take(3).ToArray();
 
-                byte[] checksum = checksum = Crypto.sha512sqTrunc(in_addr, 0, 0, 3);
+                byte[] checksum = Crypto.sha512sqTrunc(address, 0, raw_address_len, 3);
 
                 if (checksum.SequenceEqual(in_chk))
                 {

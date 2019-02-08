@@ -277,7 +277,7 @@ namespace DLT
             {
                 time_sync_data.Clear();
                 time_sync_data.Add(2);
-                time_sync_data.AddRange(BitConverter.GetBytes(Core.getCurrentTimestamp()));
+                time_sync_data.AddRange(BitConverter.GetBytes(Core.getCurrentTimestampMillis()));
                 try
                 {
                     clientSocket.Send(time_sync_data.ToArray(), SocketFlags.None);
@@ -527,7 +527,7 @@ namespace DLT
             }
             else
             {
-                message.checksum = Crypto.sha512sqTrunc(data, 0, 0, 16);
+                message.checksum = Crypto.sha512sqTrunc(data, 0, 0, 32);
             }
             message.skipEndpoint = null;
 
@@ -642,7 +642,7 @@ namespace DLT
                     reader.ReadByte(); // skip start byte
                     int code = reader.ReadInt32(); // skip message code
                     data_length = reader.ReadInt32(); // finally read data length
-                    byte[] data_checksum = reader.ReadBytes(32); // skip checksum sha256, 32 bytes
+                    byte[] data_checksum = reader.ReadBytes(32); // skip checksum sha512qu/sha512sq, 32 bytes
                     byte checksum = reader.ReadByte(); // header checksum byte
                     byte endByte = reader.ReadByte(); // end byte
 
@@ -687,7 +687,7 @@ namespace DLT
             lock (timeSyncs)
             {
                 TimeSyncData prev_tsd = timeSyncs.Last();
-                long my_cur_time = Clock.getTimestamp();
+                long my_cur_time = Clock.getTimestampMillis();
                 long time_difference = my_cur_time - BitConverter.ToInt64(socketReadBuffer, 0);
                 if (prev_tsd != null)
                 {
@@ -909,7 +909,7 @@ namespace DLT
                     return 0;
                 }
                 long time_diff = timeSyncs.OrderBy(x => x.timeDifference).First().timeDifference;
-                return time_diff;
+                return time_diff / 1000;
             }
         }
     }

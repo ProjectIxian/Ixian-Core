@@ -44,7 +44,7 @@ namespace IXICore
                     data_checksum = Crypto.sha512quTrunc(data);
                 }else
                 {
-                    data_checksum = Crypto.sha512sqTrunc(data, 0, 0, 16);
+                    data_checksum = Crypto.sha512sqTrunc(data, 0, 0, 32);
                 }
             }
 

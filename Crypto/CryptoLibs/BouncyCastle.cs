@@ -40,6 +40,7 @@ namespace CryptoLibs
             // TODO TODO TODO TODO TODO skip header can be later removed after the upgrade/hard fork
             if (!skip_header)
             {
+                bytes.Add((byte)1); // add version
                 bytes.AddRange(BitConverter.GetBytes((int)0)); // prepend pub key version
             }
 
