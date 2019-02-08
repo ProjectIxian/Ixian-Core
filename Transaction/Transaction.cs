@@ -80,11 +80,20 @@ namespace DLT
 
         private readonly static byte[] multisigStartMarker = { 0x4d, 0x73 };
 
-        public static int maxVersion = 2;
+        public static int maxVersion = 3;
+
+        private void setVersion()
+        {
+            version = 2;
+            if (Node.getLastBlockVersion() > 2)
+            {
+                version = maxVersion;
+            }
+        }
 
         public Transaction(int tx_type)
         {
-            version = maxVersion;
+            setVersion();
 
             type = tx_type;
 
@@ -101,7 +110,7 @@ namespace DLT
 
         public Transaction(int tx_type, IxiNumber tx_amount, IxiNumber tx_feePerKb, byte[] tx_to, byte[] tx_from, byte[] tx_data, byte[] tx_pubKey, ulong tx_blockHeight, int tx_nonce = -1)
         {
-            version = maxVersion;
+            setVersion();
 
             type = tx_type;
 
@@ -147,7 +156,7 @@ namespace DLT
 
         public Transaction(int tx_type, IxiNumber tx_feePerKb, SortedDictionary<byte[], IxiNumber> tx_toList, byte[] tx_from, byte[] tx_data, byte[] tx_pubKey, ulong tx_blockHeight, int tx_nonce = -1)
         {
-            version = maxVersion;
+            setVersion();
 
             type = tx_type;
 
@@ -198,7 +207,7 @@ namespace DLT
 
         public Transaction(int tx_type, IxiNumber tx_feePerKb, SortedDictionary<byte[], IxiNumber> tx_toList, SortedDictionary<byte[], IxiNumber> tx_fromList, byte[] tx_data, byte[] tx_pubKey, ulong tx_blockHeight, int tx_nonce = -1)
         {
-            version = maxVersion;
+            setVersion();
 
             type = tx_type;
 
@@ -715,14 +724,18 @@ namespace DLT
 
         private void AddMultisigOrig(string orig_txid, byte[] signer_pub_key, byte[] signer_nonce)
         {
-            byte[] orig_txid_bytes = Encoding.UTF8.GetBytes(orig_txid);
-            using (MemoryStream ms = new MemoryStream(4 + orig_txid_bytes.Length))
+            byte[] orig_txid_bytes = null;
+            if (orig_txid != null && orig_txid != "")
+            {
+                orig_txid_bytes = Encoding.UTF8.GetBytes(orig_txid);
+            }
+            using (MemoryStream ms = new MemoryStream())
             {
                 using (BinaryWriter bw = new BinaryWriter(ms))
                 {
                     bw.Write(multisigStartMarker[0]);
                     bw.Write(multisigStartMarker[1]);
-                    if (orig_txid == null || orig_txid == "")
+                    if (orig_txid_bytes == null)
                     {
                         bw.Write((int)0);
                     }

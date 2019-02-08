@@ -527,7 +527,7 @@ namespace DLT
             }
             else
             {
-                message.checksum = Crypto.sha512sqTrunc(data, 0, 0, 16);
+                message.checksum = Crypto.sha512sqTrunc(data, 0, 0, 32);
             }
             message.skipEndpoint = null;
 
@@ -642,7 +642,7 @@ namespace DLT
                     reader.ReadByte(); // skip start byte
                     int code = reader.ReadInt32(); // skip message code
                     data_length = reader.ReadInt32(); // finally read data length
-                    byte[] data_checksum = reader.ReadBytes(32); // skip checksum sha256, 32 bytes
+                    byte[] data_checksum = reader.ReadBytes(32); // skip checksum sha512qu/sha512sq, 32 bytes
                     byte checksum = reader.ReadByte(); // header checksum byte
                     byte endByte = reader.ReadByte(); // end byte
 
