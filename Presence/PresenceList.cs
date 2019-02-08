@@ -414,6 +414,10 @@ namespace DLT
                         string deviceid = reader.ReadString();
                         long timestamp = reader.ReadInt64();
                         string hostname = reader.ReadString();
+                        if (keepAliveVersion > 0)
+                        {
+                            char node_type = reader.ReadChar();
+                        }
                         int sigLen = reader.ReadInt32();
                         byte[] signature = reader.ReadBytes(sigLen);
                         //Logging.info(String.Format("[PL] KEEPALIVE request from {0}", hostname));
@@ -444,12 +448,22 @@ namespace DLT
                                 }
                                 return false;
                             }
-
-                            // Verify the signature
-                            if (CryptoManager.lib.verifySignature(Encoding.UTF8.GetBytes(CoreConfig.ixianChecksumLockString + "-" + deviceid + "-" + timestamp + "-" + hostname), listEntry.pubkey, signature) == false)
+                            if (keepAliveVersion == 0)
                             {
-                                Logging.warn(string.Format("[PL] KEEPALIVE tampering for {0} {1}, incorrect Sig.", Base58Check.Base58CheckEncoding.EncodePlain(listEntry.wallet), hostname));
-                                return false;
+                                // Verify the signature
+                                if (CryptoManager.lib.verifySignature(Encoding.UTF8.GetBytes(CoreConfig.ixianChecksumLockString + "-" + deviceid + "-" + timestamp + "-" + hostname), listEntry.pubkey, signature) == false)
+                                {
+                                    Logging.warn(string.Format("[PL] KEEPALIVE tampering for {0} {1}, incorrect Sig.", Base58Check.Base58CheckEncoding.EncodePlain(listEntry.wallet), hostname));
+                                    return false;
+                                }
+                            }else
+                            {
+                                // Verify the signature
+                                if (CryptoManager.lib.verifySignature(bytes.Take(bytes.Length - sigLen - 4).ToArray(), listEntry.pubkey, signature) == false)
+                                {
+                                    Logging.warn(string.Format("[PL] KEEPALIVE tampering for {0} {1}, incorrect Sig.", Base58Check.Base58CheckEncoding.EncodePlain(listEntry.wallet), hostname));
+                                    return false;
+                                }
                             }
 
                             PresenceAddress pa = listEntry.addresses.Find(x => x.address == hostname && x.device == deviceid);
