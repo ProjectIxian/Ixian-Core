@@ -475,15 +475,7 @@ namespace DLT
             }
 
             privateKey = kp.privateKeyBytes;
-            if (walletVersion <= 1)
-            {
-                publicKey = kp.publicKeyBytes;
-            }else
-            {
-                List<byte> tmp_pub_key = kp.publicKeyBytes.ToList();
-                tmp_pub_key.Insert(0, 1); // prepend address version
-                publicKey = tmp_pub_key.ToArray();
-            }
+            publicKey = kp.publicKeyBytes;
 
             Address addr = new Address(publicKey);
             lastAddress = address = addr.address;
