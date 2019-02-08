@@ -328,12 +328,18 @@ namespace DLT
 
                 long totalTimeDiff = 0;
 
+                int client_count = 0;
+
                 foreach (NetworkClient client in networkClients)
                 {
-                    totalTimeDiff += client.timeDifference;
+                    if (client.helloReceived)
+                    {
+                        totalTimeDiff += client.timeDifference;
+                        client_count++;
+                    }
                 }
 
-                long timeDiff = totalTimeDiff / networkClients.Count;
+                long timeDiff = totalTimeDiff / client_count;
 
                 // amortize +- 5 seconds
                 if (timeDiff > -5 && timeDiff < 5)
