@@ -24,6 +24,7 @@ namespace DLT
         public int incomingPort = Config.serverPort;
 
         public long timeDifference = 0;
+        public bool timeSyncComplete = false;
 
         public bool helloReceived = false;
         public ulong blockHeight = 0;
@@ -678,10 +679,10 @@ namespace DLT
         {
             Socket socket = clientSocket;
 
-            int rcv_count = 0;
+            int rcv_count = 8;
             for (int i = 0; i < rcv_count && socket.Connected;)
             {
-                i += socket.Receive(socketReadBuffer, i, 8 - i, SocketFlags.None);
+                i += socket.Receive(socketReadBuffer, i, rcv_count - i, SocketFlags.None);
                 Thread.Yield();
             }
             lock (timeSyncs)
@@ -695,6 +696,10 @@ namespace DLT
                 }
                 TimeSyncData tsd = new TimeSyncData() { timeDifference = time_difference, processedTime = my_cur_time };
                 timeSyncs.Add(tsd);
+                if(timeSyncs.Count() >= 5)
+                {
+                    timeSyncComplete = true;
+                }
             }
         }
 

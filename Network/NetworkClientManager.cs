@@ -332,7 +332,7 @@ namespace DLT
 
                 foreach (NetworkClient client in networkClients)
                 {
-                    if (client.helloReceived)
+                    if (client.helloReceived && client.timeSyncComplete)
                     {
                         totalTimeDiff += client.timeDifference;
                         client_count++;
