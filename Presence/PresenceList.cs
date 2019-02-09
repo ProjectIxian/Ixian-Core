@@ -414,9 +414,10 @@ namespace DLT
                         string deviceid = reader.ReadString();
                         long timestamp = reader.ReadInt64();
                         string hostname = reader.ReadString();
+                        char node_type = '0';
                         if (keepAliveVersion > 0)
                         {
-                            char node_type = reader.ReadChar();
+                            node_type = reader.ReadChar();
                         }
                         int sigLen = reader.ReadInt32();
                         byte[] signature = reader.ReadBytes(sigLen);
@@ -490,6 +491,10 @@ namespace DLT
                                     // Update the timestamp
                                     pa.lastSeenTime = timestamp;
                                     pa.signature = signature;
+                                    if (node_type != '0')
+                                    {
+                                        pa.type = node_type;
+                                    }
 
                                     if (pa.type == 'M' || pa.type == 'H')
                                     {

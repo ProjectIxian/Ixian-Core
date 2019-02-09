@@ -341,8 +341,8 @@ namespace DLT
 
                 long timeDiff = totalTimeDiff / client_count;
 
-                // amortize +- 5 seconds
-                if (timeDiff > -5 && timeDiff < 5)
+                // amortize +- 2 seconds
+                if (timeDiff >= -2 && timeDiff <= 2)
                 {
                     timeDiff = 0;
                 }
