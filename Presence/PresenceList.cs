@@ -97,8 +97,8 @@ namespace DLT
                     {
                         long currentTime = Core.getCurrentTimestamp();
                         long lTimestamp = local_addr.lastSeenTime;
-                        // Check for tampering. Includes a 200 second synchronization zone
-                        if ((currentTime - lTimestamp) > 100 || (currentTime - lTimestamp) < -100)
+                        // Check for tampering. Includes a 60 second synchronization zone
+                        if ((currentTime - lTimestamp) > 30 || (currentTime - lTimestamp) < -30)
                         {
                             Logging.warn(string.Format("[PL] Potential KEEPALIVE tampering for {0} {1}. Skipping; {2} - {3}", Crypto.hashToString(pr.wallet), local_addr.address, currentTime, lTimestamp));
                             continue;
@@ -481,8 +481,8 @@ namespace DLT
                                         return false;
                                     }
 
-                                    // Check for tampering. Includes a 100 second synchronization zone
-                                    if ((currentTime - timestamp) > 100)
+                                    // Check for tampering. Includes a 60 second synchronization zone
+                                    if ((currentTime - timestamp) > 30 || (currentTime - timestamp) < -30)
                                     {
                                         Logging.warn(string.Format("[PL] Potential KEEPALIVE tampering for {0} {1}. Timestamp {2}", Base58Check.Base58CheckEncoding.EncodePlain(listEntry.wallet), pa.address, timestamp));
                                         return false;
@@ -576,7 +576,7 @@ namespace DLT
                                 Logging.info(string.Format("Expired lastseen for {0} / {1}", pa.address, pa.device));
                                 removeAddressEntry(pr.wallet, pa);
                             }
-                            else if ((currentTime - pa.lastSeenTime) < -20) // future time + 20 seconds amortization?
+                            else if ((currentTime - pa.lastSeenTime) < -30) // future time + 30 seconds amortization
                             {
                                 Logging.info(string.Format("Expired future lastseen for {0} / {1}", pa.address, pa.device));
                                 removeAddressEntry(pr.wallet, pa);

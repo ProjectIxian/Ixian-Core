@@ -281,7 +281,11 @@ namespace DLT
                 time_sync_data.AddRange(BitConverter.GetBytes(Core.getCurrentTimestampMillis()));
                 try
                 {
-                    clientSocket.Send(time_sync_data.ToArray(), SocketFlags.None);
+                    int time_sync_data_len = time_sync_data.ToArray().Length;
+                    for (int sent = 0; sent < time_sync_data_len;)
+                    {
+                        sent += clientSocket.Send(time_sync_data.ToArray(), sent, time_sync_data_len, SocketFlags.None);
+                    }
                 }
                 catch (Exception ex)
                 {
@@ -687,11 +691,11 @@ namespace DLT
             }
             lock (timeSyncs)
             {
-                TimeSyncData prev_tsd = timeSyncs.Last();
                 long my_cur_time = Clock.getTimestampMillis();
                 long time_difference = my_cur_time - BitConverter.ToInt64(socketReadBuffer, 0);
-                if (prev_tsd != null)
+                if (timeSyncs.Count > 0)
                 {
+                    TimeSyncData prev_tsd = timeSyncs.Last();
                     time_difference -= my_cur_time - prev_tsd.processedTime;
                 }
                 TimeSyncData tsd = new TimeSyncData() { timeDifference = time_difference, processedTime = my_cur_time };
@@ -788,7 +792,7 @@ namespace DLT
                                 bytesToRead = header_length - 1; // header length - start byte
                             }else if(helloReceived == false)
                             {
-                                if(socketReadBuffer[0] == '2')
+                                if(socketReadBuffer[0] == 2)
                                 {
                                     readTimeSyncData();
                                 }
