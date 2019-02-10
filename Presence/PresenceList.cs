@@ -97,8 +97,8 @@ namespace DLT
                     {
                         long currentTime = Core.getCurrentTimestamp();
                         long lTimestamp = local_addr.lastSeenTime;
-                        // Check for tampering. Includes a 60 second synchronization zone
-                        if ((currentTime - lTimestamp) > 30 || (currentTime - lTimestamp) < -30)
+                        // Check for tampering. Includes a +300, -30 second synchronization zone
+                        if ((currentTime - lTimestamp) > 300 || (currentTime - lTimestamp) < -30)
                         {
                             Logging.warn(string.Format("[PL] Potential KEEPALIVE tampering for {0} {1}. Skipping; {2} - {3}", Crypto.hashToString(pr.wallet), local_addr.address, currentTime, lTimestamp));
                             continue;
@@ -481,8 +481,8 @@ namespace DLT
                                         return false;
                                     }
 
-                                    // Check for tampering. Includes a 60 second synchronization zone
-                                    if ((currentTime - timestamp) > 30 || (currentTime - timestamp) < -30)
+                                    // Check for tampering. Includes a +300, -30 second synchronization zone
+                                    if ((currentTime - timestamp) > 300 || (currentTime - timestamp) < -30)
                                     {
                                         Logging.warn(string.Format("[PL] Potential KEEPALIVE tampering for {0} {1}. Timestamp {2}", Base58Check.Base58CheckEncoding.EncodePlain(listEntry.wallet), pa.address, timestamp));
                                         return false;
