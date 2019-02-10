@@ -845,7 +845,7 @@ namespace DLT
                         }
 
                         int signer_pub_key_len = rd.ReadInt32();
-                        if (signer_pub_key_len < 0 || (signer_pub_key_len != 523 && signer_pub_key_len != 36))
+                        if (signer_pub_key_len < 36 || signer_pub_key_len > 2500)
                         {
                             Logging.warn(String.Format("Multisig transaction: Invalid signer pub key length stored in data: {0}", orig_tx_len));
                             return null;

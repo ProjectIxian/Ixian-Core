@@ -346,7 +346,12 @@ namespace DLT
 
         public static bool verifyPresence(Presence presence)
         {
-            if (presence.wallet.Length == 0)
+            if (presence.wallet.Length > 128 && presence.wallet.Length < 4)
+            {
+                return false;
+            }
+
+            if (presence.pubkey == null || presence.pubkey.Length < 32 || presence.pubkey.Length > 2500)
             {
                 return false;
             }
@@ -493,6 +498,18 @@ namespace DLT
                                     pa.signature = signature;
                                     if (node_type != '0')
                                     {
+                                        if (pa.type != node_type)
+                                        {
+                                            lock (presenceCount)
+                                            {
+                                                presenceCount[pa.type]--;
+                                                if (!presenceCount.ContainsKey(node_type))
+                                                {
+                                                    presenceCount.Add(node_type, 0);
+                                                }
+                                                presenceCount[node_type]++;
+                                            }
+                                        }
                                         pa.type = node_type;
                                     }
 

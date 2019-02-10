@@ -121,6 +121,10 @@ namespace DLT
 
             state = RemoteEndpointState.Established;
 
+            timeDifference = 0;
+            timeSyncComplete = false;
+            timeSyncs.Clear();
+
             running = true;
 
             // Abort all related threads
@@ -681,6 +685,11 @@ namespace DLT
 
         protected void readTimeSyncData()
         {
+            if(timeSyncComplete)
+            {
+                return;
+            }
+
             Socket socket = clientSocket;
 
             int rcv_count = 8;
