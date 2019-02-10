@@ -847,7 +847,7 @@ namespace DLT
                         int signer_pub_key_len = rd.ReadInt32();
                         if (signer_pub_key_len < 36 || signer_pub_key_len > 2500)
                         {
-                            Logging.warn(String.Format("Multisig transaction: Invalid signer pub key length stored in data: {0}", orig_tx_len));
+                            Logging.warn(String.Format("Multisig transaction: Invalid signer pub key length stored in data: {0}", signer_pub_key_len));
                             return null;
                         }
                         if (signer_pub_key_len == 0)
@@ -862,6 +862,11 @@ namespace DLT
                         }
 
                         int signer_nonce_len = rd.ReadInt32();
+                        if (signer_nonce_len > 16)
+                        {
+                            Logging.warn(String.Format("Multisig transaction: Invalid signer nonce length stored in data: {0}", signer_nonce_len));
+                            return null;
+                        }
                         byte[] signer_nonce = rd.ReadBytes(signer_nonce_len);
 
                         return new MultisigTxData
@@ -905,7 +910,7 @@ namespace DLT
                         {
                             case MultisigWalletChangeType.AddSigner:
                                 int ch_addr_len = rd.ReadInt32();
-                                if (ch_addr_len <= 0 || ch_addr_len > 36)
+                                if (ch_addr_len < 36 || ch_addr_len > 128)
                                 {
                                     Logging.warn("Multisig change transaction: Adding signer, but the data does not contain a valid address!");
                                     return null;
@@ -918,9 +923,23 @@ namespace DLT
                                 }
 
                                 int signer_pub_key_len = rd.ReadInt32();
+                                if (signer_pub_key_len < 36 || signer_pub_key_len > 2500)
+                                {
+                                    Logging.warn(String.Format("Multisig transaction: Invalid signer pub key length stored in data: {0}", signer_pub_key_len));
+                                    return null;
+                                }
+                                if (signer_pub_key_len == 0)
+                                {
+                                    return null;
+                                }
                                 byte[] signer_pub_key = rd.ReadBytes(signer_pub_key_len);
 
                                 int signer_nonce_len = rd.ReadInt32();
+                                if (signer_nonce_len > 16)
+                                {
+                                    Logging.warn(String.Format("Multisig transaction: Invalid signer nonce length stored in data: {0}", signer_nonce_len));
+                                    return null;
+                                }
                                 byte[] signer_nonce = rd.ReadBytes(signer_nonce_len);
 
                                 return new MultisigAddrAdd
@@ -931,7 +950,7 @@ namespace DLT
                                 };
                             case MultisigWalletChangeType.DelSigner:
                                 ch_addr_len = rd.ReadInt32();
-                                if (ch_addr_len <= 0 || ch_addr_len > 36)
+                                if (ch_addr_len < 36 || ch_addr_len > 128)
                                 {
                                     Logging.warn("Multisig change transaction: Deleting signer, but the data does not contain a valid address!");
                                     return null;
@@ -944,9 +963,23 @@ namespace DLT
                                 }
 
                                 signer_pub_key_len = rd.ReadInt32();
+                                if (signer_pub_key_len < 36 || signer_pub_key_len > 2500)
+                                {
+                                    Logging.warn(String.Format("Multisig transaction: Invalid signer pub key length stored in data: {0}", signer_pub_key_len));
+                                    return null;
+                                }
+                                if (signer_pub_key_len == 0)
+                                {
+                                    return null;
+                                }
                                 signer_pub_key = rd.ReadBytes(signer_pub_key_len);
 
                                 signer_nonce_len = rd.ReadInt32();
+                                if (signer_nonce_len > 16)
+                                {
+                                    Logging.warn(String.Format("Multisig transaction: Invalid signer nonce length stored in data: {0}", signer_nonce_len));
+                                    return null;
+                                }
                                 signer_nonce = rd.ReadBytes(signer_nonce_len);
 
                                 return new MultisigAddrDel
@@ -959,9 +992,23 @@ namespace DLT
                                 byte new_req_sigs = rd.ReadByte();
 
                                 signer_pub_key_len = rd.ReadInt32();
+                                if (signer_pub_key_len < 36 || signer_pub_key_len > 2500)
+                                {
+                                    Logging.warn(String.Format("Multisig transaction: Invalid signer pub key length stored in data: {0}", signer_pub_key_len));
+                                    return null;
+                                }
+                                if (signer_pub_key_len == 0)
+                                {
+                                    return null;
+                                }
                                 signer_pub_key = rd.ReadBytes(signer_pub_key_len);
 
                                 signer_nonce_len = rd.ReadInt32();
+                                if (signer_nonce_len > 16)
+                                {
+                                    Logging.warn(String.Format("Multisig transaction: Invalid signer nonce length stored in data: {0}", signer_nonce_len));
+                                    return null;
+                                }
                                 signer_nonce = rd.ReadBytes(signer_nonce_len);
 
                                 return new MultisigChSig
