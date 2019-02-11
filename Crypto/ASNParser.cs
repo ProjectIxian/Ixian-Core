@@ -228,7 +228,7 @@ namespace IXICore.CryptoKey
                     length |= GetNextOctet();
                 }
             }
-            catch (ArgumentOutOfRangeException ex)
+            catch (ArgumentOutOfRangeException)
             { throw new Exception("Error Parsing Key"); }
 
             return length;
@@ -255,7 +255,7 @@ namespace IXICore.CryptoKey
                 return GetOctets(length);
             }
 
-            catch (ArgumentOutOfRangeException ex)
+            catch (ArgumentOutOfRangeException)
             { throw new Exception("Error Parsing Key"); }
         }
 
@@ -298,7 +298,7 @@ namespace IXICore.CryptoKey
                 octets.RemoveRange(0, octetCount);
             }
 
-            catch (ArgumentOutOfRangeException ex)
+            catch (ArgumentOutOfRangeException)
             { throw new Exception("Error Parsing Key"); }
 
             return values;
@@ -335,7 +335,7 @@ namespace IXICore.CryptoKey
                 return 0;
             }
 
-            catch (ArgumentOutOfRangeException ex)
+            catch (ArgumentOutOfRangeException)
             { throw new Exception("Error Parsing Key"); }
         }
 
@@ -372,7 +372,7 @@ namespace IXICore.CryptoKey
                 return length;
             }
 
-            catch (ArgumentOutOfRangeException ex)
+            catch (ArgumentOutOfRangeException)
             { throw new Exception("Error Parsing Key"); }
         }
 
@@ -408,7 +408,7 @@ namespace IXICore.CryptoKey
                 return length;
             }
 
-            catch (ArgumentOutOfRangeException ex)
+            catch (ArgumentOutOfRangeException)
             { throw new Exception("Error Parsing Key"); }
         }
 
@@ -445,7 +445,7 @@ namespace IXICore.CryptoKey
                 return length;
             }
 
-            catch (ArgumentOutOfRangeException ex)
+            catch (ArgumentOutOfRangeException)
             { throw new Exception("Error Parsing Key"); }
         }
 
@@ -481,7 +481,7 @@ namespace IXICore.CryptoKey
                 return GetOctets(length);
             }
 
-            catch (ArgumentOutOfRangeException ex)
+            catch (ArgumentOutOfRangeException)
             { throw new Exception("Error Parsing Key"); }
         }
 
@@ -521,7 +521,7 @@ namespace IXICore.CryptoKey
                 return values;
             }
 
-            catch (ArgumentOutOfRangeException ex)
+            catch (ArgumentOutOfRangeException)
             { throw new Exception("Error Parsing Key"); }
         }
     }
