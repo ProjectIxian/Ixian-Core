@@ -179,7 +179,7 @@ namespace DLT
             }
         }
 
-        public byte[] calculateChecksum()
+        public byte[] calculateChecksum(int block_version)
         {
             List<byte> rawData = new List<byte>();
 
@@ -206,7 +206,7 @@ namespace DLT
                     rawData.AddRange(entry);
                 }
             }
-            if (Node.getLastBlockVersion() <= 2)
+            if (block_version <= 2)
             {
                 return Crypto.sha512quTrunc(rawData.ToArray());
             }else

@@ -247,13 +247,17 @@ namespace DLT
             }
         }
 
-        public byte[] calculateWalletStateChecksum(bool snapshot = false)
+        public byte[] calculateWalletStateChecksum(int block_version = 0, bool snapshot = false)
         {
             lock (stateLock)
             {
+                if(block_version == 0)
+                {
+                    block_version = Node.getLastBlockVersion();
+                }
                 // Note: This will stop working if we change WS checksum format/function again in the future
                 // Either remove the caching mechanic, or add additional detections here
-                if (Node.getLastBlockVersion() == 2)
+                if (block_version <= 2)
                 {
                     // block version 2 has 32-byte checksums
                     if (cachedChecksum != null && cachedChecksum.Length != 32)
@@ -300,7 +304,7 @@ namespace DLT
                     }
                 }
                 byte[] checksum = null;
-                if (Node.getLastBlockVersion() <= 2)
+                if (block_version <= 2)
                 {
                     checksum = Crypto.sha512quTrunc(Encoding.UTF8.GetBytes("IXIAN-DLT" + version));
                 }else
@@ -311,8 +315,8 @@ namespace DLT
                 // Note: addresses are not fixed size
                 foreach (byte[] addr in eligible_addresses)
                 {
-                    byte[] wallet_checksum = getWallet(addr, snapshot).calculateChecksum();
-                    if (Node.getLastBlockVersion() <= 2)
+                    byte[] wallet_checksum = getWallet(addr, snapshot).calculateChecksum(block_version);
+                    if (block_version <= 2)
                     {
                         checksum = Crypto.sha512quTrunc(Encoding.UTF8.GetBytes(Crypto.hashToString(checksum) + Crypto.hashToString(wallet_checksum)));
                     }else
