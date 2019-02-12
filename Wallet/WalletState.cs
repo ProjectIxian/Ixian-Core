@@ -251,6 +251,32 @@ namespace DLT
         {
             lock (stateLock)
             {
+                // Note: This will stop working if we change WS checksum format/function again in the future
+                // Either remove the caching mechanic, or add additional detections here
+                if (Node.getLastBlockVersion() == 2)
+                {
+                    // block version 2 has 32-byte checksums
+                    if (cachedChecksum != null && cachedChecksum.Length != 32)
+                    {
+                        cachedChecksum = null;
+                    }
+                    if (cachedDeltaChecksum != null && cachedDeltaChecksum.Length != 32)
+                    {
+                        cachedDeltaChecksum = null;
+                    }
+                }
+                else
+                {
+                    // block version 3 has 64-byte checksums
+                    if (cachedChecksum != null && cachedChecksum.Length != 64)
+                    {
+                        cachedChecksum = null;
+                    }
+                    if (cachedDeltaChecksum != null && cachedDeltaChecksum.Length != 64)
+                    {
+                        cachedDeltaChecksum = null;
+                    }
+                }
                 if (snapshot == false && cachedChecksum != null)
                 {
                     return cachedChecksum;
