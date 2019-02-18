@@ -11,6 +11,7 @@
   <ItemGroup>
     <Compile Include="$(MSBuildThisFileDirectory)Address\Address.cs" />
     <Compile Include="$(MSBuildThisFileDirectory)API\GenericAPIServer.cs" />
+    <Compile Include="$(MSBuildThisFileDirectory)Block\Block.cs" />
     <Compile Include="$(MSBuildThisFileDirectory)Crypto\ASNParser.cs" />
     <Compile Include="$(MSBuildThisFileDirectory)Crypto\BigInteger.cs" />
     <Compile Include="$(MSBuildThisFileDirectory)Crypto\Crypto.cs" />
@@ -19,6 +20,7 @@
     <Compile Include="$(MSBuildThisFileDirectory)Crypto\CryptoManager.cs" />
     <Compile Include="$(MSBuildThisFileDirectory)Crypto\KeyDerivation.cs" />
     <Compile Include="$(MSBuildThisFileDirectory)Legacy\Legacy.cs" />
+    <Compile Include="$(MSBuildThisFileDirectory)Meta\Activity.cs" />
     <Compile Include="$(MSBuildThisFileDirectory)Meta\Core.cs" />
     <Compile Include="$(MSBuildThisFileDirectory)Meta\CoreConfig.cs" />
     <Compile Include="$(MSBuildThisFileDirectory)Meta\Logging.cs" />
@@ -29,6 +31,7 @@
     <Compile Include="$(MSBuildThisFileDirectory)Network\NetworkClientManager.cs" />
     <Compile Include="$(MSBuildThisFileDirectory)Network\NetworkQueue.cs" />
     <Compile Include="$(MSBuildThisFileDirectory)Network\NetworkRemoteEndpoint.cs" />
+    <Compile Include="$(MSBuildThisFileDirectory)Network\NetworkServer.cs" />
     <Compile Include="$(MSBuildThisFileDirectory)Network\NetworkUtils.cs" />
     <Compile Include="$(MSBuildThisFileDirectory)Peer\Peer.cs" />
     <Compile Include="$(MSBuildThisFileDirectory)Presence\Presence.cs" />
@@ -41,6 +44,7 @@
     <Compile Include="$(MSBuildThisFileDirectory)Utils\BitWriter.cs" />
     <Compile Include="$(MSBuildThisFileDirectory)Utils\ByteArrayComparer.cs" />
     <Compile Include="$(MSBuildThisFileDirectory)Utils\IxiNumber.cs" />
+    <Compile Include="$(MSBuildThisFileDirectory)Utils\IxiUtils.cs" />
     <Compile Include="$(MSBuildThisFileDirectory)Utils\KDTable.cs" />
     <Compile Include="$(MSBuildThisFileDirectory)Utils\Mnemonics.cs" />
     <Compile Include="$(MSBuildThisFileDirectory)Utils\NetDump.cs" />

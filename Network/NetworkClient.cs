@@ -1,5 +1,6 @@
 ﻿using DLT.Meta;
 using DLT.Network;
+using IXICore;
 using System;
 using System.Net.Sockets;
 
@@ -122,7 +123,7 @@ namespace DLT
         // Receive thread
         protected override void recvLoop()
         {
-            ProtocolMessage.sendHelloMessage(this, false);
+            CoreProtocolMessage.sendHelloMessage(this, false);
 
             base.recvLoop();
         }

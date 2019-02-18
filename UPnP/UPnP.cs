@@ -92,9 +92,9 @@ namespace DLT
                         Logging.info(String.Format("UPnP router is not responding: {0}", routerDevice.ToString()));
                     }
                 }
-                catch (MappingException ex)
+                catch (Exception ex)
                 {
-                    Logging.warn(String.Format("Error while retrieving the external IP: {0}", ex.Message));
+                    Logging.warn(String.Format("Error while retrieving the external IP: {0}", ex));
                 }
             }
             //

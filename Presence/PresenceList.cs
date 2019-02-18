@@ -7,6 +7,7 @@ using System.IO;
 using System.Linq;
 using System.Net.Sockets;
 using System.Text;
+using System.Threading;
 using System.Threading.Tasks;
 
 namespace DLT
@@ -15,10 +16,15 @@ namespace DLT
     {
         public static List<Presence> presences = new List<Presence> { }; // The presence list
 
-        private static Dictionary<char, long> presenceCount = new Dictionary<char, long>();
-
         public static PresenceAddress curNodePresenceAddress = null;
         public static Presence curNodePresence = null;
+
+        // private
+        private static Dictionary<char, long> presenceCount = new Dictionary<char, long>();
+
+        private static Thread keepAliveThread;
+        private static bool autoKeepalive = false;
+
 
         // Generate an initial presence list
         public static void generatePresenceList(string initial_ip, char type = 'M')
@@ -393,6 +399,148 @@ namespace DLT
             return false;
         }
 
+        public static void startKeepAlive()
+        {
+            // Start the keepalive thread
+            autoKeepalive = true;
+            keepAliveThread = new Thread(keepAlive);
+            keepAliveThread.Start();
+        }
+
+        public static void stopKeepAlive()
+        {
+            autoKeepalive = false;
+            if (keepAliveThread != null)
+            {
+                keepAliveThread.Abort();
+                keepAliveThread = null;
+            }
+        }
+
+        // Sends perioding keepalive network messages
+        private static void keepAlive()
+        {
+            while (autoKeepalive)
+            {
+                // Wait x seconds before rechecking
+                for (int i = 0; i < CoreConfig.keepAliveInterval; i++)
+                {
+                    if (autoKeepalive == false)
+                    {
+                        Thread.Yield();
+                        return;
+                    }
+                    // Sleep for one second
+                    Thread.Sleep(1000);
+                }
+
+
+                try
+                {
+
+                    byte[] ka_bytes = null;
+                    if (Node.getLastBlockVersion() < 3)
+                    {
+                        ka_bytes = keepAlive_v0();
+                    }
+                    else
+                    {
+                        ka_bytes = keepAlive_v1();
+                    }
+
+                    byte[] address = null;
+
+                    // Update self presence
+                    PresenceList.receiveKeepAlive(ka_bytes, out address);
+
+                    // Send this keepalive message to all connected clients
+                    CoreProtocolMessage.broadcastEventBasedMessage(ProtocolMessageCode.keepAlivePresence, ka_bytes, address);
+
+                }
+                catch (Exception)
+                {
+                    continue;
+                }
+
+            }
+
+            Thread.Yield();
+        }
+
+        private static byte[] keepAlive_v0()
+        {
+            // Prepare the keepalive message
+            using (MemoryStream m = new MemoryStream())
+            {
+                using (BinaryWriter writer = new BinaryWriter(m))
+                {
+                    writer.Write(0);
+
+                    byte[] wallet = Node.walletStorage.getPrimaryAddress();
+                    writer.Write(wallet.Length);
+                    writer.Write(wallet);
+
+                    writer.Write(Config.device_id);
+
+                    // Add the unix timestamp
+                    long timestamp = Core.getCurrentTimestamp();
+                    writer.Write(timestamp);
+
+                    string hostname = Node.getFullAddress();
+                    writer.Write(hostname);
+
+                    // Add a verifiable signature
+                    byte[] private_key = Node.walletStorage.getPrimaryPrivateKey();
+                    byte[] signature = CryptoManager.lib.getSignature(Encoding.UTF8.GetBytes(CoreConfig.ixianChecksumLockString + "-" + Config.device_id + "-" + timestamp + "-" + hostname), private_key);
+                    writer.Write(signature.Length);
+                    writer.Write(signature);
+
+                    PresenceList.curNodePresenceAddress.lastSeenTime = timestamp;
+                    PresenceList.curNodePresenceAddress.signature = signature;
+                }
+
+                return m.ToArray();
+            }
+        }
+
+        private static byte[] keepAlive_v1()
+        {
+            // Prepare the keepalive message
+            using (MemoryStream m = new MemoryStream())
+            {
+                using (BinaryWriter writer = new BinaryWriter(m))
+                {
+                    writer.Write(1);
+
+                    byte[] wallet = Node.walletStorage.getPrimaryAddress();
+                    writer.Write(wallet.Length);
+                    writer.Write(wallet);
+
+                    writer.Write(Config.device_id);
+
+                    // Add the unix timestamp
+                    long timestamp = Core.getCurrentTimestamp();
+                    writer.Write(timestamp);
+
+                    string hostname = Node.getFullAddress();
+                    writer.Write(hostname);
+
+                    writer.Write(PresenceList.curNodePresenceAddress.type);
+
+                    // Add a verifiable signature
+                    byte[] private_key = Node.walletStorage.getPrimaryPrivateKey();
+                    byte[] signature = CryptoManager.lib.getSignature(m.ToArray(), private_key);
+                    writer.Write(signature.Length);
+                    writer.Write(signature);
+
+                    PresenceList.curNodePresenceAddress.lastSeenTime = timestamp;
+                    PresenceList.curNodePresenceAddress.signature = signature;
+                }
+
+                return m.ToArray();
+            }
+        }
+
         // Called when receiving a keepalive network message. The PresenceList will update the appropriate entry based on the timestamp.
         // Returns TRUE if it updated an entry in the PL
         // Sets the out address parameter to be the KA wallet's address or null if an error occured
@@ -449,7 +597,7 @@ namespace DLT
                                         writer.Write(wallet.Length);
                                         writer.Write(wallet);
 
-                                        ProtocolMessage.broadcastProtocolMessage(new char[] { 'M', 'R' }, ProtocolMessageCode.getPresence, mw.ToArray());
+                                        CoreProtocolMessage.broadcastProtocolMessage(new char[] { 'M', 'R' }, ProtocolMessageCode.getPresence, mw.ToArray());
                                     }
                                 }
                                 return false;
@@ -538,7 +686,7 @@ namespace DLT
                                             writer.Write(wallet.Length);
                                             writer.Write(wallet);
 
-                                            ProtocolMessage.broadcastProtocolMessage(new char[] { 'M', 'R' }, ProtocolMessageCode.getPresence, mw.ToArray());
+                                            CoreProtocolMessage.broadcastProtocolMessage(new char[] { 'M', 'R' }, ProtocolMessageCode.getPresence, mw.ToArray());
                                         }
                                     }
                                     return false;

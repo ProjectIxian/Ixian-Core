@@ -423,5 +423,6 @@ namespace DLT
                 return walletState.Take(50).Select(x => x.Value).ToArray();
             }
         }
+
     }
 }

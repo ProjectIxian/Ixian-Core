@@ -445,7 +445,7 @@ namespace DLT
                     if (message_found)
                     {
                         // Active message set, add it to Network Queue
-                        ProtocolMessage.readProtocolMessage(active_message.data, this);
+                        CoreProtocolMessage.readProtocolMessage(active_message.data, this);
                     }
                     else
                     {
