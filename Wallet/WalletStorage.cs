@@ -594,9 +594,7 @@ namespace DLT
             if (File.Exists(filename) == false)
             {
                 Logging.log(LogSeverity.error, "Cannot read wallet file.");
-
-                // Generate a new wallet
-                return generateWallet(password);
+                return false;
             }
 
             // create a backup of the new wallet file
@@ -789,8 +787,20 @@ namespace DLT
             return true;
         }
 
+        // Deletes the wallet file if it exists
+        public bool deleteWallet()
+        {
+            if (File.Exists(filename) == false)
+            {
+                return false;
+            }
+
+            File.Delete(filename);
+            return true;
+        }
+
         // Generate a new wallet with matching private/public key pairs
-        protected bool generateWallet(string password)
+        public bool generateWallet(string password)
         {
             Logging.flush();
 

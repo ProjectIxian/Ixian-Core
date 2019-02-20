@@ -1,4 +1,6 @@
-﻿using IXICore.Utils;
+﻿#if !__MOBILE__
+
+using IXICore.Utils;
 using SQLite;
 using System;
 using System.Collections.Generic;
@@ -484,3 +486,5 @@ namespace DLT.Meta
         }
     }
 }
+
+#endif

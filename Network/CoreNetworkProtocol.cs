@@ -305,8 +305,6 @@ namespace IXICore
                 // Create a temporary presence with the client's address and device id
                 Presence presence = new Presence(addr, pubkey, null, endpoint.presenceAddress);
 
-
-
                 // Connect to this node only if it's a master node or a full history node
                 if (node_type == 'M' || node_type == 'H')
                 {

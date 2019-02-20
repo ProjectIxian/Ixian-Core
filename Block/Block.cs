@@ -1,5 +1,4 @@
 using DLT.Meta;
-using SQLite;
 using System;
 using System.Collections.Generic;
 using System.IO;
@@ -15,7 +14,6 @@ namespace DLT
         public static int maxVersion = 3;
 
         // TODO: Refactor all of these as readonly get-params
-        [PrimaryKey, AutoIncrement]
         public ulong blockNum { get; set; }
 
         public List<string> transactions = new List<string> { };
@@ -341,11 +339,6 @@ namespace DLT
         // Applies this node's signature to this block
         public bool applySignature()
         {
-            if (!Node.isMasterNode())
-            {
-                return true;
-            }
-
             // Note: we don't need any further validation, since this block has already passed through BlockProcessor.verifyBlock() at this point.
             byte[] myAddress = Node.walletStorage.getPrimaryAddress();
             if (containsSignature(myAddress))
@@ -679,7 +672,7 @@ namespace DLT
             }
             Logging.info(String.Format("\t\t|- Block Number:\t\t {0}", blockNum));
             Logging.info(String.Format("\t\t|- Block Version:\t\t {0}", version));
-            Logging.info(String.Format("\t\t|- Signatures:\t\t\t {0} ({1} req)", signatures.Count, Node.getRequiredConsensus()));
+            Logging.info(String.Format("\t\t|- Signatures:\t\t\t {0}", signatures.Count));
             Logging.info(String.Format("\t\t|- Block Checksum:\t\t {0}", Crypto.hashToString(blockChecksum)));
             Logging.info(String.Format("\t\t|- Last Block Checksum: \t {0}", last_block_chksum));
             Logging.info(String.Format("\t\t|- WalletState Checksum:\t {0}", Crypto.hashToString(walletStateChecksum)));

@@ -364,7 +364,7 @@ namespace DLT
                 clientSocket.NoDelay = true;
                 clientSocket.Blocking = true;
 
-                if(Node.isAcceptingConnections())
+                if(!Node.isAcceptingConnections())
                 {
                     Thread.Sleep(100); // wait a bit for check connectivity purposes
                     clientSocket.Send(CoreProtocolMessage.prepareProtocolMessage(ProtocolMessageCode.bye, new byte[1]));
