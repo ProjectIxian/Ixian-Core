@@ -347,9 +347,10 @@ namespace DLT
             }
         }
 
-        public SortedDictionary<byte[], IxiNumber> generateFromList(byte[] primary_address, IxiNumber total_amount_with_fee, List<byte[]> skip_addresses)
+        public SortedDictionary<byte[], IxiNumber> generateFromList(byte[] primary_address, IxiNumber total_amount_with_fee, List<byte[]> skip_addresses, List<Transaction> pending_transactions)
         {
-            lock(myAddresses)
+            // TODO TODO TODO TODO  this won't work well once wallet v3 is activated
+            lock (myAddresses)
             {
                 Dictionary<byte[], IxiNumber> tmp_from_list = new Dictionary<byte[], IxiNumber>(new ByteArrayComparer());
                 foreach (var entry in myAddresses)
@@ -386,15 +387,30 @@ namespace DLT
                 IxiNumber tmp_total_amount = 0;
                 foreach (var entry in tmp_from_list_ordered)
                 {
-                    if (tmp_total_amount + entry.Value >= total_amount_with_fee)
+                    IxiNumber balance = entry.Value;
+                    if (pending_transactions != null)
+                    {
+                        var tmp_pending_froms = pending_transactions.FindAll(x => x.fromList.ContainsKey(entry.Key));
+                        foreach(var pending_from in tmp_pending_froms)
+                        {
+                            balance -= pending_from.fromList[entry.Key];
+                        }
+                    }
+
+                    if(balance <= 0)
+                    {
+                        continue;
+                    }
+
+                    if (tmp_total_amount + balance >= total_amount_with_fee)
                     {
                         IxiNumber tmp_amount = total_amount_with_fee - tmp_total_amount;
                         from_list.Add(entry.Key, tmp_amount);
                         tmp_total_amount += tmp_amount;
                         break;
                     }
-                    from_list.Add(entry.Key, entry.Value);
-                    tmp_total_amount += entry.Value;
+                    from_list.Add(entry.Key, balance);
+                    tmp_total_amount += balance;
                 }
 
                 if (from_list.Count > 0 && tmp_total_amount == total_amount_with_fee)
