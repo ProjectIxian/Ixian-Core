@@ -1,17 +1,29 @@
 ﻿using DLT.Meta;
+using Newtonsoft.Json;
 using System;
 using System.Collections.Generic;
+using System.IO;
 using System.Net;
+using System.Text;
 using System.Threading;
 
 namespace IXICore
 {
+    class JsonError
+    {
+        public int code = 0;
+        public string message = null;
+    }
+
+    class JsonResponse
+    {
+        public object result = null;
+        public JsonError error = null;
+        public string id = null;
+    }
+
     class GenericAPIServer
     {
-        // Public accessible
-        public bool forceShutdown = false;
-
-
         protected HttpListener listener;
         protected Thread apiControllerThread;
         protected bool continueRunning;
@@ -147,6 +159,40 @@ namespace IXICore
             {
                 responseObject.ContentLength64 = buffer.Length;
                 System.IO.Stream output = responseObject.OutputStream;
+                output.Write(buffer, 0, buffer.Length);
+                output.Close();
+            }
+            catch (Exception e)
+            {
+                Logging.error(String.Format("APIServer: {0}", e));
+            }
+        }
+
+        public void sendResponse(HttpListenerResponse responseObject, JsonResponse response)
+        {
+            string responseString = JsonConvert.SerializeObject(response);
+
+            byte[] buffer = Encoding.UTF8.GetBytes(responseString);
+
+            try
+            {
+                responseObject.ContentLength64 = buffer.Length;
+                Stream output = responseObject.OutputStream;
+                output.Write(buffer, 0, buffer.Length);
+                output.Close();
+            }
+            catch (Exception e)
+            {
+                Logging.error(String.Format("APIServer: {0}", e));
+            }
+        }
+
+        public void sendResponse(HttpListenerResponse responseObject, byte[] buffer)
+        {
+            try
+            {
+                responseObject.ContentLength64 = buffer.Length;
+                Stream output = responseObject.OutputStream;
                 output.Write(buffer, 0, buffer.Length);
                 output.Close();
             }
