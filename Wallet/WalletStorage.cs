@@ -360,7 +360,7 @@ namespace DLT
                         continue;
                     }
 
-                    if (skip_addresses.Contains(entry.Value.keyPair.addressBytes, new ByteArrayComparer()))
+                    if (skip_addresses.Contains(entry.Key, new ByteArrayComparer()))
                     {
                         continue;
                     }
