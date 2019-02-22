@@ -40,13 +40,7 @@ namespace IXICore
 
             if (checksum == null)
             {
-                if (Node.getLastBlockVersion() <= 2)
-                {
-                    data_checksum = Crypto.sha512quTrunc(data);
-                }else
-                {
-                    data_checksum = Crypto.sha512sqTrunc(data, 0, 0, 32);
-                }
+                data_checksum = Crypto.sha512sqTrunc(data, 0, 0, 32);
             }
 
             using (MemoryStream m = new MemoryStream())
@@ -165,13 +159,8 @@ namespace IXICore
                         // Verify the checksum before proceeding
                         if (local_checksum.SequenceEqual(data_checksum) == false)
                         {
-                            // TODO TODO TODO TODO TODO remove nested if after network upgrade
-                            local_checksum = Crypto.sha512quTrunc(data);
-                            if (local_checksum.SequenceEqual(data_checksum) == false)
-                            {
-                                Logging.error("Dropped message (invalid checksum)");
-                                continue;
-                            }
+                            Logging.error("Dropped message (invalid checksum)");
+                            continue;
                         }
 
                         // For development purposes, output the proper protocol message
