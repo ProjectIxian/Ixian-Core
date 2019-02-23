@@ -92,19 +92,28 @@ namespace DLT
             return balance;
         }
 
-        public Address generateNewAddress(Address key_primary_address, bool write_to_file = true)
+        public Address generateNewAddress(Address key_primary_address, byte[] last_nonce, bool add_to_pool = true, bool write_to_file = true)
         {
+            Address new_address = null;
             if(walletVersion < 2)
             {
-                return generateNewAddress_v0(key_primary_address, write_to_file);
+                new_address = generateNewAddress_v0(key_primary_address, last_nonce, add_to_pool);
             }
             else
             {
-                return generateNewAddress_v1(key_primary_address, write_to_file);
+                new_address = generateNewAddress_v1(key_primary_address, last_nonce, add_to_pool);
             }
+            if(new_address != null)
+            {
+                if (write_to_file)
+                {
+                    writeWallet(walletPassword);
+                }
+            }
+            return new_address;
         }
 
-        public Address generateNewAddress_v0(Address key_primary_address, bool write_to_file = true)
+        public Address generateNewAddress_v0(Address key_primary_address, byte[] last_nonce, bool add_to_pool = true)
         {
             lock (myKeys)
             {
@@ -115,36 +124,38 @@ namespace DLT
 
                 IxianKeyPair kp = myKeys[key_primary_address.address];
 
-                byte[] base_nonce = Crypto.sha512quTrunc(privateKey, publicKey.Length, 64);
+                byte[] base_nonce = Crypto.sha512quTrunc(kp.privateKeyBytes, publicKey.Length, 64);
 
-                byte[] last_nonce = kp.lastNonceBytes;
+                if (last_nonce == null)
+                {
+                    last_nonce = kp.lastNonceBytes;
+                }
 
                 List<byte> new_nonce = base_nonce.ToList();
                 if (last_nonce != null)
                 {
                     new_nonce.AddRange(last_nonce);
                 }
-                kp.lastNonceBytes = Crypto.sha512quTrunc(new_nonce.ToArray(), 0, 0, 16);
+                byte[] new_nonce_bytes = Crypto.sha512quTrunc(new_nonce.ToArray(), 0, 0, 16);
 
-                Address new_address = new Address(key_primary_address.address, kp.lastNonceBytes);
+                Address new_address = new Address(key_primary_address.address, new_nonce_bytes);
 
-                lock (myAddresses)
+                if (add_to_pool)
                 {
-                    AddressData ad = new AddressData() { nonce = kp.lastNonceBytes, keyPair = kp };
-                    myAddresses.Add(new_address.address, ad);
-                    lastAddress = new_address.address;
-                }
-
-                if (write_to_file)
-                {
-                    writeWallet(walletPassword);
+                    kp.lastNonceBytes = new_nonce_bytes;
+                    lock (myAddresses)
+                    {
+                        AddressData ad = new AddressData() { nonce = kp.lastNonceBytes, keyPair = kp };
+                        myAddresses.Add(new_address.address, ad);
+                        lastAddress = new_address.address;
+                    }
                 }
 
                 return new_address;
             }
         }
 
-        public Address generateNewAddress_v1(Address key_primary_address, bool write_to_file = true)
+        public Address generateNewAddress_v1(Address key_primary_address, byte[] last_nonce, bool add_to_pool = true)
         {
             lock (myKeys)
             {
@@ -155,29 +166,31 @@ namespace DLT
 
                 IxianKeyPair kp = myKeys[key_primary_address.address];
 
-                byte[] base_nonce = Crypto.sha512sqTrunc(privateKey, publicKey.Length, 64);
+                byte[] base_nonce = Crypto.sha512sqTrunc(kp.privateKeyBytes, publicKey.Length, 64);
 
-                byte[] last_nonce = kp.lastNonceBytes;
+                if (last_nonce == null)
+                {
+                    last_nonce = kp.lastNonceBytes;
+                }
 
                 List<byte> new_nonce = base_nonce.ToList();
                 if (last_nonce != null)
                 {
                     new_nonce.AddRange(last_nonce);
                 }
-                kp.lastNonceBytes = Crypto.sha512sqTrunc(new_nonce.ToArray(), 0, 0, 16);
+                byte[] new_nonce_bytes = Crypto.sha512sqTrunc(new_nonce.ToArray(), 0, 0, 16);
 
-                Address new_address = new Address(key_primary_address.address, kp.lastNonceBytes);
+                Address new_address = new Address(key_primary_address.address, new_nonce_bytes);
 
-                lock (myAddresses)
+                if (add_to_pool)
                 {
-                    AddressData ad = new AddressData() { nonce = kp.lastNonceBytes, keyPair = kp };
-                    myAddresses.Add(new_address.address, ad);
-                    lastAddress = new_address.address;
-                }
-
-                if (write_to_file)
-                {
-                    writeWallet(walletPassword);
+                    kp.lastNonceBytes = new_nonce_bytes;
+                    lock (myAddresses)
+                    {
+                        AddressData ad = new AddressData() { nonce = kp.lastNonceBytes, keyPair = kp };
+                        myAddresses.Add(new_address.address, ad);
+                        lastAddress = new_address.address;
+                    }
                 }
 
                 return new_address;
@@ -497,7 +510,7 @@ namespace DLT
                         }
                         else
                         {
-                            generateNewAddress(addr, false);
+                            generateNewAddress(addr, null, true, false);
                         }
                     }
                 }
@@ -820,13 +833,13 @@ namespace DLT
         {
             Logging.flush();
 
-            walletVersion = 1;
+            walletVersion = 2;
             walletPassword = password;
 
             Logging.log(LogSeverity.info, "Generating primary wallet keys, this may take a while, please wait...");
 
             //IxianKeyPair kp = generateNewKeyPair(false);
-            IxianKeyPair kp = CryptoManager.lib.generateKeys(CoreConfig.defaultRsaKeySize, true);
+            IxianKeyPair kp = CryptoManager.lib.generateKeys(CoreConfig.defaultRsaKeySize);
 
             if (kp == null)
             {
@@ -874,6 +887,29 @@ namespace DLT
                 return true;
             }
             return false;
+        }
+
+        public void scanForLostAddresses()
+        {
+            foreach(var key in myKeys)
+            {
+                Address primary_address = new Address(key.Value.addressBytes);
+                byte[] last_nonce = key.Value.lastNonceBytes;
+                for (int i = 0; i < 100; i++)
+                {
+                    Address new_address = generateNewAddress(primary_address, last_nonce, false, false);
+                    if(Node.walletState.getWalletBalance(new_address.address) > 0)
+                    {
+                        for(int j = 0; j <= i; j++)
+                        {
+                            generateNewAddress(primary_address, null, true, false);
+                        }
+                        i = 0;
+                    }
+                    last_nonce = new_address.nonce;
+                }
+                writeWallet(walletPassword);
+            }
         }
     }
 }

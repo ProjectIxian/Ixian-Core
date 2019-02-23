@@ -1279,6 +1279,7 @@ namespace DLT
             tDic.Add("to", toListDic);
 
             tDic.Add("fee", fee.ToString());
+            tDic.Add("totalAmount", (amount + fee).ToString());
 
             return tDic;
         }

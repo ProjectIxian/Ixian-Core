@@ -8,10 +8,12 @@ namespace DLT
     {
         public int version = 0;
         public byte[] address;
+        public byte[] nonce;
 
         public Address()
         {
             address = null;
+            nonce = null;
         }
 
         public Address(byte[] public_key_or_address, byte[] nonce = null)
@@ -32,6 +34,8 @@ namespace DLT
                     version = public_key_or_address[0];
                 }
             }
+
+            this.nonce = nonce;
 
             if(version == 0)
             {
