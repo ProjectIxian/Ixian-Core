@@ -243,11 +243,19 @@ namespace DLT
             {
                 return false;
             }
-            if (!b.signatureFreezeChecksum.SequenceEqual(signatureFreezeChecksum))
+
+            if (b.signatureFreezeChecksum != null && signatureFreezeChecksum != null)
+            {
+                if (!b.signatureFreezeChecksum.SequenceEqual(signatureFreezeChecksum))
+                {
+                    return false;
+                }
+            }else if(b.signatureFreezeChecksum != null || signatureFreezeChecksum != null)
             {
                 return false;
             }
-            if(!b.calculateSignatureChecksum().SequenceEqual(calculateSignatureChecksum()))
+
+            if (!b.calculateSignatureChecksum().SequenceEqual(calculateSignatureChecksum()))
             {
                 return false;
             }
