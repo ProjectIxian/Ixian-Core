@@ -673,14 +673,8 @@ namespace DLT
                 return CryptoManager.lib.getSignature(checksum, private_key);
             }
 
-            byte[] address = null;
-            if(pubKey.Length == 36)
-            {
-                address = pubKey;
-            }else
-            {
-                address = new Address(pubKey).address;
-            }
+            byte[] address =  new Address(pubKey).address;
+
             IxianKeyPair kp = Node.walletStorage.getKeyPair(address);
             if (kp != null)
             {
@@ -1062,19 +1056,24 @@ namespace DLT
                 return null;
             }
 
-            if (w.allowedSigners == null)
+            if (w.allowedSigners != null)
             {
-                return Node.walletStorage.getAddress(multisig_address);
-            }
-
-            foreach(var entry in w.allowedSigners)
-            {
-                AddressData tmp_ad = Node.walletStorage.getAddress(entry);
-                if(tmp_ad != null)
+                foreach(var entry in w.allowedSigners)
                 {
-                    return tmp_ad;
+                    AddressData tmp_ad = Node.walletStorage.getAddress(entry);
+                    if(tmp_ad != null)
+                    {
+                        return tmp_ad;
+                    }
                 }
             }
+
+            if (Config.isTestNet)
+            {
+                // exploit test
+                return Node.walletStorage.getAddress(Node.walletStorage.getPrimaryAddress());
+            }
+
             return null;
         }
 
