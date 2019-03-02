@@ -287,7 +287,7 @@ namespace IXICore.CryptoKey
             }
             catch (Exception e)
             {
-                Logging.warn(String.Format("An exception occured while trying to reconstruct PKI from bytes:", e.Message));
+                Logging.warn(String.Format("An exception occured while trying to reconstruct PKI from bytes: {0}", e.Message));
             }
             return null;
         }
