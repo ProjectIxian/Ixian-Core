@@ -71,7 +71,7 @@ namespace DLT
             return null;
         }
 
-        public IPAddress GetExternalIPAddress()
+        public async Task<IPAddress> GetExternalIPAddress()
         {
             Logging.info("Attempting to discover external address. This is automatic, if the router supports UPnP.");
             Logging.info("This may take up to 10 seconds...");
@@ -80,17 +80,9 @@ namespace DLT
                 Logging.info(String.Format("Found UPnP device: {0}", routerDevice.ToString()));
                 try
                 {
-                    Task<IPAddress> getAddressTask = routerDevice.GetExternalIPAsync();
-                    if (getAddressTask.Wait(5000) == true)
-                    {
-                        IPAddress externalIP = getAddressTask.Result;
-                        Logging.info(String.Format("Found external IP address: {0}", externalIP.ToString()));
-                        return externalIP;
-                    }
-                    else
-                    {
-                        Logging.info(String.Format("UPnP router is not responding: {0}", routerDevice.ToString()));
-                    }
+                    IPAddress externalIP = await routerDevice.GetExternalIPAsync();
+                    Logging.info(String.Format("Found external IP address: {0}", externalIP.ToString()));
+                    return externalIP;
                 }
                 catch (Exception ex)
                 {
