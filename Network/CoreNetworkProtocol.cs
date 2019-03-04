@@ -472,7 +472,7 @@ namespace IXICore
         }
 
         // Broadcast an event-specific protocol message across clients and nodes
-        // Returns true if it sent the message at least one endpoint. Returns false if the message couldn't be sent to any endpoints
+        // Returns true if it sent the message to at least one endpoint. Returns false if the message couldn't be sent to any endpoints
         public static bool broadcastEventBasedMessage(ProtocolMessageCode code, byte[] data, byte[] address, RemoteEndpoint skipEndpoint = null)
         {
             // Broadcast the event to all non-C nodes
