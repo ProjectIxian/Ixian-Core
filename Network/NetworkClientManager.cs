@@ -223,7 +223,7 @@ namespace DLT
 
         // Send data to all connected nodes
         // Returns true if the data was sent to at least one client
-        public static bool broadcastData(char[] types, ProtocolMessageCode code, byte[] data, RemoteEndpoint skipEndpoint = null)
+        public static bool broadcastData(char[] types, ProtocolMessageCode code, byte[] data, byte[] helper_data, RemoteEndpoint skipEndpoint = null)
         {
             bool result = false;
             lock (networkClients)
@@ -255,14 +255,14 @@ namespace DLT
                     }
 
 
-                    client.sendData(code, data);
+                    client.sendData(code, data, helper_data);
                     result = true;
                 }
             }
             return result;
         }
 
-        public static bool sendToClient(string neighbor, ProtocolMessageCode code, byte[] data)
+        public static bool sendToClient(string neighbor, ProtocolMessageCode code, byte[] data, byte[] helper_data)
         {
             NetworkClient client = null;
             lock (networkClients)
@@ -279,7 +279,7 @@ namespace DLT
 
             if (client != null)
             {
-                client.sendData(code, data);
+                client.sendData(code, data, helper_data);
                 return true;
             }
 

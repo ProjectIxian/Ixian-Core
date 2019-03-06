@@ -188,7 +188,7 @@ namespace DLT
 
             // Send data to all connected clients
             // Returns true if the data was sent to at least one client
-            public static bool broadcastData(char[] types, ProtocolMessageCode code, byte[] data, RemoteEndpoint skipEndpoint = null)
+            public static bool broadcastData(char[] types, ProtocolMessageCode code, byte[] data, byte[] helper_data, RemoteEndpoint skipEndpoint = null)
             {
                 bool result = false;
                 lock (connectedClients)
@@ -219,7 +219,7 @@ namespace DLT
                             }
                         }
 
-                        endpoint.sendData(code, data);
+                        endpoint.sendData(code, data, helper_data);
                         result = true;
                     }
                 }
@@ -227,7 +227,7 @@ namespace DLT
             }
 
             // Sends event data to all subscribed clients
-            public static bool broadcastEventData(ProtocolMessageCode code, byte[] data, byte[] address, RemoteEndpoint skipEndpoint = null)
+            public static bool broadcastEventData(ProtocolMessageCode code, byte[] data, byte[] address, byte[] helper_data, RemoteEndpoint skipEndpoint = null)
             {
                 bool result = false;
                 lock (connectedClients)
@@ -258,7 +258,7 @@ namespace DLT
                         // Finally, check if the endpoint is subscribed to this event and address
                         if (endpoint.isSubscribedToEvent((int)code, address))
                         {
-                            endpoint.sendData(code, data);
+                            endpoint.sendData(code, data, helper_data);
                             result = true;
                         }
                     }
@@ -305,7 +305,7 @@ namespace DLT
             }
 
 
-            public static bool sendToClient(string neighbor, ProtocolMessageCode code, byte[] data)
+            public static bool sendToClient(string neighbor, ProtocolMessageCode code, byte[] data, byte[] helper_data)
             {
                 RemoteEndpoint client = null;
                 lock (connectedClients)
@@ -321,7 +321,7 @@ namespace DLT
                 }
                 if (client != null)
                 {
-                    client.sendData(code, data);
+                    client.sendData(code, data, helper_data);
                     return true;
                 }
                 return false;

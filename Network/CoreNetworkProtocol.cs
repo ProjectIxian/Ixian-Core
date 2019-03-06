@@ -454,7 +454,7 @@ namespace IXICore
 
         // Broadcast a protocol message across clients and nodes
         // Returns true if it sent the message at least one endpoint. Returns false if the message couldn't be sent to any endpoints
-        public static bool broadcastProtocolMessage(char[] types, ProtocolMessageCode code, byte[] data, RemoteEndpoint skipEndpoint = null)
+        public static bool broadcastProtocolMessage(char[] types, ProtocolMessageCode code, byte[] data, byte[] helper_data, RemoteEndpoint skipEndpoint = null)
         {
             if (data == null)
             {
@@ -462,8 +462,8 @@ namespace IXICore
                 return false;
             }
 
-            bool c_result = NetworkClientManager.broadcastData(types, code, data, skipEndpoint);
-            bool s_result = NetworkServer.broadcastData(types, code, data, skipEndpoint);
+            bool c_result = NetworkClientManager.broadcastData(types, code, data, helper_data, skipEndpoint);
+            bool s_result = NetworkServer.broadcastData(types, code, data, helper_data, skipEndpoint);
 
             if (!c_result && !s_result)
                 return false;
@@ -473,13 +473,13 @@ namespace IXICore
 
         // Broadcast an event-specific protocol message across clients and nodes
         // Returns true if it sent the message to at least one endpoint. Returns false if the message couldn't be sent to any endpoints
-        public static bool broadcastEventBasedMessage(ProtocolMessageCode code, byte[] data, byte[] address, RemoteEndpoint skipEndpoint = null)
+        public static bool broadcastEventBasedMessage(ProtocolMessageCode code, byte[] data, byte[] address, byte[] helper_data, RemoteEndpoint skipEndpoint = null)
         {
             // Broadcast the event to all non-C nodes
-            bool b_result = broadcastProtocolMessage(new char[] { 'M', 'R', 'H', 'W' }, code, data, skipEndpoint);
+            bool b_result = broadcastProtocolMessage(new char[] { 'M', 'R', 'H', 'W' }, code, data, helper_data, skipEndpoint);
 
             // Now send it to subscribed C nodes
-            bool f_result = NetworkServer.broadcastEventData(code, data, address, skipEndpoint);
+            bool f_result = NetworkServer.broadcastEventData(code, data, address, helper_data, skipEndpoint);
 
             if (!b_result && !f_result)
                 return false;

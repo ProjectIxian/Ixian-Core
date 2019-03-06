@@ -357,6 +357,7 @@ namespace DLT
                                     active_message.data = candidate.data;
                                     active_message.checksum = candidate.checksum;
                                     active_message.skipEndpoint = candidate.skipEndpoint;
+                                    active_message.helperData = candidate.helperData;
                                     // Remove it from the queue
                                     sendQueueMessagesLowPriority.Remove(candidate);
                                     message_found = true;
@@ -375,6 +376,7 @@ namespace DLT
                                 active_message.data = candidate.data;
                                 active_message.checksum = candidate.checksum;
                                 active_message.skipEndpoint = candidate.skipEndpoint;
+                                active_message.helperData = candidate.helperData;
                                 // Remove it from the queue
                                 sendQueueMessagesNormalPriority.Remove(candidate);
                                 message_found = true;
@@ -389,6 +391,7 @@ namespace DLT
                             active_message.data = candidate.data;
                             active_message.checksum = candidate.checksum;
                             active_message.skipEndpoint = candidate.skipEndpoint;
+                            active_message.helperData = candidate.helperData;
                             // Remove it from the queue
                             sendQueueMessagesHighPriority.Remove(candidate);
                             message_found = true;
@@ -519,7 +522,7 @@ namespace DLT
 
 
         // Sends data over the network
-        public void sendData(ProtocolMessageCode code, byte[] data)
+        public void sendData(ProtocolMessageCode code, byte[] data, byte[] helper_data = null)
         {
             if (data == null)
             {
@@ -532,13 +535,23 @@ namespace DLT
             message.data = data;
             message.checksum = Crypto.sha512sqTrunc(data, 0, 0, 32);
             message.skipEndpoint = null;
+            message.helperData = helper_data;
 
             if(code == ProtocolMessageCode.bye || code == ProtocolMessageCode.keepAlivePresence 
                 || code == ProtocolMessageCode.getPresence || code == ProtocolMessageCode.updatePresence)
             {
                 lock (sendQueueMessagesHighPriority)
                 {
-                    if (sendQueueMessagesHighPriority.Exists(x => x.code == message.code && message.checksum.SequenceEqual(x.checksum)))
+                    bool duplicate = false;
+                    if(message.helperData != null)
+                    {
+                        duplicate = sendQueueMessagesHighPriority.Exists(x => x.code == message.code && message.helperData.SequenceEqual(x.helperData));
+                    }
+                    else
+                    {
+                        duplicate = sendQueueMessagesHighPriority.Exists(x => x.code == message.code && message.checksum.SequenceEqual(x.checksum));
+                    }
+                    if (duplicate)
                     {
                         Logging.warn(string.Format("Attempting to add a duplicate message (code: {0}) to the high priority network queue for {1}", code, getFullAddress()));
                     }
@@ -557,7 +570,16 @@ namespace DLT
             {
                 lock (sendQueueMessagesNormalPriority)
                 {
-                    if (sendQueueMessagesNormalPriority.Exists(x => x.code == message.code && message.checksum.SequenceEqual(x.checksum)))
+                    bool duplicate = false;
+                    if (message.helperData != null)
+                    {
+                        duplicate = sendQueueMessagesNormalPriority.Exists(x => x.code == message.code && message.helperData.SequenceEqual(x.helperData));
+                    }
+                    else
+                    {
+                        duplicate = sendQueueMessagesNormalPriority.Exists(x => x.code == message.code && message.checksum.SequenceEqual(x.checksum));
+                    }
+                    if (duplicate)
                     {
                         Logging.warn(string.Format("Attempting to add a duplicate message (code: {0}) to the normal priority network queue for {1}", code, getFullAddress()));
                     }
@@ -575,9 +597,18 @@ namespace DLT
             {
                 lock (sendQueueMessagesLowPriority)
                 {
-                    if (sendQueueMessagesLowPriority.Exists(x => x.code == message.code && message.checksum.SequenceEqual(x.checksum)))
+                    bool duplicate = false;
+                    if (message.helperData != null)
                     {
-                        Logging.warn(string.Format("Attempting to add a duplicate message (code: {0}) to the low priority network queue for{1}", code, getFullAddress()));
+                        duplicate = sendQueueMessagesLowPriority.Exists(x => x.code == message.code && message.helperData.SequenceEqual(x.helperData));
+                    }
+                    else
+                    {
+                        duplicate = sendQueueMessagesLowPriority.Exists(x => x.code == message.code && message.checksum.SequenceEqual(x.checksum));
+                    }
+                    if (duplicate)
+                    {
+                            Logging.warn(string.Format("Attempting to add a duplicate message (code: {0}) to the low priority network queue for{1}", code, getFullAddress()));
                     }
                     else
                     {

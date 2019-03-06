@@ -19,6 +19,7 @@ namespace DLT
             public byte[] data;
             public byte[] checksum;
             public RemoteEndpoint skipEndpoint;
+            public byte[] helperData;
         }
 
         struct QueueMessageRaw

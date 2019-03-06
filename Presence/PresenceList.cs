@@ -454,7 +454,7 @@ namespace DLT
                     PresenceList.receiveKeepAlive(ka_bytes, out address);
 
                     // Send this keepalive message to all connected clients
-                    CoreProtocolMessage.broadcastEventBasedMessage(ProtocolMessageCode.keepAlivePresence, ka_bytes, address);
+                    CoreProtocolMessage.broadcastEventBasedMessage(ProtocolMessageCode.keepAlivePresence, ka_bytes, address, address);
 
                 }
                 catch (Exception)
@@ -597,7 +597,7 @@ namespace DLT
                                         writer.Write(wallet.Length);
                                         writer.Write(wallet);
 
-                                        CoreProtocolMessage.broadcastProtocolMessage(new char[] { 'M', 'R' }, ProtocolMessageCode.getPresence, mw.ToArray());
+                                        CoreProtocolMessage.broadcastProtocolMessage(new char[] { 'M', 'R' }, ProtocolMessageCode.getPresence, mw.ToArray(), null);
                                     }
                                 }
                                 return false;
@@ -686,7 +686,7 @@ namespace DLT
                                             writer.Write(wallet.Length);
                                             writer.Write(wallet);
 
-                                            CoreProtocolMessage.broadcastProtocolMessage(new char[] { 'M', 'R' }, ProtocolMessageCode.getPresence, mw.ToArray());
+                                            CoreProtocolMessage.broadcastProtocolMessage(new char[] { 'M', 'R' }, ProtocolMessageCode.getPresence, mw.ToArray(), null);
                                         }
                                     }
                                     return false;
