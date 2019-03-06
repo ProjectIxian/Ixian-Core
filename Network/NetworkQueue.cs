@@ -37,8 +37,10 @@ namespace DLT
             {
                 public ProtocolMessageCode code;
                 public byte[] data;
+                public int length;
                 public byte[] checksum;
                 public RemoteEndpoint endpoint;
+                public byte[] helperData;
             }
 
             // Maintain a queue of messages to receive
@@ -62,6 +64,14 @@ namespace DLT
                 }
             }
 
+            private static byte[] extractHelperData(ProtocolMessageCode code, byte[] data)
+            {
+                if (code == ProtocolMessageCode.blockData || code == ProtocolMessageCode.newBlock)
+                {
+                    return data.Take(8).ToArray();
+                }
+                return null;
+            }
 
             public static void receiveProtocolMessage(ProtocolMessageCode code, byte[] data, byte[] checksum, RemoteEndpoint endpoint)
             {
@@ -69,9 +79,12 @@ namespace DLT
                 {
                     code = code,
                     data = data,
+                    length = data.Length,
                     checksum = checksum,
-                    endpoint = endpoint
+                    endpoint = endpoint,
+                    helperData = extractHelperData(code, data)
                 };
+
 
                 lock (txqueueMessages)
                 {
@@ -79,6 +92,19 @@ namespace DLT
                     if (code == ProtocolMessageCode.newTransaction || code == ProtocolMessageCode.transactionData
                         || code == ProtocolMessageCode.transactionsChunk || code == ProtocolMessageCode.newBlock || code == ProtocolMessageCode.blockData)
                     {
+                        if(message.helperData != null)
+                        {
+                            if (txqueueMessages.Exists(x => x.code == message.code && x.helperData.SequenceEqual(message.helperData)))
+                            {
+                                int msg_index = txqueueMessages.FindIndex(x => x.code == message.code && message.helperData.SequenceEqual(x.helperData));
+                                if (txqueueMessages[msg_index].length < message.length)
+                                {
+                                    txqueueMessages[msg_index] = message;
+                                }
+                                return;
+                            }
+                        }
+
                         if (txqueueMessages.Exists(x => x.code == message.code && x.checksum.SequenceEqual(message.checksum)))
                         {
                             //Logging.warn(string.Format("Attempting to add a duplicate message (code: {0}) to the network queue", code));

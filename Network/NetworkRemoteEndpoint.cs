@@ -520,6 +520,36 @@ namespace DLT
             }
         }
 
+        private void addMessageToSendQueue(List<QueueMessage> message_queue, QueueMessage message)
+        {
+            if (message.helperData != null)
+            {
+                if (message_queue.Exists(x => x.code == message.code && message.helperData.SequenceEqual(x.helperData)))
+                {
+                    int msg_index = message_queue.FindIndex(x => x.code == message.code && message.helperData.SequenceEqual(x.helperData));
+                    message_queue[msg_index] = message;
+                }
+            }
+            else
+            {
+                bool duplicate = message_queue.Exists(x => x.code == message.code && message.checksum.SequenceEqual(x.checksum));
+                if (duplicate)
+                {
+                    Logging.warn(string.Format("Attempting to add a duplicate message (code: {0}) to the network queue for {1}", message.code, getFullAddress()));
+                }
+                else
+                {
+                    // Check if there are too many messages
+                    if (message_queue.Count > CoreConfig.maxSendQueue)
+                    {
+                        message_queue.RemoveAt(10);
+                    }
+
+                    message_queue.Add(message);
+                }
+            }
+        }
+
 
         // Sends data over the network
         public void sendData(ProtocolMessageCode code, byte[] data, byte[] helper_data = null)
@@ -542,83 +572,20 @@ namespace DLT
             {
                 lock (sendQueueMessagesHighPriority)
                 {
-                    bool duplicate = false;
-                    if(message.helperData != null)
-                    {
-                        duplicate = sendQueueMessagesHighPriority.Exists(x => x.code == message.code && message.helperData.SequenceEqual(x.helperData));
-                    }
-                    else
-                    {
-                        duplicate = sendQueueMessagesHighPriority.Exists(x => x.code == message.code && message.checksum.SequenceEqual(x.checksum));
-                    }
-                    if (duplicate)
-                    {
-                        Logging.warn(string.Format("Attempting to add a duplicate message (code: {0}) to the high priority network queue for {1}", code, getFullAddress()));
-                    }
-                    else
-                    {
-                        // Check if there are too many messages
-                        if (sendQueueMessagesHighPriority.Count > CoreConfig.maxSendQueue)
-                        {
-                            sendQueueMessagesHighPriority.RemoveAt(10);
-                        }
-
-                        sendQueueMessagesHighPriority.Add(message);
-                    }
+                    addMessageToSendQueue(sendQueueMessagesHighPriority, message);
                 }
             }else if(code != ProtocolMessageCode.transactionData && code != ProtocolMessageCode.newTransaction)
             {
                 lock (sendQueueMessagesNormalPriority)
                 {
-                    bool duplicate = false;
-                    if (message.helperData != null)
-                    {
-                        duplicate = sendQueueMessagesNormalPriority.Exists(x => x.code == message.code && message.helperData.SequenceEqual(x.helperData));
-                    }
-                    else
-                    {
-                        duplicate = sendQueueMessagesNormalPriority.Exists(x => x.code == message.code && message.checksum.SequenceEqual(x.checksum));
-                    }
-                    if (duplicate)
-                    {
-                        Logging.warn(string.Format("Attempting to add a duplicate message (code: {0}) to the normal priority network queue for {1}", code, getFullAddress()));
-                    }
-                    else
-                    {
-                        // Check if there are too many messages
-                        if (sendQueueMessagesNormalPriority.Count > CoreConfig.maxSendQueue)
-                        {
-                            sendQueueMessagesNormalPriority.RemoveAt(10);
-                        }
-                        sendQueueMessagesNormalPriority.Add(message);
-                    }
+                    addMessageToSendQueue(sendQueueMessagesNormalPriority, message);
                 }
-            }else
+            }
+            else
             {
                 lock (sendQueueMessagesLowPriority)
                 {
-                    bool duplicate = false;
-                    if (message.helperData != null)
-                    {
-                        duplicate = sendQueueMessagesLowPriority.Exists(x => x.code == message.code && message.helperData.SequenceEqual(x.helperData));
-                    }
-                    else
-                    {
-                        duplicate = sendQueueMessagesLowPriority.Exists(x => x.code == message.code && message.checksum.SequenceEqual(x.checksum));
-                    }
-                    if (duplicate)
-                    {
-                            Logging.warn(string.Format("Attempting to add a duplicate message (code: {0}) to the low priority network queue for{1}", code, getFullAddress()));
-                    }
-                    else
-                    {
-                        // Check if there are too many messages
-                        if (sendQueueMessagesLowPriority.Count > CoreConfig.maxSendQueue)
-                        {
-                            sendQueueMessagesLowPriority.RemoveAt(10);
-                        }
-                        sendQueueMessagesLowPriority.Add(message);
-                    }
+                    addMessageToSendQueue(sendQueueMessagesLowPriority, message);
                 }
             }
         }
