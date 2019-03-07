@@ -434,6 +434,10 @@ namespace DLT
                     Thread.Sleep(1000);
                 }
 
+                if(curNodePresenceAddress.type == 'W')
+                {
+                    continue; // no need to send PL for worker nodes
+                }
 
                 try
                 {
@@ -575,6 +579,24 @@ namespace DLT
                         int sigLen = reader.ReadInt32();
                         byte[] signature = reader.ReadBytes(sigLen);
                         //Logging.info(String.Format("[PL] KEEPALIVE request from {0}", hostname));
+
+                        if (node_type == 'C' || node_type == 'R')
+                        {
+                            // all good, continue
+                        }
+                        else if (node_type == 'M' || node_type == 'H')
+                        {
+                            // check balance
+                            if (Node.walletState.getWalletBalance(wallet) < CoreConfig.minimumMasterNodeFunds)
+                            {
+                                return false;
+                            }
+                        }
+                        else
+                        {
+                            // reject everything else
+                            return false;
+                        }
 
                         lock (presences)
                         {
