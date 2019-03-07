@@ -528,6 +528,7 @@ namespace DLT
                 {
                     int msg_index = message_queue.FindIndex(x => x.code == message.code && message.helperData.SequenceEqual(x.helperData));
                     message_queue[msg_index] = message;
+                    return;
                 }
             }
             else
@@ -536,18 +537,16 @@ namespace DLT
                 if (duplicate)
                 {
                     Logging.warn(string.Format("Attempting to add a duplicate message (code: {0}) to the network queue for {1}", message.code, getFullAddress()));
-                }
-                else
-                {
-                    // Check if there are too many messages
-                    if (message_queue.Count > CoreConfig.maxSendQueue)
-                    {
-                        message_queue.RemoveAt(10);
-                    }
-
-                    message_queue.Add(message);
+                    return;
                 }
             }
+            // Check if there are too many messages
+            if (message_queue.Count > CoreConfig.maxSendQueue)
+            {
+                message_queue.RemoveAt(10);
+            }
+
+            message_queue.Add(message);
         }
 
 
