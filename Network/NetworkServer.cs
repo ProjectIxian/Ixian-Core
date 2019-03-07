@@ -26,7 +26,7 @@ namespace DLT
             private static TcpListener listener;
             public static List<RemoteEndpoint> connectedClients = new List<RemoteEndpoint>();
 
-            Dictionary<string, DateTime> nodeBlacklist = new Dictionary<string, DateTime>();
+            private static Dictionary<string, DateTime> nodeBlacklist = new Dictionary<string, DateTime>();
 
             static NetworkServer()
             {
@@ -455,7 +455,7 @@ namespace DLT
 
 
             // Adds a node to the blacklist
-            public void blacklistNode(string ip)
+            public static void blacklistNode(string ip)
             {
                 lock (nodeBlacklist)
                 {
@@ -464,7 +464,8 @@ namespace DLT
             }
 
             // Returns true if node is blacklisted
-            public bool isNodeBlacklisted(string ip)
+            // TODO TODO TODO TODO blacklist by IP or wallet address or both?
+            public static bool isNodeBlacklisted(string ip)
             {
                 lock (nodeBlacklist)
                 {

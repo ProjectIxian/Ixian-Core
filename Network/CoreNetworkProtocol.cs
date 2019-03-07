@@ -253,7 +253,6 @@ namespace IXICore
                     }
                 }
 
-
                 //Console.WriteLine("Received Address: {0} of type {1}", addr, node_type);
 
                 endpoint.incomingPort = port;
