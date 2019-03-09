@@ -116,6 +116,11 @@ namespace DLT
             presence = null;
             presenceAddress = null;
 
+            lock (subscribedAddresses)
+            {
+                subscribedAddresses.Clear();
+            }
+
             lastDataReceivedTime = Clock.getTimestamp();
             lastDataSentTime = Clock.getTimestamp();
 
@@ -194,6 +199,11 @@ namespace DLT
             lock (recvRawQueueMessages)
             {
                 recvRawQueueMessages.Clear();
+            }
+
+            lock (subscribedAddresses)
+            {
+                subscribedAddresses.Clear();
             }
 
             // Abort all related threads
@@ -841,14 +851,17 @@ namespace DLT
             if (address == null)
                 return false;
 
-            // Check the quota
-            if (subscribedAddresses.Count > CoreConfig.maximumSubscribableEvents)
-                return false;
-
-            // Check if we're subscribed already to this address
-            if (subscribedAddresses.ContainsKey(address) == false)
+            lock (subscribedAddresses)
             {
-                subscribedAddresses.Add(address, type);
+                // Check the quota
+                if (subscribedAddresses.Count > CoreConfig.maximumSubscribableEvents)
+                    return false;
+
+                // Check if we're subscribed already to this address
+                if (subscribedAddresses.ContainsKey(address) == false)
+                {
+                    subscribedAddresses.Add(address, type);
+                }
             }
 
             return true;
@@ -861,10 +874,13 @@ namespace DLT
             if (address == null)
                 return false;
 
-            // Check if we're subscribed already to this address
-            if (subscribedAddresses.ContainsKey(address) == true)
+            lock (subscribedAddresses)
             {
-                subscribedAddresses.Remove(address);
+                // Check if we're subscribed already to this address
+                if (subscribedAddresses.ContainsKey(address) == true)
+                {
+                    subscribedAddresses.Remove(address);
+                }
             }
 
             return true;
@@ -877,15 +893,19 @@ namespace DLT
             if (address == null)
                 return false;
 
-            // Check if we're subscribed to this address
-            if (subscribedAddresses.ContainsKey(address) == true)
+            lock (subscribedAddresses)
             {
-                // Check for the specific event type
-                if(subscribedAddresses[address] == type)
+                // Check if we're subscribed to this address
+                if (subscribedAddresses.ContainsKey(address) == true)
                 {
-                    return true;
+                    // Check for the specific event type
+                    if (subscribedAddresses[address] == type)
+                    {
+                        return true;
+                    }
                 }
             }
+
             return false;
         }
 
