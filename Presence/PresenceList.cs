@@ -81,8 +81,6 @@ namespace DLT
         // If the wallet address is found in the presence list, it adds any new addresses from the specified presence.
         public static Presence updateEntry(Presence presence, RemoteEndpoint skipEndpoint = null)
         {
-            //Console.WriteLine("[PL] Received update entry for: {0}", presence.wallet);
-
             if(presence == null)
             {
                 return null;
@@ -133,7 +131,7 @@ namespace DLT
                         // Add the address if it's not found
                         if (addressfound == false && entryUpdated == false)
                         {
-                            //Console.WriteLine("[PL] Adding new address for {0}", presence.wallet);
+                            //Logging.info("[PL] Adding new address for {0}", presence.wallet);
                             pr.addresses.Add(local_addr);
                             entryUpdated = true;
 
