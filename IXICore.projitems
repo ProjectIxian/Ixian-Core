@@ -29,6 +29,7 @@
     <Compile Include="$(MSBuildThisFileDirectory)Network\Network.cs" />
     <Compile Include="$(MSBuildThisFileDirectory)Network\NetworkClient.cs" />
     <Compile Include="$(MSBuildThisFileDirectory)Network\NetworkClientManager.cs" />
+    <Compile Include="$(MSBuildThisFileDirectory)Network\NetworkEvents.cs" />
     <Compile Include="$(MSBuildThisFileDirectory)Network\NetworkQueue.cs" />
     <Compile Include="$(MSBuildThisFileDirectory)Network\NetworkRemoteEndpoint.cs" />
     <Compile Include="$(MSBuildThisFileDirectory)Network\NetworkServer.cs" />

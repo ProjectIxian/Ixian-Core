@@ -836,29 +836,19 @@ namespace DLT
 
 
         // Subscribe to event
-        public bool attachEvent(int type, byte[] data)
+        public bool attachEvent(int type, byte[] address)
         {
-            using (MemoryStream m = new MemoryStream(data))
+            if (address == null)
+                return false;
+
+            // Check the quota
+            if (subscribedAddresses.Count > CoreConfig.maximumSubscribableEvents)
+                return false;
+
+            // Check if we're subscribed already to this address
+            if (subscribedAddresses.ContainsKey(address) == false)
             {
-                using (BinaryReader reader = new BinaryReader(m))
-                {
-                    int addrCount = reader.ReadInt32();
-                    for (int i = 0; i < addrCount; i++)
-                    {
-                        // Check the quota
-                        if (subscribedAddresses.Count > CoreConfig.maximumSubscribableEvents)
-                            return false;
-
-                        int addrLen = reader.ReadInt32();
-                        byte[] address = reader.ReadBytes(addrLen);
-
-                        // Check if we're subscribed already to this address
-                        if(subscribedAddresses.ContainsKey(address) == false)
-                        {
-                            subscribedAddresses.Add(address, type);
-                        }                        
-                    }
-                }
+                subscribedAddresses.Add(address, type);
             }
 
             return true;
@@ -866,26 +856,17 @@ namespace DLT
 
 
         // Unsubscribe from event
-        public bool detachEvent(int type, byte[] data)
+        public bool detachEvent(int type, byte[] address)
         {
-            using (MemoryStream m = new MemoryStream(data))
-            {
-                using (BinaryReader reader = new BinaryReader(m))
-                {
-                    int addrCount = reader.ReadInt32();
-                    for (int i = 0; i < addrCount; i++)
-                    {
-                        int addrLen = reader.ReadInt32();
-                        byte[] address = reader.ReadBytes(addrLen);
+            if (address == null)
+                return false;
 
-                        // Check if we're subscribed already to this address
-                        if (subscribedAddresses.ContainsKey(address) == true)
-                        {
-                            subscribedAddresses.Remove(address);
-                        }
-                    }
-                }
+            // Check if we're subscribed already to this address
+            if (subscribedAddresses.ContainsKey(address) == true)
+            {
+                subscribedAddresses.Remove(address);
             }
+
             return true;
         }
 
