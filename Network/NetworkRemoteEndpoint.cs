@@ -49,7 +49,7 @@ namespace DLT
         protected bool running = false;
 
         // Maintain a list of subscribed event addresses with event type
-        private Dictionary<byte[], int> subscribedAddresses = new Dictionary<byte[], int>();
+        private Dictionary<byte[], NetworkEvents.Type> subscribedAddresses = new Dictionary<byte[], NetworkEvents.Type>();
 
         // Maintain a queue of messages to send
         private List<QueueMessage> sendQueueMessagesHighPriority = new List<QueueMessage>();
@@ -869,7 +869,7 @@ namespace DLT
 
 
         // Subscribe to event
-        public bool attachEvent(int type, byte[] address)
+        public bool attachEvent(NetworkEvents.Type type, byte[] address)
         {
             if (address == null)
                 return false;
@@ -892,7 +892,7 @@ namespace DLT
 
 
         // Unsubscribe from event
-        public bool detachEvent(int type, byte[] address)
+        public bool detachEvent(NetworkEvents.Type type, byte[] address)
         {
             if (address == null)
                 return false;
@@ -911,7 +911,7 @@ namespace DLT
 
         // Check if the remote endpoint is subscribed to an event for a specific address
         // Returns true if subscribed
-        public bool isSubscribedToEvent(int type, byte[] address)
+        public bool isSubscribedToEvent(NetworkEvents.Type type, byte[] address)
         {
             if (address == null)
                 return false;

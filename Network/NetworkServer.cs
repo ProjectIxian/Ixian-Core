@@ -227,7 +227,7 @@ namespace DLT
             }
 
             // Sends event data to all subscribed clients
-            public static bool broadcastEventData(ProtocolMessageCode code, byte[] data, byte[] address, byte[] helper_data, RemoteEndpoint skipEndpoint = null)
+            public static bool broadcastEventData(NetworkEvents.Type type, ProtocolMessageCode code, byte[] data, byte[] address, byte[] helper_data, RemoteEndpoint skipEndpoint = null)
             {
                 bool result = false;
                 lock (connectedClients)
@@ -256,7 +256,7 @@ namespace DLT
                         }
 
                         // Finally, check if the endpoint is subscribed to this event and address
-                        if (endpoint.isSubscribedToEvent((int)code, address))
+                        if (endpoint.isSubscribedToEvent(type, address))
                         {
                             endpoint.sendData(code, data, helper_data);
                             result = true;

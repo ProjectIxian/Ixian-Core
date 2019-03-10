@@ -455,9 +455,11 @@ namespace DLT
                     // Update self presence
                     PresenceList.receiveKeepAlive(ka_bytes, out address);
 
-                    // Send this keepalive message to all connected clients
-                    CoreProtocolMessage.broadcastEventBasedMessage(ProtocolMessageCode.keepAlivePresence, ka_bytes, address, address);
+                    // Send this keepalive to all connected non-clients
+                    CoreProtocolMessage.broadcastProtocolMessage(new char[] { 'M', 'R', 'H', 'W' }, ProtocolMessageCode.keepAlivePresence, ka_bytes, address);
 
+                    // Send this keepalive message to all connected clients
+                    CoreProtocolMessage.broadcastEventDataMessage(NetworkEvents.Type.keepAlive, address, ProtocolMessageCode.keepAlivePresence, ka_bytes, address);
                 }
                 catch (Exception)
                 {

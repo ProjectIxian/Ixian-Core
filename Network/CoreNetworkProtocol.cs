@@ -465,17 +465,14 @@ namespace IXICore
             return true;
         }
 
-        // Broadcast an event-specific protocol message across clients and nodes
+        // Broadcast an event-specific protocol message across subscribed clients
         // Returns true if it sent the message to at least one endpoint. Returns false if the message couldn't be sent to any endpoints
-        public static bool broadcastEventBasedMessage(ProtocolMessageCode code, byte[] data, byte[] address, byte[] helper_data, RemoteEndpoint skipEndpoint = null)
+        public static bool broadcastEventDataMessage(NetworkEvents.Type type, byte[] address, ProtocolMessageCode code, byte[] data, byte[] helper_data, RemoteEndpoint skipEndpoint = null)
         {
-            // Broadcast the event to all non-C nodes
-            bool b_result = broadcastProtocolMessage(new char[] { 'M', 'R', 'H', 'W' }, code, data, helper_data, skipEndpoint);
+            // Send it to subscribed C nodes
+            bool f_result = NetworkServer.broadcastEventData(type, code, data, address, helper_data, skipEndpoint);
 
-            // Now send it to subscribed C nodes
-            bool f_result = NetworkServer.broadcastEventData(code, data, address, helper_data, skipEndpoint);
-
-            if (!b_result && !f_result)
+            if (!f_result)
                 return false;
 
             return true;

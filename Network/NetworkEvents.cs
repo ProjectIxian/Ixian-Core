@@ -6,8 +6,17 @@ using System.Text;
 
 namespace DLT
 {
-    class NetworkEvents
+    public class NetworkEvents
     {
+        // Message codes are for the most part pairs (send/receive)
+        public enum Type
+        {
+            keepAlive,
+            transactionFrom,
+            transactionTo
+        }
+
+
         // Prepares an event message data with a provided type and address
         public static byte[] prepareEventMessageData(int type, byte[] address)
         {
@@ -46,7 +55,7 @@ namespace DLT
                     int addrLen = reader.ReadInt32();
                     byte[] address = reader.ReadBytes(addrLen);
 
-                    endpoint.attachEvent(type, address);
+                    endpoint.attachEvent((NetworkEvents.Type)type, address);
                 }
             }
         }
@@ -68,7 +77,7 @@ namespace DLT
                     int addrLen = reader.ReadInt32();
                     byte[] address = reader.ReadBytes(addrLen);
 
-                    endpoint.detachEvent(type, address);
+                    endpoint.detachEvent((NetworkEvents.Type)type, address);
                 }
             }
         }
