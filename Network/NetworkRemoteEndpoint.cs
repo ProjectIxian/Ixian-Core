@@ -120,6 +120,11 @@ namespace DLT
             presence = null;
             presenceAddress = null;
 
+            lock (subscribedAddresses)
+            {
+                subscribedAddresses.Clear();
+            }
+
             lastDataReceivedTime = Clock.getTimestamp();
             lastDataSentTime = Clock.getTimestamp();
 
@@ -198,6 +203,11 @@ namespace DLT
             lock (recvRawQueueMessages)
             {
                 recvRawQueueMessages.Clear();
+            }
+
+            lock (subscribedAddresses)
+            {
+                subscribedAddresses.Clear();
             }
 
             // Abort all related threads
@@ -859,28 +869,21 @@ namespace DLT
 
 
         // Subscribe to event
-        public bool attachEvent(int type, byte[] data)
+        public bool attachEvent(int type, byte[] address)
         {
-            using (MemoryStream m = new MemoryStream(data))
+            if (address == null)
+                return false;
+
+            lock (subscribedAddresses)
             {
-                using (BinaryReader reader = new BinaryReader(m))
+                // Check the quota
+                if (subscribedAddresses.Count > CoreConfig.maximumSubscribableEvents)
+                    return false;
+
+                // Check if we're subscribed already to this address
+                if (subscribedAddresses.ContainsKey(address) == false)
                 {
-                    int addrCount = reader.ReadInt32();
-                    for (int i = 0; i < addrCount; i++)
-                    {
-                        // Check the quota
-                        if (subscribedAddresses.Count > CoreConfig.maximumSubscribableEvents)
-                            return false;
-
-                        int addrLen = reader.ReadInt32();
-                        byte[] address = reader.ReadBytes(addrLen);
-
-                        // Check if we're subscribed already to this address
-                        if(subscribedAddresses.ContainsKey(address) == false)
-                        {
-                            subscribedAddresses.Add(address, type);
-                        }                        
-                    }
+                    subscribedAddresses.Add(address, type);
                 }
             }
 
@@ -889,26 +892,20 @@ namespace DLT
 
 
         // Unsubscribe from event
-        public bool detachEvent(int type, byte[] data)
+        public bool detachEvent(int type, byte[] address)
         {
-            using (MemoryStream m = new MemoryStream(data))
-            {
-                using (BinaryReader reader = new BinaryReader(m))
-                {
-                    int addrCount = reader.ReadInt32();
-                    for (int i = 0; i < addrCount; i++)
-                    {
-                        int addrLen = reader.ReadInt32();
-                        byte[] address = reader.ReadBytes(addrLen);
+            if (address == null)
+                return false;
 
-                        // Check if we're subscribed already to this address
-                        if (subscribedAddresses.ContainsKey(address) == true)
-                        {
-                            subscribedAddresses.Remove(address);
-                        }
-                    }
+            lock (subscribedAddresses)
+            {
+                // Check if we're subscribed already to this address
+                if (subscribedAddresses.ContainsKey(address) == true)
+                {
+                    subscribedAddresses.Remove(address);
                 }
             }
+
             return true;
         }
 
@@ -919,15 +916,19 @@ namespace DLT
             if (address == null)
                 return false;
 
-            // Check if we're subscribed to this address
-            if (subscribedAddresses.ContainsKey(address) == true)
+            lock (subscribedAddresses)
             {
-                // Check for the specific event type
-                if(subscribedAddresses[address] == type)
+                // Check if we're subscribed to this address
+                if (subscribedAddresses.ContainsKey(address) == true)
                 {
-                    return true;
+                    // Check for the specific event type
+                    if (subscribedAddresses[address] == type)
+                    {
+                        return true;
+                    }
                 }
             }
+
             return false;
         }
 

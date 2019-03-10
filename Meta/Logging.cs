@@ -57,7 +57,8 @@ namespace DLT
             {        
                 if(running)
                 {
-                    Console.WriteLine("Logging already started.");
+                    if (consoleOutput)
+                        Console.WriteLine("Logging already started.");
                     return;
                 }
                 try
@@ -184,7 +185,8 @@ namespace DLT
                 }
                 catch(Exception e)
                 {
-                    Console.WriteLine("Logging exception: {0}", e.Message);
+                    if (consoleOutput)
+                        Console.WriteLine("Logging exception: {0}", e.Message);
                 }
             }
 
@@ -272,7 +274,8 @@ namespace DLT
                 }
                 catch (Exception e)
                 {
-                    Console.WriteLine("Exception rolling log file: {0}", e.Message);
+                    if (consoleOutput)
+                        Console.WriteLine("Exception rolling log file: {0}", e.Message);
                     return;
                 }
                 try
@@ -284,7 +287,8 @@ namespace DLT
                 }
                 catch (Exception e)
                 {
-                    Console.WriteLine("Exception opening log file: {0}", e.Message);
+                    if (consoleOutput)
+                        Console.WriteLine("Exception opening log file: {0}", e.Message);
                 }
             }
 
@@ -320,7 +324,8 @@ namespace DLT
                     }
                     catch(Exception e)
                     {
-                        Console.WriteLine("Exception clearing log files: {0}", e.Message);
+                        if (consoleOutput)
+                            Console.WriteLine("Exception clearing log files: {0}", e.Message);
                     }
 
                     logFileStream = File.Open(logfilename, FileMode.OpenOrCreate, FileAccess.Write, FileShare.Read);

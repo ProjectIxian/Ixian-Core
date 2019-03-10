@@ -163,9 +163,6 @@ namespace IXICore
                             continue;
                         }
 
-                        // For development purposes, output the proper protocol message
-                        //Console.WriteLine(string.Format("NET: {0} | {1} | {2}", code, data_length, Crypto.hashToString(data_checksum)));
-
                         // Can proceed to parse the data parameter based on the protocol message code.
                         // Data can contain multiple elements.
                         //parseProtocolMessage(code, data, socket, endpoint);
@@ -252,8 +249,6 @@ namespace IXICore
                         }
                     }
                 }
-
-                //Console.WriteLine("Received Address: {0} of type {1}", addr, node_type);
 
                 endpoint.incomingPort = port;
 
