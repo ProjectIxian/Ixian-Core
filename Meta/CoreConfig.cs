@@ -28,7 +28,7 @@ namespace IXICore
         public static readonly int maximumNeighborReconnectCount = 3; // Number of retries before proceeding to a different neighbor node
         public static readonly int simultaneousConnectedNeighbors = 6; // Desired number of simulatenously connected neighbor nodes
         public static readonly int maximumSubscribableEvents = 500; // Maximum number of events a client can be subscribed to
-        public static readonly int maximumServerMasterNodes = 200; // Maximum number of clients this server can accept 
+        public static readonly int maximumServerMasterNodes = 250; // Maximum number of clients this server can accept 
         public static readonly int maximumServerClients = 200; // Maximum number of clients this server can accept
         public static readonly double networkConsensusRatio = 0.75;
 

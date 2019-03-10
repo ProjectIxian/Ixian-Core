@@ -68,6 +68,10 @@ namespace DLT
 
         protected bool enableSendTimeSyncMessages = true;
 
+        private int messagesPerSecond = 0;
+        private int lastMessagesPerSecond = 0;
+        private DateTime lastMessageStatTime;
+
         protected void prepareSocket(Socket socket)
         {
             // The socket will linger for 3 seconds after 
@@ -220,6 +224,7 @@ namespace DLT
         protected virtual void recvLoop()
         {
             socketReadBuffer = new byte[8192];
+            lastMessageStatTime = DateTime.UtcNow;
             while (running)
             {
                 // Let the protocol handler receive and handle messages
@@ -229,6 +234,7 @@ namespace DLT
                     if (data != null)
                     {
                         parseDataInternal(data, this);
+                        messagesPerSecond++;
                     }
                 }
                 catch (Exception e)
@@ -237,13 +243,30 @@ namespace DLT
                     state = RemoteEndpointState.Closed;
                 }
 
+                TimeSpan timeSinceLastStat = DateTime.UtcNow - lastMessageStatTime;
+                if (timeSinceLastStat.TotalSeconds < 0 || timeSinceLastStat.TotalSeconds > 10)
+                {
+                    lastMessageStatTime = DateTime.UtcNow;
+                    lastMessagesPerSecond = messagesPerSecond / 10;
+                    messagesPerSecond = 0;
+                }
+
+                    
                 // Sleep a while to throttle the client
                 // Check if there are too many messages
                 // TODO TODO TODO this can be handled way better
-                if (NetworkQueue.getQueuedMessageCount() + NetworkQueue.getTxQueuedMessageCount() > CoreConfig.maxNetworkQueue)
+                int total_message_count = NetworkQueue.getQueuedMessageCount() + NetworkQueue.getTxQueuedMessageCount();
+                if(total_message_count > 100)
                 {
+                    Logging.warn("Flood control level 2 activated for {0}", getFullAddress());
+                    Thread.Sleep(200 * lastMessagesPerSecond);
+                }
+                else if (total_message_count > 50)
+                {
+                    Logging.info("Flood control level 1 activated for {0}", getFullAddress());
                     Thread.Sleep(50);
-                }else
+                }
+                else
                 {
                     Thread.Sleep(1);
                 }

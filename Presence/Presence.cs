@@ -245,7 +245,7 @@ namespace DLT
             }
         }
 
-        public byte[] getBytes()
+        public byte[] getBytes(ushort from_index = 0, ushort count = 0)
         {
             using (MemoryStream m = new MemoryStream())
             {
@@ -281,11 +281,17 @@ namespace DLT
                     }
 
                     // Write the number of ips
-                    UInt16 number_of_addresses = (UInt16) addresses.Count;
+                    UInt16 number_of_addresses = (ushort) ((UInt16) addresses.Count - from_index);
+
+                    if(count > 0 && number_of_addresses > count)
+                    {
+                        number_of_addresses = count;
+                    }
+
                     writer.Write(number_of_addresses);
 
                     // Write all ips
-                    for (UInt16 i = 0; i < number_of_addresses; i++)
+                    for (UInt16 i = from_index; i < number_of_addresses; i++)
                     {
                         if (addresses[i] == null)
                         {
@@ -307,6 +313,17 @@ namespace DLT
                 }
                 return m.ToArray();
             }
+        }
+
+        public byte[][] getByteChunks()
+        {
+            ushort chunk_count = (ushort)Math.Ceiling((decimal)addresses.Count / 10);
+            byte[][] presence_chunks = new byte[chunk_count][];
+            for(ushort i = 0; i < chunk_count; i++)
+            {
+                presence_chunks[i] = getBytes((ushort)(i * 10), 10);
+            }
+            return presence_chunks;
         }
     }
 }
