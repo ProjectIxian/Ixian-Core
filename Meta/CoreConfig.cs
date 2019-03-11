@@ -26,7 +26,7 @@ namespace IXICore
         public static readonly int networkClientReconnectInterval = 10 * 1000; // Time in milliseconds
         public static readonly int keepAliveInterval = 45; // Number of seconds to wait until next keepalive ping
         public static readonly int maximumNeighborReconnectCount = 3; // Number of retries before proceeding to a different neighbor node
-        public static readonly int simultaneousConnectedNeighbors = 6; // Desired number of simulatenously connected neighbor nodes
+        public static int simultaneousConnectedNeighbors = 6; // Desired number of simulatenously connected neighbor nodes
         public static readonly int maximumSubscribableEvents = 500; // Maximum number of events a client can be subscribed to
         public static readonly int maximumServerMasterNodes = 200; // Maximum number of clients this server can accept 
         public static readonly int maximumServerClients = 200; // Maximum number of clients this server can accept
