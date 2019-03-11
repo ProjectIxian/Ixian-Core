@@ -278,10 +278,6 @@ namespace DLT
                 int total_message_count = NetworkQueue.getQueuedMessageCount() + NetworkQueue.getTxQueuedMessageCount();
                 if(total_message_count > 500)
                 {
-                    if (lastMessagesPerSecond > 1)
-                    {
-                        Logging.warn("Flood control activated for {0} - {1}ms", getFullAddress(), 100 * lastMessagesPerSecond);
-                    }
                     Thread.Sleep(100 * lastMessagesPerSecond);
                     if (messagesPerSecond == 0)
                     {
