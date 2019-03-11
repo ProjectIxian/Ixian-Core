@@ -253,38 +253,49 @@ namespace DLT
                     state = RemoteEndpointState.Closed;
                 }
 
+                // Check if the client disconnected
+                if (state == RemoteEndpointState.Closed)
+                {
+                    running = false;
+                }
+
                 TimeSpan timeSinceLastStat = DateTime.UtcNow - lastMessageStatTime;
-                if (timeSinceLastStat.TotalSeconds < 0 || timeSinceLastStat.TotalSeconds > 10)
+                if (timeSinceLastStat.TotalSeconds < 0 || timeSinceLastStat.TotalSeconds > 2)
                 {
                     lastMessageStatTime = DateTime.UtcNow;
-                    lastMessagesPerSecond = messagesPerSecond / 10;
+                    lastMessagesPerSecond = (int)(messagesPerSecond / timeSinceLastStat.TotalSeconds);
                     messagesPerSecond = 0;
                 }
 
+                if (lastMessagesPerSecond < 1)
+                {
+                    lastMessagesPerSecond = 1;
+                }
                     
                 // Sleep a while to throttle the client
                 // Check if there are too many messages
                 // TODO TODO TODO this can be handled way better
                 int total_message_count = NetworkQueue.getQueuedMessageCount() + NetworkQueue.getTxQueuedMessageCount();
-                if(total_message_count > 100)
+                if(total_message_count > 500)
                 {
-                    Logging.warn("Flood control level 2 activated for {0}", getFullAddress());
-                    Thread.Sleep(200 * lastMessagesPerSecond);
+                    if (lastMessagesPerSecond > 1)
+                    {
+                        Logging.warn("Flood control activated for {0} - {1}ms", getFullAddress(), 100 * lastMessagesPerSecond);
+                    }
+                    Thread.Sleep(100 * lastMessagesPerSecond);
+                    if (messagesPerSecond == 0)
+                    {
+                        lastMessageStatTime = DateTime.UtcNow;
+                    }
+                    lastDataReceivedTime = Clock.getTimestamp();
                 }
-                else if (total_message_count > 50)
+                else if (total_message_count > 100)
                 {
-                    Logging.info("Flood control level 1 activated for {0}", getFullAddress());
-                    Thread.Sleep(50);
+                    Thread.Sleep(total_message_count / 10);
                 }
                 else
                 {
                     Thread.Sleep(1);
-                }
-
-                // Check if the client disconnected
-                if (state == RemoteEndpointState.Closed)
-                {
-                    running = false;
                 }
             }
         }

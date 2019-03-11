@@ -592,7 +592,7 @@ namespace DLT
                                 return false;
                             }
                         }
-                        else
+                        else if(node_type != '0')
                         {
                             // reject everything else
                             return false;
