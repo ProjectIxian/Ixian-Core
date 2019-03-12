@@ -18,7 +18,7 @@ namespace DLT
 
 
         // Prepares an event message data with a provided type and address
-        public static byte[] prepareEventMessageData(int type, byte[] address)
+        public static byte[] prepareEventMessageData(Type type, byte[] address)
         {
             if (address == null)
                 return null;
@@ -28,7 +28,7 @@ namespace DLT
             {
                 using (BinaryWriter writer = new BinaryWriter(m))
                 {
-                    writer.Write(type);
+                    writer.Write((int)type);
                     writer.Write(address.Length);
                     writer.Write(address);
                     data = m.ToArray();
