@@ -345,13 +345,13 @@ namespace DLT
         }
 
         // Applies this node's signature to this block
-        public bool applySignature()
+        public byte[][] applySignature()
         {
             // Note: we don't need any further validation, since this block has already passed through BlockProcessor.verifyBlock() at this point.
             byte[] myAddress = Node.walletStorage.getPrimaryAddress();
             if (containsSignature(myAddress))
             {
-                return false;
+                return null;
             }
 
             byte[] myPubKey = Node.walletStorage.getPrimaryPublicKey();
@@ -362,24 +362,25 @@ namespace DLT
 
             Wallet w = Node.walletState.getWallet(myAddress);
 
+            byte[][] newSig = new byte[2][];
+            newSig[0] = signature;
+            if (w.publicKey == null)
+            {
+                newSig[1] = myPubKey;
+            }
+            else
+            {
+                newSig[1] = myAddress;
+            }
+
             lock (signatures)
             {
-                byte[][] newSig = new byte[2][];
-                newSig[0] = signature;
-                if (w.publicKey == null)
-                {
-                    newSig[1] = myPubKey;
-                }
-                else
-                {
-                    newSig[1] = myAddress;
-                }
                 signatures.Add(newSig);               
             }
 
             Logging.info(String.Format("Signed block #{0}.", blockNum));
 
-            return true;
+            return newSig;
         }
 
         public bool containsSignature(byte[] address_or_pub_key)
