@@ -108,7 +108,7 @@ namespace DLT
             applied = 0;
         }
 
-        public Transaction(int tx_type, IxiNumber tx_amount, IxiNumber tx_feePerKb, byte[] tx_to, byte[] tx_from, byte[] tx_data, byte[] tx_pubKey, ulong tx_blockHeight, int tx_nonce = -1)
+        public Transaction(int tx_type, IxiNumber tx_amount, IxiNumber tx_feePerKb, byte[] tx_to, byte[] tx_from, byte[] tx_data, byte[] tx_pubKey, ulong tx_blockHeight, int tx_nonce = -1, long tx_timestamp = 0)
         {
             setVersion();
 
@@ -131,7 +131,13 @@ namespace DLT
                 nonce = tx_nonce;
             }
 
-            timeStamp = Core.getCurrentTimestamp();
+            if (tx_timestamp > 0)
+            {
+                timeStamp = tx_timestamp;
+            }else
+            {
+                timeStamp = Core.getCurrentTimestamp();
+            }
 
             pubKey = tx_pubKey;
             if(pubKey == null)
@@ -154,7 +160,7 @@ namespace DLT
             }
         }
 
-        public Transaction(int tx_type, IxiNumber tx_feePerKb, SortedDictionary<byte[], IxiNumber> tx_toList, byte[] tx_from, byte[] tx_data, byte[] tx_pubKey, ulong tx_blockHeight, int tx_nonce = -1)
+        public Transaction(int tx_type, IxiNumber tx_feePerKb, SortedDictionary<byte[], IxiNumber> tx_toList, byte[] tx_from, byte[] tx_data, byte[] tx_pubKey, ulong tx_blockHeight, int tx_nonce = -1, long tx_timestamp = 0)
         {
             setVersion();
 
@@ -181,7 +187,14 @@ namespace DLT
                 nonce = tx_nonce;
             }
 
-            timeStamp = Core.getCurrentTimestamp();
+            if (tx_timestamp > 0)
+            {
+                timeStamp = tx_timestamp;
+            }
+            else
+            {
+                timeStamp = Core.getCurrentTimestamp();
+            }
 
             pubKey = tx_pubKey;
             if (pubKey == null)

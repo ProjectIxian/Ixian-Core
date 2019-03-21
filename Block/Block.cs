@@ -68,24 +68,46 @@ namespace DLT
 
             foreach (byte[][] signature in block.signatures)
             {
-                if (!containsSignature(signature[1]))
-                {
-                    byte[][] newSig = new byte[2][];
-                    newSig[0] = new byte[signature[0].Length];
-                    Array.Copy(signature[0], newSig[0], newSig[0].Length);
-                    newSig[1] = new byte[signature[1].Length];
-                    Array.Copy(signature[1], newSig[1], newSig[1].Length);
-                    signatures.Add(newSig);
-                }
+                byte[][] newSig = new byte[2][];
+                newSig[0] = new byte[signature[0].Length];
+                Array.Copy(signature[0], newSig[0], newSig[0].Length);
+                newSig[1] = new byte[signature[1].Length];
+                Array.Copy(signature[1], newSig[1], newSig[1].Length);
+                signatures.Add(newSig);
             }
 
-            blockChecksum = block.blockChecksum;
-            lastBlockChecksum = block.lastBlockChecksum;
-            walletStateChecksum = block.walletStateChecksum;
-            signatureFreezeChecksum = block.signatureFreezeChecksum;
+            if (block.blockChecksum != null)
+            {
+                blockChecksum = new byte[block.blockChecksum.Length];
+                Array.Copy(block.blockChecksum, blockChecksum, blockChecksum.Length);
+            }
+
+            if (block.lastBlockChecksum != null)
+            {
+                lastBlockChecksum = new byte[block.lastBlockChecksum.Length];
+                Array.Copy(block.lastBlockChecksum, lastBlockChecksum, lastBlockChecksum.Length);
+            }
+
+            if (block.walletStateChecksum != null)
+            {
+                walletStateChecksum = new byte[block.walletStateChecksum.Length];
+                Array.Copy(block.walletStateChecksum, walletStateChecksum, walletStateChecksum.Length);
+            }
+
+            if (block.signatureFreezeChecksum != null)
+            {
+                signatureFreezeChecksum = new byte[block.signatureFreezeChecksum.Length];
+                Array.Copy(block.signatureFreezeChecksum, signatureFreezeChecksum, signatureFreezeChecksum.Length);
+            }
+
+            if (block.powField != null)
+            {
+                powField = new byte[block.powField.Length];
+                Array.Copy(block.powField, powField, powField.Length);
+            }
+
             timestamp = block.timestamp;
             difficulty = block.difficulty;
-            powField = block.powField;
 
             fromLocalStorage = block.fromLocalStorage;
         }
@@ -394,7 +416,7 @@ namespace DLT
                 foreach (byte[][] sig in signatures)
                 {
                     // Generate an address in case we got the pub key
-                    Address s_address_or_pub_key = new Address(sig[1]);
+                    Address s_address_or_pub_key = new Address(sig[1], null, false);
                     byte[] sig_address = s_address_or_pub_key.address;
 
                     if (cmp_address.SequenceEqual(sig_address))
@@ -609,13 +631,7 @@ namespace DLT
                         addressBytes = address.address;
                     }
 
-                    // Check if signature is actually valid
-                    if (CryptoManager.lib.verifySignature(blockChecksum, pubKeyBytes, signature) == false)
-                    {
-                        // Signature is not valid, don't extract the wallet address
-                        // TODO: maybe do something else here as well. Perhaps reject the block?
-                        continue;
-                    }
+                    // no need to verify if the sigs are ok, this has been pre-verified before the block was accepted
 
                     // Add the address to the list
                     result.Add(addressBytes);

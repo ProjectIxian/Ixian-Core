@@ -72,6 +72,9 @@ namespace DLT
                 }
                 continueRunning = false;
 
+                netControllerThread.Abort();
+                netControllerThread = null;
+
                 // Close blocking socket
                 listener.Stop();
 
@@ -87,9 +90,6 @@ namespace DLT
 
                     connectedClients.Clear();
                 }
-
-                netControllerThread.Abort();
-                netControllerThread = null;
             }
 
             public static void handleDisconnectedClients()
@@ -175,6 +175,11 @@ namespace DLT
                         catch (SocketException)
                         {
                             // Could be an interupt request
+                        }catch(Exception)
+                        {
+                            Logging.error("Exception occured in network server while trying to accept socket connection.");
+                            restartNetworkOperations();
+                            return;
                         }
                     }
 

@@ -16,7 +16,7 @@ namespace DLT
             nonce = null;
         }
 
-        public Address(byte[] public_key_or_address, byte[] nonce = null)
+        public Address(byte[] public_key_or_address, byte[] nonce = null, bool verify_checksum = true)
         {
             version = 0;
 
@@ -39,23 +39,23 @@ namespace DLT
 
             if(version == 0)
             {
-                constructAddress_v0(public_key_or_address, nonce);
+                constructAddress_v0(public_key_or_address, nonce, verify_checksum);
             }else if(version == 1)
             {
-                constructAddress_v1(public_key_or_address, nonce);
+                constructAddress_v1(public_key_or_address, nonce, verify_checksum);
             }else
             {
                 throw new Exception("Cannot construct address, unknown address version");
             }
         }
 
-        private void constructAddress_v0(byte[] public_key_or_address, byte[] nonce)
+        private void constructAddress_v0(byte[] public_key_or_address, byte[] nonce, bool verify_checksum)
         {
             byte[] base_address = null;
             if (public_key_or_address.Length == 36)
             {
                 base_address = public_key_or_address;
-                if(!validateChecksum(base_address))
+                if(verify_checksum && !validateChecksum(base_address))
                 {
                     throw new Exception("Invalid address was specified (checksum error).");
                 }
@@ -101,13 +101,13 @@ namespace DLT
             }
         }
 
-        private void constructAddress_v1(byte[] public_key_or_address, byte[] nonce)
+        private void constructAddress_v1(byte[] public_key_or_address, byte[] nonce, bool verify_checksum)
         {
             byte[] base_address = null;
             if (public_key_or_address.Length == 48)
             {
                 base_address = public_key_or_address;
-                if (!validateChecksum(base_address))
+                if (verify_checksum && !validateChecksum(base_address))
                 {
                     throw new Exception("Invalid address was specified (checksum error).");
                 }
