@@ -51,8 +51,27 @@ namespace DLT
                 if(second_part.Length > num_decimals)
                     second_part = second_part.Substring(0, num_decimals);
 
-                BigInteger p1 = BigInteger.Parse(split[0]);
-                BigInteger p2 = BigInteger.Parse(second_part);
+                BigInteger p1 = 0;
+                BigInteger p2 = 0;
+
+                // Could be cleaned up with tryParse
+                try
+                {
+                    p1 = BigInteger.Parse(split[0]);
+                }
+                catch (Exception)
+                {
+                    p1 = 0;
+                }
+
+                try
+                {
+                    p2 = BigInteger.Parse(second_part);
+                }
+                catch (Exception)
+                {
+                    p2 = 0;
+                }
 
                 // Check for partial decimals
                 int s2_length = second_part.Length;
