@@ -70,6 +70,12 @@ namespace DLT
             return seedHash;
         }
 
+        // Get the full wallet file path
+        public string getFileName()
+        {
+            return filename;
+        }
+
         public IxiNumber getMyTotalBalance(byte[] primary_address)
         {
             IxiNumber balance = 0;
