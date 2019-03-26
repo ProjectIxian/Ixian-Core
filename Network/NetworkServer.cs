@@ -182,7 +182,10 @@ namespace DLT
                         }catch(Exception)
                         {
                             Logging.error("Exception occured in network server while trying to accept socket connection.");
-                            restartNetworkOperations();
+                            if (!continueRunning)
+                            {
+                                restartNetworkOperations();
+                            }
                             return;
                         }
                     }
