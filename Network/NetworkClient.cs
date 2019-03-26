@@ -59,7 +59,15 @@ namespace DLT
             try
             {
                 totalReconnects++;
-                tcpClient.Connect(hostname, port);
+                if (!tcpClient.ConnectAsync(hostname, port).Wait(5000))
+                {
+                    Logging.warn(string.Format("Network client connection to {0}:{1} has failed.", hostname, port));
+
+                    disconnect();
+
+                    running = false;
+                    return false;
+                }
             }
             catch (SocketException se)
             {
