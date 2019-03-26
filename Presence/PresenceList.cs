@@ -24,6 +24,7 @@ namespace DLT
 
         private static Thread keepAliveThread;
         private static bool autoKeepalive = false;
+        public static ThreadLiveCheck TLC;
 
 
         // Generate an initial presence list
@@ -399,9 +400,11 @@ namespace DLT
 
         public static void startKeepAlive()
         {
+            TLC = new ThreadLiveCheck();
             // Start the keepalive thread
             autoKeepalive = true;
             keepAliveThread = new Thread(keepAlive);
+            keepAliveThread.Name = "Presence_List_Keep_Alive_Thread";
             keepAliveThread.Start();
         }
 
@@ -420,6 +423,7 @@ namespace DLT
         {
             while (autoKeepalive)
             {
+                TLC.Report();
                 // Wait x seconds before rechecking
                 for (int i = 0; i < CoreConfig.keepAliveInterval; i++)
                 {

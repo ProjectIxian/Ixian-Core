@@ -41,6 +41,7 @@ namespace DLT
             public static bool consoleOutput = true;
 
             private static long currentLogSize = 0;
+            private static ThreadLiveCheck TLC;
 
             private struct LogStatement
             {
@@ -77,8 +78,10 @@ namespace DLT
                     logFileStream.Write(logMessage, 0, logMessage.Length);
 
                     // Start thread
+                    TLC = new ThreadLiveCheck();
                     running = true;
                     thread = new Thread(new ThreadStart(threadLoop));
+                    thread.Name = "Logging_Thread";
                     thread.Start();
                 }
                 catch (Exception e)
@@ -198,6 +201,7 @@ namespace DLT
 
                 while (running)
                 {
+                    TLC.Report();
                     message_found = false;
 
                     lock (statements)

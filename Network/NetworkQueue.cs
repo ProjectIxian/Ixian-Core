@@ -31,6 +31,7 @@ namespace DLT
         class NetworkQueue
         {
             private static bool shouldStop = false; // flag to signal shutdown of threads
+            private static ThreadLiveCheck TLC;
 
             // Internal queue message entity with socket and remoteendpoint support
             struct QueueMessageRecv
@@ -163,14 +164,17 @@ namespace DLT
                 queueMessages.Clear();
                 txqueueMessages.Clear();
 
+                TLC = new ThreadLiveCheck();
                 // Multi-threaded network queue parsing
                 for (int i = 0; i < 1; i++)
                 {
                     Thread queue_thread = new Thread(queueThreadLoop);
+                    queue_thread.Name = "Network_Queue_Thread_#" + i.ToString();
                     queue_thread.Start();
                 }
 
                 Thread txqueue_thread = new Thread(txqueueThreadLoop);
+                txqueue_thread.Name = "Network_Queue_TX_Thread";
                 txqueue_thread.Start();
 
                 Logging.info("Network queue thread started.");
@@ -206,6 +210,7 @@ namespace DLT
 
                 while (!shouldStop)
                 {
+                    TLC.Report();
                     bool message_found = false;
                     lock(queueMessages)
                     {
@@ -251,6 +256,7 @@ namespace DLT
 
                 while (!shouldStop)
                 {
+                    TLC.Report();
                     bool message_found = false;
                     lock (txqueueMessages)
                     {

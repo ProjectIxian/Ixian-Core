@@ -17,6 +17,7 @@ namespace DLT
         private static bool autoReconnect = true;
 
         private static bool running = false;
+        private static ThreadLiveCheck TLC;
 
         // Starts the Network Client Manager. First it connects to one of the seed nodes in order to fetch the Presence List.
         // Afterwards, it starts the reconnect and keepalive threads
@@ -53,7 +54,9 @@ namespace DLT
             }
 
             // Start the reconnect thread
+            TLC = new ThreadLiveCheck();
             reconnectThread = new Thread(reconnectClients);
+            reconnectThread.Name = "Network_Client_Manager_Reconnect";
             autoReconnect = true;
             reconnectThread.Start();
         }
@@ -471,7 +474,7 @@ namespace DLT
 
             while (autoReconnect)
             {
-
+                TLC.Report();
                 handleDisconnectedClients();
 
                 // Check if we need to connect to more neighbors

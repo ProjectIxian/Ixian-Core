@@ -27,6 +27,7 @@ namespace DLT
             public static List<RemoteEndpoint> connectedClients = new List<RemoteEndpoint>();
 
             private static Dictionary<string, DateTime> nodeBlacklist = new Dictionary<string, DateTime>();
+            private static ThreadLiveCheck TLC;
 
             static NetworkServer()
             {
@@ -45,7 +46,9 @@ namespace DLT
                     return;
                 }
 
+                TLC = new ThreadLiveCheck();
                 netControllerThread = new Thread(networkOpsLoop);
+                netControllerThread.Name = "Network_Server_Controller_Thread";
                 connectedClients = new List<RemoteEndpoint>();
                 continueRunning = true;
 
@@ -158,6 +161,7 @@ namespace DLT
                 // housekeeping tasks
                 while (continueRunning)
                 {
+                    TLC.Report();
                     handleDisconnectedClients();
                     int clientsCount = 0;
                     lock (connectedClients)

@@ -72,6 +72,8 @@ namespace DLT
         private int lastMessagesPerSecond = 0;
         private DateTime lastMessageStatTime;
 
+        private ThreadLiveCheck TLC;
+
         protected void prepareSocket(Socket socket)
         {
             // The socket will linger for 3 seconds after 
@@ -155,16 +157,20 @@ namespace DLT
 
             try
             {
+                TLC = new ThreadLiveCheck();
                 // Start receive thread
                 recvThread = new Thread(new ThreadStart(recvLoop));
+                recvThread.Name = "Network_Remote_Endpoint_Receive_Thread";
                 recvThread.Start();
 
                 // Start send thread
                 sendThread = new Thread(new ThreadStart(sendLoop));
+                sendThread.Name = "Network_Remote_Endpoint_Send_Thread";
                 sendThread.Start();
 
                 // Start parse thread
                 parseThread = new Thread(new ThreadStart(parseLoop));
+                parseThread.Name = "Network_Remote_Endpoint_Parse_Thread";
                 parseThread.Start();
             }
             catch (Exception e)
@@ -237,6 +243,7 @@ namespace DLT
             lastMessageStatTime = DateTime.UtcNow;
             while (running)
             {
+                TLC.Report();
                 // Let the protocol handler receive and handle messages
                 try
                 {
@@ -355,6 +362,7 @@ namespace DLT
 
             while (running)
             {
+                TLC.Report();
                 long curTime = Clock.getTimestamp();
                 if(curTime - lastDataReceivedTime > CoreConfig.pingTimeout)
                 {
@@ -468,6 +476,7 @@ namespace DLT
 
             while (running)
             {
+                TLC.Report();
                 try
                 {
                     bool message_found = false;

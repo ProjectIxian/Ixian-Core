@@ -28,6 +28,7 @@ namespace IXICore
         protected Thread apiControllerThread;
         protected bool continueRunning;
         protected string listenURL;
+        protected ThreadLiveCheck TLC;
 
         protected Dictionary<string, string> authorizedUsers;
 
@@ -41,6 +42,8 @@ namespace IXICore
             this.authorizedUsers = authorizedUsers;
 
             apiControllerThread = new Thread(apiLoop);
+            apiControllerThread.Name = "API_Controller_Thread";
+            TLC = new ThreadLiveCheck();
             apiControllerThread.Start();
         }
 
@@ -140,7 +143,7 @@ namespace IXICore
                     }
                     context.Response.Close();
                 }
-
+                TLC.Report();
                 Thread.Yield();
             }
 

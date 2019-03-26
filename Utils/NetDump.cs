@@ -46,14 +46,16 @@ namespace DLT
         private Dictionary<int, BufferedStream> allSendFiles = new Dictionary<int, BufferedStream>();
 
         private Thread outputWriter;
+        private ThreadLiveCheck TLC;
 
         
         public bool running { get; private set; }
 
         private NetDump()
         {
+            TLC = new ThreadLiveCheck();
             outputWriter = new Thread(outputWriterWorker);
-            outputWriter.Name = "NetworkDumper";
+            outputWriter.Name = "Network_Dumper_Thread";
         }
 
         public void appendReceived(Socket s, byte[] data, int count)
@@ -132,6 +134,7 @@ namespace DLT
         {
             while(running)
             {
+                TLC.Report();
                 int[] keys = null;
                 lock(recvLock)
                 {
