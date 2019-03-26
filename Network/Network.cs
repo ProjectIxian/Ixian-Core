@@ -397,7 +397,7 @@ namespace DLT
                 try
                 {
                     Logging.info(String.Format("Testing client connectivity for {0}. Local endpoint: {1}.", full_hostname, temp.Client.LocalEndPoint.ToString()));
-                    if (!temp.Connect(hostname, port).Wait(1000))
+                    if (!temp.ConnectAsync(hostname, port).Wait(1000))
                     {
                         return false;
                     }
