@@ -490,7 +490,7 @@ namespace DLT
                     {
                         netClients = new List<NetworkClient>(networkClients);
                     }
-                    CoreProtocolMessage.sendBye(netClients[0], 200, "Disconnected for shuffling purposes.", "", false);
+                    CoreProtocolMessage.sendBye(netClients[0], ProtocolByeCode.bye, "Disconnected for shuffling purposes.", "", false);
 
                     lock (networkClients)
                     {

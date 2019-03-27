@@ -69,13 +69,13 @@ namespace IXICore
             return result;
         }
 
-        public static void sendBye(RemoteEndpoint endpoint, int code, string message, string data, bool removeAddressEntry = true)
+        public static void sendBye(RemoteEndpoint endpoint, ProtocolByeCode code, string message, string data, bool removeAddressEntry = true)
         {
             using (MemoryStream m2 = new MemoryStream())
             {
                 using (BinaryWriter writer = new BinaryWriter(m2))
                 {
-                    writer.Write(code);
+                    writer.Write((int)code);
                     writer.Write(message);
                     writer.Write(data);
                     endpoint.sendData(ProtocolMessageCode.bye, m2.ToArray());
@@ -191,16 +191,9 @@ namespace IXICore
                 // Check for incompatible nodes
                 if (protocol_version < CoreConfig.protocolVersion)
                 {
-                    using (MemoryStream m2 = new MemoryStream())
-                    {
-                        using (BinaryWriter writer = new BinaryWriter(m2))
-                        {
-                            Logging.warn(String.Format("Hello: Connected node version ({0}) is too old! Upgrade the node.", protocol_version));
-                            writer.Write(string.Format("Your node version is too old. Should be at least {0} is {1}", CoreConfig.protocolVersion, protocol_version));
-                            endpoint.sendData(ProtocolMessageCode.bye, m2.ToArray());
-                            return false;
-                        }
-                    }
+                    Logging.warn(String.Format("Hello: Connected node version ({0}) is too old! Upgrade the node.", protocol_version));
+                    sendBye(endpoint, ProtocolByeCode.deprecated, string.Format("Your node version is too old. Should be at least {0} is {1}", CoreConfig.protocolVersion, protocol_version), CoreConfig.protocolVersion.ToString(), true);
+                    return false;
                 }
 
                 int addrLen = reader.ReadInt32();
@@ -223,31 +216,17 @@ namespace IXICore
                 // Check the testnet designator and disconnect on mismatch
                 if (test_net != Config.isTestNet)
                 {
-                    using (MemoryStream m2 = new MemoryStream())
-                    {
-                        using (BinaryWriter writer = new BinaryWriter(m2))
-                        {
-                            writer.Write(string.Format("Incorrect testnet designator: {0}. Should be {1}", test_net, Config.isTestNet));
-                            Logging.warn(string.Format("Rejected node {0} due to incorrect testnet designator: {1}", endpoint.fullAddress, test_net));
-                            endpoint.sendData(ProtocolMessageCode.bye, m2.ToArray());
-                            return false;
-                        }
-                    }
+                    Logging.warn(string.Format("Rejected node {0} due to incorrect testnet designator: {1}", endpoint.fullAddress, test_net));
+                    sendBye(endpoint, ProtocolByeCode.incorrectNetworkType, string.Format("Incorrect testnet designator: {0}. Should be {1}", test_net, Config.isTestNet), test_net.ToString(), true);
+                    return false;
                 }
 
                 // Check the address and pubkey and disconnect on mismatch
                 if (!addr.SequenceEqual((new Address(pubkey)).address))
                 {
-                    using (MemoryStream m2 = new MemoryStream())
-                    {
-                        using (BinaryWriter writer = new BinaryWriter(m2))
-                        {
-                            writer.Write(string.Format("Pubkey and address do not match."));
-                            Logging.warn(string.Format("Pubkey and address do not match."));
-                            endpoint.sendData(ProtocolMessageCode.bye, m2.ToArray());
-                            return false;
-                        }
-                    }
+                    Logging.warn(string.Format("Pubkey and address do not match."));
+                    sendBye(endpoint, ProtocolByeCode.authFailed, "Pubkey and address do not match.", "", true);
+                    return false;
                 }
 
                 endpoint.incomingPort = port;
@@ -263,7 +242,7 @@ namespace IXICore
                 else
                 if (CryptoManager.lib.verifySignature(Encoding.UTF8.GetBytes(CoreConfig.ixianChecksumLockString + "-" + device_id + "-" + timestamp + "-" + endpoint.getFullAddress(true)), pubkey, signature) == false)
                 {
-                    CoreProtocolMessage.sendBye(endpoint, 600, "Verify signature failed in hello message, likely an incorrect IP was specified. Detected IP:", endpoint.address);
+                    CoreProtocolMessage.sendBye(endpoint, ProtocolByeCode.incorrectIp, "Verify signature failed in hello message, likely an incorrect IP was specified. Detected IP:", endpoint.address);
                     Logging.warn(string.Format("Connected node used an incorrect signature in hello message, likely an incorrect IP was specified. Detected IP: {0}", endpoint.address));
                     return false;
                 }
@@ -291,23 +270,13 @@ namespace IXICore
                 // Connect to this node only if it's a master node or a full history node
                 if (node_type == 'M' || node_type == 'H')
                 {
-                    if (endpoint.GetType() == typeof(RemoteEndpoint))
+                    // Check the wallet balance for the minimum amount of coins
+                    IxiNumber balance = Node.walletState.getWalletBalance(addr);
+                    if (balance < CoreConfig.minimumMasterNodeFunds)
                     {
-                        // Check the wallet balance for the minimum amount of coins
-                        IxiNumber balance = Node.walletState.getWalletBalance(addr);
-                        if (balance < CoreConfig.minimumMasterNodeFunds)
-                        {
-                            using (MemoryStream m2 = new MemoryStream())
-                            {
-                                using (BinaryWriter writer = new BinaryWriter(m2))
-                                {
-                                    writer.Write(string.Format("Insufficient funds. Minimum is {0}", CoreConfig.minimumMasterNodeFunds));
-                                    Logging.warn(string.Format("Rejected master node {0} due to insufficient funds: {1}", endpoint.getFullAddress(), balance.ToString()));
-                                    endpoint.sendData(ProtocolMessageCode.bye, m2.ToArray());
-                                    return false;
-                                }
-                            }
-                        }
+                        Logging.warn(string.Format("Rejected master node {0} due to insufficient funds: {1}", endpoint.getFullAddress(), balance.ToString()));
+                        sendBye(endpoint, ProtocolByeCode.insufficientFunds, string.Format("Insufficient funds. Minimum is {0}", CoreConfig.minimumMasterNodeFunds), balance.ToString(), true);
+                        return false;
                     }
                     // Limit to one IP per masternode
                     // TODO TODO TODO - think about this and do it properly
@@ -331,6 +300,7 @@ namespace IXICore
 
                 if (endpoint.GetType() != typeof(NetworkClient))
                 {
+                    // we're the server
                     if (node_type == 'M' || node_type == 'H' || node_type == 'R')
                     {
                         if (!checkNodeConnectivity(endpoint))
@@ -349,15 +319,8 @@ namespace IXICore
             {
                 // Disconnect the node in case of any reading errors
                 Logging.warn(string.Format("Older node connected. {0}", e.ToString()));
-                using (MemoryStream m2 = new MemoryStream())
-                {
-                    using (BinaryWriter writer = new BinaryWriter(m2))
-                    {
-                        writer.Write(string.Format("Please update your Ixian node to connect."));
-                        endpoint.sendData(ProtocolMessageCode.bye, m2.ToArray());
-                        return false;
-                    }
-                }
+                sendBye(endpoint, ProtocolByeCode.deprecated, "Please update your Ixian node to connect.", "", true);
+                return false;
             }
             return true;
         }
@@ -586,7 +549,7 @@ namespace IXICore
             if (CoreNetworkUtils.PingAddressReachable(hostname) == false)
             {
                 Logging.warn("Node {0} was not reachable on the advertised address.", hostname);
-                CoreProtocolMessage.sendBye(endpoint, 601, "External " + hostname + " not reachable!", "");
+                CoreProtocolMessage.sendBye(endpoint, ProtocolByeCode.notConnectable, "External " + hostname + " not reachable!", "");
                 return false;
             }
             return true;

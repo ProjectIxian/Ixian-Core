@@ -10,6 +10,22 @@ namespace DLT
 {
     namespace Network
     {
+        public enum ProtocolByeCode
+        {
+            blockInvalidChecksum = 100,
+            blockInvalidForked = 101,
+            blockInvalidNoConsensus = 102,
+            bye = 200,
+            expectingMaster = 400,
+            forked = 500,
+            deprecated = 501,
+            incorrectNetworkType = 502,
+            insufficientFunds = 599, // can be removed later
+            incorrectIp = 600,
+            notConnectable = 601,
+            authFailed = 603
+        }
+
         // Message codes are for the most part pairs (send/receive)
         public enum ProtocolMessageCode
         {
@@ -382,17 +398,32 @@ namespace DLT
             public static bool PingAddressReachable(String full_hostname)
             {
                 // TODO TODO TODO TODO move this to another thread
+
+                if(String.IsNullOrWhiteSpace(full_hostname))
+                {
+                    return false;
+                }
+
                 String[] hn_port = full_hostname.Split(':');
                 if(hn_port.Length != 2)
                 {
                     return false;
                 }
                 String hostname = hn_port[0];
+                if (!IXICore.Utils.IxiUtils.validateIPv4(hostname))
+                {
+                    return false;
+                }
                 int port;
                 if(int.TryParse(hn_port[1], out port) == false)
                 {
                     return false;
                 }
+                if(port <= 0)
+                {
+                    return false;
+                }
+
                 TcpClient temp = new TcpClient();
                 bool connected = false;
                 try
