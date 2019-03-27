@@ -45,6 +45,9 @@ namespace IXICore
         public static readonly byte[] ixianChecksumLock = Encoding.UTF8.GetBytes("Ixian");
         public static readonly string ixianChecksumLockString = "Ixian";
 
+        // Debug
+        public static readonly bool threadLiveCheckEnabled = false;
+
 
         public static ulong getRedactedWindowSize(int block_version = -1)
         {

@@ -381,6 +381,7 @@ namespace DLT
 
             public static bool PingAddressReachable(String full_hostname)
             {
+                // TODO TODO TODO TODO move this to another thread
                 String[] hn_port = full_hostname.Split(':');
                 if(hn_port.Length != 2)
                 {
