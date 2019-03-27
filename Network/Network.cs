@@ -23,6 +23,7 @@ namespace DLT
             insufficientFunds = 599, // can be removed later
             incorrectIp = 600,
             notConnectable = 601,
+            tooFarBehind = 602,
             authFailed = 603
         }
 
