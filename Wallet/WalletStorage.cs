@@ -897,6 +897,7 @@ namespace DLT
 
         public void scanForLostAddresses()
         {
+            bool new_address_found = false;
             foreach(var key in myKeys)
             {
                 Address primary_address = new Address(key.Value.addressBytes);
@@ -906,6 +907,7 @@ namespace DLT
                     Address new_address = generateNewAddress(primary_address, last_nonce, false, false);
                     if(Node.walletState.getWalletBalance(new_address.address) > 0)
                     {
+                        new_address_found = true;
                         for(int j = 0; j <= i; j++)
                         {
                             generateNewAddress(primary_address, null, true, false);
@@ -914,6 +916,9 @@ namespace DLT
                     }
                     last_nonce = new_address.nonce;
                 }
+            }
+            if (new_address_found)
+            {
                 writeWallet(walletPassword);
             }
         }
