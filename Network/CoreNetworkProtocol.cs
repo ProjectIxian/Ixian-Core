@@ -267,39 +267,38 @@ namespace IXICore
                 // Create a temporary presence with the client's address and device id
                 Presence presence = new Presence(addr, pubkey, null, endpoint.presenceAddress);
 
-                // Connect to this node only if it's a master node or a full history node
-                if (node_type == 'M' || node_type == 'H')
-                {
-                    // Check the wallet balance for the minimum amount of coins
-                    IxiNumber balance = Node.walletState.getWalletBalance(addr);
-                    if (balance < CoreConfig.minimumMasterNodeFunds)
-                    {
-                        Logging.warn(string.Format("Rejected master node {0} due to insufficient funds: {1}", endpoint.getFullAddress(), balance.ToString()));
-                        sendBye(endpoint, ProtocolByeCode.insufficientFunds, string.Format("Insufficient funds. Minimum is {0}", CoreConfig.minimumMasterNodeFunds), balance.ToString(), true);
-                        return false;
-                    }
-                    // Limit to one IP per masternode
-                    // TODO TODO TODO - think about this and do it properly
-                    /*string[] hostname_split = hostname.Split(':');
-                    if (PresenceList.containsIP(hostname_split[0], 'M'))
-                    {
-                        using (MemoryStream m2 = new MemoryStream())
-                        {
-                            using (BinaryWriter writer = new BinaryWriter(m2))
-                            {
-                                writer.Write(string.Format("This IP address ( {0} ) already has a masternode connected.", hostname_split[0]));
-                                Logging.info(string.Format("Rejected master node {0} due to duplicate IP address", hostname));
-                                socket.Send(prepareProtocolMessage(ProtocolMessageCode.bye, m2.ToArray()), SocketFlags.None);
-                                socket.Disconnect(true);
-                                return;
-                            }
-                        }
-                    }*/
-
-                }
-
                 if (endpoint.GetType() != typeof(NetworkClient))
                 {
+                    // Connect to this node only if it's a master node or a full history node
+                    if (node_type == 'M' || node_type == 'H')
+                    {
+                        // Check the wallet balance for the minimum amount of coins
+                        IxiNumber balance = Node.walletState.getWalletBalance(addr);
+                        if (balance < CoreConfig.minimumMasterNodeFunds)
+                        {
+                            Logging.warn(string.Format("Rejected master node {0} due to insufficient funds: {1}", endpoint.getFullAddress(), balance.ToString()));
+                            sendBye(endpoint, ProtocolByeCode.insufficientFunds, string.Format("Insufficient funds. Minimum is {0}", CoreConfig.minimumMasterNodeFunds), balance.ToString(), true);
+                            return false;
+                        }
+                        // Limit to one IP per masternode
+                        // TODO TODO TODO - think about this and do it properly
+                        /*string[] hostname_split = hostname.Split(':');
+                        if (PresenceList.containsIP(hostname_split[0], 'M'))
+                        {
+                            using (MemoryStream m2 = new MemoryStream())
+                            {
+                                using (BinaryWriter writer = new BinaryWriter(m2))
+                                {
+                                    writer.Write(string.Format("This IP address ( {0} ) already has a masternode connected.", hostname_split[0]));
+                                    Logging.info(string.Format("Rejected master node {0} due to duplicate IP address", hostname));
+                                    socket.Send(prepareProtocolMessage(ProtocolMessageCode.bye, m2.ToArray()), SocketFlags.None);
+                                    socket.Disconnect(true);
+                                    return;
+                                }
+                            }
+                        }*/
+                    }
+
                     // we're the server
                     if (node_type == 'M' || node_type == 'H' || node_type == 'R')
                     {
