@@ -535,7 +535,7 @@ namespace DLT
             NetDump.Instance.appendSent(clientSocket, ba, ba.Length);
             try
             {
-                for (int sentBytes = 0; sentBytes < ba.Length;)
+                for (int sentBytes = 0; sentBytes < ba.Length && running;)
                 {
                     int bytesToSendCount = ba.Length - sentBytes;
                     if (bytesToSendCount > 8000)
@@ -786,7 +786,7 @@ namespace DLT
                 int data_length = 0;
                 int header_length = 43; // start byte + int32 (4 bytes) + int32 (4 bytes) + checksum (32 bytes) + header checksum (1 byte) + end byte
                 int bytesToRead = 1;
-                while (message_found == false && socket.Connected)
+                while (message_found == false && socket.Connected && running)
                 {
                     //int pos = bytesToRead > NetworkProtocol.recvByteHist.Length ? NetworkProtocol.recvByteHist.Length - 1 : bytesToRead;
                     /*lock (NetworkProtocol.recvByteHist)
