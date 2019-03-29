@@ -91,7 +91,8 @@ namespace DLT
                 {
                     // Move transaction messages to the transaction queue
                     if (code == ProtocolMessageCode.newTransaction || code == ProtocolMessageCode.transactionData
-                        || code == ProtocolMessageCode.transactionsChunk || code == ProtocolMessageCode.newBlock || code == ProtocolMessageCode.blockData)
+                        || code == ProtocolMessageCode.transactionsChunk || code == ProtocolMessageCode.newBlock || code == ProtocolMessageCode.blockData
+                        || code == ProtocolMessageCode.blockSignatureChunk || code == ProtocolMessageCode.newBlockSignature)
                     {
                         if(message.helperData != null)
                         {
@@ -113,7 +114,7 @@ namespace DLT
                         }
 
                         if (txqueueMessages.Count > 20 && 
-                            (code == ProtocolMessageCode.transactionsChunk || code == ProtocolMessageCode.newBlock || code == ProtocolMessageCode.blockData))
+                            (code == ProtocolMessageCode.transactionsChunk || code == ProtocolMessageCode.newBlock || code == ProtocolMessageCode.blockData || code == ProtocolMessageCode.blockSignatureChunk))
                         {
                             txqueueMessages.Insert(5, message);
                         }
