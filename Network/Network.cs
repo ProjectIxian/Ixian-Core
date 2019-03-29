@@ -429,7 +429,7 @@ namespace DLT
                 bool connected = false;
                 try
                 {
-                    Logging.info(String.Format("Testing client connectivity for {0}. Local endpoint: {1}.", full_hostname, temp.Client.LocalEndPoint.ToString()));
+                    Logging.info(String.Format("Testing client connectivity for {0}.", full_hostname));
                     if (!temp.ConnectAsync(hostname, port).Wait(1000))
                     {
                         return false;
