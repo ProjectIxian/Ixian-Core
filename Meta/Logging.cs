@@ -164,14 +164,16 @@ namespace DLT
                             threadId,
                             message);
 
-                        if (severity == LogSeverity.error)
-                            Console.ForegroundColor = ConsoleColor.Red;
+                        if (consoleOutput)
+                        {
+                            if (severity == LogSeverity.error)
+                                Console.ForegroundColor = ConsoleColor.Red;
 
-                        if(consoleOutput)
                             Console.WriteLine(formattedMessage);
 
-                        if (severity == LogSeverity.error)
-                            Console.ResetColor();
+                            if (severity == LogSeverity.error)
+                                Console.ResetColor();
+                        }
 
                         Debug.WriteLine(formattedMessage);
 
