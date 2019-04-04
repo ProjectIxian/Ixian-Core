@@ -433,11 +433,7 @@ namespace IXICore
         {
             // Send it to subscribed C nodes
             bool f_result = NetworkServer.broadcastEventData(type, code, data, address, helper_data, skipEndpoint);
-
-            if (!f_result)
-                return false;
-
-            return true;
+            return f_result;
         }
 
 

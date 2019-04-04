@@ -934,14 +934,20 @@ namespace DLT
 
             lock (subscribedAddresses)
             {
-                // Check if we're subscribed to this address
-                if (subscribedAddresses.ContainsKey(address) == true)
+                foreach (var entry in subscribedAddresses)
                 {
                     // Check for the specific event type
-                    if (subscribedAddresses[address] == type)
+                    if(entry.Value != type)
+                    {
+                        continue;
+                    }
+
+                    // Use the address matcher to see if this address qualifies
+                    if(AddressMatcher.matches(entry.Key, address, CoreConfig.matcherBytesPerAddress))
                     {
                         return true;
                     }
+
                 }
             }
 

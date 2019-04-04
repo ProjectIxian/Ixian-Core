@@ -16,6 +16,7 @@ namespace IXICore
         private static readonly ulong minRedactedWindowSize_v2 = 20000; // approx 7 days. Represents the redacted window size of v2 blocks
         public static readonly byte[] ixianInfiniMineAddress = Base58Check.Base58CheckEncoding.DecodePlain("1ixianinfinimine234234234234234234234234234242HP");
         public static readonly int defaultRsaKeySize = 4096;
+        public static readonly int matcherBytesPerAddress = 4; // Used for client address masking
 
         // Networking
         public static readonly int maxNetworkQueue = 10000; // Maximum number of received messages in network queue before throttling starts

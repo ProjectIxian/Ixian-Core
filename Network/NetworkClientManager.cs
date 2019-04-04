@@ -61,6 +61,25 @@ namespace DLT
             reconnectThread.Start();
         }
 
+        // Starts the Network Client Manager in debug mode with a single connection and no reconnect. Used for development only.
+        public static bool startWithSingleConnection(string address)
+        {
+            if (running)
+            {
+                return false;
+            }
+            running = true;
+            networkClients = new List<NetworkClient>();
+
+            bool result = connectTo(address);
+            if(!result)
+            {
+                running = false;
+            }
+
+            return result;
+        }
+
         public static void stop()
         {
             if(!running)
