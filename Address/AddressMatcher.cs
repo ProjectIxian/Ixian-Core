@@ -9,6 +9,9 @@ namespace DLT
         // Match a single address
         public static bool matches(byte[] matcher, byte[] addr, int match_bytes)
         {
+            if (addr.Length != matcher.Length)
+                return false;
+
             int count = 0;
             // Note - we always skip first byte because no matcher is made with the first byte
             for (int i = 1; i < matcher.Length; i++)
