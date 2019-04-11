@@ -84,8 +84,20 @@ namespace DLT
 
         private void setVersion()
         {
-            version = 2;
-            if (Node.getLastBlockVersion() > 2)
+            int lastBlockVersion = Node.getLastBlockVersion();
+            if (lastBlockVersion == 0)
+            {
+                version = 0;
+            }else if (lastBlockVersion == 1)
+            {
+                version = 1;
+            }else if(lastBlockVersion == 2)
+            {
+                version = 2;
+            }else if(lastBlockVersion == 3)
+            {
+                version = 3;
+            }else
             {
                 version = maxVersion;
             }
@@ -405,6 +417,9 @@ namespace DLT
                             }
 
                             id = generateID();
+                        }else
+                        {
+                            throw new Exception("Unknown transaction version " + version);
                         }
                     }
                 }
@@ -1097,8 +1112,6 @@ namespace DLT
         {
             Transaction t = new Transaction((int)Transaction.Type.MultisigTX, tx_amount, tx_fee, tx_to, tx_from, null, tx_from, tx_blockHeight);
 
-            t.version = maxVersion;
-
             // TODO TODO TODO TODO TODO TODO make this compatible with wallet v3
 
             AddressData ad = findMyMultisigAddressData(tx_from);
@@ -1123,8 +1136,6 @@ namespace DLT
         {
             Transaction t = new Transaction((int)Transaction.Type.MultisigTX, tx_fee, tx_to_list, tx_from, null, tx_from, tx_blockHeight);
 
-            t.version = maxVersion;
-
             // TODO TODO TODO TODO TODO TODO make this compatible with wallet v3
 
             AddressData ad = findMyMultisigAddressData(tx_from);
@@ -1148,8 +1159,6 @@ namespace DLT
         public static Transaction multisigAddTxSignature(string orig_txid, IxiNumber tx_fee, byte[] tx_from, ulong tx_blockHeight)
         {
             Transaction t = new Transaction((int)Transaction.Type.MultisigAddTxSignature, new IxiNumber(0), tx_fee, tx_from, tx_from, null, tx_from, tx_blockHeight);
-
-            t.version = maxVersion;
 
             // TODO TODO TODO TODO TODO TODO make this compatible with wallet v3
 
@@ -1176,8 +1185,6 @@ namespace DLT
         {
             Transaction t = new Transaction((int)Transaction.Type.ChangeMultisigWallet, new IxiNumber(0), tx_fee, tx_from, tx_from, null, tx_from, tx_blockHeight);
 
-            t.version = maxVersion;
-
             // TODO TODO TODO TODO TODO TODO make this compatible with wallet v3
 
             AddressData ad = findMyMultisigAddressData(tx_from);
@@ -1202,8 +1209,6 @@ namespace DLT
         {
             Transaction t = new Transaction((int)Transaction.Type.ChangeMultisigWallet, new IxiNumber(0), tx_fee, tx_from, tx_from, null, tx_from, tx_blockHeight);
 
-            t.version = maxVersion;
-
             // TODO TODO TODO TODO TODO TODO make this compatible with wallet v3
 
             AddressData ad = findMyMultisigAddressData(tx_from);
@@ -1227,8 +1232,6 @@ namespace DLT
         public static Transaction multisigChangeReqSigs(byte sigs, IxiNumber tx_fee, byte[] tx_from, ulong tx_blockHeight)
         {
             Transaction t = new Transaction((int)Transaction.Type.ChangeMultisigWallet, new IxiNumber(0), tx_fee, tx_from, tx_from, null, tx_from, tx_blockHeight);
-
-            t.version = maxVersion;
 
             // TODO TODO TODO TODO TODO TODO make this compatible with wallet v3
 
