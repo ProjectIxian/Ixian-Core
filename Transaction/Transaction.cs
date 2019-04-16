@@ -342,9 +342,9 @@ namespace DLT
         {
             try
             {
-                if (bytes.Length > 102400)
+                if (bytes.Length > 512000)
                 {
-                    throw new Exception("Transaction size is bigger then 100kB.");
+                    throw new Exception("Transaction size is bigger than 500kB.");
                 }
                 using (MemoryStream m = new MemoryStream(bytes))
                 {

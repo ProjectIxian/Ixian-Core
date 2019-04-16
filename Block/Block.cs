@@ -9,9 +9,197 @@ using IXICore;
 
 namespace DLT
 {
+    public class SuperBlockSegment
+    {
+        public ulong blockNum = 0;
+        public int version = 0;
+        public List<string> transactions = new List<string>();
+        public byte[] signatureFreezeChecksum = null;
+        public List<byte[]> signatureFreezeSigners = new List<byte[]>();
+        public List<byte[][]> legacySignatureFreezeSigners = new List<byte[][]>();
+
+        public SuperBlockSegment()
+        {
+
+        }
+
+        public SuperBlockSegment(byte[] bytes)
+        {
+            try
+            {
+                if (bytes.Length > 3072000)
+                {
+                    throw new Exception("SuperBlock Segment size is bigger than 3MB.");
+                }
+                using (MemoryStream m = new MemoryStream(bytes))
+                {
+                    using (BinaryReader reader = new BinaryReader(m))
+                    {
+                        version = reader.ReadInt32();
+
+                        if (version <= Block.maxVersion)
+                        {
+                            blockNum = reader.ReadUInt64();
+
+                            // Get the transaction ids
+                            int num_transactions = reader.ReadInt32();
+                            for (int i = 0; i < num_transactions; i++)
+                            {
+                                string txid = reader.ReadString();
+                                transactions.Add(txid);
+                            }
+
+                            // Get the signers
+                            int num_signatures = reader.ReadInt32();
+                            for (int i = 0; i < num_signatures; i++)
+                            {
+                                int sigAddresLen = reader.ReadInt32();
+                                byte[] sigAddress = reader.ReadBytes(sigAddresLen);
+                                if (!containsSignature(sigAddress))
+                                {
+                                    signatureFreezeSigners.Add(sigAddress);
+                                }
+                            }
+
+                            int dataLen = reader.ReadInt32();
+                            if (dataLen > 0)
+                            {
+                                signatureFreezeChecksum = reader.ReadBytes(dataLen);
+                            }
+
+                            // Get the legacy signatures
+                            num_signatures = reader.ReadInt32();
+                            for (int i = 0; i < num_signatures; i++)
+                            {
+                                int sigLen = reader.ReadInt32();
+                                byte[] sig = reader.ReadBytes(sigLen);
+                                int sigAddresLen = reader.ReadInt32();
+                                byte[] sigAddress = reader.ReadBytes(sigAddresLen);
+                                if (!containsSignature(sigAddress))
+                                {
+                                    byte[][] newSig = new byte[2][];
+                                    newSig[0] = sig;
+                                    newSig[1] = sigAddress;
+                                    legacySignatureFreezeSigners.Add(newSig);
+                                }
+                            }
+                        }
+                    }
+                }
+            }
+            catch (Exception e)
+            {
+                Logging.warn(string.Format("Cannot create block from bytes: {0}", e.ToString()));
+                throw;
+            }
+        }
+
+        public bool containsSignature(byte[] address_or_pub_key)
+        {
+            // Generate an address in case we got the pub key
+            Address p_address = new Address(address_or_pub_key);
+            byte[] cmp_address = p_address.address;
+
+            lock (signatureFreezeSigners)
+            {
+                foreach (byte[] sig in signatureFreezeSigners)
+                {
+                    // Generate an address in case we got the pub key
+                    Address sig_address = new Address(sig, null, false);
+                    byte[] b_sig_address = sig_address.address;
+
+                    if (cmp_address.SequenceEqual(b_sig_address))
+                    {
+                        return true;
+                    }
+                }
+            }
+
+            lock (legacySignatureFreezeSigners)
+            {
+                foreach (byte[][] sig in legacySignatureFreezeSigners)
+                {
+                    // Generate an address in case we got the pub key
+                    Address sig_address = new Address(sig[1], null, false);
+                    byte[] b_sig_address = sig_address.address;
+
+                    if (cmp_address.SequenceEqual(b_sig_address))
+                    {
+                        return true;
+                    }
+                }
+            }
+            return false;
+        }
+
+        public byte[] getBytes()
+        {
+            using (MemoryStream m = new MemoryStream())
+            {
+                using (BinaryWriter writer = new BinaryWriter(m))
+                {
+                    writer.Write(version);
+
+                    writer.Write(blockNum);
+
+                    // Write the number of transactions
+                    int num_transactions = transactions.Count;
+                    writer.Write(num_transactions);
+
+                    // Write each wallet
+                    foreach (string txid in transactions)
+                    {
+                        writer.Write(txid);
+                    }
+
+                    lock (signatureFreezeSigners)
+                    {
+                        // Write the number of signatures
+                        int num_signatures = signatureFreezeSigners.Count;
+                        writer.Write(num_signatures);
+
+                        // Write each signature
+                        foreach (byte[] signature in signatureFreezeSigners)
+                        {
+                            writer.Write(signature.Length);
+                            writer.Write(signature);
+                        }
+                    }
+
+                    if (signatureFreezeChecksum != null)
+                    {
+                        writer.Write(signatureFreezeChecksum.Length);
+                        writer.Write(signatureFreezeChecksum);
+                    }
+                    else
+                    {
+                        writer.Write((int)0);
+                    }
+
+                    lock (legacySignatureFreezeSigners)
+                    {
+                        // Write the number of signatures
+                        int num_signatures = legacySignatureFreezeSigners.Count;
+                        writer.Write(num_signatures);
+
+                        // Write each signature
+                        foreach (byte[][] signature in legacySignatureFreezeSigners)
+                        {
+                            writer.Write(signature[0].Length);
+                            writer.Write(signature[0]);
+                            writer.Write(signature[1].Length);
+                            writer.Write(signature[1]);
+                        }
+                    }
+                }
+                return m.ToArray();
+            }
+        }
+    }
+
     public class Block
     {
-        public static int maxVersion = 3;
+        public static int maxVersion = 4;
 
         // TODO: Refactor all of these as readonly get-params
         public ulong blockNum { get; set; }
@@ -27,6 +215,10 @@ namespace DLT
         public byte[] signatureFreezeChecksum = null;
         public long timestamp = 0;
         public ulong difficulty = 0;
+
+        public Dictionary<ulong, SuperBlockSegment> superBlockSegments = new Dictionary<ulong, SuperBlockSegment>();
+        public byte[] lastSuperBlockChecksum = null;
+        public ulong lastSuperBlockNum = 0;
 
         // Locally calculated
         public byte[] powField = null;
@@ -60,6 +252,46 @@ namespace DLT
             version = block.version;
             blockNum = block.blockNum;
 
+            lastSuperBlockNum = block.lastSuperBlockNum;
+
+            foreach(var entry in block.superBlockSegments)
+            {
+                List<string> new_segment_transactions = new List<string>();
+                foreach (var segment_transaction in entry.Value.transactions)
+                {
+                    new_segment_transactions.Add(segment_transaction);
+                }
+
+                byte[] new_signature_freeze_checksum = null;
+                if (entry.Value.signatureFreezeChecksum != null)
+                {
+                    new_signature_freeze_checksum = new byte[entry.Value.signatureFreezeChecksum.Length];
+                    Array.Copy(entry.Value.signatureFreezeChecksum, new_signature_freeze_checksum, new_signature_freeze_checksum.Length);
+                }
+
+                List<byte[]> new_signature_freeze_signers = new List<byte[]>();
+                foreach (var signer_address in entry.Value.signatureFreezeSigners)
+                {
+                    new_signature_freeze_signers.Add(signer_address);
+                }
+
+                List<byte[][]> new_legacy_signature_freeze_signers = new List<byte[][]>();
+                foreach (byte[][] signature in entry.Value.legacySignatureFreezeSigners)
+                {
+                    byte[][] newSig = new byte[2][];
+
+                    newSig[0] = new byte[signature[0].Length];
+                    Array.Copy(signature[0], newSig[0], newSig[0].Length);
+
+                    newSig[1] = new byte[signature[1].Length];
+                    Array.Copy(signature[1], newSig[1], newSig[1].Length);
+
+                    new_legacy_signature_freeze_signers.Add(newSig);
+                }
+
+                superBlockSegments.Add(entry.Key, new SuperBlockSegment() { blockNum = entry.Value.blockNum, version = entry.Value.version, transactions = new_segment_transactions, signatureFreezeChecksum = new_signature_freeze_checksum, signatureFreezeSigners = new_signature_freeze_signers, legacySignatureFreezeSigners = new_legacy_signature_freeze_signers });
+            }
+
             // Add transactions and signatures from the old block
             foreach (string txid in block.transactions)
             {
@@ -86,6 +318,12 @@ namespace DLT
             {
                 lastBlockChecksum = new byte[block.lastBlockChecksum.Length];
                 Array.Copy(block.lastBlockChecksum, lastBlockChecksum, lastBlockChecksum.Length);
+            }
+
+            if (block.lastSuperBlockChecksum != null)
+            {
+                lastSuperBlockChecksum = new byte[block.lastSuperBlockChecksum.Length];
+                Array.Copy(block.lastSuperBlockChecksum, lastSuperBlockChecksum, lastSuperBlockChecksum.Length);
             }
 
             if (block.walletStateChecksum != null)
@@ -116,9 +354,9 @@ namespace DLT
         {
             try
             {
-                if (bytes.Length > 1024000)
+                if (bytes.Length > 3072000)
                 {
-                    throw new Exception("Block size is bigger then 1MB.");
+                    throw new Exception("Block size is bigger than 3MB.");
                 }
                 using (MemoryStream m = new MemoryStream(bytes))
                 {
@@ -126,9 +364,10 @@ namespace DLT
                     {
                         version = reader.ReadInt32();
 
-                        blockNum = reader.ReadUInt64();
                         if (version <= maxVersion)
                         {
+                            blockNum = reader.ReadUInt64();
+
                             // Get the transaction ids
                             int num_transactions = reader.ReadInt32();
                             for (int i = 0; i < num_transactions; i++)
@@ -176,6 +415,17 @@ namespace DLT
 
                             difficulty = reader.ReadUInt64();
                             timestamp = reader.ReadInt64();
+
+                            if(version > 3)
+                            {
+                                lastSuperBlockNum = reader.ReadUInt64();
+
+                                dataLen = reader.ReadInt32();
+                                if (dataLen > 0)
+                                {
+                                    lastSuperBlockChecksum = reader.ReadBytes(dataLen);
+                                }
+                            }
                         }
                     }
                 }
@@ -225,6 +475,7 @@ namespace DLT
 
                     writer.Write(blockChecksum.Length);
                     writer.Write(blockChecksum);
+
                     if (lastBlockChecksum != null)
                     {
                         writer.Write(lastBlockChecksum.Length);
@@ -233,6 +484,7 @@ namespace DLT
                     {
                         writer.Write((int)0);
                     }
+
                     if (walletStateChecksum != null)
                     {
                         writer.Write(walletStateChecksum.Length);
@@ -242,6 +494,7 @@ namespace DLT
                     {
                         writer.Write((int)0);
                     }
+
                     if (signatureFreezeChecksum != null)
                     {
                         writer.Write(signatureFreezeChecksum.Length);
@@ -254,6 +507,18 @@ namespace DLT
 
                     writer.Write(difficulty);
                     writer.Write(timestamp);
+
+                    writer.Write(lastSuperBlockNum);
+
+                    if (lastSuperBlockChecksum != null)
+                    {
+                        writer.Write(lastSuperBlockChecksum.Length);
+                        writer.Write(lastSuperBlockChecksum);
+                    }
+                    else
+                    {
+                        writer.Write((int)0);
+                    }
                 }
                 return m.ToArray();
             }
@@ -302,30 +567,79 @@ namespace DLT
         // Returns the checksum of this block, without considering signatures
         public byte[] calculateChecksum()
         {
+            List<byte> merged_segments = new List<byte>();
+            superBlockSegments.OrderBy(x => x.Key);
+            foreach (var entry in superBlockSegments)
+            {
+                merged_segments.AddRange(BitConverter.GetBytes(entry.Key));
+                merged_segments.AddRange(BitConverter.GetBytes(entry.Value.version));
+                merged_segments.AddRange(entry.Value.signatureFreezeChecksum);
+
+                StringBuilder merged_segment_txids = new StringBuilder();
+                foreach (string segment_txid in entry.Value.transactions)
+                {
+                    merged_segment_txids.Append(segment_txid);
+                }
+
+                merged_segments.AddRange(Crypto.sha512sqTrunc(Encoding.UTF8.GetBytes(merged_segment_txids.ToString())));
+                merged_segment_txids = null;
+
+                List<byte> merged_segment_signers = new List<byte>();
+                entry.Value.signatureFreezeSigners.Sort((x, y) => _ByteArrayComparer.Compare(x, y));
+                foreach (byte[] segment_signer in entry.Value.signatureFreezeSigners)
+                {
+                    merged_segment_signers.AddRange(segment_signer);
+                }
+
+                entry.Value.legacySignatureFreezeSigners.Sort((x, y) => _ByteArrayComparer.Compare(x[1], y[1]));
+                foreach (byte[][] segment_signer in entry.Value.legacySignatureFreezeSigners)
+                {
+                    merged_segment_signers.AddRange(segment_signer[0]);
+                    merged_segment_signers.AddRange(segment_signer[1]);
+                }
+
+                merged_segments.AddRange(Crypto.sha512sqTrunc(merged_segment_signers.ToArray()));
+                merged_segment_signers = null;
+
+            }
+
             StringBuilder merged_txids = new StringBuilder();
             foreach (string txid in transactions)
             {
                 merged_txids.Append(txid);
             }
 
+
             List<byte> rawData = new List<byte>();
             rawData.AddRange(CoreConfig.ixianChecksumLock);
             rawData.AddRange(BitConverter.GetBytes(version));
             rawData.AddRange(BitConverter.GetBytes(blockNum));
             rawData.AddRange(Encoding.UTF8.GetBytes(merged_txids.ToString()));
+
             if (lastBlockChecksum != null)
             {
                 rawData.AddRange(lastBlockChecksum);
             }
+
             if (walletStateChecksum != null)
             {
                 rawData.AddRange(walletStateChecksum);
             }
+
             if (signatureFreezeChecksum != null)
             {
                 rawData.AddRange(signatureFreezeChecksum);
             }
+
             rawData.AddRange(BitConverter.GetBytes(difficulty));
+            rawData.AddRange(merged_segments);
+
+            if (lastSuperBlockChecksum != null)
+            {
+                rawData.AddRange(BitConverter.GetBytes(lastSuperBlockNum));
+                rawData.AddRange(lastSuperBlockChecksum);
+            }
+
             if (version <= 2)
             {
                 return Crypto.sha512quTrunc(rawData.ToArray());
@@ -351,7 +665,14 @@ namespace DLT
             merged_sigs.AddRange(BitConverter.GetBytes(blockNum));
             foreach (byte[][] sig in sortedSigs)
             {
-                merged_sigs.AddRange(sig[0]);
+                if(version > 3)
+                {
+                    merged_sigs.AddRange(sig[1]);
+                }
+                else
+                {
+                    merged_sigs.AddRange(sig[0]);
+                }
             }
 
             // Generate a checksum from the merged sorted signatures
@@ -596,7 +917,7 @@ namespace DLT
         }
 
         // Goes through all signatures and generates the corresponding Ixian wallet addresses
-        public List<byte[]> getSignaturesWalletAddresses()
+        public List<byte[]> getSignaturesWalletAddresses(bool convert_pubkeys = true)
         {
             List<byte[]> result = new List<byte[]>();
 
@@ -627,8 +948,14 @@ namespace DLT
                     }else
                     {
                         pubKeyBytes = keyOrAddress;
-                        Address address = new Address(pubKeyBytes);
-                        addressBytes = address.address;
+                        if (convert_pubkeys)
+                        {
+                            Address address = new Address(pubKeyBytes);
+                            addressBytes = address.address;
+                        }else
+                        {
+                            addressBytes = pubKeyBytes;
+                        }
                     }
 
                     // no need to verify if the sigs are ok, this has been pre-verified before the block was accepted

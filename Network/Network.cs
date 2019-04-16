@@ -74,7 +74,10 @@ namespace DLT
             detachEvent,
             newBlockSignature,
             getBlockSignatures,
-            blockSignatureChunk
+            blockSignatureChunk,
+            getNextSuperBlock,
+            superBlockSegmentData,
+            getSuperBlockSegment
         }
 
         public enum RemoteEndpointState

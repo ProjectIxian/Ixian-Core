@@ -17,6 +17,7 @@ namespace IXICore
         public static readonly byte[] ixianInfiniMineAddress = Base58Check.Base58CheckEncoding.DecodePlain("1ixianinfinimine234234234234234234234234234242HP");
         public static readonly int defaultRsaKeySize = 4096;
         public static readonly int matcherBytesPerAddress = 4; // Used for client address masking
+        public static readonly ulong superblockInterval = 1000; // generate super block every n blocks
 
         // Networking
         public static readonly int maxNetworkQueue = 10000; // Maximum number of received messages in network queue before throttling starts
