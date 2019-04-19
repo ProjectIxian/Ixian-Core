@@ -568,8 +568,7 @@ namespace DLT
         public byte[] calculateChecksum()
         {
             List<byte> merged_segments = new List<byte>();
-            superBlockSegments.OrderBy(x => x.Key);
-            foreach (var entry in superBlockSegments)
+            foreach (var entry in superBlockSegments.OrderBy(x => x.Key))
             {
                 merged_segments.AddRange(BitConverter.GetBytes(entry.Key));
                 merged_segments.AddRange(BitConverter.GetBytes(entry.Value.version));
