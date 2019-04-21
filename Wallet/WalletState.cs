@@ -24,6 +24,7 @@ namespace DLT
         private byte[] cachedChecksum = null;
         private Dictionary<byte[], Wallet> wsDelta = null;
         private byte[] cachedDeltaChecksum = null;
+        private int cachedBlockVersion = 0;
 
         private IxiNumber cachedTotalSupply = new IxiNumber(0);
 
@@ -255,32 +256,20 @@ namespace DLT
                 {
                     block_version = Node.getLastBlockVersion();
                 }
-                // Note: This will stop working if we change WS checksum format/function again in the future
-                // Either remove the caching mechanic, or add additional detections here
-                if (block_version <= 2)
+
+                // edge case for first block of block_version 3
+                if(block_version == 3 && Node.getLastBlockVersion() == 2)
                 {
-                    // block version 2 has 32-byte checksums
-                    if (cachedChecksum != null && cachedChecksum.Length != 32)
-                    {
-                        cachedChecksum = null;
-                    }
-                    if (cachedDeltaChecksum != null && cachedDeltaChecksum.Length != 32)
-                    {
-                        cachedDeltaChecksum = null;
-                    }
+                    block_version = 2;
                 }
-                else
+
+                if(cachedBlockVersion != block_version)
                 {
-                    // block version 3 has 64-byte checksums
-                    if (cachedChecksum != null && cachedChecksum.Length != 64)
-                    {
-                        cachedChecksum = null;
-                    }
-                    if (cachedDeltaChecksum != null && cachedDeltaChecksum.Length != 64)
-                    {
-                        cachedDeltaChecksum = null;
-                    }
+                    cachedChecksum = null;
+                    cachedDeltaChecksum = null;
+                    cachedBlockVersion = block_version;
                 }
+
                 if (snapshot == false && cachedChecksum != null)
                 {
                     return cachedChecksum;
@@ -289,6 +278,7 @@ namespace DLT
                 {
                     return cachedDeltaChecksum;
                 }
+
                 // TODO: This could get unwieldy above ~100M wallet addresses. We have to implement sharding by then.
                 SortedSet<byte[]> eligible_addresses = null;
                 eligible_addresses = new SortedSet<byte[]>(walletState.Keys, new ByteArrayComparer());
@@ -303,6 +293,7 @@ namespace DLT
                         }
                     }
                 }
+
                 byte[] checksum = null;
                 if (block_version <= 2)
                 {
@@ -311,6 +302,7 @@ namespace DLT
                 {
                     checksum = Crypto.sha512sqTrunc(Encoding.UTF8.GetBytes("IXIAN-DLT" + version), 0, 0, 64);
                 }
+
                 // TODO: This is probably not the optimal way to do this. Maybe we could do it by blocks to reduce calls to sha256
                 // Note: addresses are not fixed size
                 foreach (byte[] addr in eligible_addresses)
@@ -326,6 +318,7 @@ namespace DLT
                         checksum = Crypto.sha512sqTrunc(tmp_hash.ToArray(), 0, 0, 64);
                     }
                 }
+
                 if (snapshot == false)
                 {
                     cachedChecksum = checksum;
