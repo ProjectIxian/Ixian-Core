@@ -445,14 +445,7 @@ namespace DLT
                 {
 
                     byte[] ka_bytes = null;
-                    if (Node.getLastBlockVersion() < 3)
-                    {
-                        ka_bytes = keepAlive_v0();
-                    }
-                    else
-                    {
-                        ka_bytes = keepAlive_v1();
-                    }
+                    ka_bytes = keepAlive_v1();
 
                     byte[] address = null;
 
