@@ -23,7 +23,7 @@ namespace DLT
 
     public class Block
     {
-        public static int maxVersion = 3;
+        public static int maxVersion = 4;
 
         // TODO: Refactor all of these as readonly get-params
         public ulong blockNum { get; set; }
@@ -31,6 +31,7 @@ namespace DLT
         public List<string> transactions = new List<string> { };
         public List<byte[][]> signatures = new List<byte[][]> { };
 
+        private int signatureCount = 0; // used only when block is compacted
 
         public int version = 0;
         public byte[] blockChecksum = null;
@@ -50,6 +51,9 @@ namespace DLT
 
         // if block was read from local storage
         public bool fromLocalStorage = false;
+
+        public bool compacted = false;
+        public bool compactedSigs = false;
 
         // Generate the genesis block
         static Block createGenesisBlock()
@@ -138,6 +142,10 @@ namespace DLT
             difficulty = block.difficulty;
 
             fromLocalStorage = block.fromLocalStorage;
+
+            compacted = block.compacted;
+            compactedSigs = block.compactedSigs;
+            signatureCount = block.signatureCount;
         }
 
         public Block(byte[] bytes)
@@ -243,6 +251,11 @@ namespace DLT
         
         public byte[] getBytes()
         {
+            if(compacted)
+            {
+                Logging.error("Trying to use getBytes() from a compacted Block {0}", blockNum);
+                return null;
+            }
             using (MemoryStream m = new MemoryStream())
             {
                 using (BinaryWriter writer = new BinaryWriter(m))
@@ -363,6 +376,11 @@ namespace DLT
 
         public bool addTransaction(string txid)
         {
+            if (compacted)
+            {
+                Logging.error("Trying to add transaction on a compacted block {0}", blockNum);
+                return false;
+            }
             // TODO: this assumes the transaction is properly validated as it's already in the Transaction Pool
             // Could add an additional layer of checks here, just as in the TransactionPool - to avoid tampering
             if (!transactions.Contains(txid))
@@ -379,6 +397,12 @@ namespace DLT
         // Returns the checksum of this block, without considering signatures
         public byte[] calculateChecksum()
         {
+            if (compacted)
+            {
+                Logging.error("Trying to calculate checksum on a compacted block {0}", blockNum);
+                return null;
+            }
+
             List<byte> merged_segments = new List<byte>();
             foreach (var entry in superBlockSegments.OrderBy(x => x.Key))
             {
@@ -435,6 +459,12 @@ namespace DLT
         // Returns the checksum of all signatures of this block
         public byte[] calculateSignatureChecksum()
         {
+            if (compacted)
+            {
+                Logging.error("Trying to calculate signature checksum on a compacted block {0}", blockNum);
+                return null;
+            }
+
             // Sort the signature first
             List<byte[][]> sortedSigs = null;
             lock (signatures)
@@ -511,6 +541,12 @@ namespace DLT
 
         public bool containsSignature(byte[] address_or_pub_key)
         {
+            if (compacted)
+            {
+                Logging.error("Trying to check if compacted block {0} contains signature", blockNum);
+                return false;
+            }
+
             // Generate an address in case we got the pub key
             Address p_address = new Address(address_or_pub_key);
             byte[] cmp_address = p_address.address;
@@ -534,6 +570,11 @@ namespace DLT
 
         public bool addSignaturesFrom(Block other)
         {
+            if (compacted)
+            {
+                Logging.error("Trying to add signature from block on a compacted block {0}", blockNum);
+                return false;
+            }
             // Note: we don't need any further validation, since this block has already passed through BlockProcessor.verifyBlock() at this point.
             lock (signatures)
             {
@@ -562,6 +603,11 @@ namespace DLT
 
         public bool addSignature(byte[] signature, byte[] address_or_pub_key)
         {
+            if(compacted)
+            {
+                Logging.error("Trying to add signature on a compacted block {0}", blockNum);
+                return false;
+            }
             lock (signatures)
             {
                 if (!containsSignature(address_or_pub_key))
@@ -598,6 +644,12 @@ namespace DLT
 
         public bool verifySignatures(bool skip_sig_verification = false)
         {
+            if (compacted)
+            {
+                Logging.error("Trying to verify signatures on a compacted block {0}", blockNum);
+                return false;
+            }
+
             lock (signatures)
             {
                 List<byte[]> sigAddresses = new List<byte[]>();
@@ -648,6 +700,12 @@ namespace DLT
         // Goes through all signatures and verifies if the block is already signed with this node's pubkey
         public bool hasNodeSignature(byte[] public_key = null)
         {
+            if (compacted)
+            {
+                Logging.error("Trying to execute hasNodeSignature on a compacted block {0}", blockNum);
+                return false;
+            }
+
             byte[] node_address = Node.walletStorage.getPrimaryAddress();
             if (public_key == null)
             {
@@ -702,6 +760,12 @@ namespace DLT
         // Goes through all signatures and generates the corresponding Ixian wallet addresses
         public List<byte[]> getSignaturesWalletAddresses(bool convert_pubkeys = true)
         {
+            if (compacted)
+            {
+                Logging.error("Trying to get signer wallet addresses from a compacted block {0}", blockNum);
+                return null;
+            }
+
             List<byte[]> result = new List<byte[]>();
 
             lock (signatures)
@@ -751,9 +815,26 @@ namespace DLT
             return result;
         }
 
+        public int getSignatureCount()
+        {
+            if (compacted)
+            {
+                return signatureCount;
+            }
+            else
+            {
+                return signatures.Count;
+            }
+        }
+
         // Returns the number of unique signatures
         public int getUniqueSignatureCount()
         {
+            if (compacted)
+            {
+                return signatureCount;
+            }
+
             int signature_count = 0;
 
             // TODO: optimize this section to handle a large amount of signatures efficiently
@@ -792,6 +873,60 @@ namespace DLT
         {
             walletStateChecksum = new byte[checksum.Length];
             Array.Copy(checksum, walletStateChecksum, walletStateChecksum.Length);
+        }
+
+        public bool compactSignatures()
+        {
+            if (version < 4)
+            {
+                return false;
+            }
+
+            if (compactedSigs)
+            {
+                return false;
+            }
+
+            compactedSigs = true;
+
+            int compacted_cnt = 0;
+            List<byte[][]> new_sigs = new List<byte[][]>();
+            foreach(var entry in signatures)
+            {
+                if (entry[0] != null)
+                {
+                    compacted_cnt++;
+                    entry[0] = null;
+                }
+                new_sigs.Add(entry);
+            }
+
+            if (compacted_cnt > 0)
+            {
+                signatures = new_sigs;
+                return true;
+            }
+
+            return false;
+        }
+
+        public bool compact()
+        {
+            if(compacted)
+            {
+                return false;
+            }
+
+            compacted = true;
+
+            signatureCount = signatures.Count;
+            signatures = null;
+
+            superBlockSegments = null;
+            transactions = null;
+
+            return true;
+
         }
 
         public void logBlockDetails()
