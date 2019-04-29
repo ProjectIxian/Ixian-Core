@@ -568,32 +568,34 @@ namespace DLT
             }
         }
 
-        public bool addSignaturesFrom(Block other)
+        public List<byte[][]> addSignaturesFrom(Block other)
         {
             if (compacted)
             {
                 Logging.error("Trying to add signature from block on a compacted block {0}", blockNum);
-                return false;
+                return null;
             }
             // Note: we don't need any further validation, since this block has already passed through BlockProcessor.verifyBlock() at this point.
             lock (signatures)
             {
                 int count = 0;
+                List<byte[][]> added_signatures = new List<byte[][]>();
                 foreach (byte[][] sig in other.signatures)
                 {
                     if (!containsSignature(sig[1]))
                     {
                         count++;
                         signatures.Add(sig);
+                        added_signatures.Add(sig);
                     }
                 }
                 if (count > 0)
                 {
                     //Logging.info(String.Format("Merged {0} new signatures from incoming block.", count));
-                    return true;
+                    return added_signatures;
                 }
             }
-            return false;
+            return null;
         }
 
         public bool verifySignature(byte[] signature, byte[] signer_pub_key)
