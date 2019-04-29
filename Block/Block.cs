@@ -23,7 +23,7 @@ namespace DLT
 
     public class Block
     {
-        public static int maxVersion = 4;
+        public static int maxVersion = 3;
 
         // TODO: Refactor all of these as readonly get-params
         public ulong blockNum { get; set; }
@@ -875,7 +875,7 @@ namespace DLT
             Array.Copy(checksum, walletStateChecksum, walletStateChecksum.Length);
         }
 
-        public bool compactSignatures()
+        public bool pruneSignatures()
         {
             if (version < 4)
             {

@@ -264,6 +264,7 @@ namespace DLT
                 if (state == RemoteEndpointState.Closed)
                 {
                     running = false;
+                    break;
                 }
 
                 TimeSpan timeSinceLastStat = DateTime.UtcNow - lastMessageStatTime;
