@@ -95,8 +95,11 @@ namespace DLT
             foreach (byte[][] signature in block.signatures)
             {
                 byte[][] newSig = new byte[2][];
-                newSig[0] = new byte[signature[0].Length];
-                Array.Copy(signature[0], newSig[0], newSig[0].Length);
+                if (signature[0] != null)
+                {
+                    newSig[0] = new byte[signature[0].Length];
+                    Array.Copy(signature[0], newSig[0], newSig[0].Length);
+                }
                 newSig[1] = new byte[signature[1].Length];
                 Array.Copy(signature[1], newSig[1], newSig[1].Length);
                 signatures.Add(newSig);
@@ -283,8 +286,14 @@ namespace DLT
                         // Write each signature
                         foreach (byte[][] signature in signatures)
                         {
-                            writer.Write(signature[0].Length);
-                            writer.Write(signature[0]);
+                            if (signature[0] != null)
+                            {
+                                writer.Write(signature[0].Length);
+                                writer.Write(signature[0]);
+                            }else
+                            {
+                                writer.Write((int)0);
+                            }
                             writer.Write(signature[1].Length);
                             writer.Write(signature[1]);
                         }
