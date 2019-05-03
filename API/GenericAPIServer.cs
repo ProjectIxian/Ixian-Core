@@ -127,7 +127,10 @@ namespace IXICore
                 }
                 catch(Exception ex)
                 {
-                    Logging.error("Error in API server! " + ex.Message);
+                    if (continueRunning)
+                    {
+                        Logging.error("Error in API server! " + ex.Message);
+                    }
                     return;
                 }
 
@@ -167,7 +170,10 @@ namespace IXICore
             }
             catch (Exception e)
             {
-                Logging.error(String.Format("APIServer: {0}", e));
+                if (continueRunning)
+                {
+                    Logging.error(String.Format("APIServer: {0}", e));
+                }
             }
         }
 
@@ -186,7 +192,10 @@ namespace IXICore
             }
             catch (Exception e)
             {
-                Logging.error(String.Format("APIServer: {0}", e));
+                if (continueRunning)
+                {
+                    Logging.error(String.Format("APIServer: {0}", e));
+                }
             }
         }
 
@@ -201,7 +210,10 @@ namespace IXICore
             }
             catch (Exception e)
             {
-                Logging.error(String.Format("APIServer: {0}", e));
+                if (continueRunning)
+                {
+                    Logging.error(String.Format("APIServer: {0}", e));
+                }
             }
         }
     }

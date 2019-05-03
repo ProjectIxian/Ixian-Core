@@ -291,7 +291,7 @@ namespace DLT
                         Thread.Sleep(10);
                     }
                 }
-                Logging.info("Network queue thread stopped.");
+                Logging.info("Network Tx queue thread stopped.");
             }
         }
     }

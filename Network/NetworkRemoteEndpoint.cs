@@ -83,10 +83,10 @@ namespace DLT
             // Disable the Nagle Algorithm for this tcp socket.
             socket.NoDelay = true;
 
-            //tcpClient.Client.ReceiveTimeout = 5000;
+            //socket.ReceiveTimeout = 5000;
             //socket.ReceiveBufferSize = 1024 * 64;
             //socket.SendBufferSize = 1024 * 64;
-            //tcpClient.Client.SendTimeout = 5000;
+            //socket.SendTimeout = 5000;
 
             socket.Blocking = true;
         }
@@ -219,17 +219,17 @@ namespace DLT
             // Abort all related threads
             if (recvThread != null)
             {
-                recvThread.Abort();
+                //recvThread.Abort();
                 recvThread = null;
             }
             if (sendThread != null)
             {
-                sendThread.Abort();
+                //sendThread.Abort();
                 sendThread = null;
             }
             if (parseThread != null)
             {
-                parseThread.Abort();
+                //parseThread.Abort();
                 parseThread = null;
             }
 
@@ -256,7 +256,10 @@ namespace DLT
                 }
                 catch (Exception e)
                 {
-                    Logging.warn(string.Format("recvRE: Disconnected client {0} with exception {1}", getFullAddress(), e.ToString()));
+                    if(running)
+                    {
+                        Logging.warn(string.Format("recvRE: Disconnected client {0} with exception {1}", getFullAddress(), e.ToString()));
+                    }
                     state = RemoteEndpointState.Closed;
                 }
 
@@ -558,13 +561,19 @@ namespace DLT
                 }
                 if (clientSocket.Connected == false)
                 {
-                    Logging.warn(String.Format("sendRE: Failed senddata to remote endpoint {0}, Closing.", getFullAddress()));
+                    if (running)
+                    {
+                        Logging.warn(String.Format("sendRE: Failed senddata to remote endpoint {0}, Closing.", getFullAddress()));
+                    }
                     state = RemoteEndpointState.Closed;
                 }
             }
             catch (Exception e)
             {
-                Logging.warn(String.Format("sendRE: Socket exception for {0}, closing. {1}", getFullAddress(), e));
+                if (running)
+                {
+                    Logging.warn(String.Format("sendRE: Socket exception for {0}, closing. {1}", getFullAddress(), e));
+                }
                 state = RemoteEndpointState.Closed;
 
             }

@@ -181,9 +181,9 @@ namespace DLT
                             // Could be an interupt request
                         }catch(Exception)
                         {
-                            Logging.error("Exception occured in network server while trying to accept socket connection.");
                             if (continueRunning)
                             {
+                                Logging.error("Exception occured in network server while trying to accept socket connection.");
                                 restartNetworkOperations();
                             }
                             return;
