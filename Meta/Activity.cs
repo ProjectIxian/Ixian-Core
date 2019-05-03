@@ -216,6 +216,7 @@ namespace DLT.Meta
                 sqlConnection.Close();
                 sqlConnection = null;
             }
+            Logging.info("Activity Storage stopped.");
         }
 
         public static List<Activity> getActivitiesByAddress(string address, int fromIndex, int count, bool descending)

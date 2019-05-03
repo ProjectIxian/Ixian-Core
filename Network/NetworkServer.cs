@@ -83,10 +83,10 @@ namespace DLT
 
                 Logging.info("Closing network server connected clients");
                 // Clear all clients
-                lock(connectedClients)
+                lock (connectedClients)
                 {
                     // Immediately close all connected client sockets
-                    foreach(RemoteEndpoint client in connectedClients)
+                    foreach (RemoteEndpoint client in connectedClients)
                     {
                         client.stop();
                     }
@@ -147,7 +147,7 @@ namespace DLT
                         listener = new TcpListener(netOpsData.listenAddress);
                         listener.Start();
                     }
-                    catch(Exception e)
+                    catch (Exception e)
                     {
                         Logging.error(string.Format("Exception starting server: {0}", e.ToString()));
                         return;
@@ -179,7 +179,8 @@ namespace DLT
                         catch (SocketException)
                         {
                             // Could be an interupt request
-                        }catch(Exception)
+                        }
+                        catch (Exception)
                         {
                             if (continueRunning)
                             {
@@ -262,9 +263,9 @@ namespace DLT
                             continue;
                         }
 
-                        if (endpoint.presenceAddress == null ||  endpoint.presenceAddress.type != 'C')
+                        if (endpoint.presenceAddress == null || endpoint.presenceAddress.type != 'C')
                         {
-                            continue;                           
+                            continue;
                         }
 
                         // Finally, check if the endpoint is subscribed to this event and address
@@ -324,7 +325,7 @@ namespace DLT
                 {
                     foreach (RemoteEndpoint ep in connectedClients)
                     {
-                        if(ep.getFullAddress() == neighbor)
+                        if (ep.getFullAddress() == neighbor)
                         {
                             client = ep;
                             break;
@@ -338,7 +339,7 @@ namespace DLT
                 }
                 return false;
             }
-            
+
             // Returns all the connected clients
             public static string[] getConnectedClients(bool useIncomingPort = false)
             {
@@ -376,7 +377,7 @@ namespace DLT
                 clientSocket.NoDelay = true;
                 clientSocket.Blocking = true;
 
-                if(!Node.isAcceptingConnections())
+                if (!Node.isAcceptingConnections())
                 {
                     Thread.Sleep(100); // wait a bit for check connectivity purposes
                     clientSocket.Send(CoreProtocolMessage.prepareProtocolMessage(ProtocolMessageCode.bye, new byte[1]));
@@ -499,7 +500,6 @@ namespace DLT
             {
                 return continueRunning;
             }
-
         }
     }
 }

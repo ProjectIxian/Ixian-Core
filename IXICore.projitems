@@ -38,6 +38,7 @@
     <Compile Include="$(MSBuildThisFileDirectory)Network\NetworkServer.cs" />
     <Compile Include="$(MSBuildThisFileDirectory)Network\NetworkUtils.cs" />
     <Compile Include="$(MSBuildThisFileDirectory)Peer\Peer.cs" />
+    <Compile Include="$(MSBuildThisFileDirectory)Platform\NativeMethods.cs" />
     <Compile Include="$(MSBuildThisFileDirectory)Presence\Presence.cs" />
     <Compile Include="$(MSBuildThisFileDirectory)Presence\PresenceList.cs" />
     <Compile Include="$(MSBuildThisFileDirectory)Presence\PeerStorage.cs" />
@@ -47,6 +48,7 @@
     <Compile Include="$(MSBuildThisFileDirectory)Utils\Base58CheckEncoding.cs" />
     <Compile Include="$(MSBuildThisFileDirectory)Utils\BitWriter.cs" />
     <Compile Include="$(MSBuildThisFileDirectory)Utils\ByteArrayComparer.cs" />
+    <Compile Include="$(MSBuildThisFileDirectory)Utils\ConsoleHelpers.cs" />
     <Compile Include="$(MSBuildThisFileDirectory)Utils\IxiNumber.cs" />
     <Compile Include="$(MSBuildThisFileDirectory)Utils\IxiUtils.cs" />
     <Compile Include="$(MSBuildThisFileDirectory)Utils\KDTable.cs" />

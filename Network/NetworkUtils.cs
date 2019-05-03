@@ -1,11 +1,8 @@
 ﻿using DLT.Meta;
 using System;
 using System.Collections.Generic;
-using System.IO;
-using System.Linq;
 using System.Net;
 using System.Net.Sockets;
-using System.Text;
 using System.Threading.Tasks;
 
 namespace DLT
@@ -57,8 +54,60 @@ namespace DLT
             }
 
 
+            static public void configureNetwork()
+            {
+                // Network configuration
+                UPnP upnp = new UPnP();
+
+                if (Config.externalIp != "" && IPAddress.TryParse(Config.externalIp, out _))
+                {
+                    Config.publicServerIP = Config.externalIp;
+                }
+                else
+                {
+                    Config.publicServerIP = "";
+                    List<IPAndMask> local_ips = CoreNetworkUtils.GetAllLocalIPAddressesAndMasks();
+                    foreach (IPAndMask local_ip in local_ips)
+                    {
+                        if (IPv4Subnet.IsPublicIP(local_ip.Address))
+                        {
+                            Logging.info(String.Format("Public IP detected: {0}, mask {1}.", local_ip.Address.ToString(), local_ip.SubnetMask.ToString()));
+                            Config.publicServerIP = local_ip.Address.ToString();
+                        }
+                    }
+                    if (Config.publicServerIP == "")
+                    {
+                        IPAddress primary_local = CoreNetworkUtils.GetPrimaryIPAddress();
+                        if (primary_local == null)
+                        {
+                            Logging.warn("Unable to determine primary IP address.");
+                        }
+                        else
+                        {
+                            Logging.warn(String.Format("None of the locally configured IP addresses are public. Attempting UPnP..."));
+                            Task<IPAddress> public_ip = upnp.GetExternalIPAddress();
+                            if (public_ip.Wait(1000))
+                            {
+                                if (public_ip.Result != null)
+                                {
+                                    Logging.info(String.Format("UPNP-determined public IP: {0}. Attempting to configure a port-forwarding rule.", public_ip.Result.ToString()));
+                                    if (upnp.MapPublicPort(Config.serverPort, primary_local))
+                                    {
+                                        Config.publicServerIP = public_ip.Result.ToString(); //upnp.getMappedIP();
+                                        Logging.info(string.Format("Network configured. Public IP is: {0}", Config.publicServerIP));
+                                    }
+                                }
+                                else
+                                {
+                                    Logging.warn("UPnP configuration failed.");
+                                }
+                            }
+
+                        }
+                    }
+                }
+            }
+
         }
-
     }
-
 }
