@@ -1,0 +1,527 @@
+/*
+ * IXIAN Wallet Page
+ */
+
+@font-face {
+/*    font-family:"PlanerRegular";
+    src: url("../font/planer_reg.ttf")*/
+}
+
+
+body, html {
+    height: 100%;
+    background-color: black;
+    
+    font-family:'Roboto', sans-serif;
+}
+
+
+.container-fluid
+{
+    padding: 0px;
+}
+
+#wrap {
+    background: #EAEBED;
+    
+    /* Prevent overscroll bounce */
+    position: absolute;
+    top: 73px;
+    bottom: 105px;
+    left: 0;
+    right: 0;
+    overflow: auto;
+}
+
+.dropDown
+{
+    display: none;
+    position: relative;
+    padding: 10px;
+    box-sizing: border-box;
+    background: white;
+    color: black;
+    border: 1px solid black;
+}
+
+*:hover > .dropDown
+{
+    display: inline-block;
+}
+
+.navbar-default {
+    background: #19221D;
+    height: 73px;
+    color: #FFF;
+}
+
+.navbar-header {
+ 	float:none;
+    width:100%;
+}
+.navbar-brand {
+    font-size:20pt;
+    float:none;
+}
+
+.navbar-version {
+    right:0;
+    padding-top: 30px;
+}
+
+#MinerSection
+{
+    position: absolute;
+    right: 0px;
+    height: 72px;
+    padding: 5px 10px;
+    background-color: black;
+    box-sizing: border-box;
+    min-width: 220px;
+}
+
+#home {
+    background: #EAEBED;
+}
+
+#status_balance {
+    width: 100%;
+    height: 110px;
+    background: #EAEBED;
+    color: #000;
+}
+
+#status_balance > .top {
+    padding-top: 10px;
+    margin-bottom: 0px;
+}
+
+.status_dbalance {
+    font-size: 420%;
+}
+
+.recent_activity {
+    width: 100%;
+    height: 40px;
+    background: #0F1214;
+    color: #FFF;
+    font-size: 120%;
+    padding-top: 8px;
+    padding-left: 40px;
+}
+
+.warning_bar {
+    width: 100%;
+    background: rgba(232, 144, 29, 0.85);
+    color: #fff;
+    position: absolute;
+    top: 70px;
+    z-index: 1;
+    font-weight: bold;
+}
+
+.payment {
+    width: 100%;
+    background: #EAEBED;
+    border-bottom: 1px;
+    border-bottom-style: solid;
+    border-bottom-color: #676768;
+}
+
+
+
+.psent {
+    color: #AB003E;
+}
+
+.preceived {
+    color: #2E8933;
+}
+
+#payments
+{
+    bottom: 0px;
+    top: 150px;
+    left: 0px;
+    right: 0px;
+    position: absolute;
+    overflow-x: hidden;
+    overflow-y: auto;
+}
+
+.payment .row
+{
+    padding-bottom: 10px;
+}
+
+.payment.sent .psign div {
+	background: no-repeat center right url(data:image/png;base64,iVBORw0KGgoAAAANSUhEUgAAADwAAAA8CAYAAAA6/NlyAAAAGXRFWHRTb2Z0d2FyZQBBZG9iZSBJbWFnZVJlYWR5ccllPAAAAyhpVFh0WE1MOmNvbS5hZG9iZS54bXAAAAAAADw/eHBhY2tldCBiZWdpbj0i77u/IiBpZD0iVzVNME1wQ2VoaUh6cmVTek5UY3prYzlkIj8+IDx4OnhtcG1ldGEgeG1sbnM6eD0iYWRvYmU6bnM6bWV0YS8iIHg6eG1wdGs9IkFkb2JlIFhNUCBDb3JlIDUuNi1jMTExIDc5LjE1ODMyNSwgMjAxNS8wOS8xMC0wMToxMDoyMCAgICAgICAgIj4gPHJkZjpSREYgeG1sbnM6cmRmPSJodHRwOi8vd3d3LnczLm9yZy8xOTk5LzAyLzIyLXJkZi1zeW50YXgtbnMjIj4gPHJkZjpEZXNjcmlwdGlvbiByZGY6YWJvdXQ9IiIgeG1sbnM6eG1wPSJodHRwOi8vbnMuYWRvYmUuY29tL3hhcC8xLjAvIiB4bWxuczp4bXBNTT0iaHR0cDovL25zLmFkb2JlLmNvbS94YXAvMS4wL21tLyIgeG1sbnM6c3RSZWY9Imh0dHA6Ly9ucy5hZG9iZS5jb20veGFwLzEuMC9zVHlwZS9SZXNvdXJjZVJlZiMiIHhtcDpDcmVhdG9yVG9vbD0iQWRvYmUgUGhvdG9zaG9wIENDIDIwMTUgKE1hY2ludG9zaCkiIHhtcE1NOkluc3RhbmNlSUQ9InhtcC5paWQ6M0REMEI2RURCMTE4MTFFN0FBNTBGMDVGRUMxQUM3MjciIHhtcE1NOkRvY3VtZW50SUQ9InhtcC5kaWQ6M0REMEI2RUVCMTE4MTFFN0FBNTBGMDVGRUMxQUM3MjciPiA8eG1wTU06RGVyaXZlZEZyb20gc3RSZWY6aW5zdGFuY2VJRD0ieG1wLmlpZDpCNzY0Qzk5NkIxMTExMUU3QUE1MEYwNUZFQzFBQzcyNyIgc3RSZWY6ZG9jdW1lbnRJRD0ieG1wLmRpZDozREQwQjZFQ0IxMTgxMUU3QUE1MEYwNUZFQzFBQzcyNyIvPiA8L3JkZjpEZXNjcmlwdGlvbj4gPC9yZGY6UkRGPiA8L3g6eG1wbWV0YT4gPD94cGFja2V0IGVuZD0iciI/PmplCeoAAAPfSURBVHja7JpLSFVRFIaPPbG82kCIqMwIsaSGRZQK6rhJUBpB+Rg260Xa46aVmEWOGmZGSTpp0lhLzSBoVphikZgWBEJmShl5+1YuJ00857jPPbvu2fCzJufs9f/7udbeOy2RSDipVNIiwZHgSHBqCx4qqAlVQP7AHU/fL3NSrKSc4GgOmy7M8Q2YMlAItoM8sBZkgUkwDYbBIHgGupiXn/4pwYhciSkH1SqyS8UMqrhpRE3yXZaKz9PvCrVxhkAr6OC7n9YKRkAa5gy4CjqVdA+k5zzUIetKsTZWBbgAblBHwirBED2KuQ/aQAMERwzUmYu5BCrBMep8YIVgiDVhDoIqSPUHMEX2aUM+ov5zoQmGyGrMLbBehiBkvga4+GViJMr4DE7i60dS92EIpGNawCw4FKRYjaik/sPqrwX/a5Lawzi8jfkOkVPJ3kvxfROTju8TSelhnbPZ4HRI8YPsBNnwuB54D+tqLCvn7qCH8SI8YpiX4IqX1duTYN1nf4GiIFZjn6u3BDTL3e7TXod0rWwPNojVhey5ble1xnuY1lyFmQLbcDRmSzIAr02YdyAGr1mTPSyxcadNYrWXxzSMLTc9pKs1NraxtCo/M4I1xcsHvZYKFl75ytNID5dpnjpno1rl1aU8jQjeD/odu0uvppVGBBeAAcsFvwY7TQneCt5bLngU5JgSvHD+ZHORGCG22EcrXFaW6Tdu/raxPo657PLzpxnj8RK/6aPmzEYE/6nMp+h7oMflt1+WmExMmRI8qcPas2B6bAQzkoQh7WrauZ3DQjjX8jnsamF1K3hAtyabyw7wxpRgyTkLLRdcBPpMCX4CSvQAwLqivEpBtxHBrM7jmLduQreQivAahudHk+mh6xQshOI6dfUiuANUMHy2WDacJZysUH7mBOvxiZxWXrSsd4VT3M3xjtceltIsw4dW3WtJ7wqPKuXlGBesR6GVoA1nGSGLFf93nfkLPNcHE76uWnDWrKnYEVP3tj62oYeSEuL/rJd/fV21qJMJ0BhSB4vfCa9ifQvWUicBO63dmKyARPyAa5oo1Pmpw7dgeaOxIBq0Bz2ntf52sA6cV/+ei6kXADKnD8iCBpEXAYjdo3n1Yz/D2LhgJXVcox25pW8wcUOh1yiyz8r7xhrqbFtqnaZf8cgUkTcYcR1+QrDPy0qu60GRbn9yNVsPmkydiQf1TmuVkq3UxFyyGDk3fuXMny5OIWBGny3EdIvbpUlAqSby0ljtbiOoUAX/JX6ziihWUTkqUsTOOPPnUKPaGNIo3Yj8EBSf6K2ljx4MVUD0XjoSHM3hSHAk+H8qvwUYAAz9qXUwEZq8AAAAAElFTkSuQmCC);
+}
+
+
+.payment.received .psign div {
+        background: no-repeat center right url(data:image/png;base64,iVBORw0KGgoAAAANSUhEUgAAADwAAAA8CAYAAAA6/NlyAAAAGXRFWHRTb2Z0d2FyZQBBZG9iZSBJbWFnZVJlYWR5ccllPAAAAyhpVFh0WE1MOmNvbS5hZG9iZS54bXAAAAAAADw/eHBhY2tldCBiZWdpbj0i77u/IiBpZD0iVzVNME1wQ2VoaUh6cmVTek5UY3prYzlkIj8+IDx4OnhtcG1ldGEgeG1sbnM6eD0iYWRvYmU6bnM6bWV0YS8iIHg6eG1wdGs9IkFkb2JlIFhNUCBDb3JlIDUuNi1jMTExIDc5LjE1ODMyNSwgMjAxNS8wOS8xMC0wMToxMDoyMCAgICAgICAgIj4gPHJkZjpSREYgeG1sbnM6cmRmPSJodHRwOi8vd3d3LnczLm9yZy8xOTk5LzAyLzIyLXJkZi1zeW50YXgtbnMjIj4gPHJkZjpEZXNjcmlwdGlvbiByZGY6YWJvdXQ9IiIgeG1sbnM6eG1wPSJodHRwOi8vbnMuYWRvYmUuY29tL3hhcC8xLjAvIiB4bWxuczp4bXBNTT0iaHR0cDovL25zLmFkb2JlLmNvbS94YXAvMS4wL21tLyIgeG1sbnM6c3RSZWY9Imh0dHA6Ly9ucy5hZG9iZS5jb20veGFwLzEuMC9zVHlwZS9SZXNvdXJjZVJlZiMiIHhtcDpDcmVhdG9yVG9vbD0iQWRvYmUgUGhvdG9zaG9wIENDIDIwMTUgKE1hY2ludG9zaCkiIHhtcE1NOkluc3RhbmNlSUQ9InhtcC5paWQ6Qjc2NEM5OTRCMTExMTFFN0FBNTBGMDVGRUMxQUM3MjciIHhtcE1NOkRvY3VtZW50SUQ9InhtcC5kaWQ6Qjc2NEM5OTVCMTExMTFFN0FBNTBGMDVGRUMxQUM3MjciPiA8eG1wTU06RGVyaXZlZEZyb20gc3RSZWY6aW5zdGFuY2VJRD0ieG1wLmlpZDpCNzY0Qzk5MkIxMTExMUU3QUE1MEYwNUZFQzFBQzcyNyIgc3RSZWY6ZG9jdW1lbnRJRD0ieG1wLmRpZDpCNzY0Qzk5M0IxMTExMUU3QUE1MEYwNUZFQzFBQzcyNyIvPiA8L3JkZjpEZXNjcmlwdGlvbj4gPC9yZGY6UkRGPiA8L3g6eG1wbWV0YT4gPD94cGFja2V0IGVuZD0iciI/PvZNso4AAAQFSURBVHja7FpNSFVBFH6WRmWZ4aqIstCwaBEE/Zlh1raCVoqY9bQ2raIyDEpSyNSiVZsofyLSXYu25iL7XQQtQs0iXxK1Ecrns6DI13fsk0rQ7lzPvXfKO/Axgu/NOd85M3N+3qQkk8nIbBpzIrNshIRDwv/ZSJ3pArn1mwIl8Kr6WejhkPBvI2W2xeFULxfH+V6BqQgoANYBOcAiIB0YBRLAa6AX6Aa6cCbf/VMeBsl5mIqBCmCNkCCZXpJLgNQoPpdO8jk0RgGN8wZoBtrxua/WEgYBuQ+qgPNAB3BDiELppMEaKSQeBUqAGqARa4xZRRiKlmFqpWfqoOCgwporMZ0l+SjWbLOCMBRrxLSXSj324B7YQmPexfpVgRGGIkswXQCWAkehTMLDy0/O+jXgI3AGsoZ9jcMkWw/EgVIvyTKbkvVLKa+e8v3zMAReFeFQpNrvOArZYugMyD7mi4chsAFTlmytgHIHkZvFu8NbwryN9wNHTMKN8vYWuZXAPuhz0LMtzRj5Hcj34jZ2sdO2YnoEzDUxvomHJSQ020CWnn7CuF+lvqVhzTRJKAibhuhTy3RWtXgoYW77VqEpkA0UMpmYUWEv+kBWB3P3m5pbOsrtozGEcLmil5upn86WhgWXywTct7TElUosl3qqeLiIdaqVnQJWUl3UU4XwDuCB5Y2MbpaVKoTXAz2WE+5lE0GFsFwyMcsJDwCrtQhLZTJsOeFh6qkSh6UyibsIPdlT/G8jkMlYPNWImewq6DeCW3qxFuE4FjMlXThNrM2kMWqm+X7b3xKTSaEzg7WyCuGJ7WJCuHUahQtJdpfilhbvjmidYccXQoBDGn6DWoR7GJpsHhuAF1qEH0oNbDnhnU5TXyeEx9M2NtqtG9RrN3BPhTBu5/eY+mlFW737Enp+0CwPjUown4dR6eqU8HiRje2TraDgJ+C50nZexeK/w+l3TJp40jvKw9aJWnR+5Qe7fujUoO1hGU3AIQjZbgnZbZgOA0b9aceE2QCQPnCL07zVQ7Iiv0XSV9PGhPFPLfzlQc5ycRBdEPbH5czGIP+06feNYyuFDAGXAnKwHK0hN2RdEeY4CSyAta/Q4r54FriMPxcCp9yu44owrPsF03FAGuDtLM+8PrO3gfnACcj/7HYtjRcAFzEdAMqgyFMPyG7GdAu443YbqxKmUuXMdqQGrnX6C4WDpOKchEKgAmu2ahhQ+xWPnK26yJ+veMYM15C2cCUzKHnU0mTdK55JSqdFfr3TWgt0ssTsk+Mf+flOK85zL2835FeNPJage/iZ62I0fO6b9hHx9OkhSC0jiXySyiXJiR5UggT7aJROp1VPkJdWoClm+Hw4JOzjGQ49HBIOCYeEtccPAQYA9UWG23xSF+0AAAAASUVORK5CYII=);
+}
+
+
+.payment .psign div
+{
+	width: 100%;
+	height: 100%;
+	line-height: 60px;
+}
+
+.psign {
+    padding-top: 15px;
+    padding-left: 20px;
+    max-width: 120px;
+    float: left;
+}
+
+.pdesc {
+    width: 100%;
+    padding: 15px 250px 0px 120px;
+    font-size: 24px;
+    text-align: left;
+    overflow: hidden;
+    text-overflow: ellipsis;
+    position: absolute;
+    word-break: keep-all;
+}
+
+.pamount {
+    padding-top: 15px;
+    font-size: 24px;
+    text-align: left;
+    max-width: 250px;
+    float: right;
+}
+
+.pdate {
+    font-size: 18px;
+}
+
+
+
+/* RECEIVE SCREEN */
+.screen_headerbar {
+
+    width: 100%;
+    background: #FFF;
+    color: #000;
+    
+    font-size: 140%;
+    font-weight: bold;
+
+    padding: 5px;
+}
+
+#qr_container {
+    width: 100%;
+    height: 40vh;
+    max-height: 300px;
+    background: #EAEBED;
+    color: #000;
+}
+
+#qr_container > .top {
+    padding-top: 15px;
+}
+
+#qr_container > .middle {
+    margin-left: auto;
+    margin-right: auto;
+    margin-top:15px;
+    width: 90%;
+    height: 90%;
+}
+
+#qr_container > .middle img
+{
+    width: 100%;
+    height: 100%;
+    margin: 0 auto;
+    object-fit: contain;
+}
+
+#qr_container > .bottom {
+    font-weight: bold;
+    margin-top: 10px;
+}
+
+#receive {
+	background: #EAEBED;
+}
+
+.receive_address {
+
+    width: 100%;
+    background: #FFF;
+    font-style: italic;
+    text-align: center;
+    color: #000;
+    height: auto;
+    padding: 10px;
+    margin-top: 70px;
+    font-size: 130%;
+    font-weight: normal;
+    word-wrap: break-word;
+}
+
+.generate_address {
+    width: 100%;
+    height: 100px;
+    background: #EAEBED;
+    color: #AB003E;
+    text-align: center;
+    padding-top: 10px;
+    font-size: 140%;
+}
+
+
+/* SEND SCREEN */
+#send > .send_address {
+    width: 100%;
+    height: 40px;
+    background: #EAEBED;
+    padding-top: 25px;
+    text-align: center;
+    font-size: 120%;
+    
+}
+
+.send_amount {
+    width:100%;
+    height: 40px;
+    background: #EAEBED;
+    text-align: center;
+    font-size: 120%;
+}
+
+.address_edit {
+    margin-left: auto;
+    margin-right: auto;
+	width:300px;
+    height:60px;
+    margin-top:20px;
+}
+
+.amount_edit {
+    margin-left: auto;
+    margin-right: auto;
+    width:300px;
+    height:60px;
+}
+
+#send_balance,
+#transaction_amounts {
+    padding-top: 5px;
+    width: 100%;
+    height: 135px;
+    background: #FFF;
+    color: #000;
+}
+
+#transaction_amounts
+{
+    height: auto;
+}
+
+#send_balance > .top {
+    padding-top: 10px;
+}
+
+.send_button_wrap {
+    margin-left: auto;
+    margin-right: auto;
+    
+    width: 300px;
+    height:50px;
+}
+
+.sendbtn {   
+
+    font-size: 140%;
+    background-color: #AB003E;
+    width: 300px;
+    height: 50px;
+    border-radius: 40px;
+    color: white;
+    margin-top: 2em;
+    margin-bottom: 2em;
+}
+
+
+#send {
+	background: #EAEBED;    
+}
+
+#footer {
+  height: 100px;
+  background-color: #f5f5f5;
+}
+
+#wrap > .container {
+  padding: 10px 15px 0;
+}
+
+#footer > .container {
+  padding-left: 15px;
+  padding-right: 15px;
+}
+
+
+#bottomNav {
+    background: #1A1B1A;
+}
+
+#bottomNav a {
+    font-size:24pt;
+    color:#ddd;
+    text-decoration:none;
+    display: block;
+}
+#bottomNav a:hover {
+    color:#fff;
+}
+
+
+
+.active {
+    background: #AB003E;
+}
+
+
+.form-control {
+   border-radius: 20px;
+   background-color: #f8f8f8 ;
+   border-color: #A2A2A4 ;
+   height: 42px;
+}
+
+.address_input {
+   width:264px;
+   padding-right: 20px;
+   float:left;
+}
+
+.camerabtn {
+   width: 54px;
+   display: inline-block;
+   margin-left: -18px;
+}
+
+
+
+@media all and (max-width: 800px) {
+.pamount
+{
+    font-size: 3vw;
+    float:left;
+    width: 31.33333333%;
+}
+
+.pdesc
+{
+    font-size: 3vw;
+    padding: 15px 0px 0px 0px;
+    position: relative;
+    width: 52%;
+    float:left;
+}
+
+.pdate {
+    font-size: 2vw;
+    float:none;
+}
+
+.payment .psign div
+{
+    line-height: 10vw;
+    background-size: contain !important;
+}
+
+#bottomNav>div
+{
+    display: table;
+    text-align: center;
+}
+
+#bottomNav a {
+    font-size: 4vw;
+    height: 105px;
+    display: table-cell;
+    vertical-align: middle;
+}
+
+.status_dbalance
+{
+    font-size: 8vw;
+}
+}
+
+
+
+@media all and (max-width: 750px) {
+#payments
+{
+    top: 21vw;
+}
+
+#status_balance
+{
+    height: 11vw;
+}
+.recent_activity_wrapper
+{
+    position: absolute;
+    top: 15vw;
+    display: table;
+    width: 100%;
+}
+.recent_activity
+{
+    padding-top: 0px;
+    height: 6vw;
+    vertical-align: middle;
+    display: table-cell;
+}
+}
+
+
+@media all and (max-width: 550px) {
+#payments
+{
+    top: 24vw;
+}
+
+#status_balance
+{
+    height: 17vw;
+}
+.recent_activity_wrapper
+{
+    top: 17vw;
+}
+.recent_activity
+{
+    height: 7vw;
+}
+}
+
+@media all and (max-width: 400px) {
+#payments
+{
+    top: 26vw;
+}
+
+#status_balance
+{
+    height: 19vw;
+}
+.recent_activity_wrapper
+{
+    top: 19vw;
+}
+}
+

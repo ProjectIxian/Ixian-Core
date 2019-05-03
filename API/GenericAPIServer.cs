@@ -3,6 +3,7 @@ using Newtonsoft.Json;
 using System;
 using System.Collections.Generic;
 using System.IO;
+using System.Linq;
 using System.Net;
 using System.Text;
 using System.Threading;
@@ -215,6 +216,54 @@ namespace IXICore
                     Logging.error(String.Format("APIServer: {0}", e));
                 }
             }
+        }
+
+        protected void onResources(HttpListenerContext context)
+        {
+            string name = "";
+            for (int i = 2; i < context.Request.Url.Segments.Count(); i++)
+            {
+                name += context.Request.Url.Segments[i];
+            }
+
+            if (name != null && name.Length > 1 && !name.EndsWith("/"))
+            {
+                name = name.Replace('/', Path.DirectorySeparatorChar);
+                if (File.Exists("html" + Path.DirectorySeparatorChar + name))
+                {
+                    if (name.EndsWith(".css", StringComparison.OrdinalIgnoreCase))
+                    {
+                        context.Response.ContentType = "text/css";
+                    }
+                    else if (name.EndsWith(".js", StringComparison.OrdinalIgnoreCase))
+                    {
+                        context.Response.ContentType = "text/javascript";
+                    }
+                    else
+                    {
+                        context.Response.ContentType = "application/octet-stream";
+                    }
+                    sendResponse(context.Response, File.ReadAllBytes("html" + Path.DirectorySeparatorChar + name));
+                    return;
+                }
+            }
+            // 404
+            context.Response.ContentType = "text/plain";
+            context.Response.StatusCode = 404;
+            context.Response.StatusDescription = "404 File not found";
+            sendResponse(context.Response, "404 File not found");
+        }
+
+        // Send the embedded wallet html file
+        protected void sendWallet(HttpListenerContext context)
+        {
+            // Fetch the wallet html file from the exe
+            string wallet_html = File.ReadAllText("html" + Path.DirectorySeparatorChar + "wallet.html");
+            // Replace the js API location
+            string result = wallet_html.Replace("#IXIAN#NODE#URL#", listenURL);
+            // Set the content type to html to show the wallet page
+            context.Response.ContentType = "text/html";
+            sendResponse(context.Response, result);
         }
     }
 }
