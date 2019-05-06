@@ -54,6 +54,10 @@ namespace IXICore.Utils
             {
                 // ERROR: Unable to set console mode
             }
+
+            // Hook a handler for force close
+            NativeMethods.SetConsoleCtrlHandler(new NativeMethods.HandlerRoutine(IXICore.Utils.ConsoleHelpers.HandleConsoleClose), true);
+
         }
 
         static public void displayBackupText()

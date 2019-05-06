@@ -229,7 +229,8 @@ namespace IXICore
             if (name != null && name.Length > 1 && !name.EndsWith("/"))
             {
                 name = name.Replace('/', Path.DirectorySeparatorChar);
-                if (File.Exists("html" + Path.DirectorySeparatorChar + name))
+                string file_path = "html" + Path.DirectorySeparatorChar + name;
+                if (File.Exists(file_path))
                 {
                     if (name.EndsWith(".css", StringComparison.OrdinalIgnoreCase))
                     {
@@ -243,8 +244,11 @@ namespace IXICore
                     {
                         context.Response.ContentType = "application/octet-stream";
                     }
-                    sendResponse(context.Response, File.ReadAllBytes("html" + Path.DirectorySeparatorChar + name));
+                    sendResponse(context.Response, File.ReadAllBytes(file_path));
                     return;
+                }else
+                {
+                    Logging.error("File {0} is missing.", file_path);
                 }
             }
             // 404
@@ -257,12 +261,21 @@ namespace IXICore
         // Send the embedded wallet html file
         protected void sendWallet(HttpListenerContext context)
         {
-            // Fetch the wallet html file from the exe
-            string wallet_html = File.ReadAllText("html" + Path.DirectorySeparatorChar + "wallet.html");
+            string wallet_path = "html" + Path.DirectorySeparatorChar + "wallet.html";
+            if (!File.Exists(wallet_path))
+            {
+                Logging.error("File {0} is missing.", wallet_path);
+                return;
+            }
+
+            string wallet_html = File.ReadAllText(wallet_path);
+
             // Replace the js API location
             string result = wallet_html.Replace("#IXIAN#NODE#URL#", listenURL);
+            
             // Set the content type to html to show the wallet page
             context.Response.ContentType = "text/html";
+
             sendResponse(context.Response, result);
         }
     }
