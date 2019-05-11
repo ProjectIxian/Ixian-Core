@@ -29,6 +29,9 @@ namespace DLT
             private static Dictionary<string, DateTime> nodeBlacklist = new Dictionary<string, DateTime>();
             private static ThreadLiveCheck TLC;
 
+            private static DateTime lastIncomingConnectionTime = DateTime.UtcNow;
+            public static bool connectable = true;
+
             static NetworkServer()
             {
             }
@@ -163,32 +166,24 @@ namespace DLT
                 {
                     TLC.Report();
                     handleDisconnectedClients();
-                    int clientsCount = 0;
-                    lock (connectedClients)
+                    // Use a blocking mechanism
+                    try
                     {
-                        clientsCount = connectedClients.Count;
+                        Socket handlerSocket = listener.AcceptSocket();
+                        acceptConnection(handlerSocket);
                     }
-                    if (clientsCount < CoreConfig.maximumServerMasterNodes)
+                    catch (SocketException)
                     {
-                        // Use a blocking mechanism
-                        try
+                        // Could be an interupt request
+                    }
+                    catch (Exception)
+                    {
+                        if (continueRunning)
                         {
-                            Socket handlerSocket = listener.AcceptSocket();
-                            acceptConnection(handlerSocket);
+                            Logging.error("Exception occured in network server while trying to accept socket connection.");
+                            restartNetworkOperations();
                         }
-                        catch (SocketException)
-                        {
-                            // Could be an interupt request
-                        }
-                        catch (Exception)
-                        {
-                            if (continueRunning)
-                            {
-                                Logging.error("Exception occured in network server while trying to accept socket connection.");
-                                restartNetworkOperations();
-                            }
-                            return;
-                        }
+                        return;
                     }
 
                     // Sleep to prevent cpu usage
@@ -196,7 +191,6 @@ namespace DLT
 
                 }
                 Logging.info("Server listener thread ended.");
-                Thread.Yield();
             }
 
             // Send data to all connected clients
@@ -386,6 +380,9 @@ namespace DLT
                     return;
                 }
 
+                lastIncomingConnectionTime = DateTime.UtcNow;
+                connectable = true;
+
                 // Setup the remote endpoint
                 RemoteEndpoint remoteEndpoint = new RemoteEndpoint();
 
@@ -499,6 +496,21 @@ namespace DLT
             public static bool isRunning()
             {
                 return continueRunning;
+            }
+
+            static public bool isConnectable()
+            {
+                if (getConnectedClients().Count() > 0)
+                {
+                    return true;
+                }
+
+                if ((DateTime.UtcNow - lastIncomingConnectionTime).TotalSeconds < 300) // if somebody connected within 5 minutes the node is probably connectable
+                {
+                    return true;
+                }
+
+                return connectable;
             }
         }
     }

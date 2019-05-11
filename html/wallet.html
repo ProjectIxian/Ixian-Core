@@ -11,7 +11,7 @@
         
         <script src="resources/js/jquery.min.js"></script>
         <script src="resources/js/bootstrap.min.js"></script>
-		<script src="resources/js/qrcode.min.js"></script>
+        <script src="resources/js/qrcode.min.js"></script>
         <script src="resources/js/instascan.min.js"></script>
     </head>
 	
@@ -381,24 +381,36 @@
                 $.getJSON(dltAPI, { format: "json" })
                     .done(function (data) {
                         sync_status = data["result"]["DLT Status"];
+
                         var warning_bar = document.getElementById("warning_bar");
+                        warning_bar.style.display = "block";
+
                         if (sync_status == "Synchronizing") {
                             // Show the syncbar
-                            warning_bar.style.display = "block";
-                            warning_bar.firstElementChild.innerHTML = "Synchronizing the blockchain, block #" + data["result"]["Block Height"] + " / " + data["result"]["Network Block Height"];
+                            warning_bar.firstElementChild.innerHTML = "Synchronizing the blockchain, block #" + data["result"]["Block Height"] + " / " + data["result"]["Network Block Height"] + ".";
 
                         } else if (sync_status == "ErrorForkedViaUpgrade")
                         {
-                            warning_bar.style.display = "block";
-                            warning_bar.firstElementChild.innerHTML = "Network has been upgraded, please download a newer version of Ixian DLT";
+                            warning_bar.firstElementChild.innerHTML = "Network has been upgraded, please download a newer version of Ixian DLT.";
                         } else if (sync_status == "ErrorLongTimeNoBlock")
                         {
-                            warning_bar.style.display = "block";
-                            warning_bar.firstElementChild.innerHTML = "No fully signed block received for a while, make sure that you're connected to the internet";
+                            warning_bar.firstElementChild.innerHTML = "No fully signed block received for a while, make sure that you're connected to the internet.";
                         }
                         else {
                             // Hide the syncbar
                             warning_bar.style.display = "none";
+                            warning_bar.firstElementChild.innerHTML = "";
+                        }
+
+                        var node_type = data["result"]["Node Type"];
+                        if (node_type == "M" || node_type == "H") {
+                            if (data["result"]["Connectable"] == false) {
+                                warning_bar.style.display = "block";
+                                if (warning_bar.firstElementChild.innerHTML != "") {
+                                    warning_bar.firstElementChild.innerHTML += "<br/>";
+                                }
+                                warning_bar.firstElementChild.innerHTML += "This node is not connectable from the internet and other nodes can't connect to it. Please set-up port-forwarding.";
+                            }
                         }
                     });
 
