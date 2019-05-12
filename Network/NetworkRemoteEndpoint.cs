@@ -74,6 +74,11 @@ namespace DLT
 
         private ThreadLiveCheck TLC;
 
+        public byte[] serverWalletAddress = null;
+        public byte[] serverPubKey = null;
+
+        public byte[] challenge = null;
+
         protected void prepareSocket(Socket socket)
         {
             // The socket will linger for 3 seconds after 

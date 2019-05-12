@@ -35,7 +35,7 @@ namespace DLT
             prepareSocket(tmpSocket);
         }
 
-        public bool connectToServer(string hostname, int port)
+        public bool connectToServer(string hostname, int port, byte[] wallet_address)
         {
             if (fullyStopped)
             {
@@ -52,6 +52,7 @@ namespace DLT
             tcpPort = port;
             address = string.Format("{0}:{1}", hostname, port);
             incomingPort = port;
+            serverWalletAddress = wallet_address;
 
             // Prepare the TCP client
             prepareClient();
@@ -124,14 +125,14 @@ namespace DLT
                 disconnect();
 
                 Logging.info(string.Format("--> Reconnecting to {0}, total reconnects: {1}", getFullAddress(true), totalReconnects));
-                return connectToServer(tcpHostname, tcpPort);
+                return connectToServer(tcpHostname, tcpPort, serverWalletAddress);
             }
         }
 
         // Receive thread
         protected override void recvLoop()
         {
-            CoreProtocolMessage.sendHelloMessage(this, false);
+            CoreProtocolMessage.sendHelloMessage(this, false, null);
 
             base.recvLoop();
         }

@@ -1,16 +1,20 @@
+using System;
+
 namespace DLT
 {
     class Peer
     {
-        public ulong remoteId = 0;
-        public int remoteState = 0;
-        public string outgoingQueue = "";
-        public string incomingQueue = "";
+        public string hostname;
+        public byte[] walletAddress;
+        public DateTime lastSeen;
+        public long lastConnectAttempt;
 
-        public Peer()
+        public Peer(string iHostname, byte[] iWalletAddress, DateTime iLastSeen, long iLastConnectAttempt)
         {
-
+            hostname = iHostname;
+            walletAddress = iWalletAddress;
+            lastSeen = iLastSeen;
+            lastConnectAttempt = iLastConnectAttempt;
         }
-        
-    }
+    };
 }

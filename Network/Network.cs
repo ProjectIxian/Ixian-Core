@@ -24,7 +24,8 @@ namespace DLT
             incorrectIp = 600,
             notConnectable = 601,
             tooFarBehind = 602,
-            authFailed = 603
+            authFailed = 603,
+            addressMismatch = 604
         }
 
         // Message codes are for the most part pairs (send/receive)

@@ -42,10 +42,10 @@ namespace DLT
             bool firstSeedConnected = false;
             while (firstSeedConnected == false)
             {
-                string address = PeerStorage.getRandomMasterNodeAddress();
-                if (address != "")
+                Peer p = PeerStorage.getRandomMasterNodeAddress();
+                if (p != null)
                 {
-                    firstSeedConnected = connectTo(address);
+                    firstSeedConnected = connectTo(p.hostname, p.walletAddress);
                 }
                 if (firstSeedConnected == false)
                 {
@@ -71,7 +71,7 @@ namespace DLT
             running = true;
             networkClients = new List<NetworkClient>();
 
-            bool result = connectTo(address);
+            bool result = connectTo(address, null);
             if(!result)
             {
                 running = false;
@@ -126,7 +126,7 @@ namespace DLT
         }
 
         // Connects to a specified node, with the syntax host:port
-        public static bool connectTo(string host)
+        public static bool connectTo(string host, byte[] wallet_address)
         {
             if (host == null || host.Length < 3)
             {
@@ -221,7 +221,7 @@ namespace DLT
             // Connect to the specified node
             NetworkClient new_client = new NetworkClient();
             // Recompose the connection address from the resolved IP and the original port
-            bool result = new_client.connectToServer(resolved_server_name, Convert.ToInt32(server[1]));
+            bool result = new_client.connectToServer(resolved_server_name, Convert.ToInt32(server[1]), wallet_address);
 
             // Add this node to the client list if connection was successfull
             if (result == true)
@@ -375,22 +375,22 @@ namespace DLT
 
 
         // Returns a random new potential neighbor. Returns null if no new neighbor is found.
-        public static string scanForNeighbor()
+        public static Peer scanForNeighbor()
         {
-            string connectToAddress = null;
+            Peer connectToPeer = null;
             // Find only masternodes
-            while (connectToAddress == null)
+            while (connectToPeer == null)
             {
                 bool addr_valid = true;
-                string address = PeerStorage.getRandomMasterNodeAddress();
+                Peer p = PeerStorage.getRandomMasterNodeAddress();
 
-                if (address == "")
+                if (p == null)
                 {
                     break;
                 }
 
                 // Next, check if we're connecting to a self address of this node
-                string[] server = address.Split(':');
+                string[] server = p.hostname.Split(':');
 
                 if (server.Length < 2)
                 {
@@ -465,21 +465,21 @@ namespace DLT
                 // If the address is valid, add it to the candidates
                 if (addr_valid)
                 {
-                    connectToAddress = address;
+                    connectToPeer = p;
                 }
             }
 
-            return connectToAddress;
+            return connectToPeer;
         }
 
         // Scan for and connect to a new neighbor
         private static void connectToRandomNeighbor()
         {
-            string neighbor = scanForNeighbor();
+            Peer neighbor = scanForNeighbor();
             if (neighbor != null)
             {
                 Logging.info(string.Format("Attempting to add new neighbor: {0}", neighbor));
-                connectTo(neighbor);
+                connectTo(neighbor.hostname, neighbor.walletAddress);
             }
         }
 

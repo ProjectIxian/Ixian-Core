@@ -8,22 +8,6 @@ namespace DLT
 {
     class PeerStorage
     {
-        class Peer
-        {
-            public string hostname;
-            public byte[] walletAddress;
-            public DateTime lastSeen;
-            public long lastConnectAttempt;
-
-            public Peer(string iHostname, byte[] iWalletAddress, DateTime iLastSeen, long iLastConnectAttempt)
-            {
-                hostname = iHostname;
-                walletAddress = iWalletAddress;
-                lastSeen = iLastSeen;
-                lastConnectAttempt = iLastConnectAttempt;
-            }
-        };
-
         private static List<Peer> peerList = new List<Peer>();
 
         public static string peersFilename = "peers.dat";
@@ -100,7 +84,7 @@ namespace DLT
             return true;
         }
 
-        public static string getRandomMasterNodeAddress()
+        public static Peer getRandomMasterNodeAddress()
         {
             List<Peer> connectableList = null;
             lock (peerList)
@@ -112,10 +96,10 @@ namespace DLT
                     Random rnd = new Random();
                     Peer p = connectableList[rnd.Next(connectableList.Count)];
                     p.lastConnectAttempt = curTime;
-                    return p.hostname;
+                    return p;
                 }
             }
-            return "";
+            return null;
         }
 
         // Saves a list of 500 master node addresses to a file

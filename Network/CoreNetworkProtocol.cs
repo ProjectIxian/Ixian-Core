@@ -207,6 +207,8 @@ namespace IXICore
                 int pkLen = reader.ReadInt32();
                 byte[] pubkey = reader.ReadBytes(pkLen);
 
+                endpoint.serverPubKey = pubkey;
+
                 int port = reader.ReadInt32();
                 long timestamp = reader.ReadInt64();
 
@@ -259,6 +261,15 @@ namespace IXICore
                     }
 
                     ((NetworkClient)endpoint).timeDifference = timeDiff;
+
+
+                    // Check the address and local address and disconnect on mismatch
+                    if (endpoint.serverWalletAddress != null && !addr.SequenceEqual(endpoint.serverWalletAddress))
+                    {
+                        Logging.warn(string.Format("Local address mismatch, possible Man-in-the-middle attack."));
+                        sendBye(endpoint, ProtocolByeCode.addressMismatch, "Local address mismatch.", "", true);
+                        return false;
+                    }
                 }
 
                 // Store the presence address for this remote endpoint
@@ -269,16 +280,20 @@ namespace IXICore
 
                 if (endpoint.GetType() != typeof(NetworkClient))
                 {
-                    // Connect to this node only if it's a master node or a full history node
-                    if (node_type == 'M' || node_type == 'H')
+                    // we're the server
+
+                    if (node_type == 'M' || node_type == 'H' || node_type == 'R')
                     {
-                        // Check the wallet balance for the minimum amount of coins
-                        IxiNumber balance = Node.walletState.getWalletBalance(addr);
-                        if (balance < CoreConfig.minimumMasterNodeFunds)
+                        if (node_type != 'R')
                         {
-                            Logging.warn(string.Format("Rejected master node {0} due to insufficient funds: {1}", endpoint.getFullAddress(), balance.ToString()));
-                            sendBye(endpoint, ProtocolByeCode.insufficientFunds, string.Format("Insufficient funds. Minimum is {0}", CoreConfig.minimumMasterNodeFunds), balance.ToString(), true);
-                            return false;
+                            // Check the wallet balance for the minimum amount of coins
+                            IxiNumber balance = Node.walletState.getWalletBalance(addr);
+                            if (balance < CoreConfig.minimumMasterNodeFunds)
+                            {
+                                Logging.warn(string.Format("Rejected master node {0} due to insufficient funds: {1}", endpoint.getFullAddress(), balance.ToString()));
+                                sendBye(endpoint, ProtocolByeCode.insufficientFunds, string.Format("Insufficient funds. Minimum is {0}", CoreConfig.minimumMasterNodeFunds), balance.ToString(), true);
+                                return false;
+                            }
                         }
                         // Limit to one IP per masternode
                         // TODO TODO TODO - think about this and do it properly
@@ -297,11 +312,6 @@ namespace IXICore
                                 }
                             }
                         }*/
-                    }
-
-                    // we're the server
-                    if (node_type == 'M' || node_type == 'H' || node_type == 'R')
-                    {
                         if (!checkNodeConnectivity(endpoint))
                         {
                             return false;
@@ -324,7 +334,7 @@ namespace IXICore
             return true;
         }
 
-        public static void sendHelloMessage(RemoteEndpoint endpoint, bool sendHelloData)
+        public static void sendHelloMessage(RemoteEndpoint endpoint, bool sendHelloData, byte[] challenge_response)
         {
             using (MemoryStream m = new MemoryStream())
             {
@@ -395,12 +405,27 @@ namespace IXICore
                         // Write the legacy level
                         writer.Write(Legacy.getLegacyLevel());
 
+                        writer.Write(challenge_response.Length);
+                        writer.Write(challenge_response);
 
                         endpoint.sendData(ProtocolMessageCode.helloData, m.ToArray());
 
                     }
                     else
                     {
+                        List<byte> challenge = new List<byte>();
+
+                        challenge.AddRange(Node.walletStorage.getPrimaryAddress());
+                        Random rnd = new Random();
+                        challenge.AddRange(BitConverter.GetBytes(rnd.Next(20000)));
+
+                        byte[] challenge_bytes = challenge.ToArray();
+
+                        endpoint.challenge = challenge_bytes;
+
+                        writer.Write(challenge_bytes.Length);
+                        writer.Write(challenge_bytes);
+
                         endpoint.sendData(ProtocolMessageCode.hello, m.ToArray());
                     }
                 }
