@@ -622,6 +622,17 @@ namespace DLT
             return false;
         }
 
+        public void convertWalletFromIxiHex()
+        {
+            string wallet_string = File.ReadAllText(filename);
+            
+            if (wallet_string.Take(6).SequenceEqual("IXIHEX"))
+            {
+                Logging.info("Converting wallet from IXIHEX to binary");
+                File.WriteAllBytes(filename, Crypto.stringToHash(wallet_string.Skip(6).ToString()));
+            }
+        }
+
         // Try to read wallet information from the file
         public bool readWallet(string password)
         {
@@ -631,6 +642,8 @@ namespace DLT
                 Logging.log(LogSeverity.error, "Cannot read wallet file.");
                 return false;
             }
+
+            convertWalletFromIxiHex();
 
             // create a backup of the new wallet file
             if (!File.Exists(filename + ".bak"))
@@ -921,6 +934,11 @@ namespace DLT
             {
                 writeWallet(walletPassword);
             }
+        }
+
+        public byte[] getRawWallet()
+        {
+            return File.ReadAllBytes(filename);
         }
     }
 }

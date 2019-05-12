@@ -478,7 +478,7 @@ namespace DLT
             Peer neighbor = scanForNeighbor();
             if (neighbor != null)
             {
-                Logging.info(string.Format("Attempting to add new neighbor: {0}", neighbor));
+                Logging.info(string.Format("Attempting to add new neighbor: {0}", neighbor.hostname));
                 connectTo(neighbor.hostname, neighbor.walletAddress);
             }
         }

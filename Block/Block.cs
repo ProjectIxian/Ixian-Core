@@ -23,7 +23,7 @@ namespace DLT
 
     public class Block
     {
-        public static int maxVersion = 3;
+        public static int maxVersion = 4;
 
         // TODO: Refactor all of these as readonly get-params
         public ulong blockNum { get; set; }
@@ -161,10 +161,10 @@ namespace DLT
                     {
                         version = reader.ReadInt32();
 
-                        if (version > 4 && bytes.Length > 10240000)
+                        if (version > 5 && bytes.Length > 10240000)
                         {
                             throw new Exception("Block size is bigger than 10MB.");
-                        }else if(version < 5 && bytes.Length > 32768000)
+                        }else if(version < 6 && bytes.Length > 32768000)
                         {
                             throw new Exception("Block size is bigger than 32MB.");
                         }
@@ -222,7 +222,7 @@ namespace DLT
                             difficulty = reader.ReadUInt64();
                             timestamp = reader.ReadInt64();
 
-                            if(version > 3)
+                            if(version > 4)
                             {
                                 lastSuperBlockNum = reader.ReadUInt64();
 

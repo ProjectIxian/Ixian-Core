@@ -873,8 +873,11 @@ namespace DLT
             }
             catch (Exception e)
             {
-                Logging.error(String.Format("NET: endpoint {0} disconnected {1}", getFullAddress(), e));
-                throw;
+                if (running)
+                {
+                    Logging.error(String.Format("NET: endpoint {0} disconnected {1}", getFullAddress(), e));
+                    throw;
+                }
             }
             if (message_found)
             {

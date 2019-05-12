@@ -43,6 +43,7 @@
     <Compile Include="$(MSBuildThisFileDirectory)Presence\PresenceList.cs" />
     <Compile Include="$(MSBuildThisFileDirectory)Presence\PeerStorage.cs" />
     <Compile Include="$(MSBuildThisFileDirectory)Time\Time.cs" />
+    <Compile Include="$(MSBuildThisFileDirectory)Transaction\PendingTransactions.cs" />
     <Compile Include="$(MSBuildThisFileDirectory)Transaction\Transaction.cs" />
     <Compile Include="$(MSBuildThisFileDirectory)UPnP\UPnP.cs" />
     <Compile Include="$(MSBuildThisFileDirectory)Utils\Base58CheckEncoding.cs" />
