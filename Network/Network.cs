@@ -268,30 +268,30 @@ namespace DLT
         {
             // The list of seed nodes to connect to first. 
             // Domain/IP seperated by : from the port
-            public static List<string> seedNodes = new List<string>
+            public static List<string[]> seedNodes = new List<string[]>
                     {
-                        "seed1.ixian.io:10234",
-                        "seed2.ixian.io:10234",
-                        "seed3.ixian.io:10234",
-                        "seed4.ixian.io:10234",
-                        "seed5.ixian.io:10234"
+                        new string[2] { "seed1.ixian.io:10234", "1AAF8ZagTw6UqiQPUoiKjmoAN45jvR8tdmSmeev4uNzq45QWB" },
+                        new string[2] { "seed2.ixian.io:10234", "1NpizdRi5rmw586Aw883CoQ7THUT528CU5JGhGomgaG9hC3EF" },
+                        new string[2] { "seed3.ixian.io:10234", "1Dp9bEFkymhN8PcN7QBzKCg2buz4njjp4eJeFngh769H4vUWi" },
+                        new string[2] { "seed4.ixian.io:10234", "1SWy7jYky8xkuN5dnr3aVMJiNiQVh4GSLggZ9hBD3q7ALVEYY" },
+                        new string[2] { "seed5.ixian.io:10234", "1R2WxZ7rmQhMTt5mCFTPhPe9Ltw8pTPY6uTsWHCvVd3GvWupC" }
                     };
 
-            public static List<string> seedTestNetNodes = new List<string>
+            public static List<string[]> seedTestNetNodes = new List<string[]>
                     {
-                        "seedtest1.ixian.io:11234",
-                        "seedtest2.ixian.io:11234",
-                        "seedtest3.ixian.io:11234"
+                        new string[2] { "seedtest1.ixian.io:11234", null },
+                        new string[2] { "seedtest2.ixian.io:11234", null },
+                        new string[2] { "seedtest3.ixian.io:11234", null }
                     };
 
             // Returns the list of seed nodes or test seed nodes if testnet
-            public static string[] getSeedNodes(bool isTestNet)
+            public static List<string[]> getSeedNodes(bool isTestNet)
             {
                 if(isTestNet)
                 {
-                    return seedTestNetNodes.ToArray();
+                    return seedTestNetNodes;
                 }
-                return seedNodes.ToArray();
+                return seedNodes;
             }
 
             // Get the local accessible IP address of this node

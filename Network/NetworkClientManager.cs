@@ -33,9 +33,14 @@ namespace DLT
             PeerStorage.readPeersFile();
 
             // Now add the seed nodes to the list
-            foreach (string addr in CoreNetworkUtils.getSeedNodes(Config.isTestNet))
+            foreach (string[] addr in CoreNetworkUtils.getSeedNodes(Config.isTestNet))
             {
-                PeerStorage.addPeerToPeerList(addr, null, false);
+                byte[] wallet_addr = null;
+                if(addr[1] != null)
+                {
+                    wallet_addr = Base58Check.Base58CheckEncoding.DecodePlain(addr[1]);
+                }
+                PeerStorage.addPeerToPeerList(addr[0], wallet_addr, false);
             }
 
             // Connect to a random node first
