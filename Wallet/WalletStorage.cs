@@ -629,7 +629,7 @@ namespace DLT
             if (wallet_string.Take(6).SequenceEqual("IXIHEX"))
             {
                 Logging.info("Converting wallet from IXIHEX to binary");
-                File.WriteAllBytes(filename, Crypto.stringToHash(wallet_string.Skip(6).ToString()));
+                File.WriteAllBytes(filename, Crypto.stringToHash((new string(wallet_string.Skip(6).ToArray())).Trim()));
             }
         }
 
