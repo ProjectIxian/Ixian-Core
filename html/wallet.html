@@ -53,6 +53,14 @@
                     <div class="recent_activity_wrapper">
                         <div class="recent_activity">
                             RECENT ACTIVITY
+                            <select id="activity_type" onchange="javascript: getActivity();">
+                                <option value="-1">All</option>
+                                <option value="100">Received</option>
+                                <option value="101">Sent</option>
+                                <option value="200">Mining Reward</option>
+                                <option value="201">Staking Reward</option>
+                                <option value="202">Tx Fee Reward</option>
+                            </select>
                         </div>
                     </div>
 
@@ -261,7 +269,8 @@
 
             function getActivity() {
                 var dltAPI = "#IXIAN#NODE#URL#";
-                $.getJSON(dltAPI + "activity", {})
+                var activity_type_el = document.getElementById("activity_type");
+                $.getJSON(dltAPI + "activity?type=" + activity_type_el.options[activity_type_el.selectedIndex].value, {})
                     .done(function (data) {
                         document.getElementById("payments").innerHTML = "";
                         for (var i in data["result"]) {

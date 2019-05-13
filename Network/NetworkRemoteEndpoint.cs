@@ -88,10 +88,10 @@ namespace DLT
             // Disable the Nagle Algorithm for this tcp socket.
             socket.NoDelay = true;
 
-            //socket.ReceiveTimeout = 5000;
+            socket.ReceiveTimeout = 30000;
             //socket.ReceiveBufferSize = 1024 * 64;
             //socket.SendBufferSize = 1024 * 64;
-            //socket.SendTimeout = 5000;
+            socket.SendTimeout = 30000;
 
             socket.Blocking = true;
         }

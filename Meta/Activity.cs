@@ -283,6 +283,38 @@ namespace DLT.Meta
             return activity_list;
         }
 
+        public static List<Activity> getActivitiesBySeedHashAndType(byte[] seed_hash, ActivityType type, int fromIndex, int count, bool descending)
+        {
+            string orderBy = " ORDER BY `timestamp` ASC";
+            if (descending)
+            {
+                orderBy = " ORDER BY `timestamp` DESC";
+            }
+
+            if (seed_hash == null)
+            {
+                seed_hash = new byte[1] { 0 };
+            }
+
+            string sql = "select * from `activity` where  `type` = ? aND `seedHash` = ?" + orderBy + " LIMIT " + fromIndex + ", " + count;
+            List<Activity> activity_list = null;
+
+            lock (storageLock)
+            {
+                try
+                {
+                    activity_list = sqlConnection.Query<Activity>(sql, type, seed_hash);
+                }
+                catch (Exception e)
+                {
+                    Logging.error(String.Format("Exception has been thrown while executing SQL Query {0}. Exception message: {1}", sql, e.Message));
+                    return null;
+                }
+            }
+
+            return activity_list;
+        }
+
         public static List<Activity> getActivitiesByStatus(ActivityStatus status, int fromIndex, int count, bool descending)
         {
             string orderBy = " ORDER BY `timestamp` ASC";

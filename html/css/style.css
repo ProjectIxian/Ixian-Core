@@ -108,6 +108,7 @@ body, html {
     font-size: 120%;
     padding-top: 8px;
     padding-left: 40px;
+    padding-right: 40px;
 }
 
 .warning_bar {
@@ -411,117 +412,123 @@ body, html {
    margin-left: -18px;
 }
 
+#activity_type {
+    float: right;
+    background: black;
+    color: white;
+}
 
 
 @media all and (max-width: 800px) {
-.pamount
-{
-    font-size: 3vw;
-    float:left;
-    width: 31.33333333%;
-}
+    .pamount
+    {
+        font-size: 3vw;
+        float:left;
+        width: 31.33333333%;
+    }
 
-.pdesc
-{
-    font-size: 3vw;
-    padding: 15px 0px 0px 0px;
-    position: relative;
-    width: 52%;
-    float:left;
-}
+    .pdesc
+    {
+        font-size: 3vw;
+        padding: 15px 0px 0px 0px;
+        position: relative;
+        width: 52%;
+        float:left;
+    }
 
-.pdate {
-    font-size: 2vw;
-    float:none;
-}
+    .pdate {
+        font-size: 2vw;
+        float:none;
+    }
 
-.payment .psign div
-{
-    line-height: 10vw;
-    background-size: contain !important;
-}
+    .payment .psign div
+    {
+        line-height: 10vw;
+        background-size: contain !important;
+    }
 
-#bottomNav>div
-{
-    display: table;
-    text-align: center;
-}
+    #bottomNav>div
+    {
+        display: table;
+        text-align: center;
+    }
 
-#bottomNav a {
-    font-size: 4vw;
-    height: 105px;
-    display: table-cell;
-    vertical-align: middle;
-}
+    #bottomNav a {
+        font-size: 4vw;
+        height: 105px;
+        display: table-cell;
+        vertical-align: middle;
+    }
 
-.status_dbalance
-{
-    font-size: 8vw;
-}
+    .status_dbalance
+    {
+        font-size: 8vw;
+    }
 }
 
 
 
 @media all and (max-width: 750px) {
-#payments
-{
-    top: 21vw;
-}
+    #payments
+    {
+        top: 21vw;
+    }
 
-#status_balance
-{
-    height: 11vw;
-}
-.recent_activity_wrapper
-{
-    position: absolute;
-    top: 15vw;
-    display: table;
-    width: 100%;
-}
-.recent_activity
-{
-    padding-top: 0px;
-    height: 6vw;
-    vertical-align: middle;
-    display: table-cell;
-}
+    #status_balance
+    {
+        height: 11vw;
+    }
+    .recent_activity_wrapper
+    {
+        position: absolute;
+        top: 15vw;
+        display: table;
+        width: 100%;
+    }
+    .recent_activity {
+        padding-top: 0px;
+        height: 6vw;
+        vertical-align: middle;
+        display: table-cell;
+        padding-left: 20px;
+        padding-right: 20px;
+    }
 }
 
 
 @media all and (max-width: 550px) {
-#payments
-{
-    top: 24vw;
-}
+    #payments
+    {
+        top: 24vw;
+    }
 
-#status_balance
-{
-    height: 17vw;
-}
-.recent_activity_wrapper
-{
-    top: 17vw;
-}
-.recent_activity
-{
-    height: 7vw;
-}
+    #status_balance
+    {
+        height: 17vw;
+    }
+    .recent_activity_wrapper
+    {
+        top: 17vw;
+    }
+    .recent_activity {
+        height: 7vw;
+        padding-left: 10px;
+        padding-right: 10px;
+    }
 }
 
 @media all and (max-width: 400px) {
-#payments
-{
-    top: 26vw;
-}
+    #payments
+    {
+        top: 26vw;
+    }
 
-#status_balance
-{
-    height: 19vw;
+    #status_balance
+    {
+        height: 19vw;
+    }
+    .recent_activity_wrapper
+    {
+        top: 19vw;
+    }
 }
-.recent_activity_wrapper
-{
-    top: 19vw;
-}
-}
-
