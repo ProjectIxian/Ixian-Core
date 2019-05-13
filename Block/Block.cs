@@ -161,6 +161,7 @@ namespace DLT
                     {
                         version = reader.ReadInt32();
 
+
                         if (version > 5 && bytes.Length > 10240000)
                         {
                             throw new Exception("Block size is bigger than 10MB.");
@@ -169,10 +170,10 @@ namespace DLT
                             throw new Exception("Block size is bigger than 32MB.");
                         }
 
+                        blockNum = reader.ReadUInt64();
 
                         if (version <= maxVersion)
                         {
-                            blockNum = reader.ReadUInt64();
 
                             // Get the transaction ids
                             int num_transactions = reader.ReadInt32();
