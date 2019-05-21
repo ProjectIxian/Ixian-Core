@@ -1,0 +1,505 @@
+﻿<!DOCTYPE html>
+<html>
+    <head lang="en">
+        <meta charset="utf-8">
+        <meta http-equiv="X-UA-Compatible" content="IE=edge">
+        <meta name="viewport" content="width=device-width, initial-scale=1">
+        <title>IXIAN Wallet</title>
+        <link rel="stylesheet" type="text/css" href="resources/css/normalize.css">
+        <link rel="stylesheet" type="text/css" href="resources/css/bootstrap37.css">
+        <link rel="stylesheet" type="text/css" href="resources/css/style.css">
+        
+        <script src="resources/js/jquery.min.js"></script>
+        <script src="resources/js/bootstrap.min.js"></script>
+        <script src="resources/js/qrcode.min.js"></script>
+        <script src="resources/js/instascan.min.js"></script>
+    </head>
+	
+    <body>
+        <div id="templates" style="display: none;">
+            <div class="payment">
+                <div class="row">
+                    <div class="col-xs-2 psign"><div>&nbsp;</div></div>
+                    <div class="col-xs-6 pdesc"></div>
+                    <div class="col-xs-4 pamount"></div>
+                </div>
+            </div>
+        </div>
+
+        <nav class="navbar navbar-default navbar-fixed-top">
+            <div class="row">
+                <div class="col-xs-10"><img src="resources/img/logofull.png" /></div>
+                <div class="col-xs-2 navbar-version" id="version"></div>
+                <div id="MinerSection"></div>
+            </div>
+        </nav>
+
+        <div id="warning_bar" class="warning_bar">
+            <p class="text-center" style="padding-top:8px"></p>
+        </div>
+
+        <div id="wrap" class="container-fluid">
+
+            <div class="tab-content">
+
+                <div id="home" class="tab-pane fade in active">
+
+                    <div id="status_balance">
+                        <p class="text-center top">Available Balance</p>
+                        <p class="text-center"><span class="status_dbalance" id="activity_balance_number">0</span> <i>IXI</i></p>
+
+                    </div>
+                    
+                    <div class="recent_activity_wrapper">
+                        <div class="recent_activity">
+                            RECENT ACTIVITY
+                            <select id="activity_type" onchange="javascript: getActivity();">
+                                <option value="-1">All</option>
+                                <option value="100">Received</option>
+                                <option value="101">Sent</option>
+                                <option value="200">Mining Reward</option>
+                                <option value="201">Staking Reward</option>
+                                <option value="202">Tx Fee Reward</option>
+                            </select>
+                        </div>
+                    </div>
+
+                    <div id="payments">
+
+
+                    </div>
+
+                </div>
+
+
+
+
+                <div id="receive" class="tab-pane fade">
+
+                    <div class="screen_headerbar">
+                        <p class="text-center" style="padding-top:8px">Receive Funds</p>
+                    </div>
+
+                    <div id="qr_container">
+                        <p class="text-center top">Scan the QR code to send funds</p>
+                        <div id="qrcode" class="middle"></div>
+
+                        <p class="text-center bottom">or click on the address below to copy it to clipboard</p>
+
+                    </div>
+
+                    <div class="receive_address" id="receive_own_address">
+                        0
+                    </div>
+
+                    <div class="send_button_wrap">
+                        <div class="generate_address btn sendbtn" onclick="generateNewAddress();">
+                            Generate new address
+                        </div>
+                    </div>
+
+                </div>
+
+
+
+                <div id="send" class="tab-pane fade">
+                    <div class="screen_headerbar">
+                        <p class="text-center" style="padding-top:8px">Send Funds</p>
+                    </div>
+
+                    <div id="send_balance">
+                        <p class="text-center top">Available Balance</p>
+                        <p class="text-center"><span class="status_dbalance" id="send_balance_number">0</span> <i>IXI</i></p>
+
+                    </div>
+
+                    <div class="send_address">
+                        enter address or scan QR code
+                    </div>
+
+                    <form id="sendForm">
+
+                        <div class="address_edit">
+                            <input type="text" id="address" placeholder="" class="input-sm form-control address_input">
+                            <img class="camerabtn" onclick="javascript:readQR()" src="resources/img/camera.png" style="display: inline-block" />
+                        </div>
+
+                        <div class="send_amount">
+                            enter amount
+                        </div>
+
+                        <div class="amount_edit">
+                            <input type="text" id="amount" placeholder="" class="input-sm form-control" onkeyup="calculateTransactionAmounts();">
+                        </div>
+
+                        <div id="transaction_amounts">
+                            <p class="text-center top">Transaction Fee</p>
+                            <p class="text-center"><span class="status_dbalance" id="transactionFee">0</span> <i>IXI</i></p>
+
+                            <p class="text-center top">Total Amount</p>
+                            <p class="text-center"><span class="status_dbalance" id="totalAmount">0</span> <i>IXI</i></p>
+                        </div>
+
+                        <div class="send_button_wrap">
+                            <input type="submit" class="btn sendbtn" value="Send">
+
+                        </div>
+
+                    </form>
+
+                </div>
+
+            </div>
+
+
+
+        </div>
+        <div id="footer">
+            <div class="col-xs-12 navbar-inverse navbar-fixed-bottom">
+                <div class="row" id="bottomNav">
+                    <div id="tab1" class="col-xs-4 text-center"><a data-toggle="tab" href="#receive"><img src="resources/img/receive.png" /><br>RECEIVE</a></div>
+                    <div id="tab2" class="col-xs-4 text-center active"><a data-toggle="tab" href="#home"><img src="resources/img/activity.png" /><br>ACTIVITY</a></div>
+                    <div id="tab3" class="col-xs-4 text-center"><a data-toggle="tab" href="#send"><img src="resources/img/send.png" /><br>SEND</a></div>
+                </div>
+            </div>
+        </div>
+
+
+
+
+        <script type="text/javascript">
+            var selectedReceiveAddress = null;
+
+            // copyToClipboard function copied from https://hackernoon.com/copying-text-to-clipboard-with-javascript-df4d4988697f
+            const copyToClipboard = str => {
+                const el = document.createElement('textarea');  // Create a <textarea> element
+                el.value = str;                                 // Set its value to the string that you want copied
+                el.setAttribute('readonly', '');                // Make it readonly to be tamper-proof
+                el.style.position = 'absolute';
+                el.style.left = '-9999px';                      // Move outside the screen to make it invisible
+                document.body.appendChild(el);                  // Append the <textarea> element to the HTML document
+                const selected =
+                    document.getSelection().rangeCount > 0        // Check if there is any content selected previously
+                        ? document.getSelection().getRangeAt(0)     // Store selection if found
+                        : false;                                    // Mark as false to know no selection existed before
+                el.select();                                    // Select the <textarea> content
+                document.execCommand('copy');                   // Copy - only works as a result of a user action (e.g. click events)
+                document.body.removeChild(el);                  // Remove the <textarea> element
+                if (selected) {                                 // If a selection existed before copying
+                    document.getSelection().removeAllRanges();    // Unselect everything on the HTML document
+                    document.getSelection().addRange(selected);   // Restore the original selection
+                }
+            };
+
+            var qrcode = new QRCode(document.getElementById("qrcode"), {
+                width: 300,
+                height: 300
+            });
+
+            function setReceiveAddress(address) {
+                selectedReceiveAddress = address;
+
+                document.getElementById("selectedReceiveAddress").innerHTML = selectedReceiveAddress;
+
+                // Create the QR code
+                qrcode.clear();
+                qrcode.makeCode(selectedReceiveAddress);
+
+                copyToClipboard(address);
+            }
+
+            function getMyWallet() {
+
+                var dltAPI = "#IXIAN#NODE#URL#";
+                $.getJSON(dltAPI + "gettotalbalance", {})
+                    .done(function (data) {
+                        data = data["result"];
+
+                        // Assign relevant wallet information
+                        document.getElementById("activity_balance_number").innerHTML = data;
+                        document.getElementById("send_balance_number").innerHTML = data;
+
+                    });
+
+                var dltAPI = "#IXIAN#NODE#URL#";
+                $.getJSON(dltAPI + "mywallet", {})
+                    .done(function (data) {
+                        data = data["result"];
+                        var keyList = Object.keys(data);
+                        if (selectedReceiveAddress == null) {
+                            selectedReceiveAddress = keyList[keyList.length - 1];
+                            // Create the QR code
+                            qrcode.clear();
+                            qrcode.makeCode(selectedReceiveAddress);
+                        }
+
+                        var html = "<div id=\"selectedReceiveAddress\" onclick=\"copyToClipboard('" + selectedReceiveAddress + "');\">" + selectedReceiveAddress + "</div>";
+
+                        if (keyList.length > 1) {
+                            html += "<div class=\"dropDown\">";
+                            for (var i in data) {
+
+                                html += "<span onclick=\"setReceiveAddress('" + i + "');\">" + i + " (" + data[i] + ")</span><br/>";
+                            }
+
+                            html += "</div>";
+                        }
+                        // Assign relevant wallet information
+                        document.getElementById("receive_own_address").innerHTML = html;
+
+                    });
+            }
+
+            function statusToString(status, type) {
+                switch (status) {
+                    case 1:
+                        return "Pending";
+                    case 2:
+                        return "Final";
+                    case 3:
+                        if (type == 200) {
+                            return "Discarded";
+                        }
+                        return "Error";
+                    default:
+                        return "Unknown - " + status;
+                }
+
+            }
+
+            function getActivity() {
+                var dltAPI = "#IXIAN#NODE#URL#";
+                var activity_type_el = document.getElementById("activity_type");
+                $.getJSON(dltAPI + "activity?type=" + activity_type_el.options[activity_type_el.selectedIndex].value, {})
+                    .done(function (data) {
+                        document.getElementById("payments").innerHTML = "";
+                        for (var i in data["result"]) {
+                            var paymentsEl = document.getElementById("payments");
+                            paymentsEl.innerHTML += document.getElementById("templates").getElementsByClassName("payment")[0].outerHTML;
+                            var htmlEl = paymentsEl.lastElementChild;
+                            htmlEl.getElementsByClassName("pdesc")[0].innerHTML = data["result"][i]["toList"];
+                            var type = data["result"][i]["type"];
+                            if (type == 100) {
+                                htmlEl.className += " received";
+                                htmlEl.getElementsByClassName("pamount")[0].innerHTML = data["result"][i]["value"];
+                                htmlEl.getElementsByClassName("pdesc")[0].innerHTML = data["result"][i]["from"];
+                                htmlEl.getElementsByClassName("pdesc")[0].innerHTML += "<br/>Payment Received";
+                            } else if (type == 101) {
+                                htmlEl.className += " sent";
+                                htmlEl.getElementsByClassName("pamount")[0].innerHTML = "-" + data["result"][i]["value"];
+                                htmlEl.getElementsByClassName("pdesc")[0].innerHTML += "<br/>Payment Sent";
+                            } else if (type == 200) {
+                                htmlEl.className += " received";
+                                htmlEl.getElementsByClassName("pamount")[0].innerHTML = data["result"][i]["value"];
+                                htmlEl.getElementsByClassName("pdesc")[0].innerHTML = data["result"][i]["from"];
+                                htmlEl.getElementsByClassName("pdesc")[0].innerHTML += "<br/>Mining Reward";
+                            } else if (type == 201) {
+                                htmlEl.className += " received";
+                                htmlEl.getElementsByClassName("pamount")[0].innerHTML = data["result"][i]["value"];
+                                htmlEl.getElementsByClassName("pdesc")[0].innerHTML = data["result"][i]["wallet"];
+                                htmlEl.getElementsByClassName("pdesc")[0].innerHTML += "<br/>Staking Reward";
+                            } else if (type == 202) {
+                                htmlEl.className += " received";
+                                htmlEl.getElementsByClassName("pamount")[0].innerHTML = data["result"][i]["value"];
+                                htmlEl.getElementsByClassName("pdesc")[0].innerHTML += "<br/>Transaction fee Reward";
+                            }
+                            var date = new Date(data["result"][i]["timestamp"] * 1000);
+                            htmlEl.getElementsByClassName("pamount")[0].innerHTML += "<br/><span class=\"pdate\">" + date.toLocaleString() + "</span>";
+                            var status = statusToString(data["result"][i]["status"], type);
+                            htmlEl.getElementsByClassName("pdesc")[0].innerHTML += " - " + status;
+                        }
+                    });
+            }
+
+            function getNodeStatus() {
+                var dltAPI = "#IXIAN#NODE#URL#";
+                $.getJSON(dltAPI + "status", {})
+                    .done(function (data) {
+
+                    });
+            }
+
+
+            function sendTransaction() {
+                var address = document.getElementById("address").value.trim();
+                var amount = document.getElementById("amount").value.trim();
+
+                console.log("Amount " + amount);
+                if (amount <= 0) //  || amount > balance)
+                {
+                    alert("Incorrect amount. Make sure you have enough IXI available.");
+                    return;
+                }
+
+                //            console.log("Sending " + amount + " to " + address);
+
+                var dltAPI = "#IXIAN#NODE#URL#" + "addtransaction?to=" + address + "_" + amount;
+                $.getJSON(dltAPI, { format: "json" })
+                    .done(function (data) {
+                        if (data["result"] != null) {
+                            getMyWallet();
+                            alert("Transaction successfully sent");
+                        } else {
+                            alert("An error occured while trying to send a transaction: (" + data["error"]["code"] + ") " + data["error"]["message"]);
+                        }
+                    });
+
+            }
+
+            function generateNewAddress() {
+                var dltAPI = "#IXIAN#NODE#URL#" + "generatenewaddress";
+                $.getJSON(dltAPI, { format: "json" })
+                    .done(function (data) {
+                        selectedReceiveAddress = data["result"];
+                        qrcode.clear();
+                        qrcode.makeCode(selectedReceiveAddress);
+                        getMyWallet();
+                    });
+
+            }
+
+            function setBlockSelectionAlgorithm(algorithm) {
+                var dltAPI = "#IXIAN#NODE#URL#" + "setBlockSelectionAlgorithm?algorithm=" + algorithm;
+                $.getJSON(dltAPI, { format: "json" })
+                    .done(function (data) {
+                        getStatus();
+                    });
+
+            }
+
+            function calculateTransactionAmounts() {
+                var address = document.getElementById("address").value.trim();
+                var amount = document.getElementById("amount").value.trim();
+
+                var dltAPI = "#IXIAN#NODE#URL#" + "createrawtransaction?to=" + address + "_" + amount+"&json=true";
+                $.getJSON(dltAPI, { format: "json" })
+                    .done(function (data) {
+                        if (data["result"] != null) {
+                            document.getElementById("transactionFee").innerHTML = data["result"]["fee"];
+                            document.getElementById("totalAmount").innerHTML = data["result"]["totalAmount"];
+                        } else {
+                            // fail
+                        }
+                    });
+
+            }
+
+            function getStatus() {
+
+                var dltAPI = "#IXIAN#NODE#URL#" + "status";
+                $.getJSON(dltAPI, { format: "json" })
+                    .done(function (data) {
+                        sync_status = data["result"]["DLT Status"];
+
+                        var warning_bar = document.getElementById("warning_bar");
+                        warning_bar.style.display = "block";
+
+                        if (sync_status == "Synchronizing") {
+                            // Show the syncbar
+                            warning_bar.firstElementChild.innerHTML = "Synchronizing the blockchain, block #" + data["result"]["Block Height"] + " / " + data["result"]["Network Block Height"] + ".";
+
+                        } else if (sync_status == "ErrorForkedViaUpgrade")
+                        {
+                            warning_bar.firstElementChild.innerHTML = "Network has been upgraded, please download a newer version of Ixian DLT.";
+                        } else if (sync_status == "ErrorLongTimeNoBlock")
+                        {
+                            warning_bar.firstElementChild.innerHTML = "No fully signed block received for a while, make sure that you're connected to the internet.";
+                        }
+                        else {
+                            // Hide the syncbar
+                            warning_bar.style.display = "none";
+                            warning_bar.firstElementChild.innerHTML = "";
+                        }
+
+                        var node_type = data["result"]["Node Type"];
+                        if (node_type == "M" || node_type == "H") {
+                            if (data["result"]["Connectable"] == false) {
+                                warning_bar.style.display = "block";
+                                if (warning_bar.firstElementChild.innerHTML != "") {
+                                    warning_bar.firstElementChild.innerHTML += "<br/>";
+                                }
+                                warning_bar.firstElementChild.innerHTML += "This node is not connectable from the internet and other nodes can't connect to it. Please set-up port-forwarding.";
+                            }
+                        }
+                    });
+
+                var dltAPI = "#IXIAN#NODE#URL#" + "minerstats";
+                $.getJSON(dltAPI, { format: "json" })
+                    .done(function (data) {
+                        if (data["result"]) {
+                            var status = "Disabled";
+                            if (data["result"]["Hashrate"] > 0) {
+                                status = "Mining";
+                            } else {
+                                status = "Paused";
+                            }
+                            var minerEl = document.getElementById("MinerSection");
+                            minerEl.style.display = "block";
+                            var html = "Miner: " + status + "<br/>";
+                            html += "Rate: " + data["result"]["Hashrate"] + "<br/>";
+                            html += "Algorithm: " + data["result"]["Search Mode"] + "<br/>";
+                            html += "<div class=\"dropDown\">";
+                            html += "<span onclick=\"setBlockSelectionAlgorithm(-1);\">Disable</span><br/>";
+                            html += "<span onclick=\"setBlockSelectionAlgorithm(0);\">Lowest Difficulty</span><br/>";
+                            html += "<span onclick=\"setBlockSelectionAlgorithm(1);\">Random Lowest Difficulty</span><br/>";
+                            html += "<span onclick=\"setBlockSelectionAlgorithm(2);\">Latest Block</span><br/>";
+                            html += "<span onclick=\"setBlockSelectionAlgorithm(3);\">Random</span><br/>";
+                            html += "</div>";
+                            minerEl.innerHTML = html;
+                        } else {
+                            document.getElementById("MinerSection").style.display = "none";
+                        }
+                    });
+
+            }
+
+            function readQR() {
+                console.log("Starting QR code reader");
+
+                let scanner = new Instascan.Scanner({});
+                scanner.addListener('scan', function (content) {
+                    console.log("QRscanner: " + content);
+                    document.getElementById("address").innerHTML = content;
+                });
+                Instascan.Camera.getCameras().then(function (cameras) {
+                    if (cameras.length > 0) {
+                        scanner.start(cameras[0]);
+                    } else {
+                        console.error('No cameras found.');
+                        alert("No camera found. Please type the address to send funds to.");
+                    }
+                }).catch(function (e) {
+                    console.error(e);
+                });
+
+            }
+
+
+            // Function to toggle tab's active color
+            $('a[data-toggle="tab"]').on('shown.bs.tab', function (e) {
+                // Not very elegant, but it works
+                document.getElementById("tab1").className = "col-xs-4 text-center";
+                document.getElementById("tab2").className = "col-xs-4 text-center";
+                document.getElementById("tab3").className = "col-xs-4 text-center";
+                e.target.parentElement.className = "col-xs-4 text-center active";
+            })
+
+            $(function () {
+                console.log("Wallet loaded");
+
+                setInterval(getMyWallet, 5000);
+                setInterval(getActivity, 5000);
+                setInterval(getStatus, 5000);
+                getMyWallet();
+                getActivity();
+                getStatus();
+            });
+
+            $('#sendForm').submit(function () {
+                sendTransaction();
+                return false;
+            });
+
+        </script>
+    </body>
+</html>

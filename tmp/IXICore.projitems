@@ -1,0 +1,64 @@
+﻿<?xml version="1.0" encoding="utf-8"?>
+<Project xmlns="http://schemas.microsoft.com/developer/msbuild/2003">
+  <PropertyGroup>
+    <MSBuildAllProjects>$(MSBuildAllProjects);$(MSBuildThisFileFullPath)</MSBuildAllProjects>
+    <HasSharedItems>true</HasSharedItems>
+    <SharedGUID>80487c64-619a-4b60-97bd-ed7670bf45b3</SharedGUID>
+  </PropertyGroup>
+  <PropertyGroup Label="Configuration">
+    <Import_RootNamespace>IXICore</Import_RootNamespace>
+  </PropertyGroup>
+  <ItemGroup>
+    <Compile Include="$(MSBuildThisFileDirectory)Address\Address.cs" />
+    <Compile Include="$(MSBuildThisFileDirectory)Address\AddressClient.cs" />
+    <Compile Include="$(MSBuildThisFileDirectory)Address\AddressMatcher.cs" />
+    <Compile Include="$(MSBuildThisFileDirectory)API\GenericAPIServer.cs" />
+    <Compile Include="$(MSBuildThisFileDirectory)Block\Block.cs" />
+    <Compile Include="$(MSBuildThisFileDirectory)Crypto\ASNParser.cs" />
+    <Compile Include="$(MSBuildThisFileDirectory)Crypto\BigInteger.cs" />
+    <Compile Include="$(MSBuildThisFileDirectory)Crypto\Crypto.cs" />
+    <Compile Include="$(MSBuildThisFileDirectory)Crypto\CryptoLib.cs" />
+    <Compile Include="$(MSBuildThisFileDirectory)Crypto\CryptoLibs\BouncyCastle.cs" />
+    <Compile Include="$(MSBuildThisFileDirectory)Crypto\CryptoManager.cs" />
+    <Compile Include="$(MSBuildThisFileDirectory)Crypto\KeyDerivation.cs" />
+    <Compile Include="$(MSBuildThisFileDirectory)Legacy\Legacy.cs" />
+    <Compile Include="$(MSBuildThisFileDirectory)Meta\Activity.cs" />
+    <Compile Include="$(MSBuildThisFileDirectory)Meta\Core.cs" />
+    <Compile Include="$(MSBuildThisFileDirectory)Meta\CoreConfig.cs" />
+    <Compile Include="$(MSBuildThisFileDirectory)Meta\Logging.cs" />
+    <Compile Include="$(MSBuildThisFileDirectory)Meta\Platform.cs" />
+    <Compile Include="$(MSBuildThisFileDirectory)Meta\ThreadLiveCheck.cs" />
+    <Compile Include="$(MSBuildThisFileDirectory)Network\CoreNetworkProtocol.cs" />
+    <Compile Include="$(MSBuildThisFileDirectory)Network\Network.cs" />
+    <Compile Include="$(MSBuildThisFileDirectory)Network\NetworkClient.cs" />
+    <Compile Include="$(MSBuildThisFileDirectory)Network\NetworkClientManager.cs" />
+    <Compile Include="$(MSBuildThisFileDirectory)Network\NetworkEvents.cs" />
+    <Compile Include="$(MSBuildThisFileDirectory)Network\NetworkQueue.cs" />
+    <Compile Include="$(MSBuildThisFileDirectory)Network\NetworkRemoteEndpoint.cs" />
+    <Compile Include="$(MSBuildThisFileDirectory)Network\NetworkServer.cs" />
+    <Compile Include="$(MSBuildThisFileDirectory)Network\NetworkUtils.cs" />
+    <Compile Include="$(MSBuildThisFileDirectory)Peer\Peer.cs" />
+    <Compile Include="$(MSBuildThisFileDirectory)Platform\NativeMethods.cs" />
+    <Compile Include="$(MSBuildThisFileDirectory)Presence\Presence.cs" />
+    <Compile Include="$(MSBuildThisFileDirectory)Presence\PresenceList.cs" />
+    <Compile Include="$(MSBuildThisFileDirectory)Presence\PeerStorage.cs" />
+    <Compile Include="$(MSBuildThisFileDirectory)Time\Time.cs" />
+    <Compile Include="$(MSBuildThisFileDirectory)Transaction\PendingTransactions.cs" />
+    <Compile Include="$(MSBuildThisFileDirectory)Transaction\Transaction.cs" />
+    <Compile Include="$(MSBuildThisFileDirectory)UPnP\UPnP.cs" />
+    <Compile Include="$(MSBuildThisFileDirectory)Utils\Base58CheckEncoding.cs" />
+    <Compile Include="$(MSBuildThisFileDirectory)Utils\BitWriter.cs" />
+    <Compile Include="$(MSBuildThisFileDirectory)Utils\ByteArrayComparer.cs" />
+    <Compile Include="$(MSBuildThisFileDirectory)Utils\ConsoleHelpers.cs" />
+    <Compile Include="$(MSBuildThisFileDirectory)Utils\IxiNumber.cs" />
+    <Compile Include="$(MSBuildThisFileDirectory)Utils\IxiUtils.cs" />
+    <Compile Include="$(MSBuildThisFileDirectory)Utils\KDTable.cs" />
+    <Compile Include="$(MSBuildThisFileDirectory)Utils\Mnemonics.cs" />
+    <Compile Include="$(MSBuildThisFileDirectory)Utils\NetDump.cs" />
+    <Compile Include="$(MSBuildThisFileDirectory)Utils\Wordlist.cs" />
+    <Compile Include="$(MSBuildThisFileDirectory)Utils\WordlistSources.cs" />
+    <Compile Include="$(MSBuildThisFileDirectory)Wallet\Wallet.cs" />
+    <Compile Include="$(MSBuildThisFileDirectory)Wallet\WalletState.cs" />
+    <Compile Include="$(MSBuildThisFileDirectory)Wallet\WalletStorage.cs" />
+  </ItemGroup>
+</Project>
