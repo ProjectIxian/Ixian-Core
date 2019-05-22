@@ -412,7 +412,8 @@
                         }
 
                         var node_type = data["result"]["Node Type"];
-                        if (node_type == "M" || node_type == "H") {
+                        if ((node_type == "M" || node_type == "H")
+                            && data["result"]["Network Servers"] == "[]") {
                             if (data["result"]["Connectable"] == false) {
                                 warning_bar.style.display = "block";
                                 if (warning_bar.firstElementChild.innerHTML != "") {
