@@ -9,6 +9,7 @@ namespace IXICore.Utils
 {
     class ConsoleHelpers
     {
+        public static bool verboseConsoleOutput = false; // Flag for verbose console output
         static public bool forceShutdown = false;
 
         // STD_INPUT_HANDLE (DWORD): -10 is the standard input device.
@@ -159,8 +160,8 @@ namespace IXICore.Utils
                 case NativeMethods.CtrlTypes.CTRL_CLOSE_EVENT:
                 case NativeMethods.CtrlTypes.CTRL_LOGOFF_EVENT:
                 case NativeMethods.CtrlTypes.CTRL_SHUTDOWN_EVENT:
-                    Config.verboseConsoleOutput = true;
-                    Logging.consoleOutput = Config.verboseConsoleOutput;
+                    verboseConsoleOutput = true;
+                    Logging.consoleOutput = verboseConsoleOutput;
                     Console.WriteLine();
                     Console.WriteLine("Application is being closed!");
                     Logging.info("Shutting down...");
