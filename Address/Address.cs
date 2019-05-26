@@ -4,11 +4,35 @@ using System.Linq;
 
 namespace DLT
 {
+    /// <summary>
+    /// Ixian Wallet Address.
+    ///  This class holds a binary value of an Ixian Address and contains functions to encode that information to- or retrieve it from a bytestream.
+    ///  An address can be constructed either directly from address bytes or from a combination of public key and a 'nonce' value.
+    /// </summary>
+    /// <remarks>
+    ///  All versions of addreses are supported and basic checksum verification is possible. It is recommended to always generate addresses in the latest
+    ///  format for best performance and security.
+    ///  Ixian addresses v1 and above are generated from the wallet's primary key using a 'nonce' value, allowing for fast and efficient generation of multiple
+    ///  addresses from the same keypair.
+    /// </remarks>
     class Address
     {
+        /// <summary>
+        /// Version of the Ixian Address.
+        /// </summary>
         public int version = 0;
+        /// <summary>
+        ///  Byte value of the address.
+        /// </summary>
+        /// <remarks>
+        ///  It is not recommended to manipulate this directly, but the field is exposed because some DLT components rely on 
+        /// </remarks>
         public byte[] address;
+        /// <summary>
+        ///  Address nonce value. Applicable only for v1 and above.
+        /// </summary>
         public byte[] nonce;
+
 
         public Address()
         {
@@ -16,6 +40,16 @@ namespace DLT
             nonce = null;
         }
 
+        /// <summary>
+        ///  Constructs an Ixian address with the given byte value or alternatively from the given public key using a nonce value.
+        /// </summary>
+        /// <remarks>
+        ///  The address can be constructed either directly from the address byte value, or indirectly via a public key and a nonce value.
+        ///  If the address bytes are given directly, the nonce value may be omitted.
+        /// </remarks>
+        /// <param name="public_key_or_address">Byte value of the address or of the wallet's public key. See Remarks.</param>
+        /// <param name="nonce">If the value given for address bytes is a public key, this field is required to specify with actual address to generate.</param>
+        /// <param name="verify_checksum">If true, the given address will be verified for the correct checksum.</param>
         public Address(byte[] public_key_or_address, byte[] nonce = null, bool verify_checksum = true)
         {
             version = 0;
@@ -147,12 +181,24 @@ namespace DLT
             }
         }
 
+        /// <summary>
+        ///  Converts a binary Address representation into it's textual (base58) form, which is used in the Json Api and various clients.
+        /// </summary>
+        /// <returns>Textual representation of the wallet.</returns>
         public override string ToString()
         {
             return Base58Check.Base58CheckEncoding.EncodePlain(address);
         }
 
-        // Validates an address by checking the checksum
+        /// <summary>
+        ///  Validates that the given value is a valid Address by checking the embedded checksum.
+        /// </summary>
+        /// <remarks>
+        ///  This function accepts only the final address bytes, not a public key + nonce pair. If you are generating an Address from 
+        ///  public key + nonce, the Address constructor will automatically embed the correct checksum, so testing it here would be pointless.
+        /// </remarks>
+        /// <param name="address">Bytes of an Ixian Address.</param>
+        /// <returns>True, if the value is a valid Address.</returns>
         public static bool validateChecksum(byte[] address)
         {
             try

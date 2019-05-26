@@ -21,38 +21,123 @@ namespace DLT
         }
     }
 
+    /// <summary>
+    ///  An Ixian DLT Block.
+    ///  A block contains all the transactions which act on the WalletState and various checksums which validate the actions performed on the blockchain.
+    ///  Blocks are the fundamental data structure of Distributed Ledger Technology (DLT) and form a chain of valid states from the so-called 'Genesis Block' to the present moment.
+    ///  An Ixian Block must include checksums of the previous block, checksums of the internal data structures (WalletState) and a list of transactions which have updated the WalletState
+    ///  from its previous value to its current value.
+    ///  In addition, a block contains cryptographic signatures of Master nodes, which is the basis for the Ixian Consensus algorithm.
+    /// </summary>
     public class Block
     {
+        /// <summary>
+        /// Latest possible version of the Block structure. New blocks should usually be created with the latest version.
+        /// </summary>
         public static int maxVersion = 4;
 
-        // TODO: Refactor all of these as readonly get-params
+        /// <summary>
+        /// Block height (block number). This is a sequential index in the blockchain which uniquely identifies each block.
+        /// </summary>
         public ulong blockNum { get; set; }
 
+        /// <summary>
+        /// The list of transactions which should act on the WalletState from the previous block to produce the WalletState for this block.
+        /// </summary>
         public List<string> transactions = new List<string> { };
+
+        /// <summary>
+        /// The list of Master Node signatures which enable the Ixian Consensus algorithm.
+        /// </summary>
         public List<byte[][]> signatures = new List<byte[][]> { };
 
         private int signatureCount = 0; // used only when block is compacted
 
+        /// <summary>
+        /// Block version.
+        /// </summary>
+        /// <remarks>
+        ///  New blocks should always be generated with the latest version - `maxVersion`, except during the transitional period while the network
+        ///  is upgrading from one block version to the next. Older blocks, retrieved from files or the network may have an older version and this field identifies
+        ///  which version the specific block has.
+        ///  Some Block features are only enabled from specific versions forward.
+        /// </remarks>
         public int version = 0;
+        /// <summary>
+        ///  Checksum of all the data in the block. This value serves as the basis for block signatures since no block contents may be changed without
+        ///  affecting the block checksum.
+        /// </summary>
         public byte[] blockChecksum = null;
+        /// <summary>
+        ///  Checksum of the previous block, so that accepting a new block indirectly confirms and validates all past blocks. This is the basic functionality of DLT.
+        /// </summary>
         public byte[] lastBlockChecksum = null;
+        /// <summary>
+        ///  Checksum of the WalletState after the transactions in this block are applied to the WalletState from the previous block.
+        /// </summary>
+        /// <remarks>
+        ///  This allows Ixian Master Nodes to operate on the WalletState and be certain that it matches all other Master nodes without exchanging all the wallet data.
+        ///  WalletState is synchornized when the node first boots up, but is never transferred between nodes later, since it can be updated in a consistent manner
+        ///  using the transactions and wallet state checksums in each block.
+        /// </remarks>
         public byte[] walletStateChecksum = null;
+        /// <summary>
+        ///  Checksum of the final list of signatures for block `blockNum - 5`.
+        /// </summary>
+        /// <remarks>
+        ///  In this way, the signers list is 'frozen' and may no longer be changed, preventing various possible tampering attacks. Since the payout of many of the Ixian DLT's
+        ///  Master Node functions is tied to the accepted signature list, this field protects that list from malicious tinkering.
+        ///  Changes are permitted for five blocks to allow slower nodes to process and apply their signatures.
+        /// </remarks>
         public byte[] signatureFreezeChecksum = null;
+        /// <summary>
+        ///  Unix Epoch value of when the block was generated.
+        /// </summary>
         public long timestamp = 0;
+        /// <summary>
+        ///  Ixian Hybrid PoW difficulty value.
+        /// </summary>
+        /// <remarks>
+        ///  Ixian Blockchain works on a consensus model and mining is not strictly required. An optional mining system is included to enable initial coin supply distribution.
+        ///  The mining algorithm is Argon2id and the solutions are not included in blocks themselves. There is a special Transaction type which submits a solution to a block.
+        ///  Miners are able to work on any block in the Redacted History window, with the target block specifying its difficulty to which the posted solution must conform.
+        /// </remarks>
         public ulong difficulty = 0;
-
+        /// <summary>
+        ///  List of blocks and their checksums - used only in the superblock functionality.
+        /// </summary>
         public Dictionary<ulong, SuperBlockSegment> superBlockSegments = new Dictionary<ulong, SuperBlockSegment>();
+        /// <summary>
+        ///  Checksum of the previous superblock - used only in superblock functinality.
+        /// </summary>
         public byte[] lastSuperBlockChecksum = null;
+        /// <summary>
+        ///  Block height of the previous superblock - used only in superblock functionality.
+        /// </summary>
         public ulong lastSuperBlockNum = 0;
 
-        // Locally calculated
+        /// <summary>
+        ///  Ixian Hybrid PoW solution, if it exists for this block.
+        /// </summary>
+        /// <remarks>
+        ///  This field is not included in the block checksum, nor is it transmitted over the network. Master Nodes fill this information for themselves from the
+        ///  special PoW-Solution transaction types in the TransactionPool.
+        /// </remarks>
         public byte[] powField = null;
 
 
-        // if block was read from local storage
+        /// <summary>
+        ///  Indicator which shows if the block was processed through the Consensus algorithm, or read from cold storage.
+        /// </summary>
         public bool fromLocalStorage = false;
 
+        /// <summary>
+        ///  Indicator to show if the block has already been compacted through the superblock functionality.
+        /// </summary>
         public bool compacted = false;
+        /// <summary>
+        ///  Indicator to show if the block's signatures have been compacted through the superblock functionality.
+        /// </summary>
         public bool compactedSigs = false;
 
         // Generate the genesis block
@@ -74,6 +159,14 @@ namespace DLT
             transactions = new List<string>();
         }
 
+        /// <summary>
+        ///  Copies the given block rather than making a reference to it.
+        /// </summary>
+        /// <remarks>
+        ///  This constructor is used in some places of the DLT software where copies of the block data are required and where such a copy
+        ///  would improve performance by requiring less thread synchronziation.
+        /// </remarks>
+        /// <param name="block">Source block.</param>
         public Block(Block block)
         {
             version = block.version;
@@ -151,6 +244,14 @@ namespace DLT
             signatureCount = block.signatureCount;
         }
 
+        /// <summary>
+        ///  Reconstructs a Block from the bytestream. See also `getBytes`.
+        /// </summary>
+        /// <remarks>
+        ///  Each block has a `getBytes()` function which serializes the block data into a byte buffer, suitable for sending over the network.
+        ///  This constructor can re-create the block from the given bytestream.
+        /// </remarks>
+        /// <param name="bytes">Block bytes, usually received from the network.</param>
         public Block(byte[] bytes)
         {
             try
@@ -253,6 +354,14 @@ namespace DLT
             }
         }
         
+        /// <summary>
+        ///  Retrieves the block in its serialized, 'byte stream' format. See also `Block(byte[] bytes)`.
+        /// </summary>
+        /// <remarks>
+        ///  A block can be serialized for network transmission using this function. All relevant fields will be encoded and a byte buffer will
+        ///  be returned. The byte buffer contains a copy of the block, so no thread synchronization is required.
+        /// </remarks>
+        /// <returns>Byte buffer with the serialized block.</returns>
         public byte[] getBytes()
         {
             if(compacted)
@@ -359,6 +468,15 @@ namespace DLT
             }
         }
 
+        /// <summary>
+        ///  Implementation of block equality.
+        /// </summary>
+        /// <remarks>
+        ///  Due to how a distributed ledger works as a technology, the comparison must only examine certain checksums of both blocks
+        ///  to verify whether they are equal or not.
+        /// </remarks>
+        /// <param name="b">Other block, sometimes called the RHS (Right-hand-side)</param>
+        /// <returns>True if the blocks are equal.</returns>
         public bool Equals(Block b)
         {
             if (!b.blockChecksum.SequenceEqual(blockChecksum))
@@ -384,6 +502,16 @@ namespace DLT
             return true;
         }
 
+        /// <summary>
+        ///  Adds an Ixian `Transaction` to the block. The transaction must already be present in the TransactionPool.
+        /// </summary>
+        /// <remarks>
+        ///  Note that the transaction is not executed against the `WalletState` when it's added to the block with this function.
+        ///  It is the responsibiltiy of the Master Node implementation to ensure that all transactions, which are added to a specific block,
+        ///  are also applied against the WalletState, so that the walletStateSchecksum represents the finishing state.
+        /// </remarks>
+        /// <param name="txid">ID of the transaction to add.</param>
+        /// <returns>True, if the transaction was added successfully.</returns>
         public bool addTransaction(string txid)
         {
             if (compacted)
@@ -404,7 +532,10 @@ namespace DLT
             return true;
         }
 
-        // Returns the checksum of this block, without considering signatures
+        /// <summary>
+        ///  Calculates the `blockChecksum` of the DLT Block, using the relevant fields.
+        /// </summary>
+        /// <returns>Byte value of the checksum result.</returns>
         public byte[] calculateChecksum()
         {
             if (compacted)
@@ -466,7 +597,13 @@ namespace DLT
             }
         }
 
-        // Returns the checksum of all signatures of this block
+        /// <summary>
+        ///  Calculates the checksum of all signatures on this block.
+        /// </summary>
+        /// <remarks>
+        ///  This is used for the signature freeze functionality of the Ixian DLT. See remarks  on the `signatureFreezeChecksum` field for details.
+        /// </remarks>
+        /// <returns>Byte value of the signature checksum.</returns>
         public byte[] calculateSignatureChecksum()
         {
             if (compacted)
@@ -510,7 +647,17 @@ namespace DLT
             return checksum;
         }
 
-        // Applies this node's signature to this block
+        /// <summary>
+        ///  Signs the Block with the running DLT Master Node's private key.
+        /// </summary>
+        /// <remarks>
+        ///  Signing the block indicates that the node has executed all transactions, specified in this block and has confirmed that the resulting
+        ///  state of all wallets (`WalletState`) matches the one in the `walletStateChecksum` field. The starting point for the transactions is
+        ///  the Wallet State from the previous block.
+        ///  The resulting signature may include either the node's public key, or its signing address, depending if the public key can be obtained through other means.
+        ///  An example of this is when this node's public key is present in the Presence List.
+        /// </remarks>
+        /// <returns>Byte array with the node's signature and public key or address.</returns>
         public byte[][] applySignature()
         {
             // Note: we don't need any further validation, since this block has already passed through BlockProcessor.verifyBlock() at this point.
@@ -549,6 +696,11 @@ namespace DLT
             return newSig;
         }
 
+        /// <summary>
+        ///  Checks if the block's signatures field contains the signature of the specified node. Either the node's address or its public key is accepted.
+        /// </summary>
+        /// <param name="address_or_pub_key">The signer's address or public key.</param>
+        /// <returns></returns>
         public bool containsSignature(byte[] address_or_pub_key)
         {
             if (compacted)
@@ -578,6 +730,16 @@ namespace DLT
             }
         }
 
+        /// <summary>
+        ///  Mergest the signatures of two blocks without duplicating.
+        /// </summary>
+        /// <remarks>
+        ///  This is used when the Master Node has been working on one set of signatures but receives the same block with a different set of signatures and wishes
+        ///  to merge the two lists together.
+        ///  The function returns the list signatures which were in the `other` block, but not in this, while at the same time adding the new signatures to this block.
+        /// </remarks>
+        /// <param name="other">The other block (should be the same `blockNum`) whose signatures will be merged.</param>
+        /// <returns>The list of 'new' signatures.</returns>
         public List<byte[][]> addSignaturesFrom(Block other)
         {
             if (compacted)
@@ -608,11 +770,27 @@ namespace DLT
             return null;
         }
 
+        /// <summary>
+        ///  Verifies if the given signature is valid for this block.
+        /// </summary>
+        /// <remarks>
+        ///  Please note that this function only accepts a public key. If the signature is supplied with an address, the public key must somehow be obtained
+        ///  prior to calling this function, either by taking it from the Presence List, or querying the network.
+        /// </remarks>
+        /// <param name="signature">Signature's byte value.</param>
+        /// <param name="signer_pub_key">Public key of the signer.</param>
+        /// <returns>True, if the signature validates this block.</returns>
         public bool verifySignature(byte[] signature, byte[] signer_pub_key)
         {
             return CryptoManager.lib.verifySignature(blockChecksum, signer_pub_key, signature);
         }
 
+        /// <summary>
+        ///  Adds the provided signature to the block's signature list.
+        /// </summary>
+        /// <param name="signature">Byte value of the signature.</param>
+        /// <param name="address_or_pub_key">Address or public key of the signer.</param>
+        /// <returns>True, if the signature was successfully added. False is returned if the signature was already present, or was not valid.</returns>
         public bool addSignature(byte[] signature, byte[] address_or_pub_key)
         {
             if(compacted)
@@ -635,6 +813,15 @@ namespace DLT
             return false;
         }
 
+        /// <summary>
+        ///  Attempts to retrieve the public key of the signer address.
+        /// </summary>
+        /// <remarks>
+        ///  This function accepts either a wallet address or a public key. In the latter case, the public key is returned directly, but in the former case,
+        ///  the public key is looked up from the wallet. This allows easy conversion from the signatures field for use in the verify function.
+        /// </remarks>
+        /// <param name="address_or_pub_key">Signer address or public key.</param>
+        /// <returns>Public key, matching the given address, or null, if the public key is not known.</returns>
         public byte[] getSignerPubKey(byte[] address_or_pub_key)
         {
             if(address_or_pub_key == null)
@@ -654,6 +841,16 @@ namespace DLT
             return null;
         }
 
+        /// <summary>
+        ///  Verifies that all signatures on this block are valid.
+        /// </summary>
+        /// <remarks>
+        ///  Checks if all the given signatures and signer addresses match and are valid. In the simpler form (`skip_sig_verification`), this function
+        ///  only checks that public keys for all signatures exist and that all signers are known, without cryptographically verifying that each signature
+        ///  matches the block.
+        /// </remarks>
+        /// <param name="skip_sig_verification">False for simpler, non-cryptographic verification.</param>
+        /// <returns>True if all signatures are valid and (optionally) match the block's checksum.</returns>
         public bool verifySignatures(bool skip_sig_verification = false)
         {
             if (compacted)
@@ -709,7 +906,11 @@ namespace DLT
             }
         }
 
-        // Goes through all signatures and verifies if the block is already signed with this node's pubkey
+        /// <summary>
+        ///  Checks the signatures on the block and returns true, if the block has already been signed by the given public key.
+        /// </summary>
+        /// <param name="public_key">The public key to check.</param>
+        /// <returns>True, if the public key has already signed the block.</returns>
         public bool hasNodeSignature(byte[] public_key = null)
         {
             if (compacted)
@@ -769,7 +970,16 @@ namespace DLT
             return false;
         }
 
-        // Goes through all signatures and generates the corresponding Ixian wallet addresses
+        /// <summary>
+        ///  Retrieves a list of Ixian Wallet addresses from the list of signatures on this block.
+        /// </summary>
+        /// <remarks>
+        ///  Since signatures on the block may include either an address or a public key, this function performs the necessary lookups
+        ///  to return only the Wallet addresses of all signers. If the parameter `convert_pubkeys` is specified false, then the public
+        ///  key lookups aren't performed and only the addresses from the signature list are returned.
+        /// </remarks>
+        /// <param name="convert_pubkeys">True if public key signatures should be converted back to their respective Ixian Wallet addresses.</param>
+        /// <returns>List of Ixian wallets which have signed this block.</returns>
         public List<byte[]> getSignaturesWalletAddresses(bool convert_pubkeys = true)
         {
             if (compacted)
@@ -827,6 +1037,10 @@ namespace DLT
             return result;
         }
 
+        /// <summary>
+        ///  Retrives the number of signatures on this block. This function might return a larger value, because it does not check for potential duplicates.
+        /// </summary>
+        /// <returns>Number of signatures.</returns>
         public int getSignatureCount()
         {
             if (compacted)
@@ -839,7 +1053,10 @@ namespace DLT
             }
         }
 
-        // Returns the number of unique signatures
+        /// <summary>
+        ///  Retrieves the number of unique signatures on the block. Signatures are verified so that only unique ones are included.
+        /// </summary>
+        /// <returns>Number of unique signatures.</returns>
         public int getUniqueSignatureCount()
         {
             if (compacted)
@@ -881,12 +1098,20 @@ namespace DLT
             return signature_count;
         }
 
+        /// <summary>
+        ///  Allocates and sets the `walletStateChecksum`.
+        /// </summary>
+        /// <param name="checksum">Checksum byte value.</param>
         public void setWalletStateChecksum(byte[] checksum)
         {
             walletStateChecksum = new byte[checksum.Length];
             Array.Copy(checksum, walletStateChecksum, walletStateChecksum.Length);
         }
 
+        /// <summary>
+        ///  ?
+        /// </summary>
+        /// <returns></returns>
         public bool pruneSignatures()
         {
             if (version < 4)
@@ -922,6 +1147,10 @@ namespace DLT
             return false;
         }
 
+        /// <summary>
+        ///  Removes the signatures as part of the compaction process (superblock functionality).
+        /// </summary>
+        /// <returns>True if compaction was performed, false if the block is already compacted.</returns>
         public bool compact()
         {
             if(compacted)
@@ -941,6 +1170,9 @@ namespace DLT
 
         }
 
+        /// <summary>
+        ///  Writes the block's details to the log for debugging purposes.
+        /// </summary>
         public void logBlockDetails()
         {
             string last_block_chksum = "";
@@ -963,6 +1195,9 @@ namespace DLT
             Logging.info(String.Format("\t\t|- Transaction Count:\t\t {0}", transactions.Count));
         }
 
+        /// <summary>
+        ///  Test if the block is the genesis block.
+        /// </summary>
         public bool isGenesis { get { return this.blockNum == 0 && this.lastBlockChecksum == null; } }
 
     }    
