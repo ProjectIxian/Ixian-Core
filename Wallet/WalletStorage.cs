@@ -703,6 +703,7 @@ namespace DLT
 
         public bool writeWallet(string password)
         {
+            walletPassword = password;
             if (walletVersion == 1 || walletVersion == 2)
             {
                 return writeWallet_v1(walletPassword);
