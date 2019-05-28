@@ -12,16 +12,41 @@ namespace DLT
 {
     namespace Meta
     {
+        /// <summary>
+        /// Severity of the log message.
+        /// </summary>
         public enum LogSeverity
         {
+            /// <summary>
+            /// Trace messages - not required during normal operation.
+            /// </summary>
             trace = 0,
+            /// <summary>
+            /// Informative messages - normal operation.
+            /// </summary>
             info = 1,
+            /// <summary>
+            /// Warning messages.
+            /// </summary>
             warn = 2,
+            /// <summary>
+            /// Serious errors.
+            /// </summary>
             error = 3
         }
+
+        /// <summary>
+        /// A singleton class which gathers and stores all logging messages from the Ixian executable. 
+        /// It supports log rotation (on restart, or when reaching a certain size), outputting to the console
+        /// and file simultaneously, automatic timestamping and thread identification.
+        /// The actual work on the log files is done in a separate thread, so that the caller does not feel a performance
+        /// impact for logging.
+        /// </summary>
         public class Logging
         {
-            // Public
+            /// <summary>
+            /// Currently selected log severity. Messages below this severity will not be logged and will be quickly and quietly dropped.
+            /// </summary>
             public static LogSeverity currentSeverity = LogSeverity.trace;
 
 
@@ -38,6 +63,9 @@ namespace DLT
 
             private static int maxLogSize = 50 * 1024 * 1024;
             private static int maxLogCount = 10;
+            /// <summary>
+            /// If set to true, log output will go to the console, otherwise log will only go to the file.
+            /// </summary>
             public static bool consoleOutput = true;
 
             private static long currentLogSize = 0;
@@ -53,7 +81,9 @@ namespace DLT
 
             private static List<LogStatement> statements = new List<LogStatement>();
 
-            // Setup and start the logging thread
+            /// <summary>
+            /// Initialize and start the logging thread.
+            /// </summary>
             public static void start()
             {        
                 if(running)
@@ -91,7 +121,9 @@ namespace DLT
                 }
             }
 
-            // Stops the logging thread
+            /// <summary>
+            /// Stop the logging thread.
+            /// </summary>
             public static void stop()
             {
                 // Check if the logging is already stopped
@@ -111,7 +143,12 @@ namespace DLT
                 }
             }
 
-            // specify max_log_size in megabytes
+            /// <summary>
+            /// Change log options while logging is active.
+            /// </summary>
+            /// <param name="max_log_size">Maximum log size in megabytes (MB).</param>
+            /// <param name="max_log_count">Maximum number of log files for rotation.</param>
+            /// <param name="console_output">Enable or disable output to console.</param>
             public static void setOptions(int max_log_size = 50, int max_log_count = 10, bool console_output = true)
             {
                 maxLogSize = max_log_size * 1024 * 1024;
@@ -120,7 +157,14 @@ namespace DLT
             }
 
 
-            // Log a statement
+            /// <summary>
+            ///  Sends a message to the log.
+            /// </summary>
+            /// <remarks>
+            ///  This should almost never be called directly, but rather through one of the helper functions.
+            /// </remarks>
+            /// <param name="log_severity">Severity of the log message.</param>
+            /// <param name="log_message">Text to write into the log.</param>
             public static void log(LogSeverity log_severity, string log_message)
             {
                 
@@ -230,7 +274,17 @@ namespace DLT
                 }
             }
 
-            // Rolls the log file
+            /// <summary>
+            ///  Rotates the log file, appending sequential numbers to the old log files and opening a new file.
+            ///  This function will only perform the roll if the file is over the maximum specified size, unless the force parameter is specified.
+            /// </summary>
+            /// <remarks>
+            ///  When the log is rotated, the current log is appended with the number '1'.
+            ///  If there already exist older log files, they are shifted by one (.1 becomes .2, .2 becomes .3 ...).
+            ///  A maximum number of rotated log files is specified in the logging options and if the rotate results in more
+            ///  files, the extra ones are deleted.
+            /// </remarks>
+            /// <param name="forceRoll">Force log rotation even if the current file is below the threshold.</param>
             public static void roll(bool forceRoll = false)
             {
                 try
@@ -298,7 +352,9 @@ namespace DLT
                 }
             }
 
-            // Clears the log files
+            /// <summary>
+            /// Removes all the log files from the target directory.
+            /// </summary>
             public static void clear()
             {
                 lock (logfilename)
@@ -338,7 +394,10 @@ namespace DLT
                 }
             }
 
-            // Returns the number of remaining log messages in the queue
+            /// <summary>
+            /// Returns the number of log statements in the Logger's internal cache, waiting to be written to the file.
+            /// </summary>
+            /// <returns>Number of waiting statements.</returns>
             public static int getRemainingStatementsCount()
             {
                 lock(statements)
@@ -347,6 +406,9 @@ namespace DLT
                 }
             }
 
+            /// <summary>
+            ///  Pauses execution until all the outstanding log statements are flushed to the file.
+            /// </summary>
             public static void flush()
             {
                 while (getRemainingStatementsCount() > 0)
@@ -356,35 +418,75 @@ namespace DLT
             }
 
             #region Convenience methods
+            /// <summary>
+            ///  Sends a message to the log with the implied severity of `Trace`.
+            /// </summary>
+            /// <param name="message">Log message.</param>
             public static void trace(string message)
             {
                 Logging.log(LogSeverity.trace, message);
             }
+            /// <summary>
+            ///  Sends a message to the log with the implied severity of `Info`.
+            /// </summary>
+            /// <param name="message">Log message.</param>
             public static void info(string message)
             {
                 Logging.log(LogSeverity.info, message);
             }
+            /// <summary>
+            ///  Sends a message to the log with the implied severity of `Warn`.
+            /// </summary>
+            /// <param name="message">Log message.</param>
             public static void warn(string message)
             {
                 Logging.log(LogSeverity.warn, message);
             }
+            /// <summary>
+            ///  Sends a message to the log with the implied severity of `Error`.
+            /// </summary>
+            /// <param name="message">Log message.</param>
             public static void error(string message)
             {
                 Logging.log(LogSeverity.error, message);
             }
 
+            /// <summary>
+            ///  Sends a message to the log with the implied severity of 'Trace'.
+            ///  This function also accepts arguments like the function `String.Format()`.
+            /// </summary>
+            /// <param name="format">Format specification. See `String.Format()`</param>
+            /// <param name="arguments">Optional arguments.</param>
             public static void trace(string format, params object[] arguments)
             {
                 Logging.log(LogSeverity.trace, string.Format(format, arguments));
             }
+            /// <summary>
+            ///  Sends a message to the log with the implied severity of 'Info'.
+            ///  This function also accepts arguments like the function `String.Format()`.
+            /// </summary>
+            /// <param name="format">Format specification. See `String.Format()`</param>
+            /// <param name="arguments">Optional arguments.</param>
             public static void info(string format, params object[] arguments)
             {
                 Logging.log(LogSeverity.info, string.Format(format, arguments));
             }
+            /// <summary>
+            ///  Sends a message to the log with the implied severity of 'Warn'.
+            ///  This function also accepts arguments like the function `String.Format()`.
+            /// </summary>
+            /// <param name="format">Format specification. See `String.Format()`</param>
+            /// <param name="arguments">Optional arguments.</param>
             public static void warn(string format, params object[] arguments)
             {
                 Logging.log(LogSeverity.warn, string.Format(format, arguments));
             }
+            /// <summary>
+            ///  Sends a message to the log with the implied severity of 'Error'.
+            ///  This function also accepts arguments like the function `String.Format()`.
+            /// </summary>
+            /// <param name="format">Format specification. See `String.Format()`</param>
+            /// <param name="arguments">Optional arguments.</param>
             public static void error(string format, params object[] arguments)
             {
                 Logging.log(LogSeverity.error, string.Format(format, arguments));
