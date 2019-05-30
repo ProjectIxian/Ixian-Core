@@ -11,16 +11,40 @@ using System.Text;
 
 namespace DLT.Meta
 {
+    /// <summary>
+    /// Type of the stored activity item.
+    /// </summary>
     public enum ActivityType
     {
+        /// <summary>
+        /// Transaction was received.
+        /// </summary>
         TransactionReceived = 100,
+        /// <summary>
+        /// Transaction was generated and sent.
+        /// </summary>
         TransactionSent = 101,
+        /// <summary>
+        /// A mining reward transaction was generated and sent.
+        /// </summary>
         MiningReward = 200,
+        /// <summary>
+        /// A staking reward transaction was received.
+        /// </summary>
         StakingReward = 201,
+        /// <summary>
+        /// A transaction fee was awarded.
+        /// </summary>
         TxFeeReward = 202,
+        /// <summary>
+        /// Contact request was received.
+        /// </summary>
         ContactRequest = 300
     }
 
+    /// <summary>
+    /// State of the activity.
+    /// </summary>
     public enum ActivityStatus
     {
         Pending = 1,
@@ -28,6 +52,9 @@ namespace DLT.Meta
         Error = 3
     }
 
+    /// <summary>
+    /// An activity item which describes a potentially interesting event on the DLT or S2 network.
+    /// </summary>
     public class Activity
     {
         private string _id = null;

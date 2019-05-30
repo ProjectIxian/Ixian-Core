@@ -97,16 +97,49 @@ namespace IXICore
         ///  Maximum size of a network message in bytes.
         /// </summary>
         public static readonly int maxMessageSize = 5000000;
-
-        public static readonly int pongInterval = 2; // pong interval in seconds (if no data is sent for x seconds, pong will be sent)
-        public static readonly int pingTimeout = 10; // how long to wait in seconds for data before disconnecting a node
-        public static readonly int networkClientReconnectInterval = 10 * 1000; // Time in milliseconds
-        public static readonly int keepAliveInterval = 45; // Number of seconds to wait until next keepalive ping
-        public static readonly int maximumNeighborReconnectCount = 3; // Number of retries before proceeding to a different neighbor node
-        public static int simultaneousConnectedNeighbors = 6; // Desired number of simulatenously connected neighbor nodes
-        public static readonly int maximumSubscribableEvents = 500; // Maximum number of events a client can be subscribed to
-        public static readonly int maximumServerMasterNodes = 200; // Maximum number of clients this server can accept 
-        public static readonly int maximumServerClients = 200; // Maximum number of clients this server can accept
+        /// <summary>
+        ///  Pong interval (in seconds) - if no data has been received from connected remote client for this time, a special packet will be sent instead to 'wake up' the receiver.
+        /// </summary>
+        public static readonly int pongInterval = 2;
+        /// <summary>
+        ///  Timeout (in seconds) before a remote client is disconnected if no data is received from it.
+        /// </summary>
+        public static readonly int pingTimeout = 10;
+        /// <summary>
+        /// Duration (in milliseconds) between reconnection attempts to remote clients.
+        /// </summary>
+        public static readonly int networkClientReconnectInterval = 10 * 1000;
+        /// <summary>
+        /// Interval (in seconds) how often to send a 'Keep-Alive' packet into the network.
+        /// </summary>
+        public static readonly int keepAliveInterval = 45;
+        /// <summary>
+        /// Number of retries when connecting to a neighbor node, before giving up.
+        /// </summary>
+        public static readonly int maximumNeighborReconnectCount = 3;
+        /// <summary>
+        ///  Target number of simultaneously connected neighbors.
+        /// </summary>
+        /// <remarks>
+        ///  If more neighbors are connected, they will slowly be disconnected. 
+        ///  If fewer neighbors are connected, more will be added over time.
+        /// </remarks>
+        public static int simultaneousConnectedNeighbors = 6;
+        /// <summary>
+        /// Maximum number of events a client can be subscribed to.
+        /// </summary>
+        public static readonly int maximumSubscribableEvents = 500;
+        /// <summary>
+        /// Maximum number of neighbor Master Nodes this server can accept (used in DLT Node executable).
+        /// </summary>
+        public static readonly int maximumServerMasterNodes = 200;
+        /// <summary>
+        /// Maximum number of client connections this server can accept (used in DLT Node executable).
+        /// </summary>
+        public static readonly int maximumServerClients = 200;
+        /// <summary>
+        /// Amount of signatures (ratio) of consenting signatures vs. available Master Nodes before a block can be accepted.
+        /// </summary>
         public static readonly double networkConsensusRatio = 0.75;
 
         // Transactions and fees
