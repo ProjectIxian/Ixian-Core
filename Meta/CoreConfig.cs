@@ -142,23 +142,57 @@ namespace IXICore
         /// </summary>
         public static readonly double networkConsensusRatio = 0.75;
 
-        // Transactions and fees
-        public static readonly IxiNumber minimumMasterNodeFunds = new IxiNumber("20000"); // Limit master nodes to this amount or above
-        public static readonly IxiNumber transactionPrice = new IxiNumber("0.00005000"); // Per kB
-        public static readonly IxiNumber foundationFeePercent = 3; // 3% of transaction fees
+        /// <summary>
+        /// Minimum funds a wallet must have before it is allowed to participate in the block consensus algorithm. (used in DLT Node executable).
+        /// </summary>
+        public static readonly IxiNumber minimumMasterNodeFunds = new IxiNumber("20000");
+        /// <summary>
+        /// Transaction fee per kilobyte. Total transaction size is used. (Used in DLT Node executable.)
+        /// </summary>
+        public static readonly IxiNumber transactionPrice = new IxiNumber("0.00005000");
+        /// <summary>
+        /// Amount of transaction fees, in percent, that are deposited into the foundation wallet, which funds the development of Ixian technology. (Used in DLT Node executable.)
+        /// </summary>
+        public static readonly IxiNumber foundationFeePercent = 3;
+        /// <summary>
+        /// Address of the Ixian foundation wallet, which is used to fund development of the Ixian technology stack. (Used in DLT Node executable.)
+        /// </summary>
         public static readonly byte[] foundationAddress = Base58Check.Base58CheckEncoding.DecodePlain("153xXfVi1sznPcRqJur8tutgrZecNVYGSzetp47bQvRfNuDix"); // Foundation wallet address
-        public static readonly IxiNumber relayPriceInitial = new IxiNumber("0.0002"); // Per kB
-        public static readonly ulong maximumTransactionsPerBlock = 2000; // Limit the maximum number of transactions in a newly generated block
-        public static readonly int maximumTransactionsPerChunk = 500; // Limit the maximum number of transactions per transaction chunk
+        /// <summary>
+        /// Initial price for relaying a kilobyte of data through an S2 node. (Used in S2 Node executable.)
+        /// </summary>
+        public static readonly IxiNumber relayPriceInitial = new IxiNumber("0.0002");
+        /// <summary>
+        /// Maximum number of transactions in each block. (Used in DLT Node executable.)
+        /// </summary>
+        public static readonly ulong maximumTransactionsPerBlock = 2000;
+        /// <summary>
+        /// Maximum number of transactions sent in each chunk when a fresh DLT Node is synchronizing. (Used in DLT Node executable.)
+        /// </summary>
+        public static readonly int maximumTransactionsPerChunk = 500;
 
-        // Misc
+        /// <summary>
+        /// Initial value for seeding the Transaction SHA512 checksum generator.
+        /// </summary>
         public static readonly byte[] ixianChecksumLock = Encoding.UTF8.GetBytes("Ixian");
+        /// <summary>
+        /// Initial value for seeding various SHA512 checksums throughout Ixian.
+        /// </summary>
         public static readonly string ixianChecksumLockString = "Ixian";
 
-        // Debug
+        /// <summary>
+        ///  If set to true, all threads will report liveness periodically, thus enabling checking for deadlocks.
+        /// </summary>
+        /// <remarks>
+        ///  See class `ThreadLiveCheck` for details.
+        /// </remarks>
         public static readonly bool threadLiveCheckEnabled = false;
 
-
+        /// <summary>
+        ///  Retrieves the lenght of the redacted window based on the block version in use.
+        /// </summary>
+        /// <param name="block_version">Block version for which you'd like to calculate the redacted window.</param>
+        /// <returns>Redacted window length.</returns>
         public static ulong getRedactedWindowSize(int block_version = -1)
         {
             if(block_version == -1)

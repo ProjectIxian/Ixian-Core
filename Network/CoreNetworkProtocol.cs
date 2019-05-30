@@ -9,9 +9,19 @@ using System.Text;
 
 namespace IXICore
 {
+    /// <summary>
+    ///  Common functions for manipulating Ixian protocol message.
+    /// </summary>
     public class CoreProtocolMessage
     {
-        // Returns a specified header checksum
+        /// <summary>
+        ///  Calculates a single-byte checksum from the given header.
+        /// </summary>
+        /// <remarks>
+        ///  A single byte of checksum is not extremely robust, but it is simple and fast.
+        /// </remarks>
+        /// <param name="header">Message header.</param>
+        /// <returns>Checksum byte.</returns>
         public static byte getHeaderChecksum(byte[] header)
         {
             byte sum = 0x7F;
@@ -22,7 +32,19 @@ namespace IXICore
             return sum;
         }
 
-        // Prepare a network protocol message. Works for both client-side and server-side
+        /// <summary>
+        ///  Prepares (serializes) a protocol message from the given Ixian message code and appropriate data. Checksum can be supplied, but 
+        ///  if it isn't, this function will calculate it using the default method.
+        /// </summary>
+        /// <remarks>
+        ///  This function can be used from the server and client side.
+        ///  Please note: This function does not validate that the payload `data` conforms to the expected message for `code`. It is the 
+        ///  caller's job to ensure that.
+        /// </remarks>
+        /// <param name="code">Message code.</param>
+        /// <param name="data">Payload for the message.</param>
+        /// <param name="checksum">Optional checksum. If not supplied, or if null, this function will calculate it with the default method.</param>
+        /// <returns>Serialized message as a byte-field</returns>
         public static byte[] prepareProtocolMessage(ProtocolMessageCode code, byte[] data, byte[] checksum = null)
         {
             byte[] result = null;
@@ -69,6 +91,14 @@ namespace IXICore
             return result;
         }
 
+        /// <summary>
+        /// Prepares and sends the disconnect message to the specified remote endpoint.
+        /// </summary>
+        /// <param name="endpoint">Remote client.</param>
+        /// <param name="code">Disconnection reason.</param>
+        /// <param name="message">Optional text message for the user of the remote client.</param>
+        /// <param name="data">Optional payload to further explain the disconnection reason.</param>
+        /// <param name="removeAddressEntry">If true, the remote address will be removed from the `PresenceList`.</param>
         public static void sendBye(RemoteEndpoint endpoint, ProtocolByeCode code, string message, string data, bool removeAddressEntry = true)
         {
             using (MemoryStream m2 = new MemoryStream())
@@ -93,7 +123,15 @@ namespace IXICore
         }
 
 
-        // Read a protocol message from a byte array
+        /// <summary>
+        ///  Reads a protocol message from the specified byte-field and calls appropriate methods to process this message.
+        /// </summary>
+        /// <remarks>
+        ///  This function checks all applicable checksums and validates that the message is complete before calling one of the specialized
+        ///  methods to handle actual decoding and processing.
+        /// </remarks>
+        /// <param name="recv_buffer">Byte-field with an Ixian protocol message.</param>
+        /// <param name="endpoint">Remote endpoint from where the message was received.</param>
         public static void readProtocolMessage(byte[] recv_buffer, RemoteEndpoint endpoint)
         {
             if (endpoint == null)
@@ -172,7 +210,15 @@ namespace IXICore
             }
         }
 
-
+        /// <summary>
+        ///  Processes a Hello Ixian protocol message and updates the `PresenceList` as appropriate.
+        /// </summary>
+        /// <remarks>
+        ///  This function should normally be called from `NetworkProtocol.parseProtocolMessage()`
+        /// </remarks>
+        /// <param name="endpoint">Remote endpoint from which the message was received.</param>
+        /// <param name="reader">Reader object placed at the beginning of the hello message data.</param>
+        /// <returns>True if the message was formatted properly and accepted.</returns>
         public static bool processHelloMessage(RemoteEndpoint endpoint, BinaryReader reader)
         {
             // Node already has a presence
@@ -334,6 +380,16 @@ namespace IXICore
             return true;
         }
 
+        /// <summary>
+        ///  Prepares and sends an Ixian protocol 'Hello' message to the specified remote endpoint.
+        /// </summary>
+        /// <remarks>
+        ///  A valid Ixian 'Hello' message includes certain Node data, verified by a public-key signature, which this function prepares using
+        ///  the primary wallet's keypair. If this message is a reply to the other endpoint's hello message, then
+        /// </remarks>
+        /// <param name="endpoint">Remote endpoint to send the message to.</param>
+        /// <param name="sendHelloData">True if the message is the first hello sent to the remote node, false if it is a reply to the challenge.</param>
+        /// <param name="challenge_response">Response byte-field to the other node's hello challenge</param>
         public static void sendHelloMessage(RemoteEndpoint endpoint, bool sendHelloData, byte[] challenge_response)
         {
             using (MemoryStream m = new MemoryStream())
@@ -433,8 +489,21 @@ namespace IXICore
         }
 
 
-        // Broadcast a protocol message across clients and nodes
-        // Returns true if it sent the message at least one endpoint. Returns false if the message couldn't be sent to any endpoints
+        /// <summary>
+        ///  Prepares and broadcasts an Ixian protocol message to all connected nodes, filtered by `types`.
+        /// </summary>
+        /// <remarks>
+        ///  The payload `data` should be properly formatted for the given `code` - this function will not ensure that this is so and
+        ///  the caller must provide a valid message to this function.
+        ///  The `skipEndpoint` parameter is useful when re-broadcasting a message received from a specific endpoint and do not wish to echo the same
+        ///  data back to the sender.
+        /// </remarks>
+        /// <param name="types">Types of nodes to send this message to.</param>
+        /// <param name="code">Protocol code.</param>
+        /// <param name="data">Message payload</param>
+        /// <param name="helper_data">Additional information, as required by the protocol message</param>
+        /// <param name="skipEndpoint">Remote endpoint which should be skipped (data should not be sent to it).</param>
+        /// <returns>True, if at least one message was sent to at least one other node. False if no messages were sent.</returns>
         public static bool broadcastProtocolMessage(char[] types, ProtocolMessageCode code, byte[] data, byte[] helper_data, RemoteEndpoint skipEndpoint = null)
         {
             if (data == null)
@@ -454,6 +523,23 @@ namespace IXICore
 
         // Broadcast an event-specific protocol message across subscribed clients
         // Returns true if it sent the message to at least one endpoint. Returns false if the message couldn't be sent to any endpoints
+        /// <summary>
+        ///  Broadcasts an event message to all clients who are subscribed to receive the specific event type and wallet address.
+        /// </summary>
+        /// <remarks>
+        ///  Events are filtered by type and address. A client must subscribe to the specifif type for specific addresses in order to receive this data.
+        ///  The payload `data` should be properly formatted for the given `code` - this function will not ensure that this is so and
+        ///  the caller must provide a valid message to this function.
+        ///  The `skipEndpoint` parameter is useful when re-broadcasting a message received from a specific endpoint and do not wish to echo the same
+        ///  data back to the sender.
+        /// </remarks>
+        /// <param name="type">Type of the event message - used to filter subscribers</param>
+        /// <param name="address">Address, which triggered the event.</param>
+        /// <param name="code">Ixian protocol code.</param>
+        /// <param name="data">Payload data.</param>
+        /// <param name="helper_data">Optional additional data, as required by `code`.</param>
+        /// <param name="skipEndpoint">Endpoint to skip when broadcasting.</param>
+        /// <returns>True, if at least one message was sent to at least one remote endpoint. False if no messages were sent.</returns>
         public static bool broadcastEventDataMessage(NetworkEvents.Type type, byte[] address, ProtocolMessageCode code, byte[] data, byte[] helper_data, RemoteEndpoint skipEndpoint = null)
         {
             // Send it to subscribed C nodes
@@ -463,6 +549,22 @@ namespace IXICore
 
 
         // Broadcasts protocol message to a single random node with block height higher than the one specified with parameter block_num
+        /// <summary>
+        ///  Sends the specified protocol message to one of the connected remote endpoints, chosen randomly.
+        /// </summary>
+        /// <remarks>
+        ///  The payload `data` should be properly formatted for the given `code` - this function will not ensure that this is so and
+        ///  the caller must provide a valid message to this function.
+        ///  The `skipEndpoint` parameter is useful when re-broadcasting a message received from a specific endpoint and do not wish to echo the same
+        ///  data back to the sender.
+        ///  The `block_num` parameter is used to filter the remote endpoints based on their latest known block height.
+        /// </remarks>
+        /// <param name="types">Types of the nodes where the message should be sent.</param>
+        /// <param name="code">Ixian protocol code.</param>
+        /// <param name="data">Payload data.</param>
+        /// <param name="block_num">Block which should be searched for the endpoint addresses.</param>
+        /// <param name="skipEndpoint">Minimum block height for endpoints which should receive this message.</param>
+        /// <returns>True, if at least one message was sent to at least one remote endpoint. False if no messages were sent.</returns>
         public static bool broadcastProtocolMessageToSingleRandomNode(char[] types, ProtocolMessageCode code, byte[] data, ulong block_num, RemoteEndpoint skipEndpoint = null)
         {
             if (data == null)
@@ -561,7 +663,14 @@ namespace IXICore
             }
         }
 
-
+        /// <summary>
+        ///  Verifies that the given remote endpoint is reachable by connecting to it and sending a short message.
+        /// </summary>
+        /// <remarks>
+        ///  This function is used to ensure that the remote endpoing has listed the correct IP and port information for their `PresenceList` entry.
+        /// </remarks>
+        /// <param name="endpoint">Target endpoint to verify for connectivity.</param>
+        /// <returns>True, if the endpoing is connectable.</returns>
         public static bool checkNodeConnectivity(RemoteEndpoint endpoint)
         {
             // TODO TODO TODO TODO we should put this in a separate thread
