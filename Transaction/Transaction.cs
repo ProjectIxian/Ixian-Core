@@ -9,79 +9,277 @@ using System.Text;
 
 namespace DLT
 {
+    /// <summary>
+    ///  Represents a single transaction on the Ixian blockchain.
+    /// </summary>
+    /// <remarks>
+    ///  A transaction is an atomic change which manipulates the Ixian `WalletState`. Each transaction processed by the DLT
+    ///  must be validated in some way:
+    ///  <list type="bullet">
+    ///   <item> For regular transactions this means a valid cryptographic signature by the source wallet owner.</item>
+    ///   <item> For 'Multi-Signature' transactions this may include multiple cryptographic signatures</item>
+    ///   <item> For 'PoW solution' transactions, the proposed value must be valid for the block it solves</item>
+    ///   <item> For a 'Staking Reward' transaction, the proposed changes must be inline with the frozen signatures and the transaction must be
+    ///          accepted by the network majority. </item>
+    ///  </list>
+    /// </remarks>
     public class Transaction
     {
-
+        /// <summary>
+        ///  Type of the transaction.
+        /// </summary>
         public enum Type:int
         {
+            /// <summary>
+            ///  Regular transaction which sends balance from a set of `Wallet`s to a set of `Wallet`s.
+            /// </summary>
             Normal = 0,
+            /// <summary>
+            ///  Transaction sends a PoW (Proof of Work) solution for a specific block and awards the signer a certain amount of Ixi as a reward.
+            /// </summary>
             PoWSolution = 1,
+            /// <summary>
+            ///  Transaction awards the Master Nodes which participate in the consensus algorithm a certain reward of Ixi.
+            /// </summary>
             StakingReward = 2,
+            /// <summary>
+            ///  Genesis transaction which created initial Ixi currency from nothing and deposited it into the seed nodes' wallets.
+            /// </summary>
+            /// <remarks>
+            ///  This type of transaction should never again appear after the first block.
+            /// </remarks>
             Genesis = 3,
+            /// <summary>
+            ///  Similar to `Trasaction.Type.Normal`, but requires multiple signatures to spend funds from a 'Multi-Signature' wallet.
+            /// </summary>
             MultisigTX = 4,
+            /// <summary>
+            ///  Special transaction which alows modifying the list of allowed signers on a 'Multi-Signature' wallet.
+            /// </summary>
             ChangeMultisigWallet = 5,
+            /// <summary>
+            ///  When a transaction involving a 'Multi-Signature' is first posted, it only has one signature, so this stub transaction is used to
+            ///  add signatures so that private key sharing is not required among signers.
+            /// </summary>
             MultisigAddTxSignature = 6
         }
 
+        /// <summary>
+        ///  Type of change being performed on a 'Multi-Signature' wallet.
+        /// </summary>
         public enum MultisigWalletChangeType:byte
         {
-            AddSigner = 1, 
+            /// <summary>
+            ///  A signer is being added to the Allowed Signers list.
+            /// </summary>
+            AddSigner = 1,
+            /// <summary>
+            ///  A signer is being removed from the Alloewd Signers list.
+            /// </summary>
+            /// <remarks>
+            ///  The signer, who is being removed, can still validate the transaction that removes their address from the list. The change
+            //   takes effect after the transaction is accepted.
+            ///  The number of signatures must be equal to or less than the number of distinct allowed signers. A `ChangeMultisigWallet` transaction which would
+            ///  make it impossible to use the wallet is invalid, even if it has enough correct signatures.
+            /// </remarks>
             DelSigner = 2, 
+            /// <summary>
+            ///  The number of required signatures for the 'Multi-Signature' wallet is being changed.
+            /// </summary>
+            /// <remarks>
+            ///  The number of signatures must be equal to or less than the number of distinct allowed signers. A `ChangeMultisigWallet` transaction which would
+            ///  make it impossible to use the wallet is invalid, even if it has enough correct signatures.
+            /// </remarks>
             ChangeReqSigs = 3
         }
 
+        /// <summary>
+        ///  Another allowed signer is being added to a Wallet. If the target wallet is not yet a 'Multi-Signature' wallet, it will be 
+        ///  converted into one and the number of required signatures will be set to 1.
+        /// </summary>
         public struct MultisigAddrAdd
         {
+            /// <summary>
+            ///  Wallet address of the new signer that is being added.
+            /// </summary>
             public byte[] addrToAdd;
+            /// <summary>
+            ///  Public key of the new signer that is being validating this transaction, if neccessary.
+            /// </summary>
             public byte[] signerPubKey;
+            /// <summary>
+            ///  Nonce value of the new signer that is validating this change.
+            /// </summary>
             public byte[] signerNonce;
         }
 
+        /// <summary>
+        ///  An allowed signer is being removed from a Wallet. If the target wallet is not a 'Multi-Signature' wallet,
+        ///  such a transaction is considered invalid. The original Wallet's owner cannot be removed.
+        /// </summary>
+        /// <remarks>
+        ///  If the removal would cause the wallet to become unusable (Required Signatures greater than the number of possible signers),
+        ///  this transaction is considered invalid.
+        ///  If the removal leavs the wallet with a single remaining signer (the owner), the wallet is implicitly converted into a normal wallet.
+        /// </remarks>
         public struct MultisigAddrDel
         {
+            /// <summary>
+            ///  Wallet address of the signer that is being removed.
+            /// </summary>
             public byte[] addrToDel;
+            /// <summary>
+            ///  Public key of the signer that is validating this transaction, if neccessary.
+            /// </summary>
             public byte[] signerPubKey;
+            /// <summary>
+            ///  Nonce value of the signer that is validating this change.
+            /// </summary>
             public byte[] signerNonce;
         }
 
+        /// <summary>
+        ///  Change the number of required signatures for a 'Multi-Signature' wallet.
+        /// </summary>
+        /// <remarks>
+        ///  The number of required signatures can be between 1 and the number of allowed signers for the wallet. If a transaction attempts to change
+        ///  the required signatures number to larger than is possible (it would render the wallet unusable), such a change is considered invalid.
+        ///  The `ChangeMultisigWallet` transaction which introduces the change is also subject to the *current* minimum signatures requirement.
+        /// </remarks>
         public struct MultisigChSig
         {
+            /// <summary>
+            ///  New value for the minimum required signatures on the 'Multi-Signature' wallet.
+            /// </summary>
             public byte reqSigs;
+            /// <summary>
+            ///  Public key of the signer that is validating this change, if neccessary.
+            /// </summary>
             public byte[] signerPubKey;
+            /// <summary>
+            ///  Nonce value of the signer that is validating this change.
+            /// </summary>
             public byte[] signerNonce;
         }
 
+        /// <summary>
+        ///  Additional signature for an existing `MultisigTX` transaction that is waiting in the pool.
+        /// </summary>
         public struct MultisigTxData
         {
+            /// <summary>
+            ///  TXID of the original transaction which this transaction validates.
+            /// </summary>
             public string origTXId;
+            /// <summary>
+            ///  Public key of the signer which can help authorize a Multisig transaction, if required (key is not yet present in the PresenceList).
+            /// </summary>
             public byte[] signerPubKey;
+            /// <summary>
+            ///  Nonce value of the signer which can help authorize a Multisig transaction.
+            /// </summary>
             public byte[] signerNonce;
         }
 
-        public int version; // 4
-        public string id; //  not sent as part of the tx but around 50 bytes
-        public int type; // 4
-        public IxiNumber amount = new IxiNumber("0"); // 32
-        public IxiNumber fee = new IxiNumber("0"); // 32
+        /// <summary>
+        ///  Transaction version.
+        /// </summary>
+        /// <remarks>
+        ///  Later versions enable new features which were introduced later in development.
+        /// </remarks>
+        public int version;
+        /// <summary>
+        ///  Transaction ID.
+        /// </summary>
+        /// <remarks>
+        ///  The transaction ID is not transferred over the network, because it can be recalculated from the transaction data.
+        /// </remarks>
+        public string id;
+        /// <summary>
+        ///  Transaction type. See also `Transaction.Type`.
+        /// </summary>
+        public int type;
+        /// <summary>
+        ///  Total amount of Ixi being transferred.
+        /// </summary>
+        public IxiNumber amount = new IxiNumber("0");
+        /// <summary>
+        ///  Transaction fee - based on the serialized size of the transaction.
+        /// </summary>
+        public IxiNumber fee = new IxiNumber("0");
 
+        /// <summary>
+        ///  Source wallets where the funds are withdrawn. Each address specifies the amount of Ixi being widthrawn from it.
+        /// </summary>
+        /// <remarks>
+        ///  The sum of all amounts must be equal to `amount` + `fee`, otherwise the transaction is invalid. All source wallets
+        ///  must belong to the same primary signing key.
+        ///  The address can either be a wallet address or a nonce value which was used to generate the address. If the value
+        ///  is a nonce value, then the public key, `pubKey`, for the transaction must be specified.
+        /// </remarks>
         public SortedDictionary<byte[], IxiNumber> fromList = new SortedDictionary<byte[], IxiNumber>(new ByteArrayComparer());
+        /// <summary>
+        ///  Destination wallets where the funds will be deposited. Each address specifies the amount of Ixi being deposited to it.
+        /// </summary>
+        /// <remarks>
+        ///  The sum of all amounts must be equal to `amount`, otherwise the transaction is invalid. Destination wallets can belong to
+        ///  different signing keys.
+        /// </remarks>
         public SortedDictionary<byte[], IxiNumber> toList = new SortedDictionary<byte[], IxiNumber>(new ByteArrayComparer());
 
-        public byte[] data; // 0
-        public ulong blockHeight; // 8
-        public int nonce; // 4
-        public long timeStamp; // 8
-        public byte[] checksum; // 32
-        public byte[] signature; // 512
-        public byte[] pubKey; // 0 or 512
+        /// <summary>
+        ///  Optional data included with the transaction. This can be any byte-field. The transaction fee will increase with the amount of data.
+        /// </summary>
+        public byte[] data;
+        /// <summary>
+        ///  Block number when the transaction was generated.
+        /// </summary>
+        public ulong blockHeight;
+        /// <summary>
+        ///  Unique 'nonce' value which prevents certain classes of transaction replay attacks.
+        /// </summary>
+        public int nonce;
+        /// <summary>
+        ///  Timestam of when the transaction was created as a unix epoch (seconds since 1970-01-01).
+        /// </summary>
+        public long timeStamp;
+        /// <summary>
+        ///  Checksum of all transaction data to ensure it hasn't been tampered with or corrupted during transmission.
+        /// </summary>
+        public byte[] checksum;
+        /// <summary>
+        ///  Signature by the originating wallets' primary key. See `fromList`.
+        /// </summary>
+        public byte[] signature;
+        /// <summary>
+        ///  Publick key which performed the signature and owns the source wallets in `fromList`.
+        /// </summary>
+        public byte[] pubKey;
+        /// <summary>
+        ///  Block height at which the transaction was applied.
+        /// </summary>
         public ulong applied;
-
+        /// <summary>
+        ///  Indicator if the transaction was loaded from cold storage.
+        /// </summary>
+        /// <remarks>
+        ///  If false, the transaction was generated by the current executable or received through the network.
+        /// </remarks>
         public bool fromLocalStorage = false;
 
+        /// <summary>
+        ///  Unique value to identify serialized MultiSig data in the transaction `data` field.
+        /// </summary>
         private readonly static byte[] multisigStartMarker = { 0x4d, 0x73 };
 
+        /// <summary>
+        ///  Currently latest transaction version.
+        /// </summary>
         public static int maxVersion = 3;
 
+        /// <summary>
+        ///  Sets the transaction's version appropriately, based on the current block version.
+        /// </summary>
         private void setVersion()
         {
             int lastBlockVersion = Node.getLastBlockVersion();
@@ -103,6 +301,10 @@ namespace DLT
             }
         }
 
+        /// <summary>
+        /// Creates an empty transaction of the specified type.
+        /// </summary>
+        /// <param name="tx_type">Transaction type. See `Transaction.Type`.</param>
         public Transaction(int tx_type)
         {
             setVersion();
@@ -120,6 +322,23 @@ namespace DLT
             applied = 0;
         }
 
+        /// <summary>
+        ///  Generates a new transaction from the provided data. This variant widthdraws from and deposits to a single address.
+        /// </summary>
+        /// <remarks>
+        ///  The Fee can be higher than the minimum network fee, which will cause the transaction to be included faster in the event
+        ///  of congestion.
+        /// </remarks>
+        /// <param name="tx_type">Type of the transaction. See `Transaction.Type`.</param>
+        /// <param name="tx_amount">Total Ixi amount being transferred.</param>
+        /// <param name="tx_feePerKb">Transaction fee per kilobyte of data.</param>
+        /// <param name="tx_to">Destination address or nonce.</param>
+        /// <param name="tx_from">Source address or nonce.</param>
+        /// <param name="tx_data">Optional extra data.</param>
+        /// <param name="tx_pubKey">Public key used to sign the transaction, if neccessary.</param>
+        /// <param name="tx_blockHeight">Block height when the transaction was generated.</param>
+        /// <param name="tx_nonce">Unique transaction nonce value.</param>
+        /// <param name="tx_timestamp">Timestamp (unix epoch) when the transaction was generated.</param>
         public Transaction(int tx_type, IxiNumber tx_amount, IxiNumber tx_feePerKb, byte[] tx_to, byte[] tx_from, byte[] tx_data, byte[] tx_pubKey, ulong tx_blockHeight, int tx_nonce = -1, long tx_timestamp = 0)
         {
             setVersion();
@@ -172,6 +391,23 @@ namespace DLT
             }
         }
 
+        /// <summary>
+        ///  Generates a new transaction from the provided data. This variant can deposit to a multiple addresses.
+        /// </summary>
+        /// <remarks>
+        ///  The Fee can be higher than the minimum network fee, which will cause the transaction to be included faster in the event
+        ///  of congestion.
+        ///  The sum if all amounts in the `tx_toList` is equal to `amount`.
+        /// </remarks>
+        /// <param name="tx_type">Type of the transaction. See `Transaction.Type`.</param>
+        /// <param name="tx_feePerKb">Transaction fee per kilobyte of data.</param>
+        /// <param name="tx_toList">List of deposit addresses and their amounts.</param>
+        /// <param name="tx_from">Withdrawal address.</param>
+        /// <param name="tx_data">Optional extra data.</param>
+        /// <param name="tx_pubKey">Signer public key, if neccessary.</param>
+        /// <param name="tx_blockHeight">Block number when the transaction was generated.</param>
+        /// <param name="tx_nonce">Unique nonce value for the transaction.</param>
+        /// <param name="tx_timestamp">Timestamp (unich epoch) when the transaction was generated.</param>
         public Transaction(int tx_type, IxiNumber tx_feePerKb, SortedDictionary<byte[], IxiNumber> tx_toList, byte[] tx_from, byte[] tx_data, byte[] tx_pubKey, ulong tx_blockHeight, int tx_nonce = -1, long tx_timestamp = 0)
         {
             setVersion();
@@ -229,7 +465,25 @@ namespace DLT
             }
         }
 
-
+        /// <summary>
+        ///  Generates a new transaction from the provided data. This variant can withdraw from and deposit to a multiple addresses.
+        /// </summary>
+        /// <remarks>
+        ///  The Fee can be higher than the minimum network fee, which will cause the transaction to be included faster in the event
+        ///  of congestion.
+        ///  All addresses in the `tx_fromList` must belong to the same signing keypair.
+        ///  The sum if all amounts in the `tx_toList` is equal to `amount`.
+        ///  The sum of all amounts in the `tx_fromList` must be equal to `amount` + `fee`.
+        /// </remarks>
+        /// <param name="tx_type">Type of the transaction. See `Transaction.Type`.</param>
+        /// <param name="tx_feePerKb">Transaction fee per kilobyte of data.</param>
+        /// <param name="tx_toList">List of deposit addresses and their amounts.</param>
+        /// <param name="tx_fromList">List of withdrawal addresses and their amounts.</param>
+        /// <param name="tx_data">Optional extra data.</param>
+        /// <param name="tx_pubKey">Pubkey which can sign all the addresses in `tx_fromList`, if not already known.</param>
+        /// <param name="tx_blockHeight">Block number when the transaction was generated.</param>
+        /// <param name="tx_nonce">Unique nonce value for the transaction.</param>
+        /// <param name="sign_transaction">True if the signature should be calculated, false if the signature will be calculated later</param>
         public Transaction(int tx_type, IxiNumber tx_feePerKb, SortedDictionary<byte[], IxiNumber> tx_toList, SortedDictionary<byte[], IxiNumber> tx_fromList, byte[] tx_data, byte[] tx_pubKey, ulong tx_blockHeight, int tx_nonce = -1, bool sign_transaction = true)
         {
             setVersion();
@@ -278,6 +532,14 @@ namespace DLT
             }
         }
 
+        /// <summary>
+        ///  Copy constructor.
+        /// </summary>
+        /// <remarks>
+        ///  In some places the Ixian software requires a full copy of the transaction and not a shared reference, so
+        ///  this constructor is provided to achieve that.
+        /// </remarks>
+        /// <param name="tx_transaction">Source transaction to copy.</param>
         public Transaction(Transaction tx_transaction)
         {
             version = tx_transaction.version;
@@ -338,6 +600,10 @@ namespace DLT
             fromLocalStorage = tx_transaction.fromLocalStorage;
         }
 
+        /// <summary>
+        ///  Constructs a transaction object from the serialized transaction data. See also `getBytes()`.
+        /// </summary>
+        /// <param name="bytes">Byte-field with the serialized transaction</param>
         public Transaction(byte[] bytes)
         {
             try
@@ -431,6 +697,10 @@ namespace DLT
             }
         }
 
+        /// <summary>
+        ///  Serializes the transaction object for transmission and returns a byte-field. See also the constructor `Transaction(byte[])`.
+        /// </summary>
+        /// <returns>Byte-field with the serialized transaction, suiteable for network transmission.</returns>
         public byte[] getBytes()
         {
             using (MemoryStream m = new MemoryStream())
@@ -515,7 +785,11 @@ namespace DLT
             }
         }
 
-        // Checks two transactions for duplicates
+        /// <summary>
+        ///  Checks if the two transactions are exactly equal.
+        /// </summary>
+        /// <param name="tx">Other transaction.</param>
+        /// <returns>True if both objects represent the same Ixian transaction.</returns>
         public bool equals(Transaction tx)
         {
             byte[] a1 = getBytes();
@@ -524,7 +798,12 @@ namespace DLT
             return a1.SequenceEqual(a2);
         }
 
-        // Verifies the transaction signature and returns true if valid
+        /// <summary>
+        ///  Checks the transaction's signature against the given public key and address nonce.
+        /// </summary>
+        /// <param name="pubkey">Public key which signed the transaction</param>
+        /// <param name="nonce">Nonce value of the originating wallet.</param>
+        /// <returns>True if the signature is valid.</returns>
         public bool verifySignature(byte[] pubkey, byte[] nonce)
         {
             if(pubkey == null)
@@ -571,7 +850,10 @@ namespace DLT
             return CryptoManager.lib.verifySignature(checksum, pubkey, signature);
         }
 
-        // Generates the transaction ID
+        /// <summary>
+        ///  Generates the Transaction ID from the transaction data.
+        /// </summary>
+        /// <returns>TXID</returns>
         public string generateID()
         {
             string txid = "";
@@ -640,7 +922,11 @@ namespace DLT
             return txid;
         }
 
-        // Calculate a transaction checksum 
+        /// <summary>
+        ///  Calculates the transaction's checksum.
+        /// </summary>
+        /// <param name="transaction">Transaction to calculate the checksum from.</param>
+        /// <returns>Byte-field with the checksum value.</returns>
         public static byte[] calculateChecksum(Transaction transaction)
         {
             List<byte> rawData = new List<byte>();
@@ -697,6 +983,12 @@ namespace DLT
             }
         }
 
+        /// <summary>
+        ///  Calculates the signature for the transaction.
+        /// </summary>
+        /// <param name="checksum">Transaction checksum.</param>
+        /// <param name="private_key">Private key with which to sign the transaction, or null if the primary key should be used.</param>
+        /// <returns>Transaction signature in a byte-field.</returns>
         public byte[] getSignature(byte[] checksum, byte[] private_key = null)
         {
             if(private_key != null)
@@ -714,7 +1006,10 @@ namespace DLT
             return null;
         }
 
-
+        /// <summary>
+        ///  Calculates the total transaction amount, without fee.
+        /// </summary>
+        /// <returns>Sum of all deposits in the transaction's `toList`.</returns>
         public IxiNumber calculateTotalAmount()
         {
             IxiNumber total = new IxiNumber(0);
@@ -725,12 +1020,20 @@ namespace DLT
             return total;
         }
 
+        /// <summary>
+        ///  Calculates the transaction checksum and stores it in the transaction.
+        /// </summary>
         public void generateChecksums()
         {
             id = generateID();
             checksum = calculateChecksum(this);
         }
 
+        /// <summary>
+        ///  Calculates the lowest possible transaction fee based on the size of the transaction.
+        /// </summary>
+        /// <param name="pricePerKb">Price per kilobyte of data.</param>
+        /// <returns>Minimum fee given the specified price per kilobyte.</returns>
         public IxiNumber calculateMinimumFee(IxiNumber pricePerKb)
         {
             int bytesLen = getBytes().Length;
@@ -746,7 +1049,12 @@ namespace DLT
             return expectedFee;
         }
 
-
+        /// <summary>
+        ///  Appends a signature for the given multisig transaction.
+        /// </summary>
+        /// <param name="orig_txid">Original multisig transaction's ID.</param>
+        /// <param name="signer_pub_key">Public key of the additional signer.</param>
+        /// <param name="signer_nonce">Nonce value of the wallet which is allowed to sign `orig_txid` and can be signed with the `signer_pub_key`.</param>
         private void AddMultisigOrig(string orig_txid, byte[] signer_pub_key, byte[] signer_nonce)
         {
             byte[] orig_txid_bytes = null;
@@ -781,6 +1089,13 @@ namespace DLT
             }
         }
 
+        /// <summary>
+        ///  Encodes information to add or delete an allowed signer from a multisig wallet.
+        /// </summary>
+        /// <param name="addr">Address to add or remove.</param>
+        /// <param name="change_type">Operation - add or remove.</param>
+        /// <param name="signer_pub_key">Signer, who is already on the multisig wallet's allowed list.</param>
+        /// <param name="signer_nonce">Nonce value of the wallet which is allowed to make changes to the multisig wallet and can be signed with the `signer_pub_key`.</param>
         private void AddMultisigChWallet(byte[] addr, MultisigWalletChangeType change_type, byte[] signer_pub_key, byte[] signer_nonce)
         {
             using (MemoryStream ms = new MemoryStream())
@@ -805,6 +1120,12 @@ namespace DLT
             }
         }
 
+        /// <summary>
+        ///  Encodes information to change the number of required signatures on a multisig wallet.
+        /// </summary>
+        /// <param name="addr">New number of signatures.</param>
+        /// <param name="signer_pub_key">Signer, who is on the multisig wallet's allowed list.</param>
+        /// <param name="signer_nonce">Nonce value of the wallet which is allowed to make changes to the multisig wallet and can be signed with the `signer_pub_key`.</param>
         private void AddMultisigChReqSigs(byte num_sigs, byte[] signer_pub_key, byte[] signer_nonce)
         {
             using (MemoryStream ms = new MemoryStream())
@@ -828,6 +1149,10 @@ namespace DLT
             }
         }
 
+        /// <summary>
+        ///  Reads the transaction's optional data and attempts to parse it as a multisig transaction data.
+        /// </summary>
+        /// <returns>Multisig transaction data, or null if no valid object was found.</returns>
         private object getMultisigTxData()
         {
             if (data == null || data.Length < 6)
@@ -910,6 +1235,10 @@ namespace DLT
             }
         }
 
+        /// <summary>
+        ///  Reads the transaction's optional data and attempts to parse it as a multisig change data.
+        /// </summary>
+        /// <returns>One of the multisig change data objects, or null if no valid object was found.</returns>
         private object getChangeMultisigWalletData()
         {
             if (data == null || data.Length < 6)
@@ -1056,6 +1385,10 @@ namespace DLT
             }
         }
 
+        /// <summary>
+        ///  Wrapper function to attempt and parse the transaction's optional data field as some kind of Multisig object.
+        /// </summary>
+        /// <returns>A multisig data object, if found, or null.</returns>
         public object GetMultisigData()
         {
             if (type == (int)Transaction.Type.MultisigTX || type == (int)Transaction.Type.MultisigAddTxSignature)
@@ -1073,6 +1406,11 @@ namespace DLT
             }
         }
 
+        /// <summary>
+        ///  Checks owned addresses and returns the first one which is allowed to sign transactions for `multisig_address`.
+        /// </summary>
+        /// <param name="multisig_address">Multisig address to check.</param>
+        /// <returns>Own address which is allowed to sign transactions for `multisig_address`, or null, if no such local address.</returns>
         public static AddressData findMyMultisigAddressData(byte[] multisig_address)
         {
             AddressData ad = Node.walletStorage.getAddress(multisig_address);
@@ -1108,6 +1446,15 @@ namespace DLT
             return null;
         }
 
+        /// <summary>
+        ///  Generates a multisig transaction.
+        /// </summary>
+        /// <param name="tx_amount">Amount of Ixi to widthraw and deposit.</param>
+        /// <param name="tx_fee">Transaction fee</param>
+        /// <param name="tx_to">Destination address where the funds should be deposited.</param>
+        /// <param name="tx_from">Multisig wallet where the funds should be withdrawn.</param>
+        /// <param name="tx_blockHeight">Blockheight at which the transaction is generated.</param>
+        /// <returns>Generated transaction object.</returns>
         public static Transaction multisigTransaction(IxiNumber tx_amount, IxiNumber tx_fee, byte[] tx_to, byte[] tx_from, ulong tx_blockHeight)
         {
             Transaction t = new Transaction((int)Transaction.Type.MultisigTX, tx_amount, tx_fee, tx_to, tx_from, null, tx_from, tx_blockHeight);
@@ -1132,6 +1479,14 @@ namespace DLT
             return t;
         }
 
+        /// <summary>
+        ///  Generates a multisig transaction with multiple destination addresses.
+        /// </summary>
+        /// <param name="tx_fee">Transaction fee</param>
+        /// <param name="tx_to_list">Destination addresses where the funds should be deposited.</param>
+        /// <param name="tx_from">Multisig wallet where the funds should be withdrawn.</param>
+        /// <param name="tx_blockHeight">Blockheight at which the transaction is generated.</param>
+        /// <returns>Generated transaction object.</returns>
         public static Transaction multisigTransaction(IxiNumber tx_fee, SortedDictionary<byte[], IxiNumber> tx_to_list, byte[] tx_from, ulong tx_blockHeight)
         {
             Transaction t = new Transaction((int)Transaction.Type.MultisigTX, tx_fee, tx_to_list, tx_from, null, tx_from, tx_blockHeight);
@@ -1156,6 +1511,15 @@ namespace DLT
             return t;
         }
 
+        /// <summary>
+        ///  Adds a signature to the specified multisig transaction, if possible.
+        ///  This function generates a transaction which adds the signature for `orig_txid`.
+        /// </summary>
+        /// <param name="orig_txid">Multisig transaction which is waiting to accumulate signatures.</param>
+        /// <param name="tx_fee">Fee per kilobyte of data.</param>
+        /// <param name="tx_from">Own address which may be allowed to sign `orig_txid`.</param>
+        /// <param name="tx_blockHeight">Block height at which to generate the new transaction/</param>
+        /// <returns>Signing transaction.</returns>
         public static Transaction multisigAddTxSignature(string orig_txid, IxiNumber tx_fee, byte[] tx_from, ulong tx_blockHeight)
         {
             Transaction t = new Transaction((int)Transaction.Type.MultisigAddTxSignature, new IxiNumber(0), tx_fee, tx_from, tx_from, null, tx_from, tx_blockHeight);
@@ -1180,7 +1544,17 @@ namespace DLT
             return t;
         }
 
-
+        /// <summary>
+        ///  Adds a signature to the specified multisig wallet.
+        ///  This function generates a transaction which adds the specified `allowed_address` to the multisig wallet `tx_from`.
+        /// </summary>
+        ///  The transaction fee is paid by `tx_from` - the multisig wallet.
+        /// </remarks>
+        /// <param name="allowed_address">Address which will be added to `tx_from`.</param>
+        /// <param name="tx_fee">Fee per kilobyte of data.</param>
+        /// <param name="tx_from">Multisig address where the `allowed_address` will be added.</param>
+        /// <param name="tx_blockHeight">Block height at which to generate the new transaction/</param>
+        /// <returns>Multisig change transaction.</returns>
         public static Transaction multisigAddKeyTransaction(byte[] allowed_address,  IxiNumber tx_fee, byte[] tx_from, ulong tx_blockHeight)
         {
             Transaction t = new Transaction((int)Transaction.Type.ChangeMultisigWallet, new IxiNumber(0), tx_fee, tx_from, tx_from, null, tx_from, tx_blockHeight);
@@ -1205,6 +1579,17 @@ namespace DLT
             return t;
         }
 
+        /// <summary>
+        ///  Deletes a signature from the specified multisig wallet.
+        ///  This function generates a transaction which deletes the specified `disallowed_address` from the multisig wallet `tx_from`.
+        /// </summary>
+        ///  The transaction fee is paid by `tx_from` - the multisig wallet.
+        /// </remarks>
+        /// <param name="disallowed_address">Address which will be removed from `tx_from`.</param>
+        /// <param name="tx_fee">Fee per kilobyte of data.</param>
+        /// <param name="tx_from">Multisig address where the `allowed_address` will be added.</param>
+        /// <param name="tx_blockHeight">Block height at which to generate the new transaction/</param>
+        /// <returns>Multisig change transaction.</returns>
         public static Transaction multisigDelKeyTransaction(byte[] disallowed_address, IxiNumber tx_fee, byte[] tx_from, ulong tx_blockHeight)
         {
             Transaction t = new Transaction((int)Transaction.Type.ChangeMultisigWallet, new IxiNumber(0), tx_fee, tx_from, tx_from, null, tx_from, tx_blockHeight);
@@ -1229,6 +1614,18 @@ namespace DLT
             return t;
         }
 
+        /// <summary>
+        ///  Changes the multisig wallet minimum required signatures value.
+        ///  This function generates a transaction which changes the specified multisig wallet `tx_from` with a new minimum
+        ///  required signatures value..
+        /// </summary>
+        ///  The transaction fee is paid by `tx_from` - the multisig wallet.
+        /// </remarks>
+        /// <param name="sigs">New minimum required signatures value for `tx_from`.</param>
+        /// <param name="tx_fee">Fee per kilobyte of data.</param>
+        /// <param name="tx_from">Multisig address where the `allowed_address` will be added.</param>
+        /// <param name="tx_blockHeight">Block height at which to generate the new transaction/</param>
+        /// <returns>Multisig change transaction.</returns>
         public static Transaction multisigChangeReqSigs(byte sigs, IxiNumber tx_fee, byte[] tx_from, ulong tx_blockHeight)
         {
             Transaction t = new Transaction((int)Transaction.Type.ChangeMultisigWallet, new IxiNumber(0), tx_fee, tx_from, tx_from, null, tx_from, tx_blockHeight);
@@ -1253,6 +1650,10 @@ namespace DLT
             return t;
         }
 
+        /// <summary>
+        ///  Encodes all transaction data fields into a Dictionary for easier conversion to JSON via the REST API server.
+        /// </summary>
+        /// <returns>Dictionary with all transaction fields.</returns>
         public Dictionary<string, object> toDictionary()
         {
             Dictionary<string, object> tDic = new Dictionary<string, object>();
