@@ -10,25 +10,73 @@ namespace DLT
 {
     namespace Network
     {
+        /// <summary>
+        ///  Reason for disconnection.
+        /// </summary>
         public enum ProtocolByeCode
         {
+            /// <summary>
+            ///  A `Block` was sent with an incorrect checksum.
+            /// </summary>
             blockInvalidChecksum = 100,
+            /// <summary>
+            ///  A `Block` which was sent is suspected to be from a forked chain.
+            /// </summary>
             blockInvalidForked = 101,
+            /// <summary>
+            /// A `Block` was sent without sufficient consensus signatures.
+            /// </summary>
             blockInvalidNoConsensus = 102,
+            /// <summary>
+            ///  Unspecified disconnection reason.
+            /// </summary>
             bye = 200,
+            /// <summary>
+            ///  A Master Node was expected.
+            /// </summary>
             expectingMaster = 400,
+            /// <summary>
+            ///  The sending node suspects it is on a forked network.
+            /// </summary>
             forked = 500,
+            /// <summary>
+            ///  A deprecated protocol was used which is not supported.
+            /// </summary>
             deprecated = 501,
+            /// <summary>
+            ///  The connecting node is on a different network (TestNet vs. MainNet).
+            /// </summary>
             incorrectNetworkType = 502,
+            /// <summary>
+            ///  The connecting Master Node does not have sufficient funds int he wallet to participate in consensus.
+            /// </summary>
             insufficientFunds = 599, // can be removed later
+            /// <summary>
+            ///  The IP address specified in the Hello message was invalid. (Not a public IP address.)
+            /// </summary>
             incorrectIp = 600,
+            /// <summary>
+            ///  The IP address specified in the Hello message was not reachable for a connection test.
+            /// </summary>
             notConnectable = 601,
+            /// <summary>
+            ///  The connecting node has fallen too far behind on the blockchain.
+            /// </summary>
             tooFarBehind = 602,
+            /// <summary>
+            ///  The authentication value does not match the connecting node's address.
+            /// </summary>
             authFailed = 603,
+            /// <summary>
+            ///  The remote node's address does not match the known address for that node.
+            /// </summary>
             addressMismatch = 604
         }
 
-        // Message codes are for the most part pairs (send/receive)
+        /// <summary>
+        ///  Codes represent types of network messages accepted by the Ixian network.
+        ///  Each code implies the expected following message structure.
+        /// </summary>
         public enum ProtocolMessageCode
         {
             hello = 0,
@@ -79,6 +127,9 @@ namespace DLT
             getNextSuperBlock = 45
         }
 
+        /// <summary>
+        ///  Current stateus of the remote endpoint (server or client).
+        /// </summary>
         public enum RemoteEndpointState
         {
             Initial,
@@ -86,6 +137,9 @@ namespace DLT
             Closed
         }
 
+        /// <summary>
+        ///  Helper class to help filter and classify IPv4 addresses
+        /// </summary>
         public class IPv4Subnet
         {
             private IPAddress subnet;
@@ -121,6 +175,12 @@ namespace DLT
                 mask = m;
             }
 
+            /// <summary>
+            ///  Converts an address in a CIDR notation to the `IPv4Subnet` object.
+            /// </summary>
+            /// <param name="cidr">IP addrss in the format 1.2.3.4/5</param>
+            /// <exception cref="ArgumentException">The provided CIDR is invalid.</exception>
+            /// <returns>IPv4 network.</returns>
             public static IPv4Subnet FromCIDR(String cidr)
             {
                 int delim = cidr.IndexOf('/');
@@ -159,6 +219,12 @@ namespace DLT
                 return new IPv4Subnet(s, new IPAddress(maskBytes));
             }
 
+            /// <summary>
+            ///  Constructs an `IPv4Subnet` from a network address and subnet mask, given as strings.
+            /// </summary>
+            /// <param name="subnet">Network address.</param>
+            /// <param name="mask">Subnet Mask</param>
+            /// <returns>IPv4 network</returns>
             public static IPv4Subnet FromSubnet(String subnet, String mask)
             {
                 IPAddress s, m;
@@ -181,6 +247,12 @@ namespace DLT
                 return new IPv4Subnet(s, m);
             }
 
+            /// <summary>
+            ///  Constructs an `IPv4Subnet` from a network address and mask, given as `IPAddress`.
+            /// </summary>
+            /// <param name="subnet">Network address.</param>
+            /// <param name="mask">Subnet mask.</param>
+            /// <returns>IPv4 network</returns>
             public static IPv4Subnet FromSubnet(IPAddress subnet, IPAddress mask)
             {
                 if (subnet.AddressFamily != AddressFamily.InterNetwork)
@@ -194,6 +266,11 @@ namespace DLT
                 return new IPv4Subnet(subnet, mask);
             }
 
+            /// <summary>
+            ///  Verifies that the given address is on a public network. (It is not a special address or one of the reserved private subnets.)
+            /// </summary>
+            /// <param name="addr">IP address to check</param>
+            /// <returns>True, if the given IP is a public, routable address.</returns>
             public static bool IsPublicIP(IPAddress addr)
             {
                 if(addr.AddressFamily != AddressFamily.InterNetwork)
@@ -223,8 +300,13 @@ namespace DLT
                 Reserved.IsIPInSubnet(addr) ||
                 Broadcast.IsIPInSubnet(addr);
                 return !unroutable;
-        }
+            }
 
+            /// <summary>
+            ///  Checks if the given IP address is a member of this IPv4 subnet.
+            /// </summary>
+            /// <param name="addr">IP address to check.</param>
+            /// <returns>True, if the IP address is a part of the subnet this object represents.</returns>
             public bool IsIPInSubnet(IPAddress addr)
             {
                 if(addr.AddressFamily != AddressFamily.InterNetwork)
@@ -244,6 +326,11 @@ namespace DLT
                 return true;
             }
 
+            /// <summary>
+            ///  Checks if the given IP address, given as a string, is a member of this IPv4 subnet.
+            /// </summary>
+            /// <param name="addr">IP address to check.</param>
+            /// <returns>True, if the IP address is a part of the subnet this object represents.</returns>
             public bool IsIPInSubnet(String ipaddr)
             {
                 if(IPAddress.TryParse(ipaddr, out IPAddress a))
@@ -256,6 +343,9 @@ namespace DLT
             }
         }
 
+        /// <summary>
+        ///  Represents an IP address and a subnet mask.
+        /// </summary>
         public struct IPAndMask
         {
             public IPAddress Address;
@@ -266,8 +356,9 @@ namespace DLT
 
         public class CoreNetworkUtils
         {
-            // The list of seed nodes to connect to first. 
-            // Domain/IP seperated by : from the port
+            /// <summary>
+            ///  List of Ixian MainNet seed nodes and their addresses.
+            /// </summary>
             public static List<string[]> seedNodes = new List<string[]>
                     {
                         new string[2] { "seed1.ixian.io:10234", "1AAF8ZagTw6UqiQPUoiKjmoAN45jvR8tdmSmeev4uNzq45QWB" },
@@ -277,6 +368,9 @@ namespace DLT
                         new string[2] { "seed5.ixian.io:10234", "1R2WxZ7rmQhMTt5mCFTPhPe9Ltw8pTPY6uTsWHCvVd3GvWupC" }
                     };
 
+            /// <summary>
+            ///  List of Ixian TestNet seed nodes and their addresses.
+            /// </summary>
             public static List<string[]> seedTestNetNodes = new List<string[]>
                     {
                         new string[2] { "seedtest1.ixian.io:11234", null },
@@ -284,7 +378,11 @@ namespace DLT
                         new string[2] { "seedtest3.ixian.io:11234", null }
                     };
 
-            // Returns the list of seed nodes or test seed nodes if testnet
+            /// <summary>
+            ///  Helper function which returns a list of seed addresses based on the testnet parameter.
+            /// </summary>
+            /// <param name="isTestNet">Indicator whether TestNet seed nodes should be returned (true), or MainNet (false).</param>
+            /// <returns>List of connectable seed addresses.</returns>
             public static List<string[]> getSeedNodes(bool isTestNet)
             {
                 if(isTestNet)
@@ -294,7 +392,10 @@ namespace DLT
                 return seedNodes;
             }
 
-            // Get the local accessible IP address of this node
+            /// <summary>
+            ///  Returns the first unicast, IPv4 network address on the local machine.
+            /// </summary>
+            /// <returns>IPv4 address as string.</returns>
             public static string GetLocalIPAddress()
             {
                 NetworkInterface[] nics = NetworkInterface.GetAllNetworkInterfaces();
@@ -316,7 +417,10 @@ namespace DLT
                 throw new Exception("No network adapters with an IPv4 address in the system!");
             }
 
-            // Get a list of all accessible local IP addresses of this node
+            /// <summary>
+            ///  Retrieves all IPv4, unicast addresses on the local computer.
+            /// </summary>
+            /// <returns>List of all IP addresses of the local computer as strings.</returns>
             public static List<string> GetAllLocalIPAddresses()
             {
                 List<String> ips = new List<string>();
@@ -339,6 +443,11 @@ namespace DLT
                 return ips;
             }
 
+            /// <summary>
+            ///  Returns the first IPv4, unicast address on the local computer which has a gateway configured and is, therefore,
+            ///  probably Internet-connectable.
+            /// </summary>
+            /// <returns>IP address object</returns>
             public static IPAddress GetPrimaryIPAddress()
             {
                 // This is impossible to find, but we return the first IP which has a gateway configured
@@ -376,6 +485,10 @@ namespace DLT
                 return null;
             }
 
+            /// <summary>
+            ///  Retrieves all locally configured IPv4 addresses and their subnet masks for the local computer.
+            /// </summary>
+            /// <returns>List of IP addresses and subnet masks.</returns>
             public static List<IPAndMask> GetAllLocalIPAddressesAndMasks()
             {
                 List<IPAndMask> ips = new List<IPAndMask>();
@@ -398,6 +511,12 @@ namespace DLT
                 return ips;
             }
 
+            /// <summary>
+            ///  Attempts to connect to the given host name or IP address and transmit some data.
+            ///  Note: This function has a possible delay of about 2 seconds.
+            /// </summary>
+            /// <param name="full_hostname">Hostname or IP address of the remote endpoint.</param>
+            /// <returns>True, if the IP address is reachable.</returns>
             public static bool PingAddressReachable(String full_hostname)
             {
                 // TODO TODO TODO TODO move this to another thread

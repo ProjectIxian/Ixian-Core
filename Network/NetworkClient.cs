@@ -6,8 +6,14 @@ using System.Net.Sockets;
 
 namespace DLT
 {
+    /// <summary>
+    ///  Implementation of the `RemoteEndpoint` interface as an Ixian network client.
+    /// </summary>
     public class NetworkClient : RemoteEndpoint
     {
+        /// <summary>
+        ///  Unerlying framework connection, if an operation must be performed directly on it.
+        /// </summary>
         public TcpClient tcpClient = null;
 
         private string tcpHostname = "";
@@ -35,6 +41,14 @@ namespace DLT
             prepareSocket(tmpSocket);
         }
 
+        /// <summary>
+        ///  Establishes connection to the given hostname and port. An expected remote wallet address must be provided
+        ///  before a connection to the Ixian network can be made safely.
+        /// </summary>
+        /// <param name="hostname">Hostname or IP address of the remote server</param>
+        /// <param name="port">Port on which to connect</param>
+        /// <param name="wallet_address">Expected wallet address of the remote server we are connecting to.</param>
+        /// <returns>True, if the connection was successful.</returns>
         public bool connectToServer(string hostname, int port, byte[] wallet_address)
         {
             if (fullyStopped)
@@ -108,7 +122,10 @@ namespace DLT
             return true;
         }
 
-        // Reconnect with the previous settings
+        /// <summary>
+        ///  Disconnects (optionally) and reconnects to the same remote host as was given in `connectToServer()`.
+        /// </summary>
+        /// <returns>True, if the connection attempt was successful.</returns>
         public bool reconnect()
         {
             lock (reconnectLock)
@@ -137,13 +154,19 @@ namespace DLT
             base.recvLoop();
         }
 
+        /// <summary>
+        ///  Breaks the connection to the remote server.
+        /// </summary>
         public override void disconnect()
         {
             base.disconnect();
             tcpClient.Close();
         }
 
-        // Returns the number of failed reconnects
+        /// <summary>
+        ///  Returns the number of times this connection was re-established (disconnected and reconnected).
+        /// </summary>
+        /// <returns>Number of connection attempts.</returns>
         public int getTotalReconnectsCount()
         {
             return totalReconnects;

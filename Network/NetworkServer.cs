@@ -11,25 +11,43 @@ namespace DLT
 {
     namespace Network
     {
+        /// <summary>
+        ///  Helper structure which holds a single IP addresses on which the server component is listening. Used only to communicate the configuration
+        ///  to the server listening thread.
+        /// </summary>
         public struct NetOpsData
         {
             public IPEndPoint listenAddress;
         }
 
+        /// <summary>
+        ///  Ixian network server object. This is used to accept connections from Ixian clients or other nodes
+        ///  and recieve Ixian protocol messages.
+        ///  Basic protocol validation is performed before a specialized protocol parser is called.
+        /// </summary>
         public class NetworkServer
         {
+            /// <summary>
+            ///  IP address on which the server will listen. For security reasons this is pre-set to the local loopback address and must be specifically
+            ///  overwritten when starting the server.
+            /// </summary>
             public static string publicIPAddress = "127.0.0.1";
-
 
             private static bool continueRunning = false;
             private static Thread netControllerThread = null;
             private static TcpListener listener;
+            /// <summary>
+            ///  List of connected clients.
+            /// </summary>
             public static List<RemoteEndpoint> connectedClients = new List<RemoteEndpoint>();
 
             private static Dictionary<string, DateTime> nodeBlacklist = new Dictionary<string, DateTime>();
             private static ThreadLiveCheck TLC;
 
             private static DateTime lastIncomingConnectionTime = DateTime.UtcNow;
+            /// <summary>
+            ///  Flag, indicating whether the listening socket is open and accepting connections.
+            /// </summary>
             public static bool connectable = true;
 
             static NetworkServer()
@@ -40,6 +58,9 @@ namespace DLT
             {
             }
 
+            /// <summary>
+            ///  Starts listening for and accepting network connections.
+            /// </summary>
             public static void beginNetworkOperations()
             {
                 if (netControllerThread != null)
@@ -68,6 +89,9 @@ namespace DLT
 
             }
 
+            /// <summary>
+            ///  Stops listening for new connections and disconnects all connected clients.
+            /// </summary>
             public static void stopNetworkOperations()
             {
                 if (netControllerThread == null)
@@ -98,6 +122,9 @@ namespace DLT
                 }
             }
 
+            /// <summary>
+            ///  Checks the list of clients and removes the ones who have disconnected since the last check.
+            /// </summary>
             public static void handleDisconnectedClients()
             {
                 List<RemoteEndpoint> netClients = null;
@@ -130,7 +157,9 @@ namespace DLT
                 }
             }
 
-            // Restart the network server
+            /// <summary>
+            ///  Restarts the network server.
+            /// </summary>
             public static void restartNetworkOperations()
             {
                 Logging.info("Stopping network server...");
@@ -193,8 +222,15 @@ namespace DLT
                 Logging.info("Server listener thread ended.");
             }
 
-            // Send data to all connected clients
-            // Returns true if the data was sent to at least one client
+            /// <summary>
+            ///  Sends the given data to all appropriate connected clients.
+            /// </summary>
+            /// <param name="types">Types of clients to which the data should be sent.</param>
+            /// <param name="code">Type of the protocol message being sent.</param>
+            /// <param name="data">Byte-field of the data, appropriate for the specific `code` used.</param>
+            /// <param name="helper_data">Optional, additional data to transmit after `data`.</param>
+            /// <param name="skipEndpoint">If given, the message will not be sent to this remote endpoint. This prevents echoing the message to the originating node.</param>
+            /// <returns>True, if at least one message was sent to at least one client.</returns>
             public static bool broadcastData(char[] types, ProtocolMessageCode code, byte[] data, byte[] helper_data, RemoteEndpoint skipEndpoint = null)
             {
                 bool result = false;
@@ -233,7 +269,17 @@ namespace DLT
                 return result;
             }
 
-            // Sends event data to all subscribed clients
+            /// <summary>
+            ///  Sends the specified event to all connected clients.
+            ///  The information is only sent to those clients who have previously subscribed to this event type
+            /// </summary>
+            /// <param name="type">Types of the event that has occurred.</param>
+            /// <param name="code">Type of the protocol message being sent.</param>
+            /// <param name="data">Byte-field of the data, appropriate for the specific `code` used.</param>
+            /// <param name="address">Ixian Wallet Address which triggered the event</param>
+            /// <param name="helper_data">Optional, additional data to transmit after `data`.</param>
+            /// <param name="skipEndpoint">If given, the message will not be sent to this remote endpoint. This prevents echoing the message to the originating node.</param>
+            /// <returns>True, if at least one message was sent to at least one client.</returns>
             public static bool broadcastEventData(NetworkEvents.Type type, ProtocolMessageCode code, byte[] data, byte[] address, byte[] helper_data, RemoteEndpoint skipEndpoint = null)
             {
                 bool result = false;
@@ -274,7 +320,13 @@ namespace DLT
             }
 
 
-            // Forwards a network message to a specific presense address if it's in the client list
+            /// <summary>
+            ///  Sends the specified network message to the given address, if it is known and connected among clients.
+            /// </summary>
+            /// <param name="address">Ixian Wallet Address - the recipient of the message</param>
+            /// <param name="code">Type of the network message to send</param>
+            /// <param name="message">Byte-field with the required data, as specified by `code`.</param>
+            /// <returns>True, if the message was delivered.</returns>
             public static bool forwardMessage(byte[] address, ProtocolMessageCode code, byte[] message)
             {
                 if (address == null)
@@ -311,7 +363,14 @@ namespace DLT
                 return false;
             }
 
-
+            /// <summary>
+            ///  Sends the protocol message to the specified neighbor node, given as a Hostname or IP address and port.
+            /// </summary>
+            /// <param name="neighbor">IP address or hostname and port for the neighbor.</param>
+            /// <param name="code">Type of the protocol message</param>
+            /// <param name="data">Data required by the protocol message `code`.</param>
+            /// <param name="helper_data">Optional, additional data to transmit after `data`.</param>
+            /// <returns>True if the data was sent to the specified neighbor.</returns>
             public static bool sendToClient(string neighbor, ProtocolMessageCode code, byte[] data, byte[] helper_data)
             {
                 RemoteEndpoint client = null;
@@ -334,7 +393,11 @@ namespace DLT
                 return false;
             }
 
-            // Returns all the connected clients
+            /// <summary>
+            ///  Retrieves all connected remote endpoints as hostnames or IP addresses and optionally ports.
+            /// </summary>
+            /// <param name="useIncomingPort">Whether the TCP port information should be included.</param>
+            /// <returns>List of connected clients with optional port information.</returns>
             public static string[] getConnectedClients(bool useIncomingPort = false)
             {
                 List<String> result = new List<String>();
@@ -417,7 +480,11 @@ namespace DLT
                 }
             }
 
-            // Removes an endpoint from the connected clients list
+            /// <summary>
+            ///  Removes the given endpoint from the connected client list, but does not immediately issue a disconnect message.
+            /// </summary>
+            /// <param name="endpoint">Endpoint to remove</param>
+            /// <returns>True if the endpoint was removed or false if the endpoint was not known.</returns>
             public static bool removeEndpoint(RemoteEndpoint endpoint)
             {
                 bool result = false;
@@ -428,6 +495,10 @@ namespace DLT
                 return result;
             }
 
+            /// <summary>
+            ///  Retrieves the number of queued outgoing messages for all clients.
+            /// </summary>
+            /// <returns>Number of messages in all outgoing queues</returns>
             public static int getQueuedMessageCount()
             {
                 int messageCount = 0;
@@ -441,6 +512,11 @@ namespace DLT
                 return messageCount;
             }
 
+            /// <summary>
+            ///  Gets the client by sequential index.
+            /// </summary>
+            /// <param name="idx">Sequential index of the client.</param>
+            /// <returns>Client at the given index, or null if out of bounds.</returns>
             public static RemoteEndpoint getClient(int idx)
             {
                 lock (connectedClients)
@@ -464,7 +540,10 @@ namespace DLT
             }
 
 
-            // Adds a node to the blacklist
+            /// <summary>
+            ///  Adds the speficied node to the blacklist by public IP.
+            /// </summary>
+            /// <param name="ip">Node to blacklist.</param>
             public static void blacklistNode(string ip)
             {
                 lock (nodeBlacklist)
@@ -473,8 +552,11 @@ namespace DLT
                 }
             }
 
-            // Returns true if node is blacklisted
-            // TODO TODO TODO TODO blacklist by IP or wallet address or both?
+            /// <summary>
+            ///  Checks if the specified IP is blacklisted.
+            /// </summary>
+            /// <param name="ip">IP address to check</param>
+            /// <returns>True, if the node is blacklisted.</returns>
             public static bool isNodeBlacklisted(string ip)
             {
                 lock (nodeBlacklist)
@@ -492,12 +574,20 @@ namespace DLT
                 return false;
             }
 
-            // Check if the server is running
+            /// <summary>
+            ///  Checks if the server is running.
+            /// </summary>
+            /// <returns>True, if the network server is running and accepting connections.</returns>
             public static bool isRunning()
             {
                 return continueRunning;
             }
 
+            /// <summary>
+            ///  Returns if the server is proven to be connectable.
+            ///  (Someone has connected to the server successfully within the past 5 minutes.)
+            /// </summary>
+            /// <returns>True, if the server is connectable from the Internet.</returns>
             static public bool isConnectable()
             {
                 if (getConnectedClients().Count() > 0)
