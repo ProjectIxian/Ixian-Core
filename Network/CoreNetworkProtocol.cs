@@ -459,7 +459,7 @@ namespace IXICore
                         writer.Write(block.version);
 
                         // Write the legacy level
-                        writer.Write(Legacy.getLegacyLevel());
+                        writer.Write((ulong)0); // deprecated, can be replaced with something else of type UInt64
 
                         writer.Write(challenge_response.Length);
                         writer.Write(challenge_response);

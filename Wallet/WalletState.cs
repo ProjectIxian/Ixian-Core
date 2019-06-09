@@ -117,7 +117,14 @@ namespace DLT
                     //Logging.info(String.Format("Committing WalletState snapshot. Wallets in snapshot: {0}.", wsDelta.Count));
                     foreach (var wallet in wsDelta)
                     {
-                        walletState.AddOrReplace(wallet.Key, wallet.Value);
+                        if (cachedBlockVersion >= 5 && wallet.Value.balance.getAmount() == 0 && wallet.Value.type == WalletType.Normal)
+                        {
+                            walletState.Remove(wallet.Key);
+                        }
+                        else
+                        {
+                            walletState.AddOrReplace(wallet.Key, wallet.Value);
+                        }
                     }
                     wsDelta = null;
                     cachedDeltaChecksum = null;
@@ -194,7 +201,14 @@ namespace DLT
 
                 if (snapshot == false)
                 {
-                    walletState.AddOrReplace(id, wallet);
+                    if (cachedBlockVersion >= 5 && balance.getAmount() == 0 && wallet.type == WalletType.Normal)
+                    {
+                        walletState.Remove(id);
+                    }
+                    else
+                    {
+                        walletState.AddOrReplace(id, wallet);
+                    }
                     cachedChecksum = null;
                     cachedTotalSupply = new IxiNumber(0);
                     cachedDeltaChecksum = null;
@@ -248,28 +262,26 @@ namespace DLT
             }
         }
 
-        public byte[] calculateWalletStateChecksum(int block_version = 0, bool snapshot = false)
+        public void setCachedBlockVersion(int block_version)
+        {
+            // edge case for first block of block_version 3
+            if (block_version == 3 && Node.getLastBlockVersion() == 2)
+            {
+                block_version = 2;
+            }
+
+            if (cachedBlockVersion != block_version)
+            {
+                cachedChecksum = null;
+                cachedDeltaChecksum = null;
+                cachedBlockVersion = block_version;
+            }
+        }
+
+        public byte[] calculateWalletStateChecksum(bool snapshot = false)
         {
             lock (stateLock)
             {
-                if(block_version == 0)
-                {
-                    block_version = Node.getLastBlockVersion();
-                }
-
-                // edge case for first block of block_version 3
-                if(block_version == 3 && Node.getLastBlockVersion() == 2)
-                {
-                    block_version = 2;
-                }
-
-                if(cachedBlockVersion != block_version)
-                {
-                    cachedChecksum = null;
-                    cachedDeltaChecksum = null;
-                    cachedBlockVersion = block_version;
-                }
-
                 if (snapshot == false && cachedChecksum != null)
                 {
                     return cachedChecksum;
@@ -295,7 +307,7 @@ namespace DLT
                 }
 
                 byte[] checksum = null;
-                if (block_version <= 2)
+                if (cachedBlockVersion <= 2)
                 {
                     checksum = Crypto.sha512quTrunc(Encoding.UTF8.GetBytes("IXIAN-DLT" + version));
                 }else
@@ -307,8 +319,8 @@ namespace DLT
                 // Note: addresses are not fixed size
                 foreach (byte[] addr in eligible_addresses)
                 {
-                    byte[] wallet_checksum = getWallet(addr, snapshot).calculateChecksum(block_version);
-                    if (block_version <= 2)
+                    byte[] wallet_checksum = getWallet(addr, snapshot).calculateChecksum(cachedBlockVersion);
+                    if (cachedBlockVersion <= 2)
                     {
                         checksum = Crypto.sha512quTrunc(Encoding.UTF8.GetBytes(Crypto.hashToString(checksum) + Crypto.hashToString(wallet_checksum)));
                     }else
@@ -329,6 +341,33 @@ namespace DLT
                 }
                 return checksum;
             }
+        }
+
+        // calculates the checksum of changed balances (applicable only for snapshot use)
+        public byte[] calculateWalletStateDeltaChecksum()
+        {
+            List<byte> ws_data = new List<byte>();
+
+            lock (stateLock)
+            {
+                if (wsDelta == null)
+                {
+                    Logging.error("Tried to calculate WalletStateDeltaChecksum but wsDelta is null");
+                    return null;
+                }
+
+                ws_data.AddRange(Encoding.UTF8.GetBytes("IXIAN-DLT" + version));
+
+                var ordered_delta = wsDelta.OrderBy(x => x.Key);
+
+                foreach (var entry in ordered_delta)
+                {
+                    ws_data.AddRange(entry.Value.getBytes());
+                }
+
+            }
+
+            return Crypto.sha512sqTrunc(ws_data.ToArray(), 0, 0, 64);
         }
 
         public WsChunk[] getWalletStateChunks(int chunk_size, ulong block_num)

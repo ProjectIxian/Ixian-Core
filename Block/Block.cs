@@ -9,6 +9,17 @@ using IXICore;
 
 namespace DLT
 {
+    static public class BlockVer
+    {
+        static public int v0 = 0;
+        static public int v1 = 1;
+        static public int v2 = 2;
+        static public int v3 = 3;
+        static public int v4 = 4;
+        static public int v5 = 5;
+        static public int v6 = 6;
+    }
+
     public class SuperBlockSegment
     {
         public ulong blockNum = 0;
@@ -34,7 +45,7 @@ namespace DLT
         /// <summary>
         /// Latest possible version of the Block structure. New blocks should usually be created with the latest version.
         /// </summary>
-        public static int maxVersion = 4;
+        public static int maxVersion = BlockVer.v5;
 
         /// <summary>
         /// Block height (block number). This is a sequential index in the blockchain which uniquely identifies each block.
@@ -108,7 +119,7 @@ namespace DLT
         /// </summary>
         public Dictionary<ulong, SuperBlockSegment> superBlockSegments = new Dictionary<ulong, SuperBlockSegment>();
         /// <summary>
-        ///  Checksum of the previous superblock - used only in superblock functinality.
+        ///  Checksum of the previous superblock - used only in superblock functionality.
         /// </summary>
         public byte[] lastSuperBlockChecksum = null;
         /// <summary>
@@ -154,7 +165,7 @@ namespace DLT
 
         public Block()
         {
-            version = 0;
+            version = BlockVer.v0;
             blockNum = 0;
             transactions = new List<string>();
         }
@@ -263,10 +274,10 @@ namespace DLT
                         version = reader.ReadInt32();
 
 
-                        if (version > 5 && bytes.Length > 10240000)
+                        if (version > BlockVer.v5 && bytes.Length > 10240000)
                         {
                             throw new Exception("Block size is bigger than 10MB.");
-                        }else if(version < 6 && bytes.Length > 32768000)
+                        }else if(version < BlockVer.v6 && bytes.Length > 32768000)
                         {
                             throw new Exception("Block size is bigger than 32MB.");
                         }
@@ -324,7 +335,7 @@ namespace DLT
                             difficulty = reader.ReadUInt64();
                             timestamp = reader.ReadInt64();
 
-                            if(version > 4)
+                            if(version > BlockVer.v4)
                             {
                                 lastSuperBlockNum = reader.ReadUInt64();
 
@@ -588,7 +599,7 @@ namespace DLT
                 rawData.AddRange(lastSuperBlockChecksum);
             }
 
-            if (version <= 2)
+            if (version <= BlockVer.v2)
             {
                 return Crypto.sha512quTrunc(rawData.ToArray());
             }else
@@ -625,7 +636,7 @@ namespace DLT
             merged_sigs.AddRange(BitConverter.GetBytes(blockNum));
             foreach (byte[][] sig in sortedSigs)
             {
-                if(version > 3)
+                if(version > BlockVer.v3)
                 {
                     merged_sigs.AddRange(sig[1]);
                 }
@@ -637,7 +648,7 @@ namespace DLT
 
             // Generate a checksum from the merged sorted signatures
             byte[] checksum = null;
-            if (version <= 2)
+            if (version <= BlockVer.v2)
             {
                 checksum = Crypto.sha512quTrunc(merged_sigs.ToArray());
             }else
@@ -1114,7 +1125,7 @@ namespace DLT
         /// <returns></returns>
         public bool pruneSignatures()
         {
-            if (version < 4)
+            if (version < BlockVer.v4)
             {
                 return false;
             }

@@ -61,9 +61,6 @@ namespace DLT
 
         private byte[] socketReadBuffer = null;
 
-        // Flag to determine if the connected node is running legacy code
-        private bool legacyNode = false;
-
         protected List<TimeSyncData> timeSyncs = new List<TimeSyncData>();
 
         protected bool enableSendTimeSyncMessages = true;
@@ -884,21 +881,6 @@ namespace DLT
                 data = big_buffer.ToArray();
             }
             return data;
-        }
-
-
-
-        // Set this node's legacy status
-        // Later on handle any specific upgrade paths for networking
-        public void setLegacy(bool legacy)
-        {
-            legacyNode = legacy;
-        }
-
-        // Check if this is a legacy node
-        public bool isLegacy()
-        {
-            return legacyNode;
         }
 
 
