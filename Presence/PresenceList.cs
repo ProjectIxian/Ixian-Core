@@ -827,5 +827,14 @@ namespace DLT
             }
         }
 
+        public static PresenceOrderedEnumerator getElectedSignerList(byte[] rnd_bytes, int target_count)
+        {
+            lock (presences)
+            {
+                int address_len = 10; // TODO TODO TODO TODO Support variable address len!
+                byte[] selector = PresenceOrderedEnumerator.GenerateSelectorFromRandom(rnd_bytes);
+                return new PresenceOrderedEnumerator(presences, address_len, selector, target_count);
+            }
+        }
     }
 }

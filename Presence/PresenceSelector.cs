@@ -16,7 +16,7 @@ namespace DLT
             if (x != null && y == null) return 1;
 
             int min_len = x.Length < y.Length ? x.Length : y.Length;
-            for(int i=0;i<min_len;i++)
+            for (int i = 0; i < min_len; i++)
             {
                 if (x[i] < y[i]) return -1;
                 if (x[i] > y[i]) return 1;
@@ -36,9 +36,9 @@ namespace DLT
         int CurrentPosition;
         int TargetCount;
         //
-        PresenceOrderedEnumerator(IEnumerable<Presence> presences, int address_len, byte[] selector, int target_count = 2000)
+        public PresenceOrderedEnumerator(IEnumerable<Presence> presences, int address_len, byte[] selector, int target_count = 2000)
         {
-            if(selector.Length != address_len)
+            if (selector.Length != address_len)
             {
                 throw new ArgumentException("Selector must be exactly as long as the address.");
             }
@@ -54,7 +54,7 @@ namespace DLT
             foreach (var p in presences)
             {
                 string[] ips = p.addresses.Select(pa => pa.address.Split(':')[0]).ToArray();
-                foreach(var ip in ips)
+                foreach (var ip in ips)
                 {
                     AddRepetition(RepetitionsIP, ip);
                 }
@@ -63,19 +63,19 @@ namespace DLT
 
             // Reduce number of addresses
             int max_rep = RepetitionsIP.Count - 1;
-            while(Addresses.Count > target_count && max_rep > 0)
+            while (Addresses.Count > target_count && max_rep > 0)
             {
                 // remove IPs that occur most often
                 List<byte[]> to_remove = new List<byte[]>();
-                foreach(var ae in Addresses)
+                foreach (var ae in Addresses)
                 {
-                    if(ae.Value.Any(ip => RepetitionsIP[max_rep].Contains(ip)))
+                    if (ae.Value.Any(ip => RepetitionsIP[max_rep].Contains(ip)))
                     {
                         to_remove.Add(ae.Key);
                     }
                     if (Addresses.Count - to_remove.Count <= target_count) break;
                 }
-                foreach(var a in to_remove)
+                foreach (var a in to_remove)
                 {
                     Addresses.Remove(a);
                 }
@@ -90,11 +90,11 @@ namespace DLT
         public static byte[] GenerateSelectorFromRandom(byte[] random)
         {
             byte[] selector = new byte[random.Length];
-            for(int i = 0; i < selector.Length; i++)
+            for (int i = 0; i < selector.Length; i++)
             {
                 selector[i] = (byte)i;
             }
-            for(int i=0;i<random.Length;i++)
+            for (int i = 0; i < random.Length; i++)
             {
                 int idx = random[i] % random.Length;
                 byte t = selector[idx];
@@ -107,9 +107,9 @@ namespace DLT
         private static void AddRepetition(List<HashSet<string>> repetition_ip, string ip)
         {
             int rep = repetition_ip.Count - 1;
-            while(rep >= 0)
+            while (rep >= 0)
             {
-                if(repetition_ip[rep].Contains(ip))
+                if (repetition_ip[rep].Contains(ip))
                 {
                     break;
                 }
@@ -152,7 +152,7 @@ namespace DLT
 
         public void Dispose()
         {
-            
+
         }
 
         public bool MoveNext()
@@ -165,6 +165,11 @@ namespace DLT
         public void Reset()
         {
             CurrentPosition = -1;
+        }
+
+        public IEnumerator GetEnumerator()
+        {
+            return this;
         }
     }
 }
