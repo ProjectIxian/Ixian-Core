@@ -66,7 +66,7 @@ namespace IXICore
         public int jsonrpc = 0;
         public string id = null;
         public string method = null;
-        public object @params = null;
+        public Dictionary<string, object> @params = null;
     }
 
     class JsonError
@@ -130,16 +130,38 @@ namespace IXICore
                 if (ConsoleHelpers.verboseConsoleOutput)
                     Console.Write("*");
 
-                if (context.Request.Url.Segments.Length < 2)
+
+                string post_data = "";
+                string method_name = "";
+                Dictionary<string, object> method_params = null;
+
+                HttpListenerRequest request = context.Request;
+                using (var reader = new StreamReader(request.InputStream, request.ContentEncoding))
                 {
-                    // We will now show an embedded wallet if the API is called with no parameters
-                    sendWallet(context);
-                    return;
+                    post_data = reader.ReadToEnd();
                 }
 
-                string methodName = context.Request.Url.Segments[1].Replace("/", "");
 
-                if (methodName == null)
+                if (post_data.Length > 0)
+                {
+                    JsonRpcRequest post_data_json = JsonConvert.DeserializeObject<JsonRpcRequest>(post_data);
+                    method_name = post_data_json.method;
+                    method_params = post_data_json.@params;
+                }
+                else
+                {
+                    if (context.Request.Url.Segments.Length < 2)
+                    {
+                        // We will now show an embedded wallet if the API is called with no parameters
+                        sendWallet(context);
+                        return;
+                    }
+
+                    method_name = context.Request.Url.Segments[1].Replace("/", "");
+                    method_params = context.Request.QueryString.Cast<string>().ToDictionary(s => s, s=> (object)context.Request.QueryString[s]);
+                }
+
+                if (method_name == null)
                 {
                     context.Response.ContentType = "application/json";
                     JsonError error = new JsonError { code = (int)RPCErrorCode.RPC_INVALID_REQUEST, message = "Unknown action." };
@@ -149,9 +171,9 @@ namespace IXICore
 
                 try
                 {
-                    if (!processRequest(context, methodName, context.Request.QueryString))
+                    if (!processRequest(context, method_name, method_params))
                     {
-                        processGenericRequest(context, methodName, context.Request.QueryString);
+                        processGenericRequest(context, method_name, method_params);
                     }
                 }
                 catch (Exception e)
@@ -159,17 +181,19 @@ namespace IXICore
                     context.Response.ContentType = "application/json";
                     JsonError error = new JsonError { code = (int)RPCErrorCode.RPC_INTERNAL_ERROR, message = "Unknown error occured, see log for details." };
                     sendResponse(context.Response, new JsonResponse { error = error });
-                    Logging.error(string.Format("Exception occured in API server while processing '{0}'. {1}", methodName, e));
+                    Logging.error(string.Format("Exception occured in API server while processing '{0}'. {1}", method_name, e));
                 }
             }
-            catch (Exception)
+            catch (Exception e)
             {
-                //continueRunning = false;
-                //Logging.error(string.Format("Error in API server {0}", e.ToString()));
+                context.Response.ContentType = "application/json";
+                JsonError error = new JsonError { code = (int)RPCErrorCode.RPC_INTERNAL_ERROR, message = "Unknown error occured, see log for details." };
+                sendResponse(context.Response, new JsonResponse { error = error });
+                Logging.error(string.Format("Exception occured in API server. {0}", e));
             }
         }
 
-        protected virtual bool processGenericRequest(HttpListenerContext context, string methodName, NameValueCollection parameters)
+        protected virtual bool processGenericRequest(HttpListenerContext context, string methodName, Dictionary<string, object> parameters)
         {
             JsonResponse response = null;
 
@@ -337,7 +361,7 @@ namespace IXICore
             return processed_request;
         }
 
-        protected virtual bool processRequest(HttpListenerContext context, string methodName, NameValueCollection parameters)
+        protected virtual bool processRequest(HttpListenerContext context, string methodName, Dictionary<string, object> parameters)
         {
             return false;
         }
@@ -575,11 +599,11 @@ namespace IXICore
             return new JsonResponse { result = "Reconnecting node to network now.", error = error };
         }
 
-        private JsonResponse onConnect(NameValueCollection parameters)
+        private JsonResponse onConnect(Dictionary<string, object> parameters)
         {
             JsonError error = null;
 
-            string to = parameters["to"];
+            string to = (string)parameters["to"];
 
             NetworkClientManager.connectTo(to, null);
 
@@ -596,7 +620,7 @@ namespace IXICore
         }
 
 
-        private JsonResponse onAddTransaction(NameValueCollection parameters)
+        private JsonResponse onAddTransaction(Dictionary<string, object> parameters)
         {
             object r = createTransactionHelper(parameters);
             Transaction transaction = null;
@@ -630,7 +654,7 @@ namespace IXICore
             return new JsonResponse { result = null, error = new JsonError() { code = (int)RPCErrorCode.RPC_VERIFY_ERROR, message = "An unknown error occured while adding the transaction" } };
         }
 
-        private JsonResponse onCreateRawTransaction(NameValueCollection parameters)
+        private JsonResponse onCreateRawTransaction(Dictionary<string, object> parameters)
         {
             // Create a transaction, but do not add it to the TX pool on the node. Useful for:
             // - offline transactions
@@ -668,14 +692,14 @@ namespace IXICore
             }
         }
 
-        private JsonResponse onDecodeRawTransaction(NameValueCollection parameters)
+        private JsonResponse onDecodeRawTransaction(Dictionary<string, object> parameters)
         {
             JsonError error = null;
 
             // transaction which alters a multisig wallet
             object res = "Incorrect transaction parameters.";
 
-            string raw_transaction_hex = parameters["transaction"];
+            string raw_transaction_hex = (string)parameters["transaction"];
             if (raw_transaction_hex == null)
             {
                 error = new JsonError { code = (int)RPCErrorCode.RPC_INVALID_PARAMETER, message = "transaction parameter is missing" };
@@ -685,14 +709,14 @@ namespace IXICore
             return new JsonResponse { result = raw_transaction.toDictionary(), error = null };
         }
 
-        private JsonResponse onSignRawTransaction(NameValueCollection parameters)
+        private JsonResponse onSignRawTransaction(Dictionary<string, object> parameters)
         {
             JsonError error = null;
 
             // transaction which alters a multisig wallet
             object res = "Incorrect transaction parameters.";
 
-            string raw_transaction_hex = parameters["transaction"];
+            string raw_transaction_hex = (string)parameters["transaction"];
             if (raw_transaction_hex == null)
             {
                 error = new JsonError { code = (int)RPCErrorCode.RPC_INVALID_PARAMETER, message = "transaction parameter is missing" };
@@ -703,14 +727,14 @@ namespace IXICore
             return new JsonResponse { result = Crypto.hashToString(raw_transaction.getBytes()), error = null };
         }
 
-        private JsonResponse onSendRawTransaction(NameValueCollection parameters)
+        private JsonResponse onSendRawTransaction(Dictionary<string, object> parameters)
         {
             JsonError error = null;
 
             // transaction which alters a multisig wallet
             object res = "Incorrect transaction parameters.";
 
-            string raw_transaction_hex = parameters["transaction"];
+            string raw_transaction_hex = (string)parameters["transaction"];
             if (raw_transaction_hex == null)
             {
                 error = new JsonError { code = (int)RPCErrorCode.RPC_INVALID_PARAMETER, message = "transaction parameter is missing" };
@@ -727,7 +751,7 @@ namespace IXICore
             return new JsonResponse { result = null, error = new JsonError() { code = (int)RPCErrorCode.RPC_VERIFY_ERROR, message = "An unknown error occured while adding the transaction" } };
         }
 
-        private JsonResponse onCalculateTransactionFee(NameValueCollection parameters)
+        private JsonResponse onCalculateTransactionFee(Dictionary<string, object> parameters)
         {
             // Create a dummy transaction, just so that we can calculate the appropriate fee required to process this (minimum fee)
             object r = createTransactionHelper(parameters);
@@ -756,20 +780,20 @@ namespace IXICore
             return new JsonResponse { result = transaction.fee.ToString(), error = null };
         }
 
-        private JsonResponse onAddMultiSigTxSignature(NameValueCollection parameters)
+        private JsonResponse onAddMultiSigTxSignature(Dictionary<string, object> parameters)
         {
             JsonError error = null;
 
             // transaction which alters a multisig wallet
             object res = "Incorrect transaction parameters.";
 
-            byte[] destWallet = Base58Check.Base58CheckEncoding.DecodePlain(parameters["wallet"]);
+            byte[] destWallet = Base58Check.Base58CheckEncoding.DecodePlain((string)parameters["wallet"]);
             if (destWallet == null)
             {
                 error = new JsonError { code = (int)RPCErrorCode.RPC_INVALID_PARAMETER, message = "wallet parameter is missing" };
                 return new JsonResponse { result = null, error = error };
             }
-            string orig_txid = parameters["origtx"];
+            string orig_txid = (string)parameters["origtx"];
             if (orig_txid == null)
             {
                 error = new JsonError { code = (int)RPCErrorCode.RPC_INVALID_PARAMETER, message = "origtx parameter is missing" };
@@ -794,7 +818,7 @@ namespace IXICore
             return new JsonResponse { result = res, error = error };
         }
 
-        private JsonResponse onAddMultiSigTransaction(NameValueCollection parameters)
+        private JsonResponse onAddMultiSigTransaction(Dictionary<string, object> parameters)
         {
             JsonError error = null;
 
@@ -805,7 +829,7 @@ namespace IXICore
             IxiNumber amount = 0;
             IxiNumber fee = CoreConfig.transactionPrice;
             SortedDictionary<byte[], IxiNumber> toList = new SortedDictionary<byte[], IxiNumber>(new ByteArrayComparer());
-            string[] to_split = parameters["to"].Split('-');
+            string[] to_split = ((string)parameters["to"]).Split('-');
             if (to_split.Length > 0)
             {
                 foreach (string single_to in to_split)
@@ -829,13 +853,13 @@ namespace IXICore
                     toList.Add(single_to_address, singleToAmount);
                 }
             }
-            string fee_string = parameters["fee"];
+            string fee_string = (string)parameters["fee"];
             if (fee_string != null && fee_string.Length > 0)
             {
                 fee = new IxiNumber(fee_string);
             }
 
-            byte[] from = Base58Check.Base58CheckEncoding.DecodePlain(parameters["from"]);
+            byte[] from = Base58Check.Base58CheckEncoding.DecodePlain((string)parameters["from"]);
             if (Node.walletState.getWallet(from).type != WalletType.Multisig)
             {
                 error = new JsonError { code = (int)RPCErrorCode.RPC_WALLET_ERROR, message = "The specified 'from' wallet is not a multisig wallet." };
@@ -874,16 +898,16 @@ namespace IXICore
             return new JsonResponse { result = res, error = error };
         }
 
-        private JsonResponse onAddMultiSigKey(NameValueCollection parameters)
+        private JsonResponse onAddMultiSigKey(Dictionary<string, object> parameters)
         {
             // transaction which alters a multisig wallet
-            byte[] destWallet = Base58Check.Base58CheckEncoding.DecodePlain(parameters["wallet"]);
+            byte[] destWallet = Base58Check.Base58CheckEncoding.DecodePlain((string)parameters["wallet"]);
             if (destWallet == null)
             {
                 return new JsonResponse { result = null, error = new JsonError() { code = (int)RPCErrorCode.RPC_INVALID_PARAMS, message = "Parameter 'wallet' is missing." } };
             }
 
-            string signer = parameters["signer"];
+            string signer = (string)parameters["signer"];
             if (signer == null)
             {
                 return new JsonResponse { result = null, error = new JsonError() { code = (int)RPCErrorCode.RPC_INVALID_PARAMS, message = "Parameter 'signer' is missing." } };
@@ -900,18 +924,18 @@ namespace IXICore
             return new JsonResponse { result = null, error = new JsonError() { code = (int)RPCErrorCode.RPC_INTERNAL_ERROR, message = "Error while creating the transaction." } };
         }
 
-        private JsonResponse onDelMultiSigKey(NameValueCollection parameters)
+        private JsonResponse onDelMultiSigKey(Dictionary<string, object> parameters)
         {
             // transaction which alters a multisig wallet
             object res = "Incorrect transaction parameters.";
 
-            byte[] destWallet = Base58Check.Base58CheckEncoding.DecodePlain(parameters["wallet"]);
+            byte[] destWallet = Base58Check.Base58CheckEncoding.DecodePlain((string)parameters["wallet"]);
             if (destWallet == null)
             {
                 return new JsonResponse { result = null, error = new JsonError() { code = (int)RPCErrorCode.RPC_INVALID_PARAMS, message = "Parameter 'wallet' is missing." } };
             }
 
-            string signer = parameters["signer"];
+            string signer = (string)parameters["signer"];
             if (signer == null)
             {
                 return new JsonResponse { result = null, error = new JsonError() { code = (int)RPCErrorCode.RPC_INVALID_PARAMS, message = "Parameter 'signer' is missing." } };
@@ -929,18 +953,18 @@ namespace IXICore
             return new JsonResponse { result = null, error = new JsonError() { code = (int)RPCErrorCode.RPC_INTERNAL_ERROR, message = "Error while creating the transaction." } };
         }
 
-        private JsonResponse onChangeMultiSigs(NameValueCollection parameters)
+        private JsonResponse onChangeMultiSigs(Dictionary<string, object> parameters)
         {
             // transaction which alters a multisig wallet
             object res = "Incorrect transaction parameters.";
 
-            byte[] destWallet = Base58Check.Base58CheckEncoding.DecodePlain(parameters["wallet"]);
+            byte[] destWallet = Base58Check.Base58CheckEncoding.DecodePlain((string)parameters["wallet"]);
             if (destWallet == null)
             {
                 return new JsonResponse { result = null, error = new JsonError() { code = (int)RPCErrorCode.RPC_INVALID_PARAMS, message = "Parameter 'wallet' is missing." } };
             }
 
-            string sigs = parameters["sigs"];
+            string sigs = (string)parameters["sigs"];
             if (sigs == null)
             {
                 return new JsonResponse { result = null, error = new JsonError() { code = (int)RPCErrorCode.RPC_INVALID_PARAMS, message = "Parameter 'sigs' is missing." } };
@@ -1071,17 +1095,17 @@ namespace IXICore
             return new JsonResponse { result = blockheight, error = error };
         }
 
-        private JsonResponse onActivity(NameValueCollection parameters)
+        private JsonResponse onActivity(Dictionary<string, object> parameters)
         {
             JsonError error = null;
 
-            string fromIndex = parameters["fromIndex"];
+            string fromIndex = (string)parameters["fromIndex"];
             if (fromIndex == null)
             {
                 fromIndex = "0";
             }
 
-            string count = parameters["count"];
+            string count = (string)parameters["count"];
             if (count == null)
             {
                 count = "50";
@@ -1090,7 +1114,7 @@ namespace IXICore
             int type = -1;
             if (parameters["type"] != null)
             {
-                type = Int32.Parse(parameters["type"]);
+                type = Int32.Parse((string)parameters["type"]);
             }
 
             List<Activity> res = null;
@@ -1107,9 +1131,9 @@ namespace IXICore
             return new JsonResponse { result = res, error = error };
         }
 
-        private JsonResponse onGenerateNewAddress(NameValueCollection parameters)
+        private JsonResponse onGenerateNewAddress(Dictionary<string, object> parameters)
         {
-            string base_address_str = parameters["address"];
+            string base_address_str = (string)parameters["address"];
             byte[] base_address = null;
             if (base_address_str == null)
             {
@@ -1132,7 +1156,7 @@ namespace IXICore
         }
 
         // Returns an empty PoW block based on the search algorithm provided as a parameter
-        private JsonResponse onGetWalletBackup(NameValueCollection parameters)
+        private JsonResponse onGetWalletBackup(Dictionary<string, object> parameters)
         {
             List<byte> wallet = new List<byte>();
             wallet.AddRange(Node.walletStorage.getRawWallet());
@@ -1141,19 +1165,19 @@ namespace IXICore
 
         // This is a bit hacky way to return useful error values
         // returns either Transaction or JsonResponse
-        private object createTransactionHelper(NameValueCollection parameters, bool sign_transaction = true)
+        private object createTransactionHelper(Dictionary<string, object> parameters, bool sign_transaction = true)
         {
             IxiNumber from_amount = 0;
             IxiNumber fee = CoreConfig.transactionPrice;
 
-            string r_auto_fee = parameters["autofee"];
+            string r_auto_fee = (string)parameters["autofee"];
             bool auto_fee = false;
             if (r_auto_fee != null && (r_auto_fee.ToLower() == "true" || r_auto_fee == "1"))
             {
                 auto_fee = true;
             }
 
-            string primary_address = parameters["primaryAddress"];
+            string primary_address = (string)parameters["primaryAddress"];
             byte[] primary_address_bytes = null;
             if (primary_address == null)
             {
@@ -1167,7 +1191,7 @@ namespace IXICore
             SortedDictionary<byte[], IxiNumber> fromList = new SortedDictionary<byte[], IxiNumber>(new ByteArrayComparer());
             if (parameters["from"] != null)
             {
-                string[] from_split = parameters["from"].Split('-');
+                string[] from_split = ((string)parameters["from"]).Split('-');
                 if (from_split.Length > 0)
                 {
                     foreach (string single_from in from_split)
@@ -1198,7 +1222,7 @@ namespace IXICore
 
             IxiNumber to_amount = 0;
             SortedDictionary<byte[], IxiNumber> toList = new SortedDictionary<byte[], IxiNumber>(new ByteArrayComparer());
-            string[] to_split = parameters["to"].Split('-');
+            string[] to_split = ((string)parameters["to"]).Split('-');
             if (to_split.Length > 0)
             {
                 foreach (string single_to in to_split)
@@ -1219,7 +1243,7 @@ namespace IXICore
                 }
             }
 
-            string fee_string = parameters["fee"];
+            string fee_string = (string)parameters["fee"];
             if (fee_string != null && fee_string.Length > 0)
             {
                 fee = new IxiNumber(fee_string);
