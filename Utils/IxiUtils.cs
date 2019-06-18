@@ -1,9 +1,10 @@
 ﻿using System;
+using System.Diagnostics;
 using System.Linq;
 
 namespace IXICore.Utils
 {
-    class IxiUtils
+    static class IxiUtils
     {
 
         // Helper for validating IPv4 addresses
@@ -22,6 +23,25 @@ namespace IXICore.Utils
 
             byte tempForParsing;
             return splitValues.All(r => byte.TryParse(r, out tempForParsing));
+        }
+
+        static public void executeProcess(string filename, string arguments, bool wait_for_exit)
+        {
+            var psi = new ProcessStartInfo();
+            psi.UseShellExecute = false;
+            psi.CreateNoWindow = true;
+
+            psi.RedirectStandardOutput = true;
+            psi.RedirectStandardError = true;
+
+            psi.FileName = filename;
+            psi.Arguments = arguments;
+
+            var p = Process.Start(psi);
+            if (wait_for_exit)
+            {
+                p.WaitForExit();
+            }
         }
     }
 }

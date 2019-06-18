@@ -441,6 +441,10 @@ namespace DLT.Meta
             }
 
             bool result = false;
+
+            string notify_cmd = Config.walletNotifyCommand.Replace("%s", Encoding.UTF8.GetString(activity.data));
+            IxiUtils.executeProcess(notify_cmd, "", false);
+
             lock (storageLock)
             {
                 if (getActivityById(activity.id) == null)
@@ -458,29 +462,13 @@ namespace DLT.Meta
             return result;
         }
 
-        public static bool updateStatus(string id, ActivityStatus status, ulong block_height)
-        {
-            bool result = false;
-            lock (storageLock)
-            {
-                if (block_height > 0)
-                {
-                    string sql = "UPDATE `activity` SET `status` = ?, `blockHeight` = ? WHERE `id` = ?";
-                    result = executeSQL(sql, status, (long)block_height, id);
-                }
-                else
-                {
-                    string sql = "UPDATE `activity` SET `status` = ? WHERE `id` = ?";
-                    result = executeSQL(sql, status, id);
-                }
-            }
-
-            return result;
-        }
-
         public static bool updateStatus(byte[] data, ActivityStatus status, ulong block_height)
         {
             bool result = false;
+
+            string notify_cmd = Config.walletNotifyCommand.Replace("%s", Encoding.UTF8.GetString(data));
+            IxiUtils.executeProcess(notify_cmd, "", false);
+
             lock (storageLock)
             {
                 if (block_height > 0)
@@ -498,21 +486,13 @@ namespace DLT.Meta
             return result;
         }
 
-        public static bool updateValue(string id, IxiNumber value)
-        {
-            bool result = false;
-            lock (storageLock)
-            {
-                string sql = "UPDATE `activity` SET `value` = ? WHERE `id` = ?";
-                result = executeSQL(sql, value.ToString(), id);
-            }
-
-            return result;
-        }
-
         public static bool updateValue(byte[] data, IxiNumber value)
         {
             bool result = false;
+
+            string notify_cmd = Config.walletNotifyCommand.Replace("%s", Encoding.UTF8.GetString(data));
+            IxiUtils.executeProcess(notify_cmd, "", false);
+
             lock (storageLock)
             {
                 string sql = "UPDATE `activity` SET `value` = ? WHERE `data` = ?";
