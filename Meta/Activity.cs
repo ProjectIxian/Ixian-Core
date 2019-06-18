@@ -1,5 +1,6 @@
 ﻿#if !__MOBILE__
 
+using IXICore;
 using IXICore.Utils;
 using SQLite;
 using System;
@@ -442,8 +443,11 @@ namespace DLT.Meta
 
             bool result = false;
 
-            string notify_cmd = Config.walletNotifyCommand.Replace("%s", Encoding.UTF8.GetString(activity.data));
-            IxiUtils.executeProcess(notify_cmd, "", false);
+            if (CoreConfig.walletNotifyCommand != "")
+            {
+                string notify_cmd = CoreConfig.walletNotifyCommand.Replace("%s", Encoding.UTF8.GetString(activity.data));
+                IxiUtils.executeProcess(notify_cmd, "", false);
+            }
 
             lock (storageLock)
             {
@@ -466,8 +470,11 @@ namespace DLT.Meta
         {
             bool result = false;
 
-            string notify_cmd = Config.walletNotifyCommand.Replace("%s", Encoding.UTF8.GetString(data));
-            IxiUtils.executeProcess(notify_cmd, "", false);
+            if (CoreConfig.walletNotifyCommand != "")
+            {
+                string notify_cmd = CoreConfig.walletNotifyCommand.Replace("%s", Encoding.UTF8.GetString(data));
+                IxiUtils.executeProcess(notify_cmd, "", false);
+            }
 
             lock (storageLock)
             {
@@ -490,8 +497,11 @@ namespace DLT.Meta
         {
             bool result = false;
 
-            string notify_cmd = Config.walletNotifyCommand.Replace("%s", Encoding.UTF8.GetString(data));
-            IxiUtils.executeProcess(notify_cmd, "", false);
+            if (CoreConfig.walletNotifyCommand != "")
+            {
+                string notify_cmd = CoreConfig.walletNotifyCommand.Replace("%s", Encoding.UTF8.GetString(data));
+                IxiUtils.executeProcess(notify_cmd, "", false);
+            }
 
             lock (storageLock)
             {

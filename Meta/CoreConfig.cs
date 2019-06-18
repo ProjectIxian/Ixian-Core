@@ -189,6 +189,16 @@ namespace IXICore
         public static readonly bool threadLiveCheckEnabled = false;
 
         /// <summary>
+        /// Command to execute when a new transaction is received for this wallet.
+        /// </summary>
+        public static string walletNotifyCommand = "";
+
+        /// <summary>
+        /// Command to execute when a new block is accepted.
+        /// </summary>
+        public static string blockNotifyCommand = "";
+
+        /// <summary>
         ///  Retrieves the lenght of the redacted window based on the block version in use.
         /// </summary>
         /// <param name="block_version">Block version for which you'd like to calculate the redacted window.</param>

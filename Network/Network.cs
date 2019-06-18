@@ -567,7 +567,46 @@ namespace DLT
                 catch (SocketException) { connected = false; }
                 return connected;
             }
-        }
 
+            /// <summary>
+            /// Disconnects and reconnects the node to the network.
+            /// </summary>
+            static public void reconnect()
+            {
+                // Reconnect server and clients
+
+                // Reset the network receive queue
+                NetworkQueue.reset();
+
+                if (!Node.isAcceptingConnections())
+                {
+                    Logging.info("Network server is not enabled in modes other than master node.");
+                    NetworkServer.stopNetworkOperations();
+                }
+                else
+                {
+                    NetworkServer.restartNetworkOperations();
+                }
+
+                NetworkClientManager.restartClients();
+            }
+            
+            /// <summary>
+            /// Isolates the node from the network.
+            /// </summary>
+            static public void isolate()
+            {
+                NetworkClientManager.isolate();
+                if (!Node.isMasterNode())
+                {
+                    Logging.info("Network server is not enabled in modes other than master node.");
+                    NetworkServer.stopNetworkOperations();
+                }
+                else
+                {
+                    NetworkServer.restartNetworkOperations();
+                }
+            }
+        }
     }
 }
