@@ -1090,8 +1090,6 @@ namespace IXICore
                 networkArray.Add("Wallets", Node.walletState.numWallets);
                 networkArray.Add("Presences", PresenceList.getTotalPresences());
                 networkArray.Add("Supply", Node.walletState.calculateTotalSupply().ToString());
-                networkArray.Add("Applied TX Count", TransactionPool.getTransactionCount() - TransactionPool.getUnappliedTransactions().Count());
-                networkArray.Add("Unapplied TX Count", TransactionPool.getUnappliedTransactions().Count());
                 networkArray.Add("WS Checksum", Crypto.hashToString(Node.walletState.calculateWalletStateChecksum()));
                 networkArray.Add("WS Delta Checksum", Crypto.hashToString(Node.walletState.calculateWalletStateChecksum(true)));
             }
