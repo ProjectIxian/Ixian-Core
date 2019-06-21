@@ -831,7 +831,7 @@ namespace DLT
         {
             lock (presences)
             {
-                int address_len = 10; // TODO TODO TODO TODO Support variable address len!
+                int address_len = 36; // This is set to the minimum wallet length
                 byte[] selector = PresenceOrderedEnumerator.GenerateSelectorFromRandom(rnd_bytes);
                 return new PresenceOrderedEnumerator(presences, address_len, selector, target_count);
             }

@@ -3,6 +3,7 @@ using System.Linq;
 using System.Collections.Generic;
 using System.Text;
 using System.Collections;
+using DLT.Meta;
 
 namespace DLT
 {
@@ -30,7 +31,6 @@ namespace DLT
     public class PresenceOrderedEnumerator : IEnumerator<byte[]>
     {
         private byte[] SelectorIndexes;
-        private int AddressLen;
         private SortedDictionary<byte[], string[]> Addresses;
         // Iterator stuff
         int CurrentPosition;
@@ -38,11 +38,10 @@ namespace DLT
         //
         public PresenceOrderedEnumerator(IEnumerable<Presence> presences, int address_len, byte[] selector, int target_count = 2000)
         {
-            if (selector.Length != address_len)
+            if (selector.Length > address_len)
             {
-                throw new ArgumentException("Selector must be exactly as long as the address.");
+                throw new ArgumentException("Selector must be of shorter or equal length to address.");
             }
-            AddressLen = address_len;
             SelectorIndexes = selector;
             Addresses = new SortedDictionary<byte[], string[]>(new AddressComparer());
             //
@@ -53,6 +52,14 @@ namespace DLT
             //
             foreach (var p in presences)
             {
+                if(p.wallet.Length < selector.Length)
+                {
+                    Logging.warn(String.Format("Address {0} is shorter than the given selector and cannot be permuted properly. (address: {1}, selector: {2}). Ignoring this address.",
+                        Base58Check.Base58CheckEncoding.EncodePlain(p.wallet),
+                        p.wallet.Length,
+                        selector.Length));
+                    continue;
+                }
                 string[] ips = p.addresses.Select(pa => pa.address.Split(':')[0]).ToArray();
                 foreach (var ip in ips)
                 {
@@ -123,7 +130,8 @@ namespace DLT
         private static byte[] permute(byte[] data, byte[] selector)
         {
             byte[] result = new byte[data.Length];
-            for (int i = 0; i < data.Length; i++)
+            Array.Copy(data, result, data.Length);
+            for (int i = 0; i < selector.Length; i++)
             {
                 result[i] = data[selector[i]];
             }
@@ -133,7 +141,8 @@ namespace DLT
         private static byte[] unpermute(byte[] data, byte[] selector)
         {
             byte[] result = new byte[data.Length];
-            for (int i = 0; i < data.Length; i++)
+            Array.Copy(data, result, data.Length);
+            for (int i = 0; i < selector.Length; i++)
             {
                 result[selector[i]] = data[i];
             }
