@@ -62,6 +62,11 @@ namespace DLT
         /// </summary>
         public List<byte[][]> signatures = new List<byte[][]> { };
 
+        /// <summary>
+        /// The list of Frozen Master Node signatures which enable the Ixian Consensus algorithm.
+        /// </summary>
+        public List<byte[][]> frozenSignatures = null;
+
         private int signatureCount = 0; // used only when block is compacted
 
         /// <summary>
@@ -207,6 +212,22 @@ namespace DLT
                 newSig[1] = new byte[signature[1].Length];
                 Array.Copy(signature[1], newSig[1], newSig[1].Length);
                 signatures.Add(newSig);
+            }
+
+            if (block.frozenSignatures != null)
+            {
+                foreach (byte[][] signature in block.frozenSignatures)
+                {
+                    byte[][] newSig = new byte[2][];
+                    if (signature[0] != null)
+                    {
+                        newSig[0] = new byte[signature[0].Length];
+                        Array.Copy(signature[0], newSig[0], newSig[0].Length);
+                    }
+                    newSig[1] = new byte[signature[1].Length];
+                    Array.Copy(signature[1], newSig[1], newSig[1].Length);
+                    frozenSignatures.Add(newSig);
+                }
             }
 
             if (block.blockChecksum != null)
@@ -400,12 +421,18 @@ namespace DLT
 
                     lock (signatures)
                     {
+                        List<byte[][]> tmp_signatures = signatures;
+                        if(frozenSignatures != null)
+                        {
+                            tmp_signatures = frozenSignatures;
+                        }
+
                         // Write the number of signatures
-                        int num_signatures = signatures.Count;
+                        int num_signatures = tmp_signatures.Count;
                         writer.Write(num_signatures);
 
                         // Write each signature
-                        foreach (byte[][] signature in signatures)
+                        foreach (byte[][] signature in tmp_signatures)
                         {
                             if (signature[0] != null)
                             {
@@ -1210,6 +1237,14 @@ namespace DLT
         ///  Test if the block is the genesis block.
         /// </summary>
         public bool isGenesis { get { return this.blockNum == 0 && this.lastBlockChecksum == null; } }
+
+        public void setFrozenSignatures(List<byte[][]> frozen_sigs)
+        {
+            lock (signatures)
+            {
+                frozenSignatures = frozen_sigs;
+            }
+        }
 
     }    
 }

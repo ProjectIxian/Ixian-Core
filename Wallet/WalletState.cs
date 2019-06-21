@@ -358,7 +358,7 @@ namespace DLT
 
                 ws_data.AddRange(Encoding.UTF8.GetBytes("IXIAN-DLT" + version));
 
-                var ordered_delta = wsDelta.OrderBy(x => x.Key);
+                var ordered_delta = wsDelta.OrderBy(x => x.Key, new ByteArrayComparer());
 
                 foreach (var entry in ordered_delta)
                 {
