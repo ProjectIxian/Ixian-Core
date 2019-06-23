@@ -654,7 +654,14 @@ namespace DLT
             List<byte[][]> sortedSigs = null;
             lock (signatures)
             {
-               sortedSigs = new List<byte[][]>(signatures);
+                if(frozenSignatures != null)
+                {
+                    sortedSigs = new List<byte[][]>(frozenSignatures);
+                }
+                else
+                {
+                    sortedSigs = new List<byte[][]>(signatures);
+                }
             }
             sortedSigs.Sort((x, y) => _ByteArrayComparer.Compare(x[1], y[1]));
 
@@ -1030,8 +1037,16 @@ namespace DLT
 
             lock (signatures)
             {
+                List<byte[][]> tmp_sigs = null;
+                if(frozenSignatures != null)
+                {
+                    tmp_sigs = frozenSignatures;
+                }else
+                {
+                    tmp_sigs = signatures;
+                }
 
-                foreach (byte[][] merged_signature in signatures)
+                foreach (byte[][] merged_signature in tmp_sigs)
                 {
                     byte[] signature = merged_signature[0];
                     byte[] keyOrAddress = merged_signature[1];
@@ -1092,48 +1107,18 @@ namespace DLT
         }
 
         /// <summary>
-        ///  Retrieves the number of unique signatures on the block. Signatures are verified so that only unique ones are included.
+        ///  Retrives the number of signatures on this block.
         /// </summary>
-        /// <returns>Number of unique signatures.</returns>
-        public int getUniqueSignatureCount()
+        /// <returns>Number of signatures.</returns>
+        public int getFrozenSignatureCount()
         {
-            if (compacted)
+            if(frozenSignatures != null)
             {
-                return signatureCount;
-            }
-
-            int signature_count = 0;
-
-            // TODO: optimize this section to handle a large amount of signatures efficiently
-            int sindex1 = 0;
-
-            lock (signatures)
+                return frozenSignatures.Count;
+            }else
             {
-
-                foreach (byte[][] signature in signatures)
-                {
-                    bool duplicate = false;
-                    int sindex2 = 0;
-                    foreach (byte[][] signature_check in signatures)
-                    {
-                        if (sindex1 == sindex2)
-                            continue;
-
-                        if (signature[1].SequenceEqual(signature_check[1]))
-                        {
-                            duplicate = true;
-                        }
-                        sindex2++;
-                    }
-
-                    if (duplicate == false)
-                    {
-                        signature_count++;
-                    }
-                    sindex1++;
-                }
+                return getSignatureCount();
             }
-            return signature_count;
         }
 
         /// <summary>
@@ -1198,7 +1183,7 @@ namespace DLT
 
             compacted = true;
 
-            signatureCount = signatures.Count;
+            signatureCount = getFrozenSignatureCount();
             signatures = null;
 
             superBlockSegments = null;
