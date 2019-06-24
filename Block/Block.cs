@@ -227,7 +227,7 @@ namespace DLT
                     }
                     newSig[1] = new byte[signature[1].Length];
                     Array.Copy(signature[1], newSig[1], newSig[1].Length);
-                    frozenSignatures.Add(newSig);
+                    frozen_signatures.Add(newSig);
                 }
                 setFrozenSignatures(frozen_signatures);
             }

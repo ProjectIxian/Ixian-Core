@@ -143,6 +143,11 @@ namespace IXICore
         public static readonly double networkConsensusRatio = 0.75;
 
         /// <summary>
+        /// Maximum allowed signers on a single block.
+        /// </summary>
+        public static readonly int maximumBlockSigners = 1000;
+
+        /// <summary>
         /// Minimum funds a wallet must have before it is allowed to participate in the block consensus algorithm. (used in DLT Node executable).
         /// </summary>
         public static readonly IxiNumber minimumMasterNodeFunds = new IxiNumber("20000");
