@@ -216,6 +216,7 @@ namespace DLT
 
             if (block.frozenSignatures != null)
             {
+                List<byte[][]> frozen_signatures = new List<byte[][]>();
                 foreach (byte[][] signature in block.frozenSignatures)
                 {
                     byte[][] newSig = new byte[2][];
@@ -228,6 +229,7 @@ namespace DLT
                     Array.Copy(signature[1], newSig[1], newSig[1].Length);
                     frozenSignatures.Add(newSig);
                 }
+                setFrozenSignatures(frozen_signatures);
             }
 
             if (block.blockChecksum != null)

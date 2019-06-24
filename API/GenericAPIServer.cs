@@ -151,7 +151,19 @@ namespace IXICore
                     }
 
                     method_name = context.Request.Url.Segments[1].Replace("/", "");
-                    method_params = context.Request.QueryString.Cast<string>().ToDictionary(s => s, s=> (object)context.Request.QueryString[s]);
+                    method_params = new Dictionary<string, object>();
+                    foreach(string key in context.Request.QueryString.Keys)
+                    {
+                        if (key != null && key != "")
+                        {
+                            string value = context.Request.QueryString[key];
+                            if(value == null)
+                            {
+                                value = "";
+                            }
+                            method_params.Add(key, value);
+                        }
+                    }
                 }
 
                 if (method_name == null)

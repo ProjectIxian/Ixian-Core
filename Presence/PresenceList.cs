@@ -832,7 +832,7 @@ namespace DLT
             lock (presences)
             {
                 int address_len = 36; // This is set to the minimum wallet length
-                byte[] selector = PresenceOrderedEnumerator.GenerateSelectorFromRandom(rnd_bytes);
+                byte[] selector = PresenceOrderedEnumerator.GenerateSelectorFromRandom(rnd_bytes.Take(address_len).ToArray());
                 return new PresenceOrderedEnumerator(presences, address_len, selector, target_count);
             }
         }
