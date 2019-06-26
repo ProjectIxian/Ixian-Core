@@ -87,44 +87,52 @@ namespace CryptoLibs
 
                 dataLen = BitConverter.ToInt32(keyBytes, offset);
                 offset += 4;
-                rsaParams.Modulus = keyBytes.Skip(offset).Take(dataLen).ToArray();
+                rsaParams.Modulus = new byte[dataLen];
+                Array.Copy(keyBytes, offset, rsaParams.Modulus, 0, dataLen);
                 offset += dataLen;
 
                 dataLen = BitConverter.ToInt32(keyBytes, offset);
                 offset += 4;
-                rsaParams.Exponent = keyBytes.Skip(offset).Take(dataLen).ToArray();
+                rsaParams.Exponent = new byte[dataLen];
+                Array.Copy(keyBytes, offset, rsaParams.Exponent, 0, dataLen);
                 offset += dataLen;
 
                 if (keyBytes.Length > offset)
                 {
                     dataLen = BitConverter.ToInt32(keyBytes, offset);
                     offset += 4;
-                    rsaParams.P = keyBytes.Skip(offset).Take(dataLen).ToArray();
+                    rsaParams.P = new byte[dataLen];
+                    Array.Copy(keyBytes, offset, rsaParams.P, 0, dataLen);
                     offset += dataLen;
 
                     dataLen = BitConverter.ToInt32(keyBytes, offset);
                     offset += 4;
-                    rsaParams.Q = keyBytes.Skip(offset).Take(dataLen).ToArray();
+                    rsaParams.Q = new byte[dataLen];
+                    Array.Copy(keyBytes, offset, rsaParams.Q, 0, dataLen);
                     offset += dataLen;
 
                     dataLen = BitConverter.ToInt32(keyBytes, offset);
                     offset += 4;
-                    rsaParams.DP = keyBytes.Skip(offset).Take(dataLen).ToArray();
+                    rsaParams.DP = new byte[dataLen];
+                    Array.Copy(keyBytes, offset, rsaParams.DP, 0, dataLen);
                     offset += dataLen;
 
                     dataLen = BitConverter.ToInt32(keyBytes, offset);
                     offset += 4;
-                    rsaParams.DQ = keyBytes.Skip(offset).Take(dataLen).ToArray();
+                    rsaParams.DQ = new byte[dataLen];
+                    Array.Copy(keyBytes, offset, rsaParams.DQ, 0, dataLen);
                     offset += dataLen;
 
                     dataLen = BitConverter.ToInt32(keyBytes, offset);
                     offset += 4;
-                    rsaParams.InverseQ = keyBytes.Skip(offset).Take(dataLen).ToArray();
+                    rsaParams.InverseQ = new byte[dataLen];
+                    Array.Copy(keyBytes, offset, rsaParams.InverseQ, 0, dataLen);
                     offset += dataLen;
 
                     dataLen = BitConverter.ToInt32(keyBytes, offset);
                     offset += 4;
-                    rsaParams.D = keyBytes.Skip(offset).Take(dataLen).ToArray();
+                    rsaParams.D = new byte[dataLen];
+                    Array.Copy(keyBytes, offset, rsaParams.D, 0, dataLen);
                     offset += dataLen;
                 }
 
