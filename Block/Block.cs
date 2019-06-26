@@ -599,7 +599,7 @@ namespace DLT
 
 
             List<byte> rawData = new List<byte>();
-            rawData.AddRange(CoreConfig.ixianChecksumLock);
+            rawData.AddRange(ConsensusConfig.ixianChecksumLock);
             rawData.AddRange(BitConverter.GetBytes(version));
             rawData.AddRange(BitConverter.GetBytes(blockNum));
             rawData.AddRange(Encoding.UTF8.GetBytes(merged_txids.ToString()));

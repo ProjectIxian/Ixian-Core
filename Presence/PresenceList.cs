@@ -492,7 +492,7 @@ namespace DLT
 
                     // Add a verifiable signature
                     byte[] private_key = Node.walletStorage.getPrimaryPrivateKey();
-                    byte[] signature = CryptoManager.lib.getSignature(Encoding.UTF8.GetBytes(CoreConfig.ixianChecksumLockString + "-" + Config.device_id + "-" + timestamp + "-" + hostname), private_key);
+                    byte[] signature = CryptoManager.lib.getSignature(Encoding.UTF8.GetBytes(ConsensusConfig.ixianChecksumLockString + "-" + Config.device_id + "-" + timestamp + "-" + hostname), private_key);
                     writer.Write(signature.Length);
                     writer.Write(signature);
 
@@ -584,7 +584,7 @@ namespace DLT
                         else if (node_type == 'M' || node_type == 'H')
                         {
                             // check balance
-                            if (Node.walletState.getWalletBalance(wallet) < CoreConfig.minimumMasterNodeFunds)
+                            if (Node.walletState.getWalletBalance(wallet) < ConsensusConfig.minimumMasterNodeFunds)
                             {
                                 return false;
                             }
@@ -624,7 +624,7 @@ namespace DLT
                             if (keepAliveVersion == 0)
                             {
                                 // Verify the signature
-                                if (CryptoManager.lib.verifySignature(Encoding.UTF8.GetBytes(CoreConfig.ixianChecksumLockString + "-" + deviceid + "-" + timestamp + "-" + hostname), listEntry.pubkey, signature) == false)
+                                if (CryptoManager.lib.verifySignature(Encoding.UTF8.GetBytes(ConsensusConfig.ixianChecksumLockString + "-" + deviceid + "-" + timestamp + "-" + hostname), listEntry.pubkey, signature) == false)
                                 {
                                     Logging.warn(string.Format("[PL] KEEPALIVE tampering for {0} {1}, incorrect Sig.", Base58Check.Base58CheckEncoding.EncodePlain(listEntry.wallet), hostname));
                                     return false;

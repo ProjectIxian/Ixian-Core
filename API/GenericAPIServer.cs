@@ -817,7 +817,7 @@ namespace IXICore
             string orig_txid = (string)parameters["origtx"];
             // no need to check if orig_txid exists as it may not (yet) because we're C/W node, TODO TODO in the future we could query a M/H node
 
-            IxiNumber fee = CoreConfig.transactionPrice;
+            IxiNumber fee = ConsensusConfig.transactionPrice;
 
             Transaction transaction = Transaction.multisigAddTxSignature(orig_txid, fee, destWallet, Node.getLastBlockHeight());
             if (Node.addTransaction(transaction))
@@ -848,7 +848,7 @@ namespace IXICore
             }
 
             IxiNumber amount = 0;
-            IxiNumber fee = CoreConfig.transactionPrice;
+            IxiNumber fee = ConsensusConfig.transactionPrice;
             SortedDictionary<byte[], IxiNumber> toList = new SortedDictionary<byte[], IxiNumber>(new ByteArrayComparer());
             string[] to_split = ((string)parameters["to"]).Split('-');
             if (to_split.Length > 0)
@@ -941,7 +941,7 @@ namespace IXICore
             string signer = (string)parameters["signer"];
 
             byte[] signer_address = new Address(Base58Check.Base58CheckEncoding.DecodePlain(signer)).address;
-            IxiNumber fee = CoreConfig.transactionPrice;
+            IxiNumber fee = ConsensusConfig.transactionPrice;
 
             Transaction transaction = Transaction.multisigAddKeyTransaction(signer_address, fee, destWallet, Node.getLastBlockHeight());
             if (Node.addTransaction(transaction))
@@ -971,7 +971,7 @@ namespace IXICore
 
             byte[] signer_address = new Address(Base58Check.Base58CheckEncoding.DecodePlain(signer)).address;
 
-            IxiNumber fee = CoreConfig.transactionPrice;
+            IxiNumber fee = ConsensusConfig.transactionPrice;
 
             Transaction transaction = Transaction.multisigDelKeyTransaction(signer_address, fee, destWallet, Node.getLastBlockHeight());
             if (Node.addTransaction(transaction))
@@ -999,7 +999,7 @@ namespace IXICore
             }
             string sigs = (string)parameters["sigs"];
 
-            IxiNumber fee = CoreConfig.transactionPrice;
+            IxiNumber fee = ConsensusConfig.transactionPrice;
             if (byte.TryParse(sigs, out byte reqSigs))
             {
 
@@ -1205,7 +1205,7 @@ namespace IXICore
         private object createTransactionHelper(Dictionary<string, object> parameters, bool sign_transaction = true)
         {
             IxiNumber from_amount = 0;
-            IxiNumber fee = CoreConfig.transactionPrice;
+            IxiNumber fee = ConsensusConfig.transactionPrice;
 
             bool auto_fee = false;
             if (parameters.ContainsKey("autofee"))

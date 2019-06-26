@@ -222,7 +222,7 @@ namespace DLT
                 key_count = myKeys.Count();
             }
 
-            IxianKeyPair kp = kd.deriveKey(key_count, CoreConfig.defaultRsaKeySize, 65537);
+            IxianKeyPair kp = kd.deriveKey(key_count, ConsensusConfig.defaultRsaKeySize, 65537);
 
             if (kp == null)
             {
@@ -859,7 +859,7 @@ namespace DLT
             Logging.log(LogSeverity.info, "Generating primary wallet keys, this may take a while, please wait...");
 
             //IxianKeyPair kp = generateNewKeyPair(false);
-            IxianKeyPair kp = CryptoManager.lib.generateKeys(CoreConfig.defaultRsaKeySize);
+            IxianKeyPair kp = CryptoManager.lib.generateKeys(ConsensusConfig.defaultRsaKeySize);
 
             if (kp == null)
             {

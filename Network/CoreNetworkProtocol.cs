@@ -288,7 +288,7 @@ namespace IXICore
                     return true;
                 }
                 else
-                if (CryptoManager.lib.verifySignature(Encoding.UTF8.GetBytes(CoreConfig.ixianChecksumLockString + "-" + device_id + "-" + timestamp + "-" + endpoint.getFullAddress(true)), pubkey, signature) == false)
+                if (CryptoManager.lib.verifySignature(Encoding.UTF8.GetBytes(ConsensusConfig.ixianChecksumLockString + "-" + device_id + "-" + timestamp + "-" + endpoint.getFullAddress(true)), pubkey, signature) == false)
                 {
                     CoreProtocolMessage.sendBye(endpoint, ProtocolByeCode.incorrectIp, "Verify signature failed in hello message, likely an incorrect IP was specified. Detected IP:", endpoint.address);
                     Logging.warn(string.Format("Connected node used an incorrect signature in hello message, likely an incorrect IP was specified. Detected IP: {0}", endpoint.address));
@@ -334,10 +334,10 @@ namespace IXICore
                         {
                             // Check the wallet balance for the minimum amount of coins
                             IxiNumber balance = Node.walletState.getWalletBalance(addr);
-                            if (balance < CoreConfig.minimumMasterNodeFunds)
+                            if (balance < ConsensusConfig.minimumMasterNodeFunds)
                             {
                                 Logging.warn(string.Format("Rejected master node {0} due to insufficient funds: {1}", endpoint.getFullAddress(), balance.ToString()));
-                                sendBye(endpoint, ProtocolByeCode.insufficientFunds, string.Format("Insufficient funds. Minimum is {0}", CoreConfig.minimumMasterNodeFunds), balance.ToString(), true);
+                                sendBye(endpoint, ProtocolByeCode.insufficientFunds, string.Format("Insufficient funds. Minimum is {0}", ConsensusConfig.minimumMasterNodeFunds), balance.ToString(), true);
                                 return false;
                             }
                         }
@@ -430,7 +430,7 @@ namespace IXICore
                     writer.Write(timestamp);
 
                     // send signature
-                    byte[] signature = CryptoManager.lib.getSignature(Encoding.UTF8.GetBytes(CoreConfig.ixianChecksumLockString + "-" + Config.device_id + "-" + timestamp + "-" + publicHostname), Node.walletStorage.getPrimaryPrivateKey());
+                    byte[] signature = CryptoManager.lib.getSignature(Encoding.UTF8.GetBytes(ConsensusConfig.ixianChecksumLockString + "-" + Config.device_id + "-" + timestamp + "-" + publicHostname), Node.walletStorage.getPrimaryPrivateKey());
                     writer.Write(signature.Length);
                     writer.Write(signature);
 

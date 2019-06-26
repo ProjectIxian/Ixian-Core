@@ -930,7 +930,7 @@ namespace DLT
         public static byte[] calculateChecksum(Transaction transaction)
         {
             List<byte> rawData = new List<byte>();
-            rawData.AddRange(CoreConfig.ixianChecksumLock);
+            rawData.AddRange(ConsensusConfig.ixianChecksumLock);
             rawData.AddRange(Encoding.UTF8.GetBytes(transaction.id));
             rawData.AddRange(BitConverter.GetBytes(transaction.type));
             rawData.AddRange(Encoding.UTF8.GetBytes(transaction.amount.ToString()));
