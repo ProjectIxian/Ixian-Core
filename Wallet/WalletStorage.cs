@@ -645,12 +645,6 @@ namespace DLT
 
             convertWalletFromIxiHex();
 
-            // create a backup of the new wallet file
-            if (!File.Exists(filename + ".bak"))
-            {
-                File.Copy(filename, filename + ".bak");
-            }
-
             Logging.log(LogSeverity.info, "Wallet file found, reading data...");
             Logging.flush();
 
@@ -689,16 +683,27 @@ namespace DLT
                 Logging.error("Cannot read from wallet file. {0}", e.Message);
                 return false;
             }
+            if (success && myAddresses.Count > 0)
+            {
+                backup();
+            }
 
             reader.Close();
 
             return success;
         }
 
-        public bool backup(string destination)
+        public bool backup()
         {
-            File.Copy(filename, destination);
-            return true;
+            string wallet_id = new String(getMyAddressesBase58().First().Take(8).ToArray());
+            string expected_backup_file = filename + "." + wallet_id + ".bak";
+            // create a backup of the new wallet file
+            if (!File.Exists(expected_backup_file))
+            {
+                File.Copy(filename, expected_backup_file);
+                return true;
+            }
+            return false;
         }
 
         public bool writeWallet(string password)
@@ -899,12 +904,7 @@ namespace DLT
             // Write the new wallet data to the file
             if (writeWallet(password))
             {
-                // create a backup of the new wallet file
-                if (!File.Exists(filename + ".bak"))
-                {
-                    File.Copy(filename, filename + ".bak");
-                }
-                return true;
+                backup();
             }
             return false;
         }
