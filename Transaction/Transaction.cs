@@ -711,7 +711,7 @@ namespace DLT
         /// <returns>Byte-field with the serialized transaction, suiteable for network transmission.</returns>
         public byte[] getBytes()
         {
-            using (MemoryStream m = new MemoryStream())
+            using (MemoryStream m = new MemoryStream(832))
             {
                 using (BinaryWriter writer = new BinaryWriter(m))
                 {
@@ -788,6 +788,9 @@ namespace DLT
                     {
                         writer.Write((int)0);
                     }
+#if TRACE_MEMSTREAM_SIZES
+                    Logging.info(String.Format("Transaction::getBytes: {0}", m.Length));
+#endif
                 }
                 return m.ToArray();
             }
@@ -1091,6 +1094,9 @@ namespace DLT
 
                     bw.Write(signer_nonce.Length);
                     bw.Write(signer_nonce);
+#if TRACE_MEMSTREAM_SIZES
+                        Logging.info(String.Format("Transaction::AddMultisigOrig: {0}", ms.Length));
+#endif
 
                     data = ms.ToArray();
                 }
@@ -1122,6 +1128,9 @@ namespace DLT
 
                     bw.Write(signer_nonce.Length);
                     bw.Write(signer_nonce);
+#if TRACE_MEMSTREAM_SIZES
+                        Logging.info(String.Format("Transaction::AddMultisigChWallet: {0}", ms.Length));
+#endif
 
                     data = ms.ToArray();
                 }
@@ -1151,6 +1160,9 @@ namespace DLT
 
                     bw.Write(signer_nonce.Length);
                     bw.Write(signer_nonce);
+#if TRACE_MEMSTREAM_SIZES
+                        Logging.info(String.Format("Transaction::AddMultisigChReqSigs: {0}", ms.Length));
+#endif
 
                     data = ms.ToArray();
                 }

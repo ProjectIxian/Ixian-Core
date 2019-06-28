@@ -174,6 +174,9 @@ namespace DLT
                     {
 
                     }
+#if TRACE_MEMSTREAM_SIZES
+                    Logging.info(String.Format("Wallet::getBytes: {0}", m.Length));
+#endif
                 }
                 return m.ToArray();
             }

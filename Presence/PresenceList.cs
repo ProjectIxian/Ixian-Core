@@ -277,6 +277,9 @@ namespace DLT
                             writer.Write(presence_data_size);
                             writer.Write(presence_data);
                         }
+#if TRACE_MEMSTREAM_SIZES
+                        Logging.info(String.Format("PresenceList::getBytes: {0}", m.Length));
+#endif
                     }
                     return m.ToArray();
                 }
@@ -478,11 +481,11 @@ namespace DLT
                 }
             }
         }
-        
+
         private static byte[] keepAlive_v1()
         {
             // Prepare the keepalive message
-            using (MemoryStream m = new MemoryStream())
+            using (MemoryStream m = new MemoryStream(640))
             {
                 using (BinaryWriter writer = new BinaryWriter(m))
                 {
@@ -511,6 +514,9 @@ namespace DLT
 
                     PresenceList.curNodePresenceAddress.lastSeenTime = timestamp;
                     PresenceList.curNodePresenceAddress.signature = signature;
+#if TRACE_MEMSTREAM_SIZES
+                    Logging.info(String.Format("PresenceList::keepAlive_v1: {0}", m.Length));
+#endif
                 }
 
                 return m.ToArray();

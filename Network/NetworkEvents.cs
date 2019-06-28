@@ -31,6 +31,9 @@ namespace DLT
                     writer.Write((int)type);
                     writer.Write(address.Length);
                     writer.Write(address);
+#if TRACE_MEMSTREAM_SIZES
+                        Logging.info(String.Format("NetworkEvents::prepareEventMessageData: {0}", m.Length));
+#endif
                     data = m.ToArray();
                 }
             }

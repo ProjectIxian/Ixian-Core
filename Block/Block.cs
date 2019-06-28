@@ -411,7 +411,7 @@ namespace DLT
                 Logging.error("Trying to use getBytes() from a compacted Block {0}", blockNum);
                 return null;
             }
-            using (MemoryStream m = new MemoryStream())
+            using (MemoryStream m = new MemoryStream(5120))
             {
                 using (BinaryWriter writer = new BinaryWriter(m))
                 {
@@ -519,7 +519,11 @@ namespace DLT
                         writer.Write(entry.Value.blockChecksum.Length);
                         writer.Write(entry.Value.blockChecksum);
                     }
+#if TRACE_MEMSTREAM_SIZES
+                    Logging.info(String.Format("Block::getBytes: {0}", m.Length));
+#endif
                 }
+
                 return m.ToArray();
             }
         }

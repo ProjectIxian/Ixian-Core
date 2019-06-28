@@ -67,7 +67,7 @@ namespace DLT
 
         public byte[] getBytes()
         {
-            using (MemoryStream m = new MemoryStream())
+            using (MemoryStream m = new MemoryStream(640))
             {
                 using (BinaryWriter writer = new BinaryWriter(m))
                 {
@@ -85,6 +85,9 @@ namespace DLT
                     {
                         writer.Write(0);
                     }
+#if TRACE_MEMSTREAM_SIZES
+                    Logging.info(String.Format("PresenceAddress::getBytes: {0}", m.Length));
+#endif
                 }
                 return m.ToArray();
             }
@@ -254,7 +257,7 @@ namespace DLT
 
         public byte[] getBytes(ushort from_index = 0, ushort count = 0)
         {
-            using (MemoryStream m = new MemoryStream())
+            using (MemoryStream m = new MemoryStream(1280))
             {
                 using (BinaryWriter writer = new BinaryWriter(m))
                 {
@@ -315,6 +318,9 @@ namespace DLT
                             writer.Write(0);
                         }
                     }
+#if TRACE_MEMSTREAM_SIZES
+                    Logging.info(String.Format("Presence::getBytes: {0}", m.Length));
+#endif
                 }
                 return m.ToArray();
             }

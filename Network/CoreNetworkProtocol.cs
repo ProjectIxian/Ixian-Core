@@ -66,7 +66,7 @@ namespace IXICore
                 data_checksum = Crypto.sha512sqTrunc(data, 0, 0, 32);
             }
 
-            using (MemoryStream m = new MemoryStream())
+            using (MemoryStream m = new MemoryStream(4096))
             {
                 using (BinaryWriter writer = new BinaryWriter(m))
                 {
@@ -85,6 +85,9 @@ namespace IXICore
 
                     writer.Write((byte)'I');
                     writer.Write(data);
+#if TRACE_MEMSTREAM_SIZES
+                    Logging.info(String.Format("CoreProtocolMessage::prepareProtocolMessage: {0}", m.Length));
+#endif
                 }
                 result = m.ToArray();
             }
@@ -109,6 +112,10 @@ namespace IXICore
                     writer.Write((int)code);
                     writer.Write(message);
                     writer.Write(data);
+#if TRACE_MEMSTREAM_SIZES
+                    Logging.info(String.Format("CoreProtocolMessage::sendBye: {0}", m2.Length));
+#endif
+
                     endpoint.sendData(ProtocolMessageCode.bye, m2.ToArray());
                     Logging.info("Sending bye to {0} with message '{1}' and data '{2}'", endpoint.getFullAddress(), message, data);
                 }
@@ -409,7 +416,7 @@ namespace IXICore
         /// <param name="challenge_response">Response byte-field to the other node's hello challenge</param>
         public static void sendHelloMessage(RemoteEndpoint endpoint, bool sendHelloData, byte[] challenge_response)
         {
-            using (MemoryStream m = new MemoryStream())
+            using (MemoryStream m = new MemoryStream(1856))
             {
                 using (BinaryWriter writer = new BinaryWriter(m))
                 {
@@ -480,6 +487,9 @@ namespace IXICore
 
                         writer.Write(challenge_response.Length);
                         writer.Write(challenge_response);
+#if TRACE_MEMSTREAM_SIZES
+                        Logging.info(String.Format("CoreProtocolMessage::sendHelloMessage: {0}", m.Length));
+#endif
 
                         endpoint.sendData(ProtocolMessageCode.helloData, m.ToArray());
 
@@ -498,6 +508,9 @@ namespace IXICore
 
                         writer.Write(challenge_bytes.Length);
                         writer.Write(challenge_bytes);
+#if TRACE_MEMSTREAM_SIZES
+                        Logging.info(String.Format("CoreProtocolMessage::sendHelloMessage: {0}", m.Length));
+#endif
 
                         endpoint.sendData(ProtocolMessageCode.hello, m.ToArray());
                     }
