@@ -14,7 +14,7 @@ namespace IXICore
         /// <remarks>
         ///  The DLT will strive to generate new Blocks according to this value.
         /// </remarks>
-        public static readonly int blockGenerationInterval = 10;
+        public static readonly int blockGenerationInterval = 30;
 
         /// <summary>
         ///  Number of blocks this particular is required to keep before discarding older blocks. Blocks older than the redaction window can be discarded.
@@ -56,7 +56,7 @@ namespace IXICore
         ///  Superblocks condense the information of the previous blocks (from the previous superblock to the current one), so that much of the superfluous blockchain data
         ///  can be dropped and still allow clients to bootstrap safely from potentially untrusted Master Nodes.
         /// </remarks>
-        public static readonly ulong superblockInterval = 30;
+        public static readonly ulong superblockInterval = 1000;
 
 
         /// <summary>
@@ -72,7 +72,7 @@ namespace IXICore
         /// <summary>
         /// Minimum funds a wallet must have before it is allowed to participate in the block consensus algorithm. (used in DLT Node executable).
         /// </summary>
-        public static readonly IxiNumber minimumMasterNodeFunds = new IxiNumber("20000");
+        public static readonly IxiNumber minimumMasterNodeFunds = new IxiNumber("2000");
         /// <summary>
         /// Transaction fee per kilobyte. Total transaction size is used. (Used in DLT Node executable.)
         /// </summary>

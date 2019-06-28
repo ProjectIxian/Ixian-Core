@@ -320,6 +320,13 @@ namespace DLT
 
                             // Get the signatures
                             int num_signatures = reader.ReadInt32();
+
+                            if (num_signatures > ConsensusConfig.maximumBlockSigners * 2)
+                            {
+                                throw new Exception("Block " + blockNum + " has more than " + (ConsensusConfig.maximumBlockSigners * 2) + " signatures");
+                            }
+
+
                             for (int i = 0; i < num_signatures; i++)
                             {
                                 int sigLen = reader.ReadInt32();
@@ -431,11 +438,19 @@ namespace DLT
 
                         // Write the number of signatures
                         int num_signatures = tmp_signatures.Count;
+
+                        if(num_signatures > ConsensusConfig.maximumBlockSigners * 2)
+                        {
+                            num_signatures = ConsensusConfig.maximumBlockSigners * 2;
+                        }
+
                         writer.Write(num_signatures);
 
                         // Write each signature
-                        foreach (byte[][] signature in tmp_signatures)
+                        for (int i = 0; i < num_signatures; i++)
                         {
+                            byte[][] signature = tmp_signatures[i];
+
                             if (signature[0] != null)
                             {
                                 writer.Write(signature[0].Length);

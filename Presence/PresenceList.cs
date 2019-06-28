@@ -59,25 +59,6 @@ namespace DLT
             return false;
         }
 
-        // Searches through the entire presence list to find a presence with a matching wallet
-        // Returns the found presence, otherwise null
-        public static Presence containsWalletAddress(byte[] wallet)
-        {
-            if (wallet == null)
-                return null;
-
-            lock (presences)
-            {
-                foreach (Presence pr in presences)
-                {
-                    if (pr.wallet.SequenceEqual(wallet))
-                        return pr;
-                }
-            }
-
-            return null;
-        }
-
         // Update a presence entry. If the wallet address is not found, it creates a new entry in the Presence List.
         // If the wallet address is found in the presence list, it adds any new addresses from the specified presence.
         public static Presence updateEntry(Presence presence, RemoteEndpoint skipEndpoint = null)
@@ -819,9 +800,14 @@ namespace DLT
             return 0;
         }
 
-        public static Presence getPresenceByAddress(byte[] address)
+        public static Presence getPresenceByAddress(byte[] address_or_pubkey)
         {
-            lock(presences)
+            if (address_or_pubkey == null)
+                return null;
+
+            byte[] address = (new Address(address_or_pubkey)).address;
+
+            lock (presences)
             {
                 return presences.Find(x => x.wallet.SequenceEqual(address));
             }
