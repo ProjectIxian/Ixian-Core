@@ -334,6 +334,11 @@ namespace IXICore
                 response = onGetWalletBackup();
             }
 
+            if (methodName.Equals("validateaddress", StringComparison.OrdinalIgnoreCase))
+            {
+                response = onValidateAddress(parameters);
+            }
+
             bool resources = false;
 
             if (methodName.Equals("resources", StringComparison.OrdinalIgnoreCase))
@@ -1198,6 +1203,23 @@ namespace IXICore
             List<byte> wallet = new List<byte>();
             wallet.AddRange(Node.walletStorage.getRawWallet());
             return new JsonResponse { result = "IXIHEX" + Crypto.hashToString(wallet.ToArray()), error = null };
+        }
+
+        // Returns "OK" if checksum of the address passes and error RPC_INVALID_ADDRESS_OR_KEY if the address is incorrect
+        private JsonResponse onValidateAddress(Dictionary<string, object> parameters)
+        {
+            string address = null;
+            if (parameters.ContainsKey("address"))
+            {
+                address = (string)parameters["address"];
+            }
+
+            if(!Address.validateChecksum(Base58Check.Base58CheckEncoding.DecodePlain(address)))
+            {
+                return new JsonResponse { result = null, error = new JsonError() { code = (int)RPCErrorCode.RPC_INVALID_ADDRESS_OR_KEY, message = "Invalid address was specified" } };
+            }
+
+            return new JsonResponse { result = "OK", error = null };
         }
 
         // This is a bit hacky way to return useful error values
