@@ -21,6 +21,7 @@
                 <div class="row">
                     <div class="col-xs-2 psign"><div>&nbsp;</div></div>
                     <div class="col-xs-6 pdesc"></div>
+                    <div class="pdetails"></div>
                     <div class="col-xs-4 pamount"></div>
                 </div>
             </div>
@@ -267,6 +268,17 @@
 
             }
 
+            function jsonToHtml(jsonArr)
+            {
+                var html = "";
+                for (var key in jsonArr)
+                {
+                    html += "<b>" + key + "</b>: " + jsonArr[key] + "<br/>";
+
+                }
+                return html;
+            }
+
             function getActivity() {
                 var dltAPI = "#IXIAN#NODE#URL#";
                 var activity_type_el = document.getElementById("activity_type");
@@ -278,6 +290,9 @@
                             paymentsEl.innerHTML += document.getElementById("templates").getElementsByClassName("payment")[0].outerHTML;
                             var htmlEl = paymentsEl.lastElementChild;
                             htmlEl.getElementsByClassName("pdesc")[0].innerHTML = data["result"][i]["toList"];
+
+                            htmlEl.getElementsByClassName("pdetails")[0].innerHTML = jsonToHtml(data["result"][i]);
+
                             var type = data["result"][i]["type"];
                             if (type == 100) {
                                 htmlEl.className += " received";
@@ -311,15 +326,6 @@
                     });
             }
 
-            function getNodeStatus() {
-                var dltAPI = "#IXIAN#NODE#URL#";
-                $.getJSON(dltAPI + "status", {})
-                    .done(function (data) {
-
-                    });
-            }
-
-
             function sendTransaction() {
                 var address = document.getElementById("address").value.trim();
                 var amount = document.getElementById("amount").value.trim();
@@ -338,7 +344,7 @@
                     .done(function (data) {
                         if (data["result"] != null) {
                             getMyWallet();
-                            alert("Transaction successfully sent");
+                            alert("Transaction successfully sent. txid: " + data["result"]["id"]);
                         } else {
                             alert("An error occured while trying to send a transaction: (" + data["error"]["code"] + ") " + data["error"]["message"]);
                         }
@@ -421,6 +427,14 @@
                                 }
                                 warning_bar.firstElementChild.innerHTML += "This node is not connectable from the internet and other nodes can't connect to it. Please set-up port-forwarding.";
                             }
+                        }
+
+                        if (data["result"]["Update"] != "") {
+                            warning_bar.style.display = "block";
+                            if (warning_bar.firstElementChild.innerHTML != "") {
+                                warning_bar.firstElementChild.innerHTML += "<br/>";
+                            }
+                            warning_bar.firstElementChild.innerHTML += "An updated version of Ixian node (" + data["result"]["Update"] + ") is available, please visit https://www.ixian.io";
                         }
                     });
 
