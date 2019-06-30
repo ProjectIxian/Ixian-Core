@@ -1,6 +1,7 @@
 ﻿using DLT.Meta;
 using DLT.Network;
 using IXICore;
+using IXICore.Utils;
 using System;
 using System.Collections.Generic;
 using System.IO;
@@ -819,7 +820,8 @@ namespace DLT
             {
                 int address_len = 36; // This is set to the minimum wallet length
                 byte[] selector = PresenceOrderedEnumerator.GenerateSelectorFromRandom(rnd_bytes.Take(address_len).ToArray());
-                return new PresenceOrderedEnumerator(presences, address_len, selector, target_count);
+                var sorted_presences = presences.FindAll(x => x.addresses.Find(y => y.type == 'M' || y.type == 'H') != null).OrderBy(x => x.wallet, new ByteArrayComparer());
+                return new PresenceOrderedEnumerator(sorted_presences, address_len, selector, target_count);
             }
         }
     }
