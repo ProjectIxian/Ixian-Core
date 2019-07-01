@@ -211,8 +211,7 @@
 
             function getMyWallet() {
 
-                var dltAPI = "#IXIAN#NODE#URL#";
-                $.getJSON(dltAPI + "gettotalbalance", {})
+                $.getJSON("gettotalbalance", {})
                     .done(function (data) {
                         data = data["result"];
 
@@ -222,8 +221,7 @@
 
                     });
 
-                var dltAPI = "#IXIAN#NODE#URL#";
-                $.getJSON(dltAPI + "mywallet", {})
+                $.getJSON("mywallet", {})
                     .done(function (data) {
                         data = data["result"];
                         var keyList = Object.keys(data);
@@ -280,9 +278,8 @@
             }
 
             function getActivity() {
-                var dltAPI = "#IXIAN#NODE#URL#";
                 var activity_type_el = document.getElementById("activity_type");
-                $.getJSON(dltAPI + "activity?type=" + activity_type_el.options[activity_type_el.selectedIndex].value, {})
+                $.getJSON("activity?type=" + activity_type_el.options[activity_type_el.selectedIndex].value, {})
                     .done(function (data) {
                         document.getElementById("payments").innerHTML = "";
                         for (var i in data["result"]) {
@@ -339,7 +336,7 @@
 
                 //            console.log("Sending " + amount + " to " + address);
 
-                var dltAPI = "#IXIAN#NODE#URL#" + "addtransaction?to=" + address + "_" + amount;
+                var dltAPI ="addtransaction?to=" + address + "_" + amount;
                 $.getJSON(dltAPI, { format: "json" })
                     .done(function (data) {
                         if (data["result"] != null) {
@@ -353,7 +350,7 @@
             }
 
             function generateNewAddress() {
-                var dltAPI = "#IXIAN#NODE#URL#" + "generatenewaddress";
+                var dltAPI = "generatenewaddress";
                 $.getJSON(dltAPI, { format: "json" })
                     .done(function (data) {
                         selectedReceiveAddress = data["result"];
@@ -365,7 +362,7 @@
             }
 
             function setBlockSelectionAlgorithm(algorithm) {
-                var dltAPI = "#IXIAN#NODE#URL#" + "setBlockSelectionAlgorithm?algorithm=" + algorithm;
+                var dltAPI = "setBlockSelectionAlgorithm?algorithm=" + algorithm;
                 $.getJSON(dltAPI, { format: "json" })
                     .done(function (data) {
                         getStatus();
@@ -377,7 +374,7 @@
                 var address = document.getElementById("address").value.trim();
                 var amount = document.getElementById("amount").value.trim();
 
-                var dltAPI = "#IXIAN#NODE#URL#" + "createrawtransaction?to=" + address + "_" + amount+"&json=true";
+                var dltAPI = "createrawtransaction?to=" + address + "_" + amount+"&json=true";
                 $.getJSON(dltAPI, { format: "json" })
                     .done(function (data) {
                         if (data["result"] != null) {
@@ -392,7 +389,7 @@
 
             function getStatus() {
 
-                var dltAPI = "#IXIAN#NODE#URL#" + "status";
+                var dltAPI = "status";
                 $.getJSON(dltAPI, { format: "json" })
                     .done(function (data) {
                         sync_status = data["result"]["DLT Status"];
@@ -438,7 +435,7 @@
                         }
                     });
 
-                var dltAPI = "#IXIAN#NODE#URL#" + "minerstats";
+                var dltAPI = "minerstats";
                 $.getJSON(dltAPI, { format: "json" })
                     .done(function (data) {
                         if (data["result"]) {

@@ -273,6 +273,11 @@ namespace DLT
         private readonly static byte[] multisigStartMarker = { 0x4d, 0x73 };
 
         /// <summary>
+        ///  Helper flag that determines whether PoW solution was already verified (used locally)
+        /// </summary>
+        public bool powVerified = false;
+
+        /// <summary>
         ///  Currently latest transaction version.
         /// </summary>
         public static int maxVersion = 3;
@@ -598,6 +603,8 @@ namespace DLT
             applied = tx_transaction.applied;
 
             fromLocalStorage = tx_transaction.fromLocalStorage;
+
+            powVerified = tx_transaction.powVerified;
         }
 
         /// <summary>

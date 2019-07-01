@@ -80,19 +80,21 @@ namespace IXICore
         protected HttpListener listener;
         protected Thread apiControllerThread;
         protected bool continueRunning;
-        protected string listenURL;
+        protected List<string> listenURLs;
+        protected List<string> allowedIPs;
         protected ThreadLiveCheck TLC;
 
         protected Dictionary<string, string> authorizedUsers;
 
         // Start the API server
-        public void start(string listen_url, Dictionary<string, string> authorizedUsers = null)
+        public void start(List<string> listen_URLs, Dictionary<string, string> authorized_users = null, List<string> allowed_IPs = null)
         {
             continueRunning = true;
 
-            listenURL = listen_url;
+            listenURLs = listen_URLs;
 
-            this.authorizedUsers = authorizedUsers;
+            authorizedUsers = authorized_users;
+            allowedIPs = allowed_IPs;
 
             apiControllerThread = new Thread(apiLoop);
             apiControllerThread.Name = "API_Controller_Thread";
@@ -413,11 +415,16 @@ namespace IXICore
             listener = new HttpListener();
             try
             {
-                listener.Prefixes.Add(listenURL);
+                foreach (string url in listenURLs)
+                {
+                    listener.Prefixes.Add(url);
+                }
+
                 if (authorizedUsers != null && authorizedUsers.Count > 0)
                 {
                     listener.AuthenticationSchemes = AuthenticationSchemes.Basic;
                 }
+
                 listener.Start();
             }
             catch (Exception ex)
@@ -444,6 +451,11 @@ namespace IXICore
 
                 if(context != null)
                 {
+                    if(allowedIPs != null && allowedIPs.Count() > 0 && !allowedIPs.Contains(context.Request.RemoteEndPoint.Address.ToString()))
+                    {
+                        context.Response.Close();
+                        continue;
+                    }
                     if(isAuthorized(context))
                     {
                         onUpdate(context);
@@ -576,14 +588,11 @@ namespace IXICore
             }
 
             string wallet_html = File.ReadAllText(wallet_path);
-
-            // Replace the js API location
-            string result = wallet_html.Replace("#IXIAN#NODE#URL#", listenURL);
             
             // Set the content type to html to show the wallet page
             context.Response.ContentType = "text/html";
 
-            sendResponse(context.Response, result);
+            sendResponse(context.Response, wallet_html);
         }
 
 
