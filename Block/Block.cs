@@ -1154,6 +1154,8 @@ namespace DLT
         /// <returns></returns>
         public bool pruneSignatures()
         {
+            return false; // disabled for now
+
             if (version < BlockVer.v4)
             {
                 return false;
