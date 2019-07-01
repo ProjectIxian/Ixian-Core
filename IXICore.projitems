@@ -63,55 +63,21 @@
     <Compile Include="$(MSBuildThisFileDirectory)Wallet\WalletStorage.cs" />
   </ItemGroup>
   <ItemGroup>
-    <Content Include="$(MSBuildThisFileDirectory)html\css\bootstrap37.css">
-      <CopyToOutputDirectory>PreserveNewest</CopyToOutputDirectory>
-    </Content>
-    <Content Include="$(MSBuildThisFileDirectory)html\css\normalize.css">
-      <CopyToOutputDirectory>PreserveNewest</CopyToOutputDirectory>
-    </Content>
-    <Content Include="$(MSBuildThisFileDirectory)html\css\style.css">
-      <CopyToOutputDirectory>PreserveNewest</CopyToOutputDirectory>
-    </Content>
-    <Content Include="$(MSBuildThisFileDirectory)html\img\activity.png">
-      <CopyToOutputDirectory>PreserveNewest</CopyToOutputDirectory>
-    </Content>
-    <Content Include="$(MSBuildThisFileDirectory)html\img\camera.png">
-      <CopyToOutputDirectory>PreserveNewest</CopyToOutputDirectory>
-    </Content>
-    <Content Include="$(MSBuildThisFileDirectory)html\img\iCopy.png">
-      <CopyToOutputDirectory>PreserveNewest</CopyToOutputDirectory>
-    </Content>
-    <Content Include="$(MSBuildThisFileDirectory)html\img\logofull.png">
-      <CopyToOutputDirectory>PreserveNewest</CopyToOutputDirectory>
-    </Content>
-    <Content Include="$(MSBuildThisFileDirectory)html\img\payr.png">
-      <CopyToOutputDirectory>PreserveNewest</CopyToOutputDirectory>
-    </Content>
-    <Content Include="$(MSBuildThisFileDirectory)html\img\receive.png">
-      <CopyToOutputDirectory>PreserveNewest</CopyToOutputDirectory>
-    </Content>
-    <Content Include="$(MSBuildThisFileDirectory)html\img\send.png">
-      <CopyToOutputDirectory>PreserveNewest</CopyToOutputDirectory>
-    </Content>
-    <Content Include="$(MSBuildThisFileDirectory)html\img\sendr.png">
-      <CopyToOutputDirectory>PreserveNewest</CopyToOutputDirectory>
-    </Content>
-    <Content Include="$(MSBuildThisFileDirectory)html\wallet.html">
-      <CopyToOutputDirectory>PreserveNewest</CopyToOutputDirectory>
-    </Content>
-  </ItemGroup>
-  <ItemGroup>
-    <Content Include="$(MSBuildThisFileDirectory)html\js\bootstrap.min.js">
-      <CopyToOutputDirectory>PreserveNewest</CopyToOutputDirectory>
-    </Content>
-    <Content Include="$(MSBuildThisFileDirectory)html\js\instascan.min.js">
-      <CopyToOutputDirectory>PreserveNewest</CopyToOutputDirectory>
-    </Content>
-    <Content Include="$(MSBuildThisFileDirectory)html\js\jquery.min.js">
-      <CopyToOutputDirectory>PreserveNewest</CopyToOutputDirectory>
-    </Content>
-    <Content Include="$(MSBuildThisFileDirectory)html\js\qrcode.min.js">
-      <CopyToOutputDirectory>PreserveNewest</CopyToOutputDirectory>
-    </Content>
+    <Content Include="$(MSBuildThisFileDirectory)html\css\bootstrap37.css" />
+    <Content Include="$(MSBuildThisFileDirectory)html\css\normalize.css" />
+    <Content Include="$(MSBuildThisFileDirectory)html\css\style.css" />
+    <Content Include="$(MSBuildThisFileDirectory)html\img\activity.png" />
+    <Content Include="$(MSBuildThisFileDirectory)html\img\camera.png" />
+    <Content Include="$(MSBuildThisFileDirectory)html\img\iCopy.png" />
+    <Content Include="$(MSBuildThisFileDirectory)html\img\logofull.png" />
+    <Content Include="$(MSBuildThisFileDirectory)html\img\payr.png" />
+    <Content Include="$(MSBuildThisFileDirectory)html\img\receive.png" />
+    <Content Include="$(MSBuildThisFileDirectory)html\img\send.png" />
+    <Content Include="$(MSBuildThisFileDirectory)html\img\sendr.png" />
+    <Content Include="$(MSBuildThisFileDirectory)html\js\bootstrap.min.js" />
+    <Content Include="$(MSBuildThisFileDirectory)html\js\instascan.min.js" />
+    <Content Include="$(MSBuildThisFileDirectory)html\js\jquery.min.js" />
+    <Content Include="$(MSBuildThisFileDirectory)html\js\qrcode.min.js" />
+    <Content Include="$(MSBuildThisFileDirectory)html\wallet.html" />
   </ItemGroup>
 </Project>
