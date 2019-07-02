@@ -71,13 +71,14 @@ namespace DLT.Meta
         public long timestamp { get; set; }
         public int status { get; set; }
         public long blockHeight { get; set; }
+        public string txid { get; set; }
 
         public Activity()
         {
 
         }
 
-        public Activity(byte[] seed_hash, string wallet, string from, string to_list, int type, byte[] data, string value, long timestamp, int status, ulong block_height)
+        public Activity(byte[] seed_hash, string wallet, string from, string to_list, int type, byte[] data, string value, long timestamp, int status, ulong block_height, string txid)
         {
             this.seedHash = seed_hash;
             this.wallet = wallet;
@@ -89,9 +90,10 @@ namespace DLT.Meta
             this.timestamp = timestamp;
             this.status = status;
             this.blockHeight = (long)block_height;
+            this.txid = txid;
         }
 
-        public Activity(byte[] seed_hash, string wallet, string from, SortedDictionary<byte[], IxiNumber> to_list, int type, byte[] data, string value, long timestamp, int status, ulong block_height)
+        public Activity(byte[] seed_hash, string wallet, string from, SortedDictionary<byte[], IxiNumber> to_list, int type, byte[] data, string value, long timestamp, int status, ulong block_height, string txid)
         {
             this.seedHash = seed_hash;
             this.wallet = wallet;
@@ -103,6 +105,7 @@ namespace DLT.Meta
             this.timestamp = timestamp;
             this.status = status;
             this.blockHeight = (long)block_height;
+            this.txid = txid;
         }
 
         public string id
@@ -204,7 +207,7 @@ namespace DLT.Meta
             if (!tableInfo.Any())
             {
                 // Create the activity table
-                string sql = "CREATE TABLE `activity` (`id` TEXT, `seedHash` BLOB, `wallet` TEXT, `from` TEXT, `toList` TEXT, `type` INTEGER, `data` BLOB, `value` TEXT, `timestamp` INTEGER, `status` INTEGER, `blockHeight` INTEGER, PRIMARY KEY(`id`));";
+                string sql = "CREATE TABLE `activity` (`id` TEXT, `seedHash` BLOB, `wallet` TEXT, `from` TEXT, `toList` TEXT, `type` INTEGER, `data` BLOB, `value` TEXT, `timestamp` INTEGER, `status` INTEGER, `blockHeight` INTEGER, `txid` TEXT, PRIMARY KEY(`id`));";
                 executeSQL(sql);
 
                 sql = "CREATE INDEX `seedHash` ON `activity` (`seedHash`);";
@@ -223,10 +226,13 @@ namespace DLT.Meta
                 executeSQL(sql);
                 sql = "CREATE INDEX `blockHeight` ON `activity` (`blockHeight`);";
                 executeSQL(sql);
-            }else
+                sql = "CREATE INDEX `txid` ON `activity` (`txid`);";
+                executeSQL(sql);
+            }
+            else
             {
                 // database exists, check if it needs upgrading
-                if (!tableInfo.Exists(x => x.Name == "seedHash"))
+                if (!tableInfo.Exists(x => x.Name == "txid"))
                 {
                     sqlConnection.Close();
                     File.Delete(filename);
@@ -453,13 +459,13 @@ namespace DLT.Meta
             {
                 if (getActivityById(activity.id) == null)
                 {
-                    string sql = "INSERT INTO `activity` (`id`, `seedHash`, `wallet`, `from`, `toList`, `type`, `data`, `value`, `timestamp`, `status`, `blockHeight`) VALUES (?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?);";
-                    result = executeSQL(sql, activity.id, seed_hash, activity.wallet, activity.from, activity.toList, activity.type, activity.data, activity.value, activity.timestamp, activity.status, activity.blockHeight);
+                    string sql = "INSERT INTO `activity` (`id`, `seedHash`, `wallet`, `from`, `toList`, `type`, `data`, `value`, `timestamp`, `status`, `blockHeight`, `txid`) VALUES (?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?);";
+                    result = executeSQL(sql, activity.id, seed_hash, activity.wallet, activity.from, activity.toList, activity.type, activity.data, activity.value, activity.timestamp, activity.status, activity.blockHeight, activity.txid);
                 }
                 else
                 {
-                    string sql = "UPDATE `activity` SET `seedHash` = ?, `wallet` = ?, `from` = ?, `toList` = ?, `type` = ?, `data` = ?, `value` = ?, `timestamp` = ?, `status` = ?, `blockHeight` = ? WHERE `id` = ?";
-                    result = executeSQL(sql, seed_hash, activity.wallet, activity.from, activity.toList, activity.type, activity.data, activity.value, activity.timestamp, activity.status, activity.blockHeight, activity.id);
+                    string sql = "UPDATE `activity` SET `seedHash` = ?, `wallet` = ?, `from` = ?, `toList` = ?, `type` = ?, `data` = ?, `value` = ?, `timestamp` = ?, `status` = ?, `blockHeight` = ?, `txid`=? WHERE `id` = ?";
+                    result = executeSQL(sql, seed_hash, activity.wallet, activity.from, activity.toList, activity.type, activity.data, activity.value, activity.timestamp, activity.status, activity.blockHeight, activity.txid, activity.id);
                 }
             }
 
