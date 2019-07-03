@@ -32,7 +32,7 @@ namespace DLT
             ///  IP address on which the server will listen. For security reasons this is pre-set to the local loopback address and must be specifically
             ///  overwritten when starting the server.
             /// </summary>
-            public static string listeningPort = "10234";
+            public static int listeningPort = 10234;
 
             private static bool continueRunning = false;
             private static Thread netControllerThread = null;
@@ -79,7 +79,7 @@ namespace DLT
 
                 // Read the server port from the configuration
                 NetOpsData nod = new NetOpsData();
-                nod.listenAddress = new IPEndPoint(IPAddress.Any, Int32.Parse(listeningPort));
+                nod.listenAddress = new IPEndPoint(IPAddress.Any, listeningPort);
                 netControllerThread.Start(nod);
 
                 Logging.info(string.Format("Public network node address: {0} port {1}", NetworkClientManager.publicIP, NetworkServer.listeningPort));

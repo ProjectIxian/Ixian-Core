@@ -91,7 +91,7 @@ namespace DLT
                                 if (public_ip.Result != null)
                                 {
                                     Logging.info(String.Format("UPNP-determined public IP: {0}. Attempting to configure a port-forwarding rule.", public_ip.Result.ToString()));
-                                    if (upnp.MapPublicPort(Int32.Parse(NetworkServer.listeningPort), primary_local))
+                                    if (upnp.MapPublicPort(NetworkServer.listeningPort, primary_local))
                                     {
                                         NetworkClientManager.publicIP = public_ip.Result.ToString(); //upnp.getMappedIP();
                                         Logging.info(string.Format("Network configured. Public IP is: {0}", NetworkClientManager.publicIP));
