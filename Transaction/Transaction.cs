@@ -1445,7 +1445,7 @@ namespace DLT
                 }
             }
 
-            if (Config.isTestNet)
+            if (CoreConfig.isTestNet)
             {
                 // exploit test
                 return Node.walletStorage.getAddress(Node.walletStorage.getPrimaryAddress());

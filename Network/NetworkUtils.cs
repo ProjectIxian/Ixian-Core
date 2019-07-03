@@ -54,14 +54,14 @@ namespace DLT
             }
 
 
-            static public void configureNetwork()
+            static public void configureNetwork(string externalIp)
             {
                 // Network configuration
                 UPnP upnp = new UPnP();
 
-                if (Config.externalIp != "" && IPAddress.TryParse(Config.externalIp, out _))
+                if (externalIp != "" && IPAddress.TryParse(externalIp, out _))
                 {
-                    NetworkClientManager.publicIP = Config.externalIp;
+                    NetworkClientManager.publicIP = externalIp;
                 }
                 else
                 {

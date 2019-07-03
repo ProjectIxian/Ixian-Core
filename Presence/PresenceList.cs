@@ -35,7 +35,7 @@ namespace DLT
             Logging.info("Generating presence list.");
 
             // Initialize with the default presence state
-            curNodePresenceAddress = new PresenceAddress(Config.device_id, string.Format("{0}:{1}", initial_ip, NetworkServer.listeningPort), type, Config.version, 0, null);
+            curNodePresenceAddress = new PresenceAddress(CoreConfig.device_id, string.Format("{0}:{1}", initial_ip, NetworkServer.listeningPort), type, CoreConfig.productVersion, 0, null);
             curNodePresence = new Presence(Node.walletStorage.getPrimaryAddress(), Node.walletStorage.getPrimaryPublicKey(), null, curNodePresenceAddress);
         }
 
@@ -464,7 +464,7 @@ namespace DLT
                     writer.Write(wallet.Length);
                     writer.Write(wallet);
 
-                    writer.Write(Config.device_id);
+                    writer.Write(CoreConfig.device_id);
 
                     // Add the unix timestamp
                     long timestamp = Core.getCurrentTimestamp();
@@ -475,7 +475,7 @@ namespace DLT
 
                     // Add a verifiable signature
                     byte[] private_key = Node.walletStorage.getPrimaryPrivateKey();
-                    byte[] signature = CryptoManager.lib.getSignature(Encoding.UTF8.GetBytes(ConsensusConfig.ixianChecksumLockString + "-" + Config.device_id + "-" + timestamp + "-" + hostname), private_key);
+                    byte[] signature = CryptoManager.lib.getSignature(Encoding.UTF8.GetBytes(ConsensusConfig.ixianChecksumLockString + "-" + CoreConfig.device_id + "-" + timestamp + "-" + hostname), private_key);
                     writer.Write(signature.Length);
                     writer.Write(signature);
 
@@ -500,7 +500,7 @@ namespace DLT
                     writer.Write(wallet.Length);
                     writer.Write(wallet);
 
-                    writer.Write(Config.device_id);
+                    writer.Write(CoreConfig.device_id);
 
                     // Add the unix timestamp
                     long timestamp = Core.getCurrentTimestamp();

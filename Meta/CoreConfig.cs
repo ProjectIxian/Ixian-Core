@@ -9,6 +9,11 @@ namespace IXICore
     class CoreConfig
     {
         /// <summary>
+        /// Current version of IxiCore.
+        /// </summary>
+        public static readonly string version = "xcore-0.5.0";
+
+        /// <summary>
         /// Current version of the Ixian network protocol.
         /// </summary>
         public static readonly int protocolVersion = 5;
@@ -103,8 +108,24 @@ namespace IXICore
         public static string walletNotifyCommand = "";
 
         /// <summary>
-        /// Command to execute when a new block is accepted.
+        /// Testnet designator. If false the node can only connect to mainnet, if true it can only connect to testnet.
         /// </summary>
-        public static string blockNotifyCommand = "";
+        public static bool isTestNet = false;
+
+        /// <summary>
+        /// Forces time offset to the specified value.
+        /// </summary>
+        public static int forceTimeOffset = int.MaxValue;
+
+        /// <summary>
+        /// Unique node identifier
+        /// </summary>
+        public static string device_id = System.Guid.NewGuid().ToString();
+
+        /// <summary>
+        /// Product version.
+        /// </summary>
+        public static string productVersion = "";
+
     }
 }

@@ -35,7 +35,7 @@ namespace DLT
             PeerStorage.readPeersFile();
 
             // Now add the seed nodes to the list
-            foreach (string[] addr in CoreNetworkUtils.getSeedNodes(Config.isTestNet))
+            foreach (string[] addr in CoreNetworkUtils.getSeedNodes(CoreConfig.isTestNet))
             {
                 byte[] wallet_addr = null;
                 if(addr[1] != null)
@@ -345,9 +345,9 @@ namespace DLT
 
         public static void recalculateLocalTimeDifference()
         {
-            if(Config.forceTimeOffset != int.MaxValue)
+            if(CoreConfig.forceTimeOffset != int.MaxValue)
             {
-                Core.networkTimeDifference = Config.forceTimeOffset;
+                Core.networkTimeDifference = CoreConfig.forceTimeOffset;
                 return;
             }
             lock (networkClients)

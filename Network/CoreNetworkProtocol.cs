@@ -263,10 +263,10 @@ namespace IXICore
                 byte[] signature = reader.ReadBytes(sigLen);
 
                 // Check the testnet designator and disconnect on mismatch
-                if (test_net != Config.isTestNet)
+                if (test_net != CoreConfig.isTestNet)
                 {
                     Logging.warn(string.Format("Rejected node {0} due to incorrect testnet designator: {1}", endpoint.fullAddress, test_net));
-                    sendBye(endpoint, ProtocolByeCode.incorrectNetworkType, string.Format("Incorrect testnet designator: {0}. Should be {1}", test_net, Config.isTestNet), test_net.ToString(), true);
+                    sendBye(endpoint, ProtocolByeCode.incorrectNetworkType, string.Format("Incorrect testnet designator: {0}. Should be {1}", test_net, CoreConfig.isTestNet), test_net.ToString(), true);
                     return false;
                 }
 
@@ -408,16 +408,16 @@ namespace IXICore
                     writer.Write(address);
 
                     // Send the testnet designator
-                    writer.Write(Config.isTestNet);
+                    writer.Write(CoreConfig.isTestNet);
 
                     char node_type = IxianHandler.getNodeType();
                     writer.Write(node_type);
 
                     // Send the version
-                    writer.Write(Config.version);
+                    writer.Write(CoreConfig.productVersion);
 
                     // Send the node device id
-                    writer.Write(Config.device_id);
+                    writer.Write(CoreConfig.device_id);
 
                     // Send the wallet public key
                     writer.Write(Node.walletStorage.getPrimaryPublicKey().Length);
@@ -431,7 +431,7 @@ namespace IXICore
                     writer.Write(timestamp);
 
                     // send signature
-                    byte[] signature = CryptoManager.lib.getSignature(Encoding.UTF8.GetBytes(ConsensusConfig.ixianChecksumLockString + "-" + Config.device_id + "-" + timestamp + "-" + publicHostname), Node.walletStorage.getPrimaryPrivateKey());
+                    byte[] signature = CryptoManager.lib.getSignature(Encoding.UTF8.GetBytes(ConsensusConfig.ixianChecksumLockString + "-" + CoreConfig.device_id + "-" + timestamp + "-" + publicHostname), Node.walletStorage.getPrimaryPrivateKey());
                     writer.Write(signature.Length);
                     writer.Write(signature);
 
