@@ -1,11 +1,10 @@
 ﻿using DLT.Meta;
+using IXICore.Meta;
 using IXICore.Utils;
 using System;
 using System.Collections.Generic;
-using System.IO;
 using System.Linq;
 using System.Text;
-using System.Threading.Tasks;
 
 namespace DLT
 {
@@ -265,7 +264,7 @@ namespace DLT
         public void setCachedBlockVersion(int block_version)
         {
             // edge case for first block of block_version 3
-            if (block_version == 3 && Node.getLastBlockVersion() == 2)
+            if (block_version == 3 && IxianHandler.getLastBlockVersion() == 2)
             {
                 block_version = 2;
             }

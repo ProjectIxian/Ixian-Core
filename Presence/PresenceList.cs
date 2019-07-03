@@ -1,6 +1,7 @@
 ﻿using DLT.Meta;
 using DLT.Network;
 using IXICore;
+using IXICore.Meta;
 using IXICore.Utils;
 using System;
 using System.Collections.Generic;
@@ -34,7 +35,7 @@ namespace DLT
             Logging.info("Generating presence list.");
 
             // Initialize with the default presence state
-            curNodePresenceAddress = new PresenceAddress(Config.device_id, string.Format("{0}:{1}", initial_ip, Config.serverPort), type, Config.version, 0, null);
+            curNodePresenceAddress = new PresenceAddress(Config.device_id, string.Format("{0}:{1}", initial_ip, NetworkServer.listeningPort), type, Config.version, 0, null);
             curNodePresence = new Presence(Node.walletStorage.getPrimaryAddress(), Node.walletStorage.getPrimaryPublicKey(), null, curNodePresenceAddress);
         }
 
@@ -469,7 +470,7 @@ namespace DLT
                     long timestamp = Core.getCurrentTimestamp();
                     writer.Write(timestamp);
 
-                    string hostname = Node.getFullAddress();
+                    string hostname = NetworkClientManager.getFullPublicAddress();
                     writer.Write(hostname);
 
                     // Add a verifiable signature
@@ -505,7 +506,7 @@ namespace DLT
                     long timestamp = Core.getCurrentTimestamp();
                     writer.Write(timestamp);
 
-                    string hostname = Node.getFullAddress();
+                    string hostname = NetworkClientManager.getFullPublicAddress();
                     writer.Write(hostname);
 
                     writer.Write(PresenceList.curNodePresenceAddress.type);
@@ -566,7 +567,7 @@ namespace DLT
                         else if (node_type == 'M' || node_type == 'H')
                         {
                             // check balance
-                            if (Node.walletState.getWalletBalance(wallet) < ConsensusConfig.minimumMasterNodeFunds)
+                            if (IxianHandler.getWalletBalance(wallet) < ConsensusConfig.minimumMasterNodeFunds)
                             {
                                 return false;
                             }

@@ -1,5 +1,6 @@
 using DLT.Meta;
 using IXICore;
+using IXICore.Meta;
 using IXICore.Utils;
 using System;
 using System.Collections.Generic;
@@ -287,7 +288,7 @@ namespace DLT
         /// </summary>
         private void setVersion()
         {
-            int lastBlockVersion = Node.getLastBlockVersion();
+            int lastBlockVersion = IxianHandler.getLastBlockVersion();
             if (lastBlockVersion == 0)
             {
                 version = 0;
@@ -826,7 +827,7 @@ namespace DLT
 
             Address p_address = new Address(pubkey, nonce);
             bool allowed = false;
-            Wallet from_wallet = Node.walletState.getWallet((new Address(this.pubKey)).address);
+            Wallet from_wallet = IxianHandler.getWallet((new Address(this.pubKey)).address);
             if(from_wallet != null && from_wallet.id.SequenceEqual(p_address.address))
             {
                 allowed = true;
@@ -1426,7 +1427,7 @@ namespace DLT
                 return ad;
             }
 
-            Wallet w = Node.walletState.getWallet(multisig_address);
+            Wallet w = IxianHandler.getWallet(multisig_address);
             if (w == null)
             {
                 return null;

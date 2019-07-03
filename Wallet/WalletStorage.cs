@@ -1,6 +1,7 @@
 ﻿using DLT.Meta;
 using IXICore;
 using IXICore.CryptoKey;
+using IXICore.Meta;
 using IXICore.Utils;
 using System;
 using System.Collections.Generic;
@@ -87,7 +88,7 @@ namespace DLT
                     {
                         continue;
                     }
-                    IxiNumber amount = Node.walletState.getWalletBalance(entry.Key);
+                    IxiNumber amount = IxianHandler.getWalletBalance(entry.Key);
                     if (amount == 0)
                     {
                         continue;
@@ -384,7 +385,7 @@ namespace DLT
                         continue;
                     }
 
-                    Wallet wallet = Node.walletState.getWallet(entry.Key);
+                    Wallet wallet = IxianHandler.getWallet(entry.Key);
                     if(wallet.type != WalletType.Normal)
                     {
                         continue;
@@ -919,7 +920,7 @@ namespace DLT
                 for (int i = 0; i < 100; i++)
                 {
                     Address new_address = generateNewAddress(primary_address, last_nonce, false, false);
-                    if(Node.walletState.getWalletBalance(new_address.address) > 0)
+                    if(IxianHandler.getWalletBalance(new_address.address) > 0)
                     {
                         new_address_found = true;
                         for(int j = 0; j <= i; j++)

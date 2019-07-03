@@ -61,21 +61,21 @@ namespace DLT
 
                 if (Config.externalIp != "" && IPAddress.TryParse(Config.externalIp, out _))
                 {
-                    Config.publicServerIP = Config.externalIp;
+                    NetworkClientManager.publicIP = Config.externalIp;
                 }
                 else
                 {
-                    Config.publicServerIP = "";
+                    NetworkClientManager.publicIP = "";
                     List<IPAndMask> local_ips = CoreNetworkUtils.GetAllLocalIPAddressesAndMasks();
                     foreach (IPAndMask local_ip in local_ips)
                     {
                         if (IPv4Subnet.IsPublicIP(local_ip.Address))
                         {
                             Logging.info(String.Format("Public IP detected: {0}, mask {1}.", local_ip.Address.ToString(), local_ip.SubnetMask.ToString()));
-                            Config.publicServerIP = local_ip.Address.ToString();
+                            NetworkClientManager.publicIP = local_ip.Address.ToString();
                         }
                     }
-                    if (Config.publicServerIP == "")
+                    if (NetworkClientManager.publicIP == "")
                     {
                         IPAddress primary_local = CoreNetworkUtils.GetPrimaryIPAddress();
                         if (primary_local == null)
@@ -91,10 +91,10 @@ namespace DLT
                                 if (public_ip.Result != null)
                                 {
                                     Logging.info(String.Format("UPNP-determined public IP: {0}. Attempting to configure a port-forwarding rule.", public_ip.Result.ToString()));
-                                    if (upnp.MapPublicPort(Config.serverPort, primary_local))
+                                    if (upnp.MapPublicPort(Int32.Parse(NetworkServer.listeningPort), primary_local))
                                     {
-                                        Config.publicServerIP = public_ip.Result.ToString(); //upnp.getMappedIP();
-                                        Logging.info(string.Format("Network configured. Public IP is: {0}", Config.publicServerIP));
+                                        NetworkClientManager.publicIP = public_ip.Result.ToString(); //upnp.getMappedIP();
+                                        Logging.info(string.Format("Network configured. Public IP is: {0}", NetworkClientManager.publicIP));
                                     }
                                 }
                                 else

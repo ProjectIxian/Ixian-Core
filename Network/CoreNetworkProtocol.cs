@@ -1,6 +1,7 @@
 ﻿using DLT;
 using DLT.Meta;
 using DLT.Network;
+using IXICore.Meta;
 using System;
 using System.Collections.Generic;
 using System.IO;
@@ -333,7 +334,7 @@ namespace IXICore
                         if (node_type != 'R')
                         {
                             // Check the wallet balance for the minimum amount of coins
-                            IxiNumber balance = Node.walletState.getWalletBalance(addr);
+                            IxiNumber balance = IxianHandler.getWalletBalance(addr);
                             if (balance < ConsensusConfig.minimumMasterNodeFunds)
                             {
                                 Logging.warn(string.Format("Rejected master node {0} due to insufficient funds: {1}", endpoint.getFullAddress(), balance.ToString()));
@@ -396,7 +397,7 @@ namespace IXICore
             {
                 using (BinaryWriter writer = new BinaryWriter(m))
                 {
-                    string publicHostname = string.Format("{0}:{1}", Config.publicServerIP, Config.serverPort);
+                    string publicHostname = NetworkClientManager.getFullPublicAddress();
 
                     // Send the node version
                     writer.Write(CoreConfig.protocolVersion);
@@ -409,7 +410,7 @@ namespace IXICore
                     // Send the testnet designator
                     writer.Write(Config.isTestNet);
 
-                    char node_type = Node.getNodeType();
+                    char node_type = IxianHandler.getNodeType();
                     writer.Write(node_type);
 
                     // Send the version
@@ -423,7 +424,7 @@ namespace IXICore
                     writer.Write(Node.walletStorage.getPrimaryPublicKey());
 
                     // Send listening port
-                    writer.Write(Config.serverPort);
+                    writer.Write(NetworkServer.listeningPort);
 
                     // Send timestamp
                     long timestamp = Core.getCurrentTimestamp();
@@ -437,7 +438,7 @@ namespace IXICore
 
                     if (sendHelloData)
                     {
-                        Block block = Node.getLastBlock();
+                        Block block = IxianHandler.getLastBlock();
                         if (block == null)
                         {
                             Logging.warn("Clients are connecting, but we have no blocks yet to send them!");
@@ -454,7 +455,7 @@ namespace IXICore
                         writer.Write(block.walletStateChecksum.Length);
                         writer.Write(block.walletStateChecksum);
 
-                        writer.Write(Node.getRequiredConsensus());
+                        writer.Write((int)0); // deprecated, can be replaced with something else of type int32
 
                         writer.Write(block.version);
 

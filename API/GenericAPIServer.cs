@@ -1,6 +1,7 @@
 ﻿using DLT;
 using DLT.Meta;
 using DLT.Network;
+using IXICore.Meta;
 using IXICore.Utils;
 using Newtonsoft.Json;
 using System;
@@ -670,7 +671,7 @@ namespace IXICore
                     }
                 };
             }
-            if (Node.addTransaction(transaction))
+            if (IxianHandler.addTransaction(transaction))
             {
                 PendingTransactions.addPendingLocalTransaction(transaction);
                 return new JsonResponse { result = transaction.toDictionary(), error = null };
@@ -771,7 +772,7 @@ namespace IXICore
 
             Transaction raw_transaction = new Transaction(Crypto.stringToHash(raw_transaction_hex));
 
-            if (Node.addTransaction(raw_transaction))
+            if (IxianHandler.addTransaction(raw_transaction))
             {
                 PendingTransactions.addPendingLocalTransaction(raw_transaction);
                 return new JsonResponse { result = raw_transaction.toDictionary(), error = null };
@@ -833,8 +834,8 @@ namespace IXICore
 
             IxiNumber fee = ConsensusConfig.transactionPrice;
 
-            Transaction transaction = Transaction.multisigAddTxSignature(orig_txid, fee, destWallet, Node.getLastBlockHeight());
-            if (Node.addTransaction(transaction))
+            Transaction transaction = Transaction.multisigAddTxSignature(orig_txid, fee, destWallet, IxianHandler.getHighestKnownNetworkBlockHeight());
+            if (IxianHandler.addTransaction(transaction))
             {
                 PendingTransactions.addPendingLocalTransaction(transaction);
                 res = transaction.toDictionary();
@@ -901,7 +902,7 @@ namespace IXICore
             }
 
             byte[] from = Base58Check.Base58CheckEncoding.DecodePlain((string)parameters["from"]);
-            if (Node.walletState.getWallet(from).type != WalletType.Multisig)
+            if (IxianHandler.getWallet(from).type != WalletType.Multisig)
             {
                 error = new JsonError { code = (int)RPCErrorCode.RPC_WALLET_ERROR, message = "The specified 'from' wallet is not a multisig wallet." };
                 return new JsonResponse { result = null, error = error };
@@ -909,13 +910,13 @@ namespace IXICore
             // Only create a transaction if there is a valid amount
             if (amount > 0)
             {
-                Transaction transaction = Transaction.multisigTransaction(fee, toList, from, Node.getLastBlockHeight());
+                Transaction transaction = Transaction.multisigTransaction(fee, toList, from, IxianHandler.getHighestKnownNetworkBlockHeight());
                 if (transaction == null)
                 {
                     error = new JsonError { code = (int)RPCErrorCode.RPC_INTERNAL_ERROR, message = "An error occured while creating multisig transaction" };
                     return new JsonResponse { result = null, error = error };
                 }
-                Wallet wallet = Node.walletState.getWallet(from);
+                Wallet wallet = IxianHandler.getWallet(from);
                 if (wallet.balance < transaction.amount + transaction.fee)
                 {
                     error = new JsonError { code = (int)RPCErrorCode.RPC_WALLET_INSUFFICIENT_FUNDS, message = "Your account's balance is less than the sending amount + fee." };
@@ -923,7 +924,7 @@ namespace IXICore
                 }
                 else
                 {
-                    if (Node.addTransaction(transaction))
+                    if (IxianHandler.addTransaction(transaction))
                     {
                         PendingTransactions.addPendingLocalTransaction(transaction);
                         res = transaction.toDictionary();
@@ -957,8 +958,8 @@ namespace IXICore
             byte[] signer_address = new Address(Base58Check.Base58CheckEncoding.DecodePlain(signer)).address;
             IxiNumber fee = ConsensusConfig.transactionPrice;
 
-            Transaction transaction = Transaction.multisigAddKeyTransaction(signer_address, fee, destWallet, Node.getLastBlockHeight());
-            if (Node.addTransaction(transaction))
+            Transaction transaction = Transaction.multisigAddKeyTransaction(signer_address, fee, destWallet, IxianHandler.getHighestKnownNetworkBlockHeight());
+            if (IxianHandler.addTransaction(transaction))
             {
                 PendingTransactions.addPendingLocalTransaction(transaction);
                 return new JsonResponse { result = transaction.toDictionary(), error = null };
@@ -987,8 +988,8 @@ namespace IXICore
 
             IxiNumber fee = ConsensusConfig.transactionPrice;
 
-            Transaction transaction = Transaction.multisigDelKeyTransaction(signer_address, fee, destWallet, Node.getLastBlockHeight());
-            if (Node.addTransaction(transaction))
+            Transaction transaction = Transaction.multisigDelKeyTransaction(signer_address, fee, destWallet, IxianHandler.getHighestKnownNetworkBlockHeight());
+            if (IxianHandler.addTransaction(transaction))
             {
                 PendingTransactions.addPendingLocalTransaction(transaction);
                 return new JsonResponse { result = transaction.toDictionary(), error = null };
@@ -1017,8 +1018,8 @@ namespace IXICore
             if (byte.TryParse(sigs, out byte reqSigs))
             {
 
-                Transaction transaction = Transaction.multisigChangeReqSigs(reqSigs, fee, destWallet, Node.getLastBlockHeight());
-                if (Node.addTransaction(transaction))
+                Transaction transaction = Transaction.multisigChangeReqSigs(reqSigs, fee, destWallet, IxianHandler.getHighestKnownNetworkBlockHeight());
+                if (IxianHandler.addTransaction(transaction))
                 {
                     PendingTransactions.addPendingLocalTransaction(transaction);
                     return new JsonResponse { result = transaction.toDictionary(), error = null };
@@ -1052,7 +1053,7 @@ namespace IXICore
 
             foreach (Address addr in address_list)
             {
-                address_balance_list.Add(addr.ToString(), Node.walletState.getWalletBalance(addr.address).ToString());
+                address_balance_list.Add(addr.ToString(), IxianHandler.getWalletBalance(addr.address).ToString());
             }
 
             return new JsonResponse { result = address_balance_list, error = error };
@@ -1098,35 +1099,29 @@ namespace IXICore
             networkArray.Add("Network type", netType);
             networkArray.Add("My time", Clock.getTimestamp());
             networkArray.Add("Network time difference", Core.networkTimeDifference);
-            networkArray.Add("My External IP", Config.publicServerIP);
+            networkArray.Add("My External IP", NetworkClientManager.publicIP);
             //networkArray.Add("Listening interface", context.Request.RemoteEndPoint.Address.ToString());
             networkArray.Add("Queues", "Rcv: " + NetworkQueue.getQueuedMessageCount() + ", RcvTx: " + NetworkQueue.getTxQueuedMessageCount()
                 + ", SendClients: " + NetworkServer.getQueuedMessageCount() + ", SendServers: " + NetworkClientManager.getQueuedMessageCount()
                 + ", Logging: " + Logging.getRemainingStatementsCount() + ", Pending Transactions: " + PendingTransactions.pendingTransactionCount());
 
-            networkArray.Add("Block Height", Node.getLastBlockHeight());
-            networkArray.Add("Block Version", Node.getLastBlockVersion());
-            networkArray.Add("Network Block Height", Node.getHighestKnownNetworkBlockHeight());
-            networkArray.Add("Required Consensus", Node.getRequiredConsensus());
-            networkArray.Add("Node Type", Node.getNodeType());
+            networkArray.Add("Block Height", IxianHandler.getLastBlockHeight());
+            networkArray.Add("Block Version", IxianHandler.getLastBlockVersion());
+            networkArray.Add("Network Block Height", IxianHandler.getHighestKnownNetworkBlockHeight());
+            networkArray.Add("Node Type", IxianHandler.getNodeType());
             networkArray.Add("Connectable", NetworkServer.isConnectable());
 
             if (parameters.ContainsKey("verbose"))
             {
-                networkArray.Add("Wallets", Node.walletState.numWallets);
                 networkArray.Add("Presences", PresenceList.getTotalPresences());
-                networkArray.Add("Supply", Node.walletState.calculateTotalSupply().ToString());
-                networkArray.Add("WS Checksum", Crypto.hashToString(Node.walletState.calculateWalletStateChecksum()));
-                networkArray.Add("WS Delta Checksum", Crypto.hashToString(Node.walletState.calculateWalletStateChecksum(true)));
+                networkArray.Add("Masters", PresenceList.countPresences('M'));
+                networkArray.Add("Relays", PresenceList.countPresences('R'));
+                networkArray.Add("Clients", PresenceList.countPresences('C'));
+                networkArray.Add("Workers", PresenceList.countPresences('W'));
+
+                networkArray.Add("Network Clients", NetworkServer.getConnectedClients());
+                networkArray.Add("Network Servers", NetworkClientManager.getConnectedClients());
             }
-
-            networkArray.Add("Network Clients", NetworkServer.getConnectedClients());
-            networkArray.Add("Network Servers", NetworkClientManager.getConnectedClients());
-
-            networkArray.Add("Masters", PresenceList.countPresences('M'));
-            networkArray.Add("Relays", PresenceList.countPresences('R'));
-            networkArray.Add("Clients", PresenceList.countPresences('C'));
-            networkArray.Add("Workers", PresenceList.countPresences('W'));
 
 
             return new JsonResponse { result = networkArray, error = error };
@@ -1136,7 +1131,7 @@ namespace IXICore
         {
             JsonError error = null;
 
-            ulong blockheight = Node.getLastBlockHeight();
+            ulong blockheight = IxianHandler.getLastBlockHeight();
 
             return new JsonResponse { result = blockheight, error = error };
         }
@@ -1332,7 +1327,7 @@ namespace IXICore
             byte[] pubKey = Node.walletStorage.getKeyPair(primary_address_bytes).publicKeyBytes;
 
             // Check if this wallet's public key is already in the WalletState
-            Wallet mywallet = Node.walletState.getWallet(primary_address_bytes);
+            Wallet mywallet = IxianHandler.getWallet(primary_address_bytes);
             if (mywallet.publicKey != null && mywallet.publicKey.SequenceEqual(pubKey))
             {
                 // Walletstate public key matches, we don't need to send the public key in the transaction
@@ -1354,7 +1349,7 @@ namespace IXICore
                 return new JsonResponse { result = null, error = new JsonError() { code = (int)RPCErrorCode.RPC_VERIFY_ERROR, message = "From list is empty" } };
             }
 
-            Transaction transaction = new Transaction((int)Transaction.Type.Normal, fee, toList, fromList, null, pubKey, Node.getHighestKnownNetworkBlockHeight(), -1, sign_transaction);
+            Transaction transaction = new Transaction((int)Transaction.Type.Normal, fee, toList, fromList, null, pubKey, IxianHandler.getHighestKnownNetworkBlockHeight(), -1, sign_transaction);
             //Logging.info(String.Format("Intial transaction size: {0}.", transaction.getBytes().Length));
             //Logging.info(String.Format("Intial transaction set fee: {0}.", transaction.fee));
             if (adjust_amount) //true only if automatically generating from address
@@ -1371,7 +1366,7 @@ namespace IXICore
                     {
                         return new JsonResponse { result = null, error = new JsonError() { code = (int)RPCErrorCode.RPC_VERIFY_ERROR, message = "From list is empty" } };
                     }
-                    transaction = new Transaction((int)Transaction.Type.Normal, fee, toList, fromList, null, pubKey, Node.getHighestKnownNetworkBlockHeight(), -1, sign_transaction);
+                    transaction = new Transaction((int)Transaction.Type.Normal, fee, toList, fromList, null, pubKey, IxianHandler.getHighestKnownNetworkBlockHeight(), -1, sign_transaction);
                 }
             }
             else if (auto_fee) // true if user specified both a valid from address and the parameter autofee=true
@@ -1379,11 +1374,11 @@ namespace IXICore
                 // fee is taken from the first specified address
                 byte[] first_address = fromList.Keys.First();
                 fromList[first_address] = fromList[first_address] + transaction.fee;
-                if (fromList[first_address] > Node.walletState.getWalletBalance((new Address(transaction.pubKey, first_address)).address))
+                if (fromList[first_address] > IxianHandler.getWalletBalance((new Address(transaction.pubKey, first_address)).address))
                 {
                     return new JsonResponse { result = null, error = new JsonError() { code = (int)RPCErrorCode.RPC_WALLET_INSUFFICIENT_FUNDS, message = "Balance is too low" } };
                 }
-                transaction = new Transaction((int)Transaction.Type.Normal, fee, toList, fromList, null, pubKey, Node.getHighestKnownNetworkBlockHeight(), -1, sign_transaction);
+                transaction = new Transaction((int)Transaction.Type.Normal, fee, toList, fromList, null, pubKey, IxianHandler.getHighestKnownNetworkBlockHeight(), -1, sign_transaction);
             }
             //Logging.info(String.Format("Transaction size after automatic adjustments: {0}.", transaction.getBytes().Length));
             //Logging.info(String.Format("Transaction fee after automatic adjustments: {0}.", transaction.fee));

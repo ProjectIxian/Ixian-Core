@@ -6,6 +6,7 @@ using System.Text;
 using System.Linq;
 using IXICore.Utils;
 using IXICore;
+using IXICore.Meta;
 
 namespace DLT
 {
@@ -735,7 +736,7 @@ namespace DLT
             byte[] private_key = Node.walletStorage.getPrimaryPrivateKey();
             byte[] signature = CryptoManager.lib.getSignature(blockChecksum, private_key);
 
-            Wallet w = Node.walletState.getWallet(myAddress);
+            Wallet w = IxianHandler.getWallet(myAddress);
 
             byte[][] newSig = new byte[2][];
             newSig[0] = signature;
@@ -897,7 +898,7 @@ namespace DLT
             if (address_or_pub_key.Length >= 36 && address_or_pub_key.Length <= 128)
             {
                 // Extract the public key from the walletstate
-                Wallet signer_wallet = Node.walletState.getWallet(address_or_pub_key);
+                Wallet signer_wallet = IxianHandler.getWallet(address_or_pub_key);
                return signer_wallet.publicKey;
             }
             return null;
@@ -1075,7 +1076,7 @@ namespace DLT
                     {
                         addressBytes = keyOrAddress;
                         // Extract the public key from the walletstate
-                        Wallet signerWallet = Node.walletState.getWallet(addressBytes);
+                        Wallet signerWallet = IxianHandler.getWallet(addressBytes);
                         if (signerWallet != null && signerWallet.publicKey != null)
                         {
                             pubKeyBytes = signerWallet.publicKey;

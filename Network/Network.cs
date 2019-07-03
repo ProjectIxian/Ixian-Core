@@ -5,6 +5,7 @@ using System.Net;
 using System.Net.Sockets;
 using System.Net.NetworkInformation;
 using IXICore;
+using IXICore.Meta;
 
 namespace DLT
 {
@@ -578,7 +579,7 @@ namespace DLT
                 // Reset the network receive queue
                 NetworkQueue.reset();
 
-                if (!Node.isAcceptingConnections())
+                if (!IxianHandler.isAcceptingConnections())
                 {
                     Logging.info("Network server is not enabled in modes other than master node.");
                     NetworkServer.stopNetworkOperations();
@@ -597,7 +598,7 @@ namespace DLT
             static public void isolate()
             {
                 NetworkClientManager.isolate();
-                if (!Node.isMasterNode())
+                if (!IxianHandler.isAcceptingConnections())
                 {
                     Logging.info("Network server is not enabled in modes other than master node.");
                     NetworkServer.stopNetworkOperations();
