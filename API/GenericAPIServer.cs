@@ -605,7 +605,7 @@ namespace IXICore
         {
             JsonError error = null;
 
-            Node.forceShutdown = true;
+            IxianHandler.shutdown();
 
             return new JsonResponse { result = "Node shutdown", error = error };
         }
@@ -1139,6 +1139,7 @@ namespace IXICore
 
         private JsonResponse onActivity(Dictionary<string, object> parameters)
         {
+#if !__MOBILE__
             JsonError error = null;
 
             string fromIndex = "0";
@@ -1169,8 +1170,10 @@ namespace IXICore
             {
                 res = ActivityStorage.getActivitiesBySeedHashAndType(Node.walletStorage.getSeedHash(), (ActivityType)type, Int32.Parse(fromIndex), Int32.Parse(count), true);
             }
-
             return new JsonResponse { result = res, error = error };
+#else
+            return new JsonResponse { result = null, error = new JsonError() { code = (int)RPCErrorCode.RPC_INTERNAL_ERROR, message = "Activity not implemented" } };
+#endif
         }
 
         private JsonResponse onGenerateNewAddress(Dictionary<string, object> parameters)

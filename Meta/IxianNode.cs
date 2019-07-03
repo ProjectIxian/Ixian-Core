@@ -14,6 +14,7 @@ namespace IXICore.Meta
         public abstract bool isAcceptingConnections();
         public abstract Wallet getWallet(byte[] id);
         public abstract IxiNumber getWalletBalance(byte[] id);
+        public abstract void shutdown();
     }
 
     static class IxianHandler
@@ -106,5 +107,13 @@ namespace IXICore.Meta
             return handlerClass.getWalletBalance(id);
         }
 
+        public static void shutdown()
+        {
+            if (handlerClass == null)
+            {
+                throw new Exception("Handler Class must be specified in IxianHandler Class");
+            }
+            handlerClass.shutdown();
+        }
     }
 }
