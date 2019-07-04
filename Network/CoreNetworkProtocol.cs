@@ -424,7 +424,7 @@ namespace IXICore
                     writer.Write(Node.walletStorage.getPrimaryPublicKey());
 
                     // Send listening port
-                    writer.Write(NetworkServer.listeningPort);
+                    writer.Write(NetworkServer.getListeningPort());
 
                     // Send timestamp
                     long timestamp = Core.getCurrentTimestamp();

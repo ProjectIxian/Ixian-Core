@@ -32,7 +32,7 @@ namespace DLT
             ///  IP address on which the server will listen. For security reasons this is pre-set to the local loopback address and must be specifically
             ///  overwritten when starting the server.
             /// </summary>
-            public static int listeningPort = 10234;
+            private static int listeningPort = 10234;
 
             private static bool continueRunning = false;
             private static Thread netControllerThread = null;
@@ -51,24 +51,21 @@ namespace DLT
             /// </summary>
             public static bool connectable = true;
 
-            static NetworkServer()
-            {
-            }
-
-            private NetworkServer()
-            {
-            }
-
             /// <summary>
             ///  Starts listening for and accepting network connections.
             /// </summary>
-            public static void beginNetworkOperations()
+            public static void beginNetworkOperations(int listening_port)
             {
                 if (netControllerThread != null)
                 {
                     // already running
                     Logging.info("Network server thread is already running.");
                     return;
+                }
+
+                if(listening_port > 0)
+                {
+                    listeningPort = listening_port;
                 }
 
                 TLC = new ThreadLiveCheck();
@@ -157,13 +154,13 @@ namespace DLT
             /// <summary>
             ///  Restarts the network server.
             /// </summary>
-            public static void restartNetworkOperations()
+            public static void restartNetworkOperations(int server_port = 0)
             {
                 Logging.info("Stopping network server...");
                 stopNetworkOperations();
                 Thread.Sleep(1000);
                 Logging.info("Restarting network server...");
-                beginNetworkOperations();
+                beginNetworkOperations(server_port);
             }
 
             private static void networkOpsLoop(object data)
@@ -598,6 +595,11 @@ namespace DLT
                 }
 
                 return connectable;
+            }
+
+            static public int getListeningPort()
+            {
+                return listeningPort;
             }
         }
     }

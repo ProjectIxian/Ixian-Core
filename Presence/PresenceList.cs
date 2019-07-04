@@ -35,7 +35,7 @@ namespace DLT
             Logging.info("Generating presence list.");
 
             // Initialize with the default presence state
-            curNodePresenceAddress = new PresenceAddress(CoreConfig.device_id, string.Format("{0}:{1}", initial_ip, NetworkServer.listeningPort), type, CoreConfig.productVersion, 0, null);
+            curNodePresenceAddress = new PresenceAddress(CoreConfig.device_id, string.Format("{0}:{1}", initial_ip, NetworkServer.getListeningPort()), type, CoreConfig.productVersion, 0, null);
             curNodePresence = new Presence(Node.walletStorage.getPrimaryAddress(), Node.walletStorage.getPrimaryPublicKey(), null, curNodePresenceAddress);
         }
 
@@ -566,10 +566,13 @@ namespace DLT
                         }
                         else if (node_type == 'M' || node_type == 'H')
                         {
-                            // check balance
-                            if (IxianHandler.getWalletBalance(wallet) < ConsensusConfig.minimumMasterNodeFunds)
+                            if (IxianHandler.getNodeType() == 'M' || IxianHandler.getNodeType() == 'H')
                             {
-                                return false;
+                                // check balance
+                                if (IxianHandler.getWalletBalance(wallet) < ConsensusConfig.minimumMasterNodeFunds)
+                                {
+                                    return false;
+                                }
                             }
                         }
                         else if(node_type != '0')
