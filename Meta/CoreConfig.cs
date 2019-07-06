@@ -11,7 +11,7 @@ namespace IXICore
         /// <summary>
         /// Current version of IxiCore.
         /// </summary>
-        public static readonly string version = "xcore-0.5.0";
+        public static readonly string version = "xcore-0.5.0-dev";
 
         /// <summary>
         /// Current version of the Ixian network protocol.
@@ -65,10 +65,27 @@ namespace IXICore
         /// Duration (in milliseconds) between reconnection attempts to remote clients.
         /// </summary>
         public static readonly int networkClientReconnectInterval = 10 * 1000;
+        
         /// <summary>
-        /// Interval (in seconds) how often to send a 'Keep-Alive' packet into the network.
+        /// Interval (in seconds) how often to send a 'Keep-Alive' presence packet into the network for server (M, H, R) nodes.
         /// </summary>
-        public static readonly int keepAliveInterval = 45;
+        public static readonly int serverKeepAliveInterval = 200;
+        
+        /// <summary>
+        /// Interval (in seconds) how often to send a 'Keep-Alive' presence packet into the network for client nodes.
+        /// </summary>
+        public static readonly int clientKeepAliveInterval = 100;
+        
+        /// <summary>
+        /// Presence list entry expiration time (in seconds) for server presences
+        /// </summary>
+        public static readonly int serverPresenceExpiration = 600;
+
+        /// <summary>
+        /// Presence list entry expiration time (in seconds) for client presences
+        /// </summary>
+        public static readonly int clientPresenceExpiration = 300;
+
         /// <summary>
         /// Number of retries when connecting to a neighbor node, before giving up.
         /// </summary>

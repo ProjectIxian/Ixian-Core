@@ -85,33 +85,33 @@ namespace DLT
             bye = 2,
             getBlock = 3,
             blockData = 4,
-            getMeta = 5,
+            /*getMeta = 5,
             metaData = 6,
             getWallet = 7,
-            walletData = 8,
+            walletData = 8,*/
             getTransaction = 9,
             transactionData = 10,
-            syncPoolState = 11,
-            poolState = 12,
+            /*syncPoolState = 11,
+            poolState = 12,*/
             syncWalletState = 13,
             walletState = 14,
-            newWallet = 15,
+            /*newWallet = 15,*/
             newTransaction = 16,
             newBlock = 17,
-            getNeighbors = 18,
-            neighborData = 19,
+            /*getNeighbors = 18,
+            neighborData = 19,*/
             getWalletStateChunk = 20,
             walletStateChunk = 21,
-            syncPresenceList = 22,
+            getPresenceList = 22,
             presenceList = 23,
             updatePresence = 24,
-            removePresence = 25,
+            /*removePresence = 25,*/
             s2data = 26,
             s2failed = 27,
             s2signature = 28,
             s2keys = 29,
-            ping = 30,
-            pong = 31,
+            /*ping = 30,
+            pong = 31,*/
             getBalance = 32,
             balance = 33,
             keepAlivePresence = 34,
@@ -127,7 +127,8 @@ namespace DLT
             blockSignatures = 44,
             getNextSuperBlock = 45,
             getBlockHeaders = 46,
-            blockHeaders = 47
+            blockHeaders = 47,
+            getRandomPresences = 48
         }
 
         /// <summary>

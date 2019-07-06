@@ -85,8 +85,16 @@ namespace DLT
                     {
                         long currentTime = Core.getCurrentTimestamp();
                         long lTimestamp = local_addr.lastSeenTime;
+
+                        int expiration_time = CoreConfig.serverPresenceExpiration;
+
+                        if (local_addr.type == 'C')
+                        {
+                            expiration_time = CoreConfig.clientPresenceExpiration;
+                        }
+
                         // Check for tampering. Includes a +300, -30 second synchronization zone
-                        if ((currentTime - lTimestamp) > 300 || (currentTime - lTimestamp) < -30)
+                        if ((currentTime - lTimestamp) > expiration_time || (currentTime - lTimestamp) < -30)
                         {
                             Logging.warn(string.Format("[PL] Potential KEEPALIVE tampering for {0} {1}. Skipping; {2} - {3}", Crypto.hashToString(pr.wallet), local_addr.address, currentTime, lTimestamp));
                             continue;
@@ -281,9 +289,6 @@ namespace DLT
 
         public static bool syncFromBytes(byte[] bytes)
         {
-            // Clear the presence list
-            clear();
-
             using (MemoryStream m = new MemoryStream(bytes))
             {
                 using (BinaryReader reader = new BinaryReader(m))
@@ -361,6 +366,12 @@ namespace DLT
                     return false;
                 }
 
+                if(!entry.verifySignature(presence.pubkey))
+                {
+                    Logging.warn("Invalid presence received in verifyPresence, signature verification failed for {0}.", Base58Check.Base58CheckEncoding.EncodePlain(presence.wallet));
+                    return false;
+                }
+
             }
 
             return true;
@@ -407,8 +418,16 @@ namespace DLT
             while (autoKeepalive)
             {
                 TLC.Report();
+
+                int keepalive_interval = CoreConfig.serverKeepAliveInterval;
+
+                if(curNodePresenceAddress.type == 'C')
+                {
+                    keepalive_interval = CoreConfig.clientKeepAliveInterval;
+                }
+
                 // Wait x seconds before rechecking
-                for (int i = 0; i < CoreConfig.keepAliveInterval; i++)
+                for (int i = 0; i < keepalive_interval; i++)
                 {
                     if (autoKeepalive == false)
                     {
@@ -450,43 +469,7 @@ namespace DLT
 
             Thread.Yield();
         }
-
-        private static byte[] keepAlive_v0()
-        {
-            // Prepare the keepalive message
-            using (MemoryStream m = new MemoryStream())
-            {
-                using (BinaryWriter writer = new BinaryWriter(m))
-                {
-                    writer.Write(0);
-
-                    byte[] wallet = Node.walletStorage.getPrimaryAddress();
-                    writer.Write(wallet.Length);
-                    writer.Write(wallet);
-
-                    writer.Write(CoreConfig.device_id);
-
-                    // Add the unix timestamp
-                    long timestamp = Core.getCurrentTimestamp();
-                    writer.Write(timestamp);
-
-                    string hostname = NetworkClientManager.getFullPublicAddress();
-                    writer.Write(hostname);
-
-                    // Add a verifiable signature
-                    byte[] private_key = Node.walletStorage.getPrimaryPrivateKey();
-                    byte[] signature = CryptoManager.lib.getSignature(Encoding.UTF8.GetBytes(ConsensusConfig.ixianChecksumLockString + "-" + CoreConfig.device_id + "-" + timestamp + "-" + hostname), private_key);
-                    writer.Write(signature.Length);
-                    writer.Write(signature);
-
-                    PresenceList.curNodePresenceAddress.lastSeenTime = timestamp;
-                    PresenceList.curNodePresenceAddress.signature = signature;
-                }
-
-                return m.ToArray();
-            }
-        }
-
+        
         private static byte[] keepAlive_v1()
         {
             // Prepare the keepalive message
@@ -494,7 +477,7 @@ namespace DLT
             {
                 using (BinaryWriter writer = new BinaryWriter(m))
                 {
-                    writer.Write(1);
+                    writer.Write(1); // version
 
                     byte[] wallet = Node.walletStorage.getPrimaryAddress();
                     writer.Write(wallet.Length);
@@ -552,10 +535,9 @@ namespace DLT
                         long timestamp = reader.ReadInt64();
                         string hostname = reader.ReadString();
                         char node_type = '0';
-                        if (keepAliveVersion > 0)
-                        {
-                            node_type = reader.ReadChar();
-                        }
+
+                        node_type = reader.ReadChar();
+
                         int sigLen = reader.ReadInt32();
                         byte[] signature = reader.ReadBytes(sigLen);
                         //Logging.info(String.Format("[PL] KEEPALIVE request from {0}", hostname));
@@ -607,22 +589,12 @@ namespace DLT
                                 }
                                 return false;
                             }
-                            if (keepAliveVersion == 0)
+
+                            // Verify the signature
+                            if (CryptoManager.lib.verifySignature(bytes.Take(bytes.Length - sigLen - 4).ToArray(), listEntry.pubkey, signature) == false)
                             {
-                                // Verify the signature
-                                if (CryptoManager.lib.verifySignature(Encoding.UTF8.GetBytes(ConsensusConfig.ixianChecksumLockString + "-" + deviceid + "-" + timestamp + "-" + hostname), listEntry.pubkey, signature) == false)
-                                {
-                                    Logging.warn(string.Format("[PL] KEEPALIVE tampering for {0} {1}, incorrect Sig.", Base58Check.Base58CheckEncoding.EncodePlain(listEntry.wallet), hostname));
-                                    return false;
-                                }
-                            }else
-                            {
-                                // Verify the signature
-                                if (CryptoManager.lib.verifySignature(bytes.Take(bytes.Length - sigLen - 4).ToArray(), listEntry.pubkey, signature) == false)
-                                {
-                                    Logging.warn(string.Format("[PL] KEEPALIVE tampering for {0} {1}, incorrect Sig.", Base58Check.Base58CheckEncoding.EncodePlain(listEntry.wallet), hostname));
-                                    return false;
-                                }
+                                Logging.warn(string.Format("[PL] KEEPALIVE tampering for {0} {1}, incorrect Sig.", Base58Check.Base58CheckEncoding.EncodePlain(listEntry.wallet), hostname));
+                                return false;
                             }
 
                             PresenceAddress pa = listEntry.addresses.Find(x => x.address == hostname && x.device == deviceid);
@@ -639,8 +611,15 @@ namespace DLT
                                         return false;
                                     }
 
+                                    int expiration_time = CoreConfig.serverPresenceExpiration;
+
+                                    if (pa.type == 'C')
+                                    {
+                                        expiration_time = CoreConfig.clientPresenceExpiration;
+                                    }
+
                                     // Check for tampering. Includes a +300, -30 second synchronization zone
-                                    if ((currentTime - timestamp) > 300 || (currentTime - timestamp) < -30)
+                                    if ((currentTime - timestamp) > expiration_time || (currentTime - timestamp) < -30)
                                     {
                                         Logging.warn(string.Format("[PL] Potential KEEPALIVE tampering for {0} {1}. Timestamp {2}", Base58Check.Base58CheckEncoding.EncodePlain(listEntry.wallet), pa.address, timestamp));
                                         return false;
@@ -740,8 +719,15 @@ namespace DLT
 
                         try
                         {
+                            int expiration_time = CoreConfig.serverPresenceExpiration;
+
+                            if (pa.type == 'C')
+                            {
+                                expiration_time = CoreConfig.clientPresenceExpiration;
+                            }
+
                             // Check if timestamp is older than 300 seconds
-                            if((currentTime - pa.lastSeenTime) > 300)
+                            if ((currentTime - pa.lastSeenTime) > expiration_time)
                             {
                                 Logging.info(string.Format("Expired lastseen for {0} / {1}", pa.address, pa.device));
                                 removeAddressEntry(pr.wallet, pa);
@@ -751,7 +737,6 @@ namespace DLT
                                 Logging.info(string.Format("Expired future lastseen for {0} / {1}", pa.address, pa.device));
                                 removeAddressEntry(pr.wallet, pa);
                             }
-
                         }
                         catch(Exception e)
                         {
@@ -790,6 +775,7 @@ namespace DLT
             lock (presences)
             {
                 presences.Clear();
+                presenceCount = new Dictionary<char, long>();
             }
         }
 
@@ -815,6 +801,14 @@ namespace DLT
             lock (presences)
             {
                 return presences.Find(x => x.wallet.SequenceEqual(address));
+            }
+        }
+
+        public static List<Presence> getPresencesByType(char type)
+        {
+            lock (presences)
+            {
+                return presences.FindAll(x => x.addresses.Find(y => y.type == type) != null);
             }
         }
 

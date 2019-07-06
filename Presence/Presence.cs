@@ -90,6 +90,21 @@ namespace DLT
             }
         }
 
+        public bool verifySignature(byte[] pub_key)
+        {
+            byte[] bytes = getBytes();
+            if (signature != null)
+            {
+                int sig_len = signature.Length;
+                // Verify the signature
+                if (CryptoManager.lib.verifySignature(bytes.Take(bytes.Length - sig_len - 4).ToArray(), pub_key, signature))
+                {
+                    return true;
+                }
+            }
+            return false;
+        }
+
         public override bool Equals(object obj)
         {
             var item = obj as PresenceAddress;

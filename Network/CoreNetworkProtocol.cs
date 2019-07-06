@@ -167,7 +167,7 @@ namespace IXICore
                                 if (endpoint.presence == null)
                                 {
                                     // Check for presence and only accept hello and syncPL messages if there is no presence.
-                                    if (code == ProtocolMessageCode.hello || code == ProtocolMessageCode.syncPresenceList || code == ProtocolMessageCode.getBalance || code == ProtocolMessageCode.newTransaction)
+                                    if (code == ProtocolMessageCode.hello || code == ProtocolMessageCode.getPresenceList || code == ProtocolMessageCode.getBalance || code == ProtocolMessageCode.newTransaction)
                                     {
 
                                     }
