@@ -125,7 +125,9 @@ namespace DLT
             newBlockSignature = 42,
             getBlockSignatures = 43,
             blockSignatures = 44,
-            getNextSuperBlock = 45
+            getNextSuperBlock = 45,
+            getBlockHeaders = 46,
+            blockHeaders = 47
         }
 
         /// <summary>
