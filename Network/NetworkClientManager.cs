@@ -19,7 +19,7 @@ namespace DLT
         private static bool running = false;
         private static ThreadLiveCheck TLC;
 
-        public static string publicIP = "127.0.0.1";
+        public static string publicIP = "";
 
         // Starts the Network Client Manager. First it connects to one of the seed nodes in order to fetch the Presence List.
         // Afterwards, it starts the reconnect and keepalive threads

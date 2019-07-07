@@ -7,10 +7,7 @@ using System;
 using System.Collections.Generic;
 using System.IO;
 using System.Linq;
-using System.Net.Sockets;
-using System.Text;
 using System.Threading;
-using System.Threading.Tasks;
 
 namespace DLT
 {
@@ -27,6 +24,8 @@ namespace DLT
         private static Thread keepAliveThread;
         private static bool autoKeepalive = false;
         public static ThreadLiveCheck TLC;
+
+        public static bool forceSendKeepAlive = false;
 
 
         // Generate an initial presence list
@@ -349,32 +348,42 @@ namespace DLT
                 return false;
             }
 
+            List<PresenceAddress> valid_addresses = new List<PresenceAddress>();
+
             foreach (var entry in presence.addresses)
             {
                 if (entry.device.Length > 64)
                 {
-                    return false;
+                    continue;
                 }
 
                 if (entry.nodeVersion.Length > 64)
                 {
-                    return false;
+                    continue;
                 }
 
                 if (entry.address.Length > 24 && entry.address.Length < 9)
                 {
-                    return false;
+                    continue;
                 }
 
-                if(!entry.verifySignature(presence.pubkey))
+                if (!entry.verifySignature(presence.wallet, presence.pubkey))
                 {
-                    Logging.warn("Invalid presence received in verifyPresence, signature verification failed for {0}.", Base58Check.Base58CheckEncoding.EncodePlain(presence.wallet));
-                    return false;
+                    Logging.warn("Invalid presence address received in verifyPresence, signature verification failed for {0}.", Base58Check.Base58CheckEncoding.EncodePlain(presence.wallet));
+                    continue;
                 }
+
+                valid_addresses.Add(entry);
 
             }
 
-            return true;
+            if(valid_addresses.Count > 0)
+            {
+                presence.addresses = valid_addresses;
+                return true;
+            }
+
+            return false;
         }
 
         // Update a presence from a byte array
@@ -415,13 +424,14 @@ namespace DLT
         // Sends perioding keepalive network messages
         private static void keepAlive()
         {
+            forceSendKeepAlive = true;
             while (autoKeepalive)
             {
                 TLC.Report();
 
                 int keepalive_interval = CoreConfig.serverKeepAliveInterval;
 
-                if(curNodePresenceAddress.type == 'C')
+                if (curNodePresenceAddress.type == 'C')
                 {
                     keepalive_interval = CoreConfig.clientKeepAliveInterval;
                 }
@@ -431,14 +441,18 @@ namespace DLT
                 {
                     if (autoKeepalive == false)
                     {
-                        Thread.Yield();
                         return;
+                    }
+                    if(forceSendKeepAlive)
+                    {
+                        forceSendKeepAlive = false;
+                        break;
                     }
                     // Sleep for one second
                     Thread.Sleep(1000);
                 }
 
-                if(curNodePresenceAddress.type == 'W')
+                if (curNodePresenceAddress.type == 'W')
                 {
                     continue; // no need to send PL for worker nodes
                 }
@@ -452,7 +466,7 @@ namespace DLT
                     byte[] address = null;
 
                     // Update self presence
-                    PresenceList.receiveKeepAlive(ka_bytes, out address);
+                    PresenceList.receiveKeepAlive(ka_bytes, out address, null);
 
                     // Send this keepalive to all connected non-clients
                     CoreProtocolMessage.broadcastProtocolMessage(new char[] { 'M', 'R', 'H', 'W' }, ProtocolMessageCode.keepAlivePresence, ka_bytes, address);
@@ -460,14 +474,11 @@ namespace DLT
                     // Send this keepalive message to all connected clients
                     CoreProtocolMessage.broadcastEventDataMessage(NetworkEvents.Type.keepAlive, address, ProtocolMessageCode.keepAlivePresence, ka_bytes, address);
                 }
-                catch (Exception)
+                catch (Exception e)
                 {
-                    continue;
+                    Logging.error("Exception occured while generating keepalive: " + e);
                 }
-
             }
-
-            Thread.Yield();
         }
         
         private static byte[] keepAlive_v1()
@@ -489,7 +500,7 @@ namespace DLT
                     long timestamp = Core.getCurrentTimestamp();
                     writer.Write(timestamp);
 
-                    string hostname = NetworkClientManager.getFullPublicAddress();
+                    string hostname = curNodePresenceAddress.address;
                     writer.Write(hostname);
 
                     writer.Write(PresenceList.curNodePresenceAddress.type);
@@ -511,7 +522,7 @@ namespace DLT
         // Called when receiving a keepalive network message. The PresenceList will update the appropriate entry based on the timestamp.
         // Returns TRUE if it updated an entry in the PL
         // Sets the out address parameter to be the KA wallet's address or null if an error occured
-        public static bool receiveKeepAlive(byte[] bytes, out byte[] address)
+        public static bool receiveKeepAlive(byte[] bytes, out byte[] address, RemoteEndpoint endpoint)
         {
             address = null;
 
@@ -584,7 +595,14 @@ namespace DLT
                                         writer.Write(wallet.Length);
                                         writer.Write(wallet);
 
-                                        CoreProtocolMessage.broadcastProtocolMessage(new char[] { 'M', 'R' }, ProtocolMessageCode.getPresence, mw.ToArray(), null);
+                                        if (endpoint != null && endpoint.isConnected())
+                                        {
+                                            endpoint.sendData(ProtocolMessageCode.getPresence, mw.ToArray(), wallet);
+                                        }
+                                        else
+                                        {
+                                            CoreProtocolMessage.broadcastProtocolMessageToSingleRandomNode(new char[] { 'M', 'R', 'H' }, ProtocolMessageCode.getPresence, mw.ToArray(), 0, null);
+                                        }
                                     }
                                 }
                                 return false;
@@ -628,6 +646,7 @@ namespace DLT
                                     // Update the timestamp
                                     pa.lastSeenTime = timestamp;
                                     pa.signature = signature;
+                                    pa.version = keepAliveVersion;
                                     if (node_type != '0')
                                     {
                                         if (pa.type != node_type)
@@ -670,7 +689,13 @@ namespace DLT
                                             writer.Write(wallet.Length);
                                             writer.Write(wallet);
 
-                                            CoreProtocolMessage.broadcastProtocolMessage(new char[] { 'M', 'R' }, ProtocolMessageCode.getPresence, mw.ToArray(), null);
+                                            if (endpoint != null && endpoint.isConnected())
+                                            {
+                                                endpoint.sendData(ProtocolMessageCode.getPresence, mw.ToArray(), wallet);
+                                            }else
+                                            { 
+                                                CoreProtocolMessage.broadcastProtocolMessageToSingleRandomNode(new char[] { 'M', 'R', 'H'}, ProtocolMessageCode.getPresence, mw.ToArray(), 0, null);
+                                            }
                                         }
                                     }
                                     return false;

@@ -283,17 +283,29 @@ namespace IXICore
                 // Verify the signature
                 if (node_type == 'C')
                 {
-                    // TODO: verify if the client is connectable and if so, add the presence
+                    // TODO: verify if the client is connectable, then if connectable, check if signature verifies
 
-                    // Client is not connectable, don't add a presence
-                    return true;
+                    /*if (CryptoManager.lib.verifySignature(Encoding.UTF8.GetBytes(ConsensusConfig.ixianChecksumLockString + "-" + device_id + "-" + timestamp + "-" + endpoint.getFullAddress(true)), pubkey, signature) == false)
+                    {
+                        CoreProtocolMessage.sendBye(endpoint, ProtocolByeCode.incorrectIp, "Verify signature failed in hello message, likely an incorrect IP was specified. Detected IP:", endpoint.address);
+                        Logging.warn(string.Format("Connected node used an incorrect signature in hello message, likely an incorrect IP was specified. Detected IP: {0}", endpoint.address));
+                        return false;
+                    }*/
+                    // TODO store the full address if connectable
+                    // Store the presence address for this remote endpoint
+                    endpoint.presenceAddress = new PresenceAddress(device_id, "", node_type, node_version, Core.getCurrentTimestamp() - CoreConfig.serverKeepAliveInterval, null);
                 }
                 else
-                if (CryptoManager.lib.verifySignature(Encoding.UTF8.GetBytes(ConsensusConfig.ixianChecksumLockString + "-" + device_id + "-" + timestamp + "-" + endpoint.getFullAddress(true)), pubkey, signature) == false)
                 {
-                    CoreProtocolMessage.sendBye(endpoint, ProtocolByeCode.incorrectIp, "Verify signature failed in hello message, likely an incorrect IP was specified. Detected IP:", endpoint.address);
-                    Logging.warn(string.Format("Connected node used an incorrect signature in hello message, likely an incorrect IP was specified. Detected IP: {0}", endpoint.address));
-                    return false;
+                    if (!CryptoManager.lib.verifySignature(Encoding.UTF8.GetBytes(ConsensusConfig.ixianChecksumLockString + "-" + device_id + "-" + timestamp + "-" + endpoint.getFullAddress(true)), pubkey, signature))
+                    {
+                        CoreProtocolMessage.sendBye(endpoint, ProtocolByeCode.incorrectIp, "Verify signature failed in hello message, likely an incorrect IP was specified. Detected IP:", endpoint.address);
+                        Logging.warn(string.Format("Connected node used an incorrect signature in hello message, likely an incorrect IP was specified. Detected IP: {0}", endpoint.address));
+                        return false;
+                    }
+
+                    // Store the presence address for this remote endpoint
+                    endpoint.presenceAddress = new PresenceAddress(device_id, endpoint.getFullAddress(true), node_type, node_version, Core.getCurrentTimestamp() - CoreConfig.serverKeepAliveInterval, null);
                 }
 
                 // if we're a client update the network time difference
@@ -319,8 +331,6 @@ namespace IXICore
                     }
                 }
 
-                // Store the presence address for this remote endpoint
-                endpoint.presenceAddress = new PresenceAddress(device_id, endpoint.getFullAddress(true), node_type, node_version, Core.getCurrentTimestamp(), null);
 
                 // Create a temporary presence with the client's address and device id
                 Presence presence = new Presence(addr, pubkey, null, endpoint.presenceAddress);
@@ -378,6 +388,12 @@ namespace IXICore
                 sendBye(endpoint, ProtocolByeCode.deprecated, "Please update your Ixian node to connect.", "", true);
                 return false;
             }
+
+            if(NetworkClientManager.getConnectedClients().Count() == 1)
+            {
+                PresenceList.forceSendKeepAlive = true;
+            }
+
             return true;
         }
 

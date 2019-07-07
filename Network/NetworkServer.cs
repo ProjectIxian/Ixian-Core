@@ -32,7 +32,7 @@ namespace DLT
             ///  IP address on which the server will listen. For security reasons this is pre-set to the local loopback address and must be specifically
             ///  overwritten when starting the server.
             /// </summary>
-            private static int listeningPort = 10234;
+            private static int listeningPort = 0;
 
             private static bool continueRunning = false;
             private static Thread netControllerThread = null;

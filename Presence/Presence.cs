@@ -23,7 +23,7 @@ namespace DLT
 
         public PresenceAddress(string node_device, string node_address, char node_type, string node_version, long node_lastSeenTime, byte[] node_signature)
         {
-            version = 0;
+            version = 1;
             device = node_device;
             address = node_address;
             type = node_type;
@@ -90,18 +90,33 @@ namespace DLT
             }
         }
 
-        public bool verifySignature(byte[] pub_key)
+        public bool verifySignature(byte[] wallet, byte[] pub_key)
         {
-            byte[] bytes = getBytes();
-            if (signature != null)
+            using (MemoryStream m = new MemoryStream())
             {
-                int sig_len = signature.Length;
-                // Verify the signature
-                if (CryptoManager.lib.verifySignature(bytes.Take(bytes.Length - sig_len - 4).ToArray(), pub_key, signature))
+                if (signature != null)
                 {
-                    return true;
+                    using (BinaryWriter writer = new BinaryWriter(m))
+                    {
+                        writer.Write(1); // TODO TODO TODO version has been force to 1 here, it should be properly implemented to read from this.version
+                        writer.Write(wallet.Length);
+                        writer.Write(wallet);
+                        writer.Write(device);
+                        writer.Write(lastSeenTime);
+                        writer.Write(address);
+                        writer.Write(type);
+                    }
+
+                    byte[] bytes = m.ToArray();
+                    // Verify the signature
+                    if (CryptoManager.lib.verifySignature(bytes, pub_key, signature))
+                    {
+                        return true;
+                    }
                 }
             }
+
+
             return false;
         }
 
@@ -153,7 +168,6 @@ namespace DLT
         public byte[] pubkey;
         public byte[] metadata; 
         public List<PresenceAddress> addresses;
-        public string owner; // Represents the node that can perform changes for this presence (usually a master or relay node)
 
         public Presence()
         {
@@ -162,24 +176,6 @@ namespace DLT
             pubkey = null;
             metadata = null;
             addresses = new List<PresenceAddress> { };
-            //owner = PresenceList.getFirstMasterNodeAddress();
-            owner = " ";
-        }
-
-        public Presence(byte[] wallet_address, byte[] node_pubkey, string node_ip, char node_type, string node_version)
-        {
-            version = 0;
-            wallet = wallet_address;
-            pubkey = node_pubkey;
-            metadata = null;
-            addresses = new List<PresenceAddress> { };
-            
-            // Generate a device id
-            string deviceId = Guid.NewGuid().ToString();
-            PresenceAddress address = new PresenceAddress(deviceId, node_ip, node_type, node_version, 0, null);
-            addresses.Add(address);
-            owner = " ";
-
         }
 
         public Presence(byte[] wallet_address, byte[] node_pubkey, byte[] node_meta, PresenceAddress node_address)
@@ -190,7 +186,6 @@ namespace DLT
             metadata = node_meta;
             addresses = new List<PresenceAddress> { };
             addresses.Add(node_address);
-            owner = " ";
         }
 
         public Presence(byte[] bytes)
@@ -208,7 +203,6 @@ namespace DLT
                 wallet = null;
                 pubkey = null;
                 metadata = null;
-                owner = string.Empty;
 
 
                 using (MemoryStream m = new MemoryStream(bytes))
@@ -248,8 +242,6 @@ namespace DLT
                                 addresses.Add(new PresenceAddress(address_bytes));
                             }
                         }
-
-                        owner = reader.ReadString();
                     }
                 }
             }
@@ -323,8 +315,6 @@ namespace DLT
                             writer.Write(0);
                         }
                     }
-
-                    writer.Write(owner);
                 }
                 return m.ToArray();
             }
