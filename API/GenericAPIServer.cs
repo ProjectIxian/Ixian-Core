@@ -625,7 +625,7 @@ namespace IXICore
 
             if (!parameters.ContainsKey("to"))
             {
-                error = new JsonError { code = (int)RPCErrorCode.RPC_INVALID_PARAMETER, message = "to parameter is missing" };
+                error = new JsonError { code = (int)RPCErrorCode.RPC_INVALID_PARAMS, message = "to parameter is missing" };
                 return new JsonResponse { result = null, error = error };
             }
 
@@ -677,7 +677,7 @@ namespace IXICore
                 return new JsonResponse { result = transaction.toDictionary(), error = null };
             }
 
-            return new JsonResponse { result = null, error = new JsonError() { code = (int)RPCErrorCode.RPC_VERIFY_ERROR, message = "An unknown error occured while adding the transaction" } };
+            return new JsonResponse { result = null, error = new JsonError() { code = (int)RPCErrorCode.RPC_INTERNAL_ERROR, message = "An unknown error occured while adding the transaction" } };
         }
 
         private JsonResponse onCreateRawTransaction(Dictionary<string, object> parameters)
@@ -1269,7 +1269,7 @@ namespace IXICore
                         byte[] single_from_address = Base58Check.Base58CheckEncoding.DecodePlain(single_from_split[0]);
                         if (!Node.walletStorage.isMyAddress(single_from_address))
                         {
-                            return new JsonResponse { result = null, error = new JsonError() { code = (int)RPCErrorCode.RPC_INVALID_PARAMS, message = "Invalid from address was specified" } };
+                            return new JsonResponse { result = null, error = new JsonError() { code = (int)RPCErrorCode.RPC_INVALID_ADDRESS_OR_KEY, message = "Invalid from address was specified" } };
                         }
                         byte[] single_from_nonce = Node.walletStorage.getAddress(single_from_address).nonce;
                         IxiNumber singleFromAmount = new IxiNumber(single_from_split[1]);
@@ -1305,7 +1305,7 @@ namespace IXICore
                     byte[] single_to_address = Base58Check.Base58CheckEncoding.DecodePlain(single_to_split[0]);
                     if (!Address.validateChecksum(single_to_address))
                     {
-                        return new JsonResponse { result = null, error = new JsonError() { code = (int)RPCErrorCode.RPC_INVALID_PARAMS, message = "Invalid to address was specified" } };
+                        return new JsonResponse { result = null, error = new JsonError() { code = (int)RPCErrorCode.RPC_INVALID_ADDRESS_OR_KEY, message = "Invalid to address was specified" } };
                     }
                     IxiNumber singleToAmount = new IxiNumber(single_to_split[1]);
                     if (singleToAmount < 0 || singleToAmount == 0)
