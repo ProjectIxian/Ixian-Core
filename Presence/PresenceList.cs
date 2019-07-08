@@ -29,12 +29,12 @@ namespace DLT
 
 
         // Generate an initial presence list
-        public static void generatePresenceList(string initial_ip, char type = 'M')
+        public static void generatePresenceList(string initial_ip, int port, char type = 'M')
         {
             Logging.info("Generating presence list.");
 
             // Initialize with the default presence state
-            curNodePresenceAddress = new PresenceAddress(CoreConfig.device_id, string.Format("{0}:{1}", initial_ip, NetworkServer.getListeningPort()), type, CoreConfig.productVersion, 0, null);
+            curNodePresenceAddress = new PresenceAddress(CoreConfig.device_id, string.Format("{0}:{1}", initial_ip, port), type, CoreConfig.productVersion, 0, null);
             curNodePresence = new Presence(Node.walletStorage.getPrimaryAddress(), Node.walletStorage.getPrimaryPublicKey(), null, curNodePresenceAddress);
         }
 
@@ -105,15 +105,12 @@ namespace DLT
                         if (addr != null)
                         {
                             addressfound = true;
-                            if(addr.address != local_addr.address)
+                            if (addr.lastSeenTime < local_addr.lastSeenTime)
                             {
+                                addr.version = local_addr.version;
                                 addr.address = local_addr.address;
                                 addr.lastSeenTime = local_addr.lastSeenTime;
-                                entryUpdated = true;
-                            }
-                            else if (addr.lastSeenTime < local_addr.lastSeenTime)
-                            {
-                                addr.lastSeenTime = local_addr.lastSeenTime;
+                                addr.signature = local_addr.signature;
                                 entryUpdated = true;
                                 //Console.WriteLine("[PL] Last time updated for {0}", addr.device);
                             }
@@ -445,6 +442,7 @@ namespace DLT
                     }
                     if(forceSendKeepAlive)
                     {
+                        Thread.Sleep(1000);
                         forceSendKeepAlive = false;
                         break;
                     }
@@ -568,7 +566,7 @@ namespace DLT
                                 }
                             }
                         }
-                        else if(node_type != '0')
+                        else
                         {
                             // reject everything else
                             return false;
@@ -647,22 +645,19 @@ namespace DLT
                                     pa.lastSeenTime = timestamp;
                                     pa.signature = signature;
                                     pa.version = keepAliveVersion;
-                                    if (node_type != '0')
+                                    if (pa.type != node_type)
                                     {
-                                        if (pa.type != node_type)
+                                        lock (presenceCount)
                                         {
-                                            lock (presenceCount)
+                                            presenceCount[pa.type]--;
+                                            if (!presenceCount.ContainsKey(node_type))
                                             {
-                                                presenceCount[pa.type]--;
-                                                if (!presenceCount.ContainsKey(node_type))
-                                                {
-                                                    presenceCount.Add(node_type, 0);
-                                                }
-                                                presenceCount[node_type]++;
+                                                presenceCount.Add(node_type, 0);
                                             }
+                                            presenceCount[node_type]++;
                                         }
-                                        pa.type = node_type;
                                     }
+                                    pa.type = node_type;
 
                                     if (pa.type == 'M' || pa.type == 'H')
                                     {

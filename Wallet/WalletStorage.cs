@@ -906,6 +906,7 @@ namespace DLT
             if (writeWallet(password))
             {
                 backup();
+                return true;
             }
             return false;
         }

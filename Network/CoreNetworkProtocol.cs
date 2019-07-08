@@ -293,7 +293,7 @@ namespace IXICore
                     }*/
                     // TODO store the full address if connectable
                     // Store the presence address for this remote endpoint
-                    endpoint.presenceAddress = new PresenceAddress(device_id, "", node_type, node_version, Core.getCurrentTimestamp() - CoreConfig.serverKeepAliveInterval, null);
+                    endpoint.presenceAddress = new PresenceAddress(device_id, "", node_type, node_version, Core.getCurrentTimestamp() - CoreConfig.clientKeepAliveInterval, null);
                 }
                 else
                 {
