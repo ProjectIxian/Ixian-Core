@@ -89,10 +89,12 @@ namespace DLT
 
                 lock (txqueueMessages)
                 {
-                    // Move transaction messages to the transaction queue
+                    // Move block related messages to txqueue
                     if (code == ProtocolMessageCode.newTransaction || code == ProtocolMessageCode.transactionData
                         || code == ProtocolMessageCode.transactionsChunk || code == ProtocolMessageCode.newBlock || code == ProtocolMessageCode.blockData
-                        || code == ProtocolMessageCode.newBlockSignature || code == ProtocolMessageCode.blockSignatures)
+                        || code == ProtocolMessageCode.newBlockSignature || code == ProtocolMessageCode.blockSignatures
+                        || code == ProtocolMessageCode.getBlockSignatures || code == ProtocolMessageCode.getNextSuperBlock
+                        || code == ProtocolMessageCode.getBlockHeaders || code == ProtocolMessageCode.blockHeaders)
                     {
                         if(message.helperData != null)
                         {

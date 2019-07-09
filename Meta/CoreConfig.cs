@@ -52,7 +52,7 @@ namespace IXICore
         /// <summary>
         ///  Maximum size of a network message in bytes.
         /// </summary>
-        public static readonly int maxMessageSize = 5000000;
+        public static readonly int maxMessageSize = 50000000;
         /// <summary>
         ///  Pong interval (in seconds) - if no data has been received from connected remote client for this time, a special packet will be sent instead to 'wake up' the receiver.
         /// </summary>

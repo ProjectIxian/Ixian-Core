@@ -301,9 +301,9 @@ namespace DLT
                         if (version > BlockVer.v5 && bytes.Length > 10240000)
                         {
                             throw new Exception("Block size is bigger than 10MB.");
-                        }else if(version < BlockVer.v6 && bytes.Length > 32768000)
+                        }else if(version < BlockVer.v6 && bytes.Length > 49152000)
                         {
-                            throw new Exception("Block size is bigger than 32MB.");
+                            throw new Exception("Block size is bigger than 49MB.");
                         }
 
                         blockNum = reader.ReadUInt64();
