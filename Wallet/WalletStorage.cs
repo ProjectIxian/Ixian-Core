@@ -1,7 +1,4 @@
-﻿using DLT.Meta;
-using IXICore;
-using IXICore.CryptoKey;
-using IXICore.Meta;
+﻿using IXICore.Meta;
 using IXICore.Utils;
 using System;
 using System.Collections.Generic;
@@ -9,7 +6,7 @@ using System.IO;
 using System.Linq;
 using System.Text;
 
-namespace DLT
+namespace IXICore
 {
     public class AddressData
     {
@@ -17,7 +14,7 @@ namespace DLT
         public IxianKeyPair keyPair = null;
     }
 
-    class WalletStorage
+    public class WalletStorage
     {
         protected string filename;
 
@@ -231,7 +228,7 @@ namespace DLT
                 return null;
             }
 
-            if (!DLT.CryptoManager.lib.testKeys(Encoding.Unicode.GetBytes("TEST TEST"), kp))
+            if (!IXICore.CryptoManager.lib.testKeys(Encoding.Unicode.GetBytes("TEST TEST"), kp))
             {
                 Logging.error("An error occured while testing the newly generated keypair, unable to produce a valid address.");
                 return null;

@@ -1,7 +1,13 @@
-﻿using DLT;
+﻿// TODO: Kludge - move this into Node abstraction
+#if S2_BUILD
+using S2.Meta;
+#elif LW_BUILD
+using LW.Meta;
+#else
 using DLT.Meta;
-using DLT.Network;
+#endif
 using IXICore.Meta;
+using IXICore.Network;
 using IXICore.Utils;
 using Newtonsoft.Json;
 using System;
@@ -15,7 +21,7 @@ using System.Threading;
 namespace IXICore
 {
     //! RPC error codes
-    enum RPCErrorCode
+    public enum RPCErrorCode
     {
         //! Standard JSON-RPC 2.0 errors
         RPC_INVALID_REQUEST = -32600,
@@ -56,27 +62,27 @@ namespace IXICore
         RPC_WALLET_ALREADY_UNLOCKED = -17, //! Wallet is already unlocked
     };
 
-    class JsonRpcRequest
+    public class JsonRpcRequest
     {
         public string id = null;
         public string method = null;
         public Dictionary<string, object> @params = null;
     }
 
-    class JsonError
+    public class JsonError
     {
         public int code = 0;
         public string message = null;
     }
 
-    class JsonResponse
+    public class JsonResponse
     {
         public object result = null;
         public JsonError error = null;
         public string id = null;
     }
 
-    class GenericAPIServer
+    public class GenericAPIServer
     {
         protected HttpListener listener;
         protected Thread apiControllerThread;

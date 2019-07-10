@@ -1,21 +1,17 @@
-﻿using DLT.Meta;
+﻿using IXICore.Meta;
+using Org.BouncyCastle.Crypto;
+using Org.BouncyCastle.Crypto.Engines;
+using Org.BouncyCastle.Crypto.Generators;
+using Org.BouncyCastle.Crypto.Parameters;
+using Org.BouncyCastle.Math;
+using Org.BouncyCastle.Security;
 using System;
 using System.Collections.Generic;
 using System.Linq;
-using System.Text;
-using DLT;
-using Org.BouncyCastle.Crypto.Generators;
-using Org.BouncyCastle.Crypto;
-using Org.BouncyCastle.Security;
-using Org.BouncyCastle.Crypto.Parameters;
-using Org.BouncyCastle.Math;
-using Org.BouncyCastle.Crypto.Encodings;
-using Org.BouncyCastle.Crypto.Engines;
-using System.IO;
-using Org.BouncyCastle.OpenSsl;
 using System.Security.Cryptography;
+using System.Text;
 
-namespace CryptoLibs
+namespace IXICore
 {
     class BouncyCastle : ICryptoLib
     {

@@ -1,6 +1,5 @@
 ﻿#if !__MOBILE__
 
-using IXICore;
 using IXICore.Utils;
 using SQLite;
 using System;
@@ -10,7 +9,7 @@ using System.Linq;
 using System.Numerics;
 using System.Text;
 
-namespace DLT.Meta
+namespace IXICore.Meta
 {
     /// <summary>
     /// Type of the stored activity item.

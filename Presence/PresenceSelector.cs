@@ -1,13 +1,11 @@
-﻿using System;
-using System.Linq;
-using System.Collections.Generic;
-using System.Text;
+﻿using IXICore.Meta;
+using System;
 using System.Collections;
-using DLT.Meta;
+using System.Collections.Generic;
+using System.Linq;
 
-namespace DLT
+namespace IXICore
 {
-
     public class AddressComparer : IComparer<byte[]>
     {
         public int Compare(byte[] x, byte[] y)

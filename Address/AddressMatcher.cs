@@ -1,8 +1,6 @@
-﻿using System;
-using System.Collections.Generic;
-using System.Text;
+﻿using System.Collections.Generic;
 
-namespace DLT
+namespace IXICore
 {
     /// <summary>
     ///  The other half of the implementation for `AddressClient`, which allows an untrusted party to check if given addresses

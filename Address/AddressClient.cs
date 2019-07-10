@@ -1,9 +1,8 @@
 ﻿using System;
 using System.Collections.Generic;
 using System.Linq;
-using System.Text;
 
-namespace DLT
+namespace IXICore
 {
     /// <summary>
     ///  Allows a client to generated a secret value with incorporated markers for multiple addresses.

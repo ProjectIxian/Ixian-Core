@@ -1,606 +1,601 @@
-﻿using System;
+﻿using IXICore.Meta;
+using System;
 using System.Collections.Generic;
-using System.Threading;
+using System.Linq;
 using System.Net;
 using System.Net.Sockets;
-using DLT.Meta;
-using System.Linq;
-using IXICore;
-using IXICore.Meta;
+using System.Threading;
 
-namespace DLT
+namespace IXICore.Network
 {
-    namespace Network
+    /// <summary>
+    ///  Helper structure which holds a single IP addresses on which the server component is listening. Used only to communicate the configuration
+    ///  to the server listening thread.
+    /// </summary>
+    public struct NetOpsData
+    {
+        public IPEndPoint listenAddress;
+    }
+
+    /// <summary>
+    ///  Ixian network server object. This is used to accept connections from Ixian clients or other nodes
+    ///  and recieve Ixian protocol messages.
+    ///  Basic protocol validation is performed before a specialized protocol parser is called.
+    /// </summary>
+    public class NetworkServer
     {
         /// <summary>
-        ///  Helper structure which holds a single IP addresses on which the server component is listening. Used only to communicate the configuration
-        ///  to the server listening thread.
+        ///  IP address on which the server will listen. For security reasons this is pre-set to the local loopback address and must be specifically
+        ///  overwritten when starting the server.
         /// </summary>
-        public struct NetOpsData
+        private static int listeningPort = 0;
+
+        private static bool continueRunning = false;
+        private static Thread netControllerThread = null;
+        private static TcpListener listener;
+        /// <summary>
+        ///  List of connected clients.
+        /// </summary>
+        public static List<RemoteEndpoint> connectedClients = new List<RemoteEndpoint>();
+
+        private static Dictionary<string, DateTime> nodeBlacklist = new Dictionary<string, DateTime>();
+        private static ThreadLiveCheck TLC;
+
+        private static DateTime lastIncomingConnectionTime = DateTime.UtcNow;
+        /// <summary>
+        ///  Flag, indicating whether the listening socket is open and accepting connections.
+        /// </summary>
+        public static bool connectable = true;
+
+        /// <summary>
+        ///  Starts listening for and accepting network connections.
+        /// </summary>
+        public static void beginNetworkOperations(int listening_port)
         {
-            public IPEndPoint listenAddress;
+            if (netControllerThread != null)
+            {
+                // already running
+                Logging.info("Network server thread is already running.");
+                return;
+            }
+
+            if (listening_port > 0)
+            {
+                listeningPort = listening_port;
+            }
+
+            TLC = new ThreadLiveCheck();
+            netControllerThread = new Thread(networkOpsLoop);
+            netControllerThread.Name = "Network_Server_Controller_Thread";
+            connectedClients = new List<RemoteEndpoint>();
+            continueRunning = true;
+
+            // Read the server port from the configuration
+            NetOpsData nod = new NetOpsData();
+            nod.listenAddress = new IPEndPoint(IPAddress.Any, listeningPort);
+            netControllerThread.Start(nod);
+
+            Logging.info(string.Format("Public network node address: {0} port {1}", NetworkClientManager.publicIP, NetworkServer.listeningPort));
+
         }
 
         /// <summary>
-        ///  Ixian network server object. This is used to accept connections from Ixian clients or other nodes
-        ///  and recieve Ixian protocol messages.
-        ///  Basic protocol validation is performed before a specialized protocol parser is called.
+        ///  Stops listening for new connections and disconnects all connected clients.
         /// </summary>
-        public class NetworkServer
+        public static void stopNetworkOperations()
         {
-            /// <summary>
-            ///  IP address on which the server will listen. For security reasons this is pre-set to the local loopback address and must be specifically
-            ///  overwritten when starting the server.
-            /// </summary>
-            private static int listeningPort = 0;
-
-            private static bool continueRunning = false;
-            private static Thread netControllerThread = null;
-            private static TcpListener listener;
-            /// <summary>
-            ///  List of connected clients.
-            /// </summary>
-            public static List<RemoteEndpoint> connectedClients = new List<RemoteEndpoint>();
-
-            private static Dictionary<string, DateTime> nodeBlacklist = new Dictionary<string, DateTime>();
-            private static ThreadLiveCheck TLC;
-
-            private static DateTime lastIncomingConnectionTime = DateTime.UtcNow;
-            /// <summary>
-            ///  Flag, indicating whether the listening socket is open and accepting connections.
-            /// </summary>
-            public static bool connectable = true;
-
-            /// <summary>
-            ///  Starts listening for and accepting network connections.
-            /// </summary>
-            public static void beginNetworkOperations(int listening_port)
+            if (netControllerThread == null)
             {
-                if (netControllerThread != null)
+                // not running
+                Logging.info("Network server thread was already halted.");
+                return;
+            }
+            continueRunning = false;
+
+            netControllerThread.Abort();
+            netControllerThread = null;
+
+            // Close blocking socket
+            listener.Stop();
+
+            Logging.info("Closing network server connected clients");
+            // Clear all clients
+            lock (connectedClients)
+            {
+                // Immediately close all connected client sockets
+                foreach (RemoteEndpoint client in connectedClients)
                 {
-                    // already running
-                    Logging.info("Network server thread is already running.");
-                    return;
+                    client.stop();
                 }
 
-                if(listening_port > 0)
-                {
-                    listeningPort = listening_port;
-                }
+                connectedClients.Clear();
+            }
+        }
 
-                TLC = new ThreadLiveCheck();
-                netControllerThread = new Thread(networkOpsLoop);
-                netControllerThread.Name = "Network_Server_Controller_Thread";
-                connectedClients = new List<RemoteEndpoint>();
-                continueRunning = true;
-
-                // Read the server port from the configuration
-                NetOpsData nod = new NetOpsData();
-                nod.listenAddress = new IPEndPoint(IPAddress.Any, listeningPort);
-                netControllerThread.Start(nod);
-
-                Logging.info(string.Format("Public network node address: {0} port {1}", NetworkClientManager.publicIP, NetworkServer.listeningPort));
-
+        /// <summary>
+        ///  Checks the list of clients and removes the ones who have disconnected since the last check.
+        /// </summary>
+        public static void handleDisconnectedClients()
+        {
+            List<RemoteEndpoint> netClients = null;
+            lock (connectedClients)
+            {
+                netClients = new List<RemoteEndpoint>(connectedClients);
             }
 
-            /// <summary>
-            ///  Stops listening for new connections and disconnects all connected clients.
-            /// </summary>
-            public static void stopNetworkOperations()
+            // Prepare a list of failed clients
+            List<RemoteEndpoint> failed_clients = new List<RemoteEndpoint>();
+
+            foreach (RemoteEndpoint client in netClients)
             {
-                if (netControllerThread == null)
+                if (client.isConnected())
                 {
-                    // not running
-                    Logging.info("Network server thread was already halted.");
-                    return;
+                    continue;
                 }
-                continueRunning = false;
+                failed_clients.Add(client);
+            }
 
-                netControllerThread.Abort();
-                netControllerThread = null;
-
-                // Close blocking socket
-                listener.Stop();
-
-                Logging.info("Closing network server connected clients");
-                // Clear all clients
+            // Go through the list of failed clients and remove them
+            foreach (RemoteEndpoint client in failed_clients)
+            {
+                client.stop();
                 lock (connectedClients)
                 {
-                    // Immediately close all connected client sockets
-                    foreach (RemoteEndpoint client in connectedClients)
+                    // Remove this endpoint from the network server
+                    connectedClients.Remove(client);
+                }
+            }
+        }
+
+        /// <summary>
+        ///  Restarts the network server.
+        /// </summary>
+        public static void restartNetworkOperations(int server_port = 0)
+        {
+            Logging.info("Stopping network server...");
+            stopNetworkOperations();
+            Thread.Sleep(1000);
+            Logging.info("Restarting network server...");
+            beginNetworkOperations(server_port);
+        }
+
+        private static void networkOpsLoop(object data)
+        {
+            if (data is NetOpsData)
+            {
+                try
+                {
+                    NetOpsData netOpsData = (NetOpsData)data;
+                    listener = new TcpListener(netOpsData.listenAddress);
+                    listener.Start();
+                }
+                catch (Exception e)
+                {
+                    Logging.error(string.Format("Exception starting server: {0}", e.ToString()));
+                    return;
+                }
+            }
+            else
+            {
+                Logging.error(String.Format("NetworkServer.networkOpsLoop called with incorrect data object. Expected 'NetOpsData', got '{0}'", data.GetType().ToString()));
+                return;
+            }
+            // housekeeping tasks
+            while (continueRunning)
+            {
+                TLC.Report();
+                handleDisconnectedClients();
+                // Use a blocking mechanism
+                try
+                {
+                    Socket handlerSocket = listener.AcceptSocket();
+                    acceptConnection(handlerSocket);
+                }
+                catch (SocketException)
+                {
+                    // Could be an interupt request
+                }
+                catch (Exception)
+                {
+                    if (continueRunning)
                     {
-                        client.stop();
+                        Logging.error("Exception occured in network server while trying to accept socket connection.");
+                        restartNetworkOperations();
+                    }
+                    return;
+                }
+
+                // Sleep to prevent cpu usage
+                Thread.Sleep(100);
+
+            }
+            Logging.info("Server listener thread ended.");
+        }
+
+        /// <summary>
+        ///  Sends the given data to all appropriate connected clients.
+        /// </summary>
+        /// <param name="types">Types of clients to which the data should be sent.</param>
+        /// <param name="code">Type of the protocol message being sent.</param>
+        /// <param name="data">Byte-field of the data, appropriate for the specific `code` used.</param>
+        /// <param name="helper_data">Optional, additional data to transmit after `data`.</param>
+        /// <param name="skipEndpoint">If given, the message will not be sent to this remote endpoint. This prevents echoing the message to the originating node.</param>
+        /// <returns>True, if at least one message was sent to at least one client.</returns>
+        public static bool broadcastData(char[] types, ProtocolMessageCode code, byte[] data, byte[] helper_data, RemoteEndpoint skipEndpoint = null)
+        {
+            bool result = false;
+            lock (connectedClients)
+            {
+                foreach (RemoteEndpoint endpoint in connectedClients)
+                {
+                    if (skipEndpoint != null)
+                    {
+                        if (endpoint == skipEndpoint)
+                            continue;
                     }
 
-                    connectedClients.Clear();
-                }
-            }
-
-            /// <summary>
-            ///  Checks the list of clients and removes the ones who have disconnected since the last check.
-            /// </summary>
-            public static void handleDisconnectedClients()
-            {
-                List<RemoteEndpoint> netClients = null;
-                lock (connectedClients)
-                {
-                    netClients = new List<RemoteEndpoint>(connectedClients);
-                }
-
-                // Prepare a list of failed clients
-                List<RemoteEndpoint> failed_clients = new List<RemoteEndpoint>();
-
-                foreach (RemoteEndpoint client in netClients)
-                {
-                    if (client.isConnected())
+                    if (!endpoint.isConnected())
                     {
                         continue;
                     }
-                    failed_clients.Add(client);
-                }
 
-                // Go through the list of failed clients and remove them
-                foreach (RemoteEndpoint client in failed_clients)
-                {
-                    client.stop();
-                    lock (connectedClients)
+                    if (endpoint.helloReceived == false)
                     {
-                        // Remove this endpoint from the network server
-                        connectedClients.Remove(client);
-                    }
-                }
-            }
-
-            /// <summary>
-            ///  Restarts the network server.
-            /// </summary>
-            public static void restartNetworkOperations(int server_port = 0)
-            {
-                Logging.info("Stopping network server...");
-                stopNetworkOperations();
-                Thread.Sleep(1000);
-                Logging.info("Restarting network server...");
-                beginNetworkOperations(server_port);
-            }
-
-            private static void networkOpsLoop(object data)
-            {
-                if (data is NetOpsData)
-                {
-                    try
-                    {
-                        NetOpsData netOpsData = (NetOpsData)data;
-                        listener = new TcpListener(netOpsData.listenAddress);
-                        listener.Start();
-                    }
-                    catch (Exception e)
-                    {
-                        Logging.error(string.Format("Exception starting server: {0}", e.ToString()));
-                        return;
-                    }
-                }
-                else
-                {
-                    Logging.error(String.Format("NetworkServer.networkOpsLoop called with incorrect data object. Expected 'NetOpsData', got '{0}'", data.GetType().ToString()));
-                    return;
-                }
-                // housekeeping tasks
-                while (continueRunning)
-                {
-                    TLC.Report();
-                    handleDisconnectedClients();
-                    // Use a blocking mechanism
-                    try
-                    {
-                        Socket handlerSocket = listener.AcceptSocket();
-                        acceptConnection(handlerSocket);
-                    }
-                    catch (SocketException)
-                    {
-                        // Could be an interupt request
-                    }
-                    catch (Exception)
-                    {
-                        if (continueRunning)
-                        {
-                            Logging.error("Exception occured in network server while trying to accept socket connection.");
-                            restartNetworkOperations();
-                        }
-                        return;
+                        continue;
                     }
 
-                    // Sleep to prevent cpu usage
-                    Thread.Sleep(100);
-
-                }
-                Logging.info("Server listener thread ended.");
-            }
-
-            /// <summary>
-            ///  Sends the given data to all appropriate connected clients.
-            /// </summary>
-            /// <param name="types">Types of clients to which the data should be sent.</param>
-            /// <param name="code">Type of the protocol message being sent.</param>
-            /// <param name="data">Byte-field of the data, appropriate for the specific `code` used.</param>
-            /// <param name="helper_data">Optional, additional data to transmit after `data`.</param>
-            /// <param name="skipEndpoint">If given, the message will not be sent to this remote endpoint. This prevents echoing the message to the originating node.</param>
-            /// <returns>True, if at least one message was sent to at least one client.</returns>
-            public static bool broadcastData(char[] types, ProtocolMessageCode code, byte[] data, byte[] helper_data, RemoteEndpoint skipEndpoint = null)
-            {
-                bool result = false;
-                lock (connectedClients)
-                {
-                    foreach (RemoteEndpoint endpoint in connectedClients)
+                    if (types != null)
                     {
-                        if (skipEndpoint != null)
-                        {
-                            if (endpoint == skipEndpoint)
-                                continue;
-                        }
-
-                        if (!endpoint.isConnected())
+                        if (endpoint.presenceAddress == null || !types.Contains(endpoint.presenceAddress.type))
                         {
                             continue;
                         }
+                    }
 
-                        if (endpoint.helloReceived == false)
-                        {
+                    endpoint.sendData(code, data, helper_data);
+                    result = true;
+                }
+            }
+            return result;
+        }
+
+        /// <summary>
+        ///  Sends the specified event to all connected clients.
+        ///  The information is only sent to those clients who have previously subscribed to this event type
+        /// </summary>
+        /// <param name="type">Types of the event that has occurred.</param>
+        /// <param name="code">Type of the protocol message being sent.</param>
+        /// <param name="data">Byte-field of the data, appropriate for the specific `code` used.</param>
+        /// <param name="address">Ixian Wallet Address which triggered the event</param>
+        /// <param name="helper_data">Optional, additional data to transmit after `data`.</param>
+        /// <param name="skipEndpoint">If given, the message will not be sent to this remote endpoint. This prevents echoing the message to the originating node.</param>
+        /// <returns>True, if at least one message was sent to at least one client.</returns>
+        public static bool broadcastEventData(NetworkEvents.Type type, ProtocolMessageCode code, byte[] data, byte[] address, byte[] helper_data, RemoteEndpoint skipEndpoint = null)
+        {
+            bool result = false;
+            lock (connectedClients)
+            {
+                foreach (RemoteEndpoint endpoint in connectedClients)
+                {
+                    if (skipEndpoint != null)
+                    {
+                        if (endpoint == skipEndpoint)
                             continue;
-                        }
+                    }
 
-                        if (types != null)
-                        {
-                            if (endpoint.presenceAddress == null || !types.Contains(endpoint.presenceAddress.type))
-                            {
-                                continue;
-                            }
-                        }
+                    if (!endpoint.isConnected())
+                    {
+                        continue;
+                    }
 
+                    if (endpoint.helloReceived == false)
+                    {
+                        continue;
+                    }
+
+                    if (endpoint.presenceAddress == null || endpoint.presenceAddress.type != 'C')
+                    {
+                        continue;
+                    }
+
+                    // Finally, check if the endpoint is subscribed to this event and address
+                    if (endpoint.isSubscribedToEvent(type, address))
+                    {
                         endpoint.sendData(code, data, helper_data);
                         result = true;
                     }
                 }
-                return result;
             }
+            return result;
+        }
 
-            /// <summary>
-            ///  Sends the specified event to all connected clients.
-            ///  The information is only sent to those clients who have previously subscribed to this event type
-            /// </summary>
-            /// <param name="type">Types of the event that has occurred.</param>
-            /// <param name="code">Type of the protocol message being sent.</param>
-            /// <param name="data">Byte-field of the data, appropriate for the specific `code` used.</param>
-            /// <param name="address">Ixian Wallet Address which triggered the event</param>
-            /// <param name="helper_data">Optional, additional data to transmit after `data`.</param>
-            /// <param name="skipEndpoint">If given, the message will not be sent to this remote endpoint. This prevents echoing the message to the originating node.</param>
-            /// <returns>True, if at least one message was sent to at least one client.</returns>
-            public static bool broadcastEventData(NetworkEvents.Type type, ProtocolMessageCode code, byte[] data, byte[] address, byte[] helper_data, RemoteEndpoint skipEndpoint = null)
+
+        /// <summary>
+        ///  Sends the specified network message to the given address, if it is known and connected among clients.
+        /// </summary>
+        /// <param name="address">Ixian Wallet Address - the recipient of the message</param>
+        /// <param name="code">Type of the network message to send</param>
+        /// <param name="message">Byte-field with the required data, as specified by `code`.</param>
+        /// <returns>True, if the message was delivered.</returns>
+        public static bool forwardMessage(byte[] address, ProtocolMessageCode code, byte[] message)
+        {
+            if (address == null)
             {
-                bool result = false;
-                lock (connectedClients)
-                {
-                    foreach (RemoteEndpoint endpoint in connectedClients)
-                    {
-                        if (skipEndpoint != null)
-                        {
-                            if (endpoint == skipEndpoint)
-                                continue;
-                        }
-
-                        if (!endpoint.isConnected())
-                        {
-                            continue;
-                        }
-
-                        if (endpoint.helloReceived == false)
-                        {
-                            continue;
-                        }
-
-                        if (endpoint.presenceAddress == null || endpoint.presenceAddress.type != 'C')
-                        {
-                            continue;
-                        }
-
-                        // Finally, check if the endpoint is subscribed to this event and address
-                        if (endpoint.isSubscribedToEvent(type, address))
-                        {
-                            endpoint.sendData(code, data, helper_data);
-                            result = true;
-                        }
-                    }
-                }
-                return result;
-            }
-
-
-            /// <summary>
-            ///  Sends the specified network message to the given address, if it is known and connected among clients.
-            /// </summary>
-            /// <param name="address">Ixian Wallet Address - the recipient of the message</param>
-            /// <param name="code">Type of the network message to send</param>
-            /// <param name="message">Byte-field with the required data, as specified by `code`.</param>
-            /// <returns>True, if the message was delivered.</returns>
-            public static bool forwardMessage(byte[] address, ProtocolMessageCode code, byte[] message)
-            {
-                if (address == null)
-                {
-                    Logging.warn("Cannot forward message to null address.");
-                    return false;
-                }
-
-                Logging.info(String.Format(">>>> Preparing to forward to {0}",
-                    Base58Check.Base58CheckEncoding.EncodePlain(address)));
-
-                lock (connectedClients)
-                {
-                    foreach (RemoteEndpoint endpoint in connectedClients)
-                    {
-                        // Skip connections without presence information
-                        if (endpoint.presence == null)
-                            continue;
-
-                        byte[] client_wallet = endpoint.presence.wallet;
-
-                        if (client_wallet != null && address.SequenceEqual(client_wallet))
-                        {
-                            Logging.info(">>>> Forwarding message");
-                            endpoint.sendData(code, message);
-
-                        }
-
-                    }
-                }
-
-                // TODO: broadcast to network if no connect clients found?
-
+                Logging.warn("Cannot forward message to null address.");
                 return false;
             }
 
-            /// <summary>
-            ///  Sends the protocol message to the specified neighbor node, given as a Hostname or IP address and port.
-            /// </summary>
-            /// <param name="neighbor">IP address or hostname and port for the neighbor.</param>
-            /// <param name="code">Type of the protocol message</param>
-            /// <param name="data">Data required by the protocol message `code`.</param>
-            /// <param name="helper_data">Optional, additional data to transmit after `data`.</param>
-            /// <returns>True if the data was sent to the specified neighbor.</returns>
-            public static bool sendToClient(string neighbor, ProtocolMessageCode code, byte[] data, byte[] helper_data)
+            Logging.info(String.Format(">>>> Preparing to forward to {0}",
+                Base58Check.Base58CheckEncoding.EncodePlain(address)));
+
+            lock (connectedClients)
             {
-                RemoteEndpoint client = null;
-                lock (connectedClients)
+                foreach (RemoteEndpoint endpoint in connectedClients)
                 {
-                    foreach (RemoteEndpoint ep in connectedClients)
+                    // Skip connections without presence information
+                    if (endpoint.presence == null)
+                        continue;
+
+                    byte[] client_wallet = endpoint.presence.wallet;
+
+                    if (client_wallet != null && address.SequenceEqual(client_wallet))
                     {
-                        if (ep.getFullAddress() == neighbor)
+                        Logging.info(">>>> Forwarding message");
+                        endpoint.sendData(code, message);
+
+                    }
+
+                }
+            }
+
+            // TODO: broadcast to network if no connect clients found?
+
+            return false;
+        }
+
+        /// <summary>
+        ///  Sends the protocol message to the specified neighbor node, given as a Hostname or IP address and port.
+        /// </summary>
+        /// <param name="neighbor">IP address or hostname and port for the neighbor.</param>
+        /// <param name="code">Type of the protocol message</param>
+        /// <param name="data">Data required by the protocol message `code`.</param>
+        /// <param name="helper_data">Optional, additional data to transmit after `data`.</param>
+        /// <returns>True if the data was sent to the specified neighbor.</returns>
+        public static bool sendToClient(string neighbor, ProtocolMessageCode code, byte[] data, byte[] helper_data)
+        {
+            RemoteEndpoint client = null;
+            lock (connectedClients)
+            {
+                foreach (RemoteEndpoint ep in connectedClients)
+                {
+                    if (ep.getFullAddress() == neighbor)
+                    {
+                        client = ep;
+                        break;
+                    }
+                }
+            }
+            if (client != null)
+            {
+                client.sendData(code, data, helper_data);
+                return true;
+            }
+            return false;
+        }
+
+        /// <summary>
+        ///  Retrieves all connected remote endpoints as hostnames or IP addresses and optionally ports.
+        /// </summary>
+        /// <param name="useIncomingPort">Whether the TCP port information should be included.</param>
+        /// <returns>List of connected clients with optional port information.</returns>
+        public static string[] getConnectedClients(bool useIncomingPort = false)
+        {
+            List<String> result = new List<String>();
+
+            lock (connectedClients)
+            {
+                foreach (RemoteEndpoint client in connectedClients)
+                {
+                    if (client.isConnected())
+                    {
+                        try
                         {
-                            client = ep;
-                            break;
+                            string client_name = client.getFullAddress(useIncomingPort);
+                            result.Add(client_name);
+                        }
+                        catch (Exception e)
+                        {
+                            Logging.warn(string.Format("NetworkServer->getConnectedClients: {0}", e.ToString()));
                         }
                     }
                 }
-                if (client != null)
-                {
-                    client.sendData(code, data, helper_data);
-                    return true;
-                }
-                return false;
             }
 
-            /// <summary>
-            ///  Retrieves all connected remote endpoints as hostnames or IP addresses and optionally ports.
-            /// </summary>
-            /// <param name="useIncomingPort">Whether the TCP port information should be included.</param>
-            /// <returns>List of connected clients with optional port information.</returns>
-            public static string[] getConnectedClients(bool useIncomingPort = false)
+            return result.ToArray();
+        }
+
+        private static void acceptConnection(Socket clientSocket)
+        {
+            IPEndPoint clientEndpoint = (IPEndPoint)clientSocket.RemoteEndPoint;
+            // Add timeouts and set socket options
+            //clientSocket.ReceiveTimeout = 5000;
+            //clientSocket.SendTimeout = 5000;
+            clientSocket.LingerState = new LingerOption(true, 3);
+            clientSocket.NoDelay = true;
+            clientSocket.Blocking = true;
+
+            if (!IxianHandler.isAcceptingConnections())
             {
-                List<String> result = new List<String>();
-
-                lock (connectedClients)
-                {
-                    foreach (RemoteEndpoint client in connectedClients)
-                    {
-                        if (client.isConnected())
-                        {
-                            try
-                            {
-                                string client_name = client.getFullAddress(useIncomingPort);
-                                result.Add(client_name);
-                            }
-                            catch (Exception e)
-                            {
-                                Logging.warn(string.Format("NetworkServer->getConnectedClients: {0}", e.ToString()));
-                            }
-                        }
-                    }
-                }
-
-                return result.ToArray();
+                Thread.Sleep(100); // wait a bit for check connectivity purposes
+                clientSocket.Send(CoreProtocolMessage.prepareProtocolMessage(ProtocolMessageCode.bye, new byte[1]));
+                clientSocket.Shutdown(SocketShutdown.Both);
+                clientSocket.Disconnect(true);
+                return;
             }
 
-            private static void acceptConnection(Socket clientSocket)
-            {
-                IPEndPoint clientEndpoint = (IPEndPoint)clientSocket.RemoteEndPoint;
-                // Add timeouts and set socket options
-                //clientSocket.ReceiveTimeout = 5000;
-                //clientSocket.SendTimeout = 5000;
-                clientSocket.LingerState = new LingerOption(true, 3);
-                clientSocket.NoDelay = true;
-                clientSocket.Blocking = true;
+            lastIncomingConnectionTime = DateTime.UtcNow;
+            connectable = true;
 
-                if (!IxianHandler.isAcceptingConnections())
+            // Setup the remote endpoint
+            RemoteEndpoint remoteEndpoint = new RemoteEndpoint();
+
+            lock (connectedClients)
+            {
+                if (connectedClients.Count + 1 > CoreConfig.maximumServerMasterNodes)
                 {
-                    Thread.Sleep(100); // wait a bit for check connectivity purposes
+                    Logging.warn(string.Format("Maximum number of connected clients reached. Disconnecting client: {0}:{1}",
+                        clientEndpoint.Address.ToString(), clientEndpoint.Port));
                     clientSocket.Send(CoreProtocolMessage.prepareProtocolMessage(ProtocolMessageCode.bye, new byte[1]));
                     clientSocket.Shutdown(SocketShutdown.Both);
                     clientSocket.Disconnect(true);
                     return;
                 }
 
-                lastIncomingConnectionTime = DateTime.UtcNow;
-                connectable = true;
-
-                // Setup the remote endpoint
-                RemoteEndpoint remoteEndpoint = new RemoteEndpoint();
-
-                lock (connectedClients)
+                var existing_clients = connectedClients.Where(re => re.remoteIP.Address == clientEndpoint.Address);
+                if (existing_clients.Count() > 0)
                 {
-                    if (connectedClients.Count + 1 > CoreConfig.maximumServerMasterNodes)
+                    Logging.warn(String.Format("Client {0}:{1} already connected as {2}.",
+                        clientEndpoint.Address.ToString(), clientEndpoint.Port, existing_clients.First().ToString()));
+                    clientSocket.Send(CoreProtocolMessage.prepareProtocolMessage(ProtocolMessageCode.bye, new byte[1]));
+                    clientSocket.Shutdown(SocketShutdown.Both);
+                    clientSocket.Disconnect(true);
+                    return;
+                }
+
+                connectedClients.Add(remoteEndpoint);
+
+                Logging.info(String.Format("Client connection accepted: {0} | #{1}/{2}", clientEndpoint.ToString(), connectedClients.Count + 1, CoreConfig.maximumServerMasterNodes));
+
+                remoteEndpoint.start(clientSocket);
+            }
+        }
+
+        /// <summary>
+        ///  Removes the given endpoint from the connected client list, but does not immediately issue a disconnect message.
+        /// </summary>
+        /// <param name="endpoint">Endpoint to remove</param>
+        /// <returns>True if the endpoint was removed or false if the endpoint was not known.</returns>
+        public static bool removeEndpoint(RemoteEndpoint endpoint)
+        {
+            bool result = false;
+            lock (connectedClients)
+            {
+                result = connectedClients.Remove(endpoint);
+            }
+            return result;
+        }
+
+        /// <summary>
+        ///  Retrieves the number of queued outgoing messages for all clients.
+        /// </summary>
+        /// <returns>Number of messages in all outgoing queues</returns>
+        public static int getQueuedMessageCount()
+        {
+            int messageCount = 0;
+            lock (connectedClients)
+            {
+                foreach (RemoteEndpoint client in connectedClients)
+                {
+                    messageCount += client.getQueuedMessageCount();
+                }
+            }
+            return messageCount;
+        }
+
+        /// <summary>
+        ///  Gets the client by sequential index.
+        /// </summary>
+        /// <param name="idx">Sequential index of the client.</param>
+        /// <returns>Client at the given index, or null if out of bounds.</returns>
+        public static RemoteEndpoint getClient(int idx)
+        {
+            lock (connectedClients)
+            {
+                int i = 0;
+                RemoteEndpoint lastClient = null;
+                foreach (RemoteEndpoint client in connectedClients)
+                {
+                    if (client.isConnected())
                     {
-                        Logging.warn(string.Format("Maximum number of connected clients reached. Disconnecting client: {0}:{1}",
-                            clientEndpoint.Address.ToString(), clientEndpoint.Port));
-                        clientSocket.Send(CoreProtocolMessage.prepareProtocolMessage(ProtocolMessageCode.bye, new byte[1]));
-                        clientSocket.Shutdown(SocketShutdown.Both);
-                        clientSocket.Disconnect(true);
-                        return;
+                        lastClient = client;
                     }
-
-                    var existing_clients = connectedClients.Where(re => re.remoteIP.Address == clientEndpoint.Address);
-                    if (existing_clients.Count() > 0)
+                    if (i == idx && lastClient != null)
                     {
-                        Logging.warn(String.Format("Client {0}:{1} already connected as {2}.",
-                            clientEndpoint.Address.ToString(), clientEndpoint.Port, existing_clients.First().ToString()));
-                        clientSocket.Send(CoreProtocolMessage.prepareProtocolMessage(ProtocolMessageCode.bye, new byte[1]));
-                        clientSocket.Shutdown(SocketShutdown.Both);
-                        clientSocket.Disconnect(true);
-                        return;
+                        break;
                     }
-
-                    connectedClients.Add(remoteEndpoint);
-
-                    Logging.info(String.Format("Client connection accepted: {0} | #{1}/{2}", clientEndpoint.ToString(), connectedClients.Count + 1, CoreConfig.maximumServerMasterNodes));
-
-                    remoteEndpoint.start(clientSocket);
+                    i++;
                 }
+                return lastClient;
             }
+        }
 
-            /// <summary>
-            ///  Removes the given endpoint from the connected client list, but does not immediately issue a disconnect message.
-            /// </summary>
-            /// <param name="endpoint">Endpoint to remove</param>
-            /// <returns>True if the endpoint was removed or false if the endpoint was not known.</returns>
-            public static bool removeEndpoint(RemoteEndpoint endpoint)
+
+        /// <summary>
+        ///  Adds the speficied node to the blacklist by public IP.
+        /// </summary>
+        /// <param name="ip">Node to blacklist.</param>
+        public static void blacklistNode(string ip)
+        {
+            lock (nodeBlacklist)
             {
-                bool result = false;
-                lock (connectedClients)
-                {
-                    result = connectedClients.Remove(endpoint);
-                }
-                return result;
+                nodeBlacklist.AddOrReplace(ip, DateTime.UtcNow);
             }
+        }
 
-            /// <summary>
-            ///  Retrieves the number of queued outgoing messages for all clients.
-            /// </summary>
-            /// <returns>Number of messages in all outgoing queues</returns>
-            public static int getQueuedMessageCount()
+        /// <summary>
+        ///  Checks if the specified IP is blacklisted.
+        /// </summary>
+        /// <param name="ip">IP address to check</param>
+        /// <returns>True, if the node is blacklisted.</returns>
+        public static bool isNodeBlacklisted(string ip)
+        {
+            lock (nodeBlacklist)
             {
-                int messageCount = 0;
-                lock (connectedClients)
+                if (nodeBlacklist.ContainsKey(ip))
                 {
-                    foreach (RemoteEndpoint client in connectedClients)
+                    DateTime dt = nodeBlacklist[ip];
+                    if ((DateTime.UtcNow - dt).TotalSeconds > 600)
                     {
-                        messageCount += client.getQueuedMessageCount();
+                        nodeBlacklist.Remove(ip);
                     }
-                }
-                return messageCount;
-            }
-
-            /// <summary>
-            ///  Gets the client by sequential index.
-            /// </summary>
-            /// <param name="idx">Sequential index of the client.</param>
-            /// <returns>Client at the given index, or null if out of bounds.</returns>
-            public static RemoteEndpoint getClient(int idx)
-            {
-                lock (connectedClients)
-                {
-                    int i = 0;
-                    RemoteEndpoint lastClient = null;
-                    foreach (RemoteEndpoint client in connectedClients)
-                    {
-                        if (client.isConnected())
-                        {
-                            lastClient = client;
-                        }
-                        if (i == idx && lastClient != null)
-                        {
-                            break;
-                        }
-                        i++;
-                    }
-                    return lastClient;
-                }
-            }
-
-
-            /// <summary>
-            ///  Adds the speficied node to the blacklist by public IP.
-            /// </summary>
-            /// <param name="ip">Node to blacklist.</param>
-            public static void blacklistNode(string ip)
-            {
-                lock (nodeBlacklist)
-                {
-                    nodeBlacklist.AddOrReplace(ip, DateTime.UtcNow);
-                }
-            }
-
-            /// <summary>
-            ///  Checks if the specified IP is blacklisted.
-            /// </summary>
-            /// <param name="ip">IP address to check</param>
-            /// <returns>True, if the node is blacklisted.</returns>
-            public static bool isNodeBlacklisted(string ip)
-            {
-                lock (nodeBlacklist)
-                {
-                    if (nodeBlacklist.ContainsKey(ip))
-                    {
-                        DateTime dt = nodeBlacklist[ip];
-                        if ((DateTime.UtcNow - dt).TotalSeconds > 600)
-                        {
-                            nodeBlacklist.Remove(ip);
-                        }
-                        return true;
-                    }
-                }
-                return false;
-            }
-
-            /// <summary>
-            ///  Checks if the server is running.
-            /// </summary>
-            /// <returns>True, if the network server is running and accepting connections.</returns>
-            public static bool isRunning()
-            {
-                return continueRunning;
-            }
-
-            /// <summary>
-            ///  Returns if the server is proven to be connectable.
-            ///  (Someone has connected to the server successfully within the past 5 minutes.)
-            /// </summary>
-            /// <returns>True, if the server is connectable from the Internet.</returns>
-            static public bool isConnectable()
-            {
-                if (getConnectedClients().Count() > 0)
-                {
                     return true;
                 }
-
-                if ((DateTime.UtcNow - lastIncomingConnectionTime).TotalSeconds < 300) // if somebody connected within 5 minutes the node is probably connectable
-                {
-                    return true;
-                }
-
-                return connectable;
             }
+            return false;
+        }
 
-            static public int getListeningPort()
+        /// <summary>
+        ///  Checks if the server is running.
+        /// </summary>
+        /// <returns>True, if the network server is running and accepting connections.</returns>
+        public static bool isRunning()
+        {
+            return continueRunning;
+        }
+
+        /// <summary>
+        ///  Returns if the server is proven to be connectable.
+        ///  (Someone has connected to the server successfully within the past 5 minutes.)
+        /// </summary>
+        /// <returns>True, if the server is connectable from the Internet.</returns>
+        static public bool isConnectable()
+        {
+            if (getConnectedClients().Count() > 0)
             {
-                return listeningPort;
+                return true;
             }
+
+            if ((DateTime.UtcNow - lastIncomingConnectionTime).TotalSeconds < 300) // if somebody connected within 5 minutes the node is probably connectable
+            {
+                return true;
+            }
+
+            return connectable;
+        }
+
+        static public int getListeningPort()
+        {
+            return listeningPort;
         }
     }
 }

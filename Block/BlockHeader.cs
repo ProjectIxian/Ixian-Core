@@ -1,12 +1,11 @@
-﻿using DLT.Meta;
-using IXICore;
+﻿using IXICore.Meta;
 using System;
 using System.Collections.Generic;
 using System.IO;
 using System.Linq;
 using System.Text;
 
-namespace DLT
+namespace IXICore
 {
     /// <summary>
     ///  An Ixian DLT Block Header.

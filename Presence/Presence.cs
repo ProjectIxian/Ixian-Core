@@ -1,12 +1,10 @@
-﻿using DLT.Meta;
-using DLT.Network;
-using IXICore;
+﻿using IXICore.Meta;
 using System;
 using System.Collections.Generic;
 using System.IO;
 using System.Linq;
 
-namespace DLT
+namespace IXICore
 {
     // TODO TODO TODO add sigs to PresenceAddress; when syncing with other nodes,
     // we can't rely on them sending the correct data, we have to verify with the originators sigs otherwise the entry is invalid

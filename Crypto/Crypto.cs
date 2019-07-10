@@ -2,7 +2,7 @@ using System;
 using System.Security.Cryptography;
 using System.Text;
 
-namespace DLT
+namespace IXICore
 {
     /// <summary>
     /// Shortcuts for some common Ixian cryptographic operations.

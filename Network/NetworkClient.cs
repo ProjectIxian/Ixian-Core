@@ -1,10 +1,8 @@
-﻿using DLT.Meta;
-using DLT.Network;
-using IXICore;
+﻿using IXICore.Meta;
 using System;
 using System.Net.Sockets;
 
-namespace DLT
+namespace IXICore.Network
 {
     /// <summary>
     ///  Implementation of the `RemoteEndpoint` interface as an Ixian network client.

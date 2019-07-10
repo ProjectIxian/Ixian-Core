@@ -1,4 +1,4 @@
-﻿using DLT.Meta;
+﻿using IXICore.Meta;
 using System;
 using System.Collections.Generic;
 using System.IO;
@@ -6,16 +6,16 @@ using System.Linq;
 using System.Net.Sockets;
 using System.Text;
 using System.Threading;
-using System.Threading.Tasks;
 
-namespace DLT
+namespace IXICore.Utils
 {
     struct NetOutQueueItem
     {
         public string socketDesc;
         public byte[] buffer;
     }
-    class NetDump
+
+    public class NetDump
     {
         private static NetDump _singletonInstance;
 

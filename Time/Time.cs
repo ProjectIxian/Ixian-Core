@@ -1,6 +1,6 @@
 using System;
 
-namespace DLT
+namespace IXICore
 {
 
     public class Clock

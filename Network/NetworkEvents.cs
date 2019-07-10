@@ -1,10 +1,8 @@
-﻿using DLT.Meta;
+﻿using IXICore.Meta;
 using System;
-using System.Collections.Generic;
 using System.IO;
-using System.Text;
 
-namespace DLT
+namespace IXICore.Network
 {
     public class NetworkEvents
     {

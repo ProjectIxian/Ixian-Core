@@ -1,6 +1,6 @@
 ﻿using System;
 
-namespace DLT.Meta
+namespace IXICore.Meta
 {
     /// <summary>
     /// Helper object to help diagnose and detect deadlocked threads.

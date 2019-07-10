@@ -1,4 +1,12 @@
-﻿using DLT.Meta;
+﻿// TODO: Kludge - move this into Node abstraction
+#if S2_BUILD
+using S2.Meta;
+#elif LW_BUILD
+using LW.Meta;
+#else
+using DLT.Meta;
+#endif
+using IXICore.Meta;
 using System;
 using System.Diagnostics;
 using System.Security.Permissions;

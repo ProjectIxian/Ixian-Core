@@ -1,5 +1,4 @@
-﻿using DLT;
-using DLT.Meta;
+﻿using IXICore.Meta;
 using System;
 using System.Collections.Generic;
 using System.IO;
@@ -177,7 +176,7 @@ namespace IXICore.CryptoKey
             Logging.info("Preparing entropy to benchmark key generation speed...");
             byte[] entropy = getNewRandomSeed(1024 * 1024);
             IXICore.CryptoKey.KeyDerivation kd = new IXICore.CryptoKey.KeyDerivation(entropy);
-            DLT.CryptoManager.initLib();
+            CryptoManager.initLib();
             Logging.info(String.Format("Starting key generation. Iterations: {0}", num_iterations));
             List<TimeSpan> generationTimes = new List<TimeSpan>();
             for (int i = 0; i < num_iterations; i++)
@@ -186,7 +185,7 @@ namespace IXICore.CryptoKey
                 Logging.info(String.Format("Generating key {0}...", i));
                 IxianKeyPair kp = kd.deriveKey(i, key_size, 65537);
                 TimeSpan generationTime = DateTime.Now - start;
-                bool success = DLT.CryptoManager.lib.testKeys(Encoding.Unicode.GetBytes("TEST TEST"), kp);
+                bool success = CryptoManager.lib.testKeys(Encoding.Unicode.GetBytes("TEST TEST"), kp);
                 double key_entropy = calculateBytestreamEntropy(kp.privateKeyBytes);
                 if (success && output != null)
                 {

@@ -1,5 +1,4 @@
-﻿
-namespace DLT
+﻿namespace IXICore
 {
     public class CryptoManager
     {
@@ -16,7 +15,7 @@ namespace DLT
 
         public static void initLib()
         {
-            lib = new CryptoLib(new CryptoLibs.BouncyCastle());
+            lib = new CryptoLib(new BouncyCastle());
         }
 
         // Initialize with a specific crypto library

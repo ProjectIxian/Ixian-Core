@@ -1,6 +1,5 @@
-﻿using DLT.Meta;
-using DLT.Network;
-using IXICore;
+﻿using IXICore.Meta;
+using IXICore.Utils;
 using System;
 using System.Collections.Generic;
 using System.IO;
@@ -9,7 +8,7 @@ using System.Net;
 using System.Net.Sockets;
 using System.Threading;
 
-namespace DLT
+namespace IXICore.Network
 {
     public class TimeSyncData
     {

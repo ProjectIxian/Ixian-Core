@@ -1,11 +1,10 @@
 ﻿using System;
 using System.Collections.Generic;
 using System.Linq;
-using System.Text;
 
 namespace IXICore.Utils
 {
-    class _ByteArrayComparer
+    public class _ByteArrayComparer
     {
         public static int Compare(byte[] x, byte[] y)
         {
@@ -21,9 +20,10 @@ namespace IXICore.Utils
 
             return x.Length.CompareTo(y.Length);
         }
+
     }
 
-    class ByteArrayComparer : IComparer<byte[]>, IEqualityComparer<byte[]>
+    public class ByteArrayComparer : IComparer<byte[]>, IEqualityComparer<byte[]>
     {
         public int Compare(byte[] x, byte[] y)
         {

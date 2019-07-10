@@ -1,14 +1,12 @@
-﻿using DLT.Meta;
-using DLT.Network;
-using IXICore;
+﻿using IXICore.Meta;
 using System;
 using System.Collections.Generic;
 using System.Linq;
 using System.Threading;
 
-namespace DLT
+namespace IXICore.Network
 {
-    class NetworkClientManager
+    public class NetworkClientManager
     {
         public static List<NetworkClient> networkClients = new List<NetworkClient>();
         private static List<string> connectingClients = new List<string>(); // A list of clients that we're currently connecting

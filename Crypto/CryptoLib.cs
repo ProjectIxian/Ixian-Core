@@ -1,6 +1,6 @@
 ﻿using System.Diagnostics;
 
-namespace DLT
+namespace IXICore
 {
     /// <summary>
     ///  Represents the raw data of an Ixian RSA key value.

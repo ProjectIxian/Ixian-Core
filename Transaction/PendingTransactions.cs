@@ -1,14 +1,9 @@
-﻿using DLT;
-using DLT.Meta;
-using DLT.Network;
-using System;
-using System.Collections.Generic;
+﻿using System.Collections.Generic;
 using System.Linq;
-using System.Text;
 
 namespace IXICore
 {
-    class PendingTransactions
+    public class PendingTransactions
     {
         public static List<object[]> pendingTransactions = new List<object[]>();
 

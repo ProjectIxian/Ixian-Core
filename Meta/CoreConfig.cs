@@ -1,7 +1,4 @@
-﻿using DLT;
-using System.Text;
-
-namespace IXICore
+﻿namespace IXICore
 {
     /// <summary>
     /// Basic Ixian (compile-time) configuration values.

@@ -1,12 +1,12 @@
-﻿using System;
+﻿using IXICore.Meta;
+using System;
 using System.Collections.Generic;
 using System.IO;
 using System.Linq;
-using DLT.Meta;
 
-namespace DLT
+namespace IXICore
 {
-    class PeerStorage
+    public class PeerStorage
     {
         private static List<Peer> peerList = new List<Peer>();
 

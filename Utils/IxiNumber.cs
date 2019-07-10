@@ -1,10 +1,8 @@
 ﻿using System;
-using System.Collections.Generic;
 using System.Linq;
 using System.Numerics;
-using System.Text;
 
-namespace DLT
+namespace IXICore
 {
     // An object representing an amount of IXI coins, complete with decimal support. Can handle very large amounts.
     public class IxiNumber

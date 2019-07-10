@@ -1,14 +1,9 @@
-﻿using DLT;
-using System;
-using System.Collections.Generic;
-using System.Text;
-
-namespace IXICore
+﻿namespace IXICore
 {
     /// <summary>
     /// A collection of utility functions.
     /// </summary>
-    class Core
+    public class Core
     {
         /// <summary>
         ///  Value represents the detected time offset from the network majority and is used when time synchronization is required.

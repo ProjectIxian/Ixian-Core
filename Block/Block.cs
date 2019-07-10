@@ -1,24 +1,30 @@
+// TODO: Kludge - move this into Node abstraction
+#if S2_BUILD
+using S2.Meta;
+#elif LW_BUILD
+using LW.Meta;
+#else
 using DLT.Meta;
+#endif
+using IXICore.Meta;
+using IXICore.Utils;
 using System;
 using System.Collections.Generic;
 using System.IO;
-using System.Text;
 using System.Linq;
-using IXICore.Utils;
-using IXICore;
-using IXICore.Meta;
+using System.Text;
 
-namespace DLT
+namespace IXICore
 {
-    static public class BlockVer
+    public static class BlockVer
     {
-        static public int v0 = 0;
-        static public int v1 = 1;
-        static public int v2 = 2;
-        static public int v3 = 3;
-        static public int v4 = 4;
-        static public int v5 = 5;
-        static public int v6 = 6;
+        public static int v0 = 0;
+        public static int v1 = 1;
+        public static int v2 = 2;
+        public static int v3 = 3;
+        public static int v4 = 4;
+        public static int v5 = 5;
+        public static int v6 = 6;
     }
 
     public class SuperBlockSegment

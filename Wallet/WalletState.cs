@@ -1,12 +1,11 @@
-﻿using DLT.Meta;
-using IXICore.Meta;
+﻿using IXICore.Meta;
 using IXICore.Utils;
 using System;
 using System.Collections.Generic;
 using System.Linq;
 using System.Text;
 
-namespace DLT
+namespace IXICore
 {
     public class WsChunk
     {
@@ -15,7 +14,7 @@ namespace DLT
         public Wallet[] wallets;
     }
 
-    class WalletState
+    public class WalletState
     {
         private readonly object stateLock = new object();
         public int version = 0;

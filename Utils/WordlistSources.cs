@@ -1,34 +1,15 @@
-﻿using System;
+﻿using IXICore.Meta;
+using System;
 using System.Collections.Generic;
-using System.Linq;
-using System.Text;
 using System.Threading.Tasks;
 
-namespace DLT
+namespace IXICore.Utils
 {
     public interface IWordlistSource
     {
         Task<Wordlist> Load(string name);
     }
 
-
-    public static class WordListExtensions
-    {
-        public static TValue TryGet<TKey, TValue>(this IDictionary<TKey, TValue> dictionary, TKey key)
-        {
-            TValue value;
-            dictionary.TryGetValue(key, out value);
-            return value;
-        }
-
-        public static void AddOrReplace<TKey, TValue>(this IDictionary<TKey, TValue> dico, TKey key, TValue value)
-        {
-            if (dico.ContainsKey(key))
-                dico[key] = value;
-            else
-                dico.Add(key, value);
-        }
-    }
 
     public class HardcodedWordlistSource : IWordlistSource
     {

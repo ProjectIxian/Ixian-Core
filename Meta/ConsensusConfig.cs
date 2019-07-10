@@ -1,12 +1,11 @@
-﻿using DLT;
-using System.Text;
+﻿using System.Text;
 
 namespace IXICore
 {
     /// <summary>
     /// Basic Ixian (compile-time) configuration values.
     /// </summary>
-    class ConsensusConfig
+    public class ConsensusConfig
     {
         /// <summary>
         ///  Target Block generation interval, in seconds.

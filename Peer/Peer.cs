@@ -1,11 +1,11 @@
 using System;
 
-namespace DLT
+namespace IXICore
 {
     /// <summary>
     ///  A network peer (remote endpoint).
     /// </summary>
-    class Peer
+    public class Peer
     {
         /// <summary>
         ///  Hostname or IP of the remote peer.
