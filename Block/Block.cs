@@ -404,7 +404,7 @@ namespace DLT
         ///  be returned. The byte buffer contains a copy of the block, so no thread synchronization is required.
         /// </remarks>
         /// <returns>Byte buffer with the serialized block.</returns>
-        public byte[] getBytes()
+        public byte[] getBytes( bool include_sb_segments = true)
         {
             if(compacted)
             {
@@ -512,12 +512,18 @@ namespace DLT
                         writer.Write((int)0);
                     }
 
-                    writer.Write(superBlockSegments.Count);
-                    foreach(var entry in superBlockSegments)
+                    if (include_sb_segments)
                     {
-                        writer.Write(entry.Key);
-                        writer.Write(entry.Value.blockChecksum.Length);
-                        writer.Write(entry.Value.blockChecksum);
+                        writer.Write(superBlockSegments.Count);
+                        foreach (var entry in superBlockSegments)
+                        {
+                            writer.Write(entry.Key);
+                            writer.Write(entry.Value.blockChecksum.Length);
+                            writer.Write(entry.Value.blockChecksum);
+                        }
+                    }else
+                    {
+                        writer.Write((int)0);
                     }
 #if TRACE_MEMSTREAM_SIZES
                     Logging.info(String.Format("Block::getBytes: {0}", m.Length));
