@@ -3,6 +3,8 @@
 using S2.Network;
 #elif LW_BUILD
 using LW.Network;
+#elif SPIXI_BUILD
+using SPIXI.Network;
 #else
 using DLT.Network;
 #endif
