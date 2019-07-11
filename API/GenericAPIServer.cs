@@ -3,6 +3,8 @@
 using S2.Meta;
 #elif LW_BUILD
 using LW.Meta;
+#elif SPIXI_BUILD
+using SPIXI.Meta;
 #else
 using DLT.Meta;
 #endif
