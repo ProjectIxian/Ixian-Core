@@ -375,5 +375,20 @@ namespace IXICore
                 return Crypto.sha512sqTrunc(rawData.ToArray());
             }
         }
+
+
+        /// <summary>
+        ///  Checks if the two blockheaders are exactly equal.
+        /// </summary>
+        /// <param name="bh">Other blockheader.</param>
+        /// <returns>True if both objects represent the same Ixian transaction.</returns>
+        public bool Equals(BlockHeader bh)
+        {
+            byte[] a1 = getBytes();
+            byte[] a2 = bh.getBytes();
+
+            return a1.SequenceEqual(a2);
+        }
+
     }
 }
