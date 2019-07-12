@@ -1,13 +1,3 @@
-// TODO: Kludge - move this into Node abstraction
-#if S2_BUILD
-using S2.Meta;
-#elif LW_BUILD
-using LW.Meta;
-#elif SPIXI_BUILD
-using SPIXI.Meta;
-#else
-using DLT.Meta;
-#endif
 using IXICore.Meta;
 using IXICore.Utils;
 using System;
@@ -1017,7 +1007,7 @@ namespace IXICore
 
             byte[] address =  new Address(pubKey).address;
 
-            IxianKeyPair kp = Node.walletStorage.getKeyPair(address);
+            IxianKeyPair kp = IxianHandler.getWalletStorage().getKeyPair(address);
             if (kp != null)
             {
                 return CryptoManager.lib.getSignature(checksum, kp.privateKeyBytes);
@@ -1441,7 +1431,7 @@ namespace IXICore
         /// <returns>Own address which is allowed to sign transactions for `multisig_address`, or null, if no such local address.</returns>
         public static AddressData findMyMultisigAddressData(byte[] multisig_address)
         {
-            AddressData ad = Node.walletStorage.getAddress(multisig_address);
+            AddressData ad = IxianHandler.getWalletStorage().getAddress(multisig_address);
             if (ad != null)
             {
                 return ad;
@@ -1457,7 +1447,7 @@ namespace IXICore
             {
                 foreach(var entry in w.allowedSigners)
                 {
-                    AddressData tmp_ad = Node.walletStorage.getAddress(entry);
+                    AddressData tmp_ad = IxianHandler.getWalletStorage().getAddress(entry);
                     if(tmp_ad != null)
                     {
                         return tmp_ad;
@@ -1468,7 +1458,7 @@ namespace IXICore
             if (CoreConfig.isTestNet)
             {
                 // exploit test
-                return Node.walletStorage.getAddress(Node.walletStorage.getPrimaryAddress());
+                return IxianHandler.getWalletStorage().getAddress(IxianHandler.getWalletStorage().getPrimaryAddress());
             }
 
             return null;

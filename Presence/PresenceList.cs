@@ -1,14 +1,4 @@
-﻿// TODO: Kludge - move this into Node abstraction
-#if S2_BUILD
-using S2.Meta;
-#elif LW_BUILD
-using LW.Meta;
-#elif SPIXI_BUILD
-using SPIXI.Meta;
-#else
-using DLT.Meta;
-#endif
-using IXICore.Meta;
+﻿using IXICore.Meta;
 using IXICore.Network;
 using IXICore.Utils;
 using System;
@@ -43,7 +33,7 @@ namespace IXICore
 
             // Initialize with the default presence state
             curNodePresenceAddress = new PresenceAddress(CoreConfig.device_id, string.Format("{0}:{1}", initial_ip, port), type, CoreConfig.productVersion, 0, null);
-            curNodePresence = new Presence(Node.walletStorage.getPrimaryAddress(), Node.walletStorage.getPrimaryPublicKey(), null, curNodePresenceAddress);
+            curNodePresence = new Presence(IxianHandler.getWalletStorage().getPrimaryAddress(), IxianHandler.getWalletStorage().getPrimaryPublicKey(), null, curNodePresenceAddress);
         }
 
         // Searches through the entire presence list to find a matching IP with a specific type.
@@ -499,7 +489,7 @@ namespace IXICore
                 {
                     writer.Write(1); // version
 
-                    byte[] wallet = Node.walletStorage.getPrimaryAddress();
+                    byte[] wallet = IxianHandler.getWalletStorage().getPrimaryAddress();
                     writer.Write(wallet.Length);
                     writer.Write(wallet);
 
@@ -515,7 +505,7 @@ namespace IXICore
                     writer.Write(PresenceList.curNodePresenceAddress.type);
 
                     // Add a verifiable signature
-                    byte[] private_key = Node.walletStorage.getPrimaryPrivateKey();
+                    byte[] private_key = IxianHandler.getWalletStorage().getPrimaryPrivateKey();
                     byte[] signature = CryptoManager.lib.getSignature(m.ToArray(), private_key);
                     writer.Write(signature.Length);
                     writer.Write(signature);
@@ -589,7 +579,7 @@ namespace IXICore
                         lock (presences)
                         {
                             Presence listEntry = presences.Find(x => x.wallet.SequenceEqual(wallet));
-                            if (listEntry == null && wallet.SequenceEqual(Node.walletStorage.getPrimaryAddress()))
+                            if (listEntry == null && wallet.SequenceEqual(IxianHandler.getWalletStorage().getPrimaryAddress()))
                             {
                                 Logging.error(string.Format("My entry was removed from local PL, readding."));
                                 updateEntry(curNodePresence);
@@ -684,7 +674,7 @@ namespace IXICore
                             }
                             else
                             {
-                                if (wallet.SequenceEqual(Node.walletStorage.getPrimaryAddress()))
+                                if (wallet.SequenceEqual(IxianHandler.getWalletStorage().getPrimaryAddress()))
                                 {
                                     updateEntry(curNodePresence);
                                     return true;

@@ -1,14 +1,4 @@
-﻿// TODO: Kludge - move this into Node abstraction
-#if S2_BUILD
-using S2.Meta;
-#elif LW_BUILD
-using LW.Meta;
-#elif SPIXI_BUILD
-using SPIXI.Meta;
-#else
-using DLT.Meta;
-#endif
-using IXICore.Meta;
+﻿using IXICore.Meta;
 using IXICore.Network;
 using IXICore.Utils;
 using Newtonsoft.Json;
@@ -1044,7 +1034,7 @@ namespace IXICore
 
         private JsonResponse onGetTotalBalance()
         {
-            IxiNumber balance = Node.walletStorage.getMyTotalBalance(Node.walletStorage.getPrimaryAddress());
+            IxiNumber balance = IxianHandler.getWalletStorage().getMyTotalBalance(IxianHandler.getWalletStorage().getPrimaryAddress());
             // TODO TODO TODO TODO adapt the following line for v3 wallets
             balance -= PendingTransactions.getPendingSendingTransactionsAmount(null);
             return new JsonResponse { result = balance.ToString(), error = null };
@@ -1056,7 +1046,7 @@ namespace IXICore
             JsonError error = null;
 
             // Show own address, balance and blockchain synchronization status
-            List<Address> address_list = Node.walletStorage.getMyAddresses();
+            List<Address> address_list = IxianHandler.getWalletStorage().getMyAddresses();
 
             Dictionary<string, string> address_balance_list = new Dictionary<string, string>();
 
@@ -1072,7 +1062,7 @@ namespace IXICore
         {
             JsonError error = null;
 
-            return new JsonResponse { result = Crypto.hashToString(Node.walletStorage.getPrimaryPublicKey()), error = error };
+            return new JsonResponse { result = Crypto.hashToString(IxianHandler.getWalletStorage().getPrimaryPublicKey()), error = error };
         }
 
         private JsonResponse onClients()
@@ -1173,11 +1163,11 @@ namespace IXICore
 
             if (type == -1)
             {
-                res = ActivityStorage.getActivitiesBySeedHash(Node.walletStorage.getSeedHash(), Int32.Parse(fromIndex), Int32.Parse(count), true);
+                res = ActivityStorage.getActivitiesBySeedHash(IxianHandler.getWalletStorage().getSeedHash(), Int32.Parse(fromIndex), Int32.Parse(count), true);
             }
             else
             {
-                res = ActivityStorage.getActivitiesBySeedHashAndType(Node.walletStorage.getSeedHash(), (ActivityType)type, Int32.Parse(fromIndex), Int32.Parse(count), true);
+                res = ActivityStorage.getActivitiesBySeedHashAndType(IxianHandler.getWalletStorage().getSeedHash(), (ActivityType)type, Int32.Parse(fromIndex), Int32.Parse(count), true);
             }
             return new JsonResponse { result = res, error = error };
 #else
@@ -1196,14 +1186,14 @@ namespace IXICore
             byte[] base_address = null;
             if (base_address_str == null)
             {
-                base_address = Node.walletStorage.getPrimaryAddress();
+                base_address = IxianHandler.getWalletStorage().getPrimaryAddress();
             }
             else
             {
                 base_address = Base58Check.Base58CheckEncoding.DecodePlain(base_address_str);
             }
 
-            Address new_address = Node.walletStorage.generateNewAddress(new Address(base_address), null);
+            Address new_address = IxianHandler.getWalletStorage().generateNewAddress(new Address(base_address), null);
             if (new_address != null)
             {
                 return new JsonResponse { result = new_address.ToString(), error = null };
@@ -1218,7 +1208,7 @@ namespace IXICore
         private JsonResponse onGetWalletBackup()
         {
             List<byte> wallet = new List<byte>();
-            wallet.AddRange(Node.walletStorage.getRawWallet());
+            wallet.AddRange(IxianHandler.getWalletStorage().getRawWallet());
             return new JsonResponse { result = "IXIHEX" + Crypto.hashToString(wallet.ToArray()), error = null };
         }
 
@@ -1259,7 +1249,7 @@ namespace IXICore
             byte[] primary_address_bytes = null;
             if (!parameters.ContainsKey("primaryAddress"))
             {
-                primary_address_bytes = Node.walletStorage.getPrimaryAddress();
+                primary_address_bytes = IxianHandler.getWalletStorage().getPrimaryAddress();
             }
             else
             {
@@ -1276,11 +1266,11 @@ namespace IXICore
                     {
                         string[] single_from_split = single_from.Split('_');
                         byte[] single_from_address = Base58Check.Base58CheckEncoding.DecodePlain(single_from_split[0]);
-                        if (!Node.walletStorage.isMyAddress(single_from_address))
+                        if (!IxianHandler.getWalletStorage().isMyAddress(single_from_address))
                         {
                             return new JsonResponse { result = null, error = new JsonError() { code = (int)RPCErrorCode.RPC_INVALID_ADDRESS_OR_KEY, message = "Invalid from address was specified" } };
                         }
-                        byte[] single_from_nonce = Node.walletStorage.getAddress(single_from_address).nonce;
+                        byte[] single_from_nonce = IxianHandler.getWalletStorage().getAddress(single_from_address).nonce;
                         IxiNumber singleFromAmount = new IxiNumber(single_from_split[1]);
                         if (singleFromAmount < 0 || singleFromAmount == 0)
                         {
@@ -1337,7 +1327,7 @@ namespace IXICore
                 return new JsonResponse { result = null, error = new JsonError() { code = (int)RPCErrorCode.RPC_INVALID_PARAMS, message = "Invalid to amount was specified" } };
             }
 
-            byte[] pubKey = Node.walletStorage.getKeyPair(primary_address_bytes).publicKeyBytes;
+            byte[] pubKey = IxianHandler.getWalletStorage().getKeyPair(primary_address_bytes).publicKeyBytes;
 
             // Check if this wallet's public key is already in the WalletState
             Wallet mywallet = IxianHandler.getWallet(primary_address_bytes);
@@ -1352,7 +1342,7 @@ namespace IXICore
             {
                 lock (PendingTransactions.pendingTransactions)
                 {
-                    fromList = Node.walletStorage.generateFromList(primary_address_bytes, to_amount + fee, toList.Keys.ToList(), PendingTransactions.pendingTransactions.Select(x => (Transaction)x[0]).ToList());
+                    fromList = IxianHandler.getWalletStorage().generateFromList(primary_address_bytes, to_amount + fee, toList.Keys.ToList(), PendingTransactions.pendingTransactions.Select(x => (Transaction)x[0]).ToList());
                 }
                 adjust_amount = true;
             }
@@ -1373,7 +1363,7 @@ namespace IXICore
                     total_tx_fee = transaction.fee;
                     lock (PendingTransactions.pendingTransactions)
                     {
-                        fromList = Node.walletStorage.generateFromList(primary_address_bytes, to_amount + total_tx_fee, toList.Keys.ToList(), PendingTransactions.pendingTransactions.Select(x => (Transaction)x[0]).ToList());
+                        fromList = IxianHandler.getWalletStorage().generateFromList(primary_address_bytes, to_amount + total_tx_fee, toList.Keys.ToList(), PendingTransactions.pendingTransactions.Select(x => (Transaction)x[0]).ToList());
                     }
                     if (fromList == null || fromList.Count == 0)
                     {
@@ -1402,7 +1392,7 @@ namespace IXICore
             {
                 return new JsonResponse { result = null, error = new JsonError() { code = (int)RPCErrorCode.RPC_VERIFY_ERROR, message = "From amounts (incl. fee) do not match to amounts. If you haven't accounted for the transaction fee in the from amounts, use the parameter 'autofee' to have the node do it automatically." } };
             }
-            if (to_amount + transaction.fee > Node.walletStorage.getMyTotalBalance(primary_address_bytes))
+            if (to_amount + transaction.fee > IxianHandler.getWalletStorage().getMyTotalBalance(primary_address_bytes))
             {
                 return new JsonResponse { result = null, error = new JsonError() { code = (int)RPCErrorCode.RPC_WALLET_INSUFFICIENT_FUNDS, message = "Balance is too low" } };
             }

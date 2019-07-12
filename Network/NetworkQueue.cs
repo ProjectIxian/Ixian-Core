@@ -1,14 +1,4 @@
-﻿// TODO: Kludge - move this into Node abstraction
-#if S2_BUILD
-using S2.Network;
-#elif LW_BUILD
-using LW.Network;
-#elif SPIXI_BUILD
-using SPIXI.Network;
-#else
-using DLT.Network;
-#endif
-using IXICore.Meta;
+﻿using IXICore.Meta;
 using System.Collections.Generic;
 using System.Linq;
 using System.Threading;
@@ -235,7 +225,7 @@ namespace IXICore.Network
                 if (message_found)
                 {
                     // Active message set, attempt to parse it
-                    ProtocolMessage.parseProtocolMessage(active_message.code, active_message.data, active_message.endpoint);
+                    IxianHandler.parseProtocolMessage(active_message.code, active_message.data, active_message.endpoint);
                     lock (queueMessages)
                     {
                         // Remove it from the queue
@@ -281,7 +271,7 @@ namespace IXICore.Network
                 if (message_found)
                 {
                     // Active message set, attempt to parse it
-                    ProtocolMessage.parseProtocolMessage(active_message.code, active_message.data, active_message.endpoint);
+                    IxianHandler.parseProtocolMessage(active_message.code, active_message.data, active_message.endpoint);
                     lock (txqueueMessages)
                     {
                         // Remove it from the queue

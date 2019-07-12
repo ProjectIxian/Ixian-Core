@@ -1,4 +1,5 @@
-﻿using System;
+﻿using IXICore.Network;
+using System;
 using System.Collections.Generic;
 
 namespace IXICore.Meta
@@ -14,6 +15,9 @@ namespace IXICore.Meta
         public abstract bool isAcceptingConnections();
         public abstract Wallet getWallet(byte[] id);
         public abstract IxiNumber getWalletBalance(byte[] id);
+        public abstract WalletStorage getWalletStorage();
+        public abstract void parseProtocolMessage(ProtocolMessageCode code, byte[] data, RemoteEndpoint endpoint);
+
         public abstract void shutdown();
     }
 
@@ -105,6 +109,24 @@ namespace IXICore.Meta
                 throw new Exception("Handler Class must be specified in IxianHandler Class");
             }
             return handlerClass.getWalletBalance(id);
+        }
+
+        public static WalletStorage getWalletStorage()
+        {
+            if (handlerClass == null)
+            {
+                throw new Exception("Handler Class must be specified in IxianHandler Class");
+            }
+            return handlerClass.getWalletStorage();
+        }
+
+        public static void parseProtocolMessage(ProtocolMessageCode code, byte[] data, RemoteEndpoint endpoint)
+        {
+            if (handlerClass == null)
+            {
+                throw new Exception("Handler Class must be specified in IxianHandler Class");
+            }
+            handlerClass.parseProtocolMessage(code, data, endpoint);
         }
 
         public static void shutdown()

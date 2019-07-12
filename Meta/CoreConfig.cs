@@ -8,7 +8,7 @@
         /// <summary>
         /// Current version of IxiCore.
         /// </summary>
-        public static readonly string version = "xcore-0.6.5c";
+        public static readonly string version = "xcore-0.6.6-dev";
 
         /// <summary>
         /// Current version of the Ixian network protocol.

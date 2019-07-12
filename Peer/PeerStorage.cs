@@ -74,9 +74,26 @@ namespace IXICore
                 return false;
             }
 
-            if(server[0] == "127.0.0.1"
-                || server[0] == "::1"
-                || server[0] == "localhost")
+            // Check address
+            if (server[0] == "127.0.0.1"
+                || server[0] == "localhost"
+                || server[0].Trim() == "")
+            {
+                return false;
+            }
+
+            // Check port
+            int port = 0;
+
+            try
+            {
+                port = Int32.Parse(server[1]);
+            }catch(Exception e)
+            {
+                return false;
+            }
+
+            if (port <= 0 || port > 65535)
             {
                 return false;
             }

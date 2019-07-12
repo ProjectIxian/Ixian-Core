@@ -1,14 +1,4 @@
-﻿// TODO: Kludge - move this into Node abstraction
-#if S2_BUILD
-using S2.Meta;
-#elif LW_BUILD
-using LW.Meta;
-#elif SPIXI_BUILD
-using SPIXI.Meta;
-#else
-using DLT.Meta;
-#endif
-using IXICore.Meta;
+﻿using IXICore.Meta;
 using System;
 using System.Diagnostics;
 using System.Security.Permissions;
@@ -177,7 +167,7 @@ namespace IXICore.Utils
                     Logging.info("Shutting down...");
                     Logging.flush();
 
-                    Node.stop();
+                    IxianHandler.shutdown();
                     
                     // Wait (max 5 seconds) for everything to die
                     DateTime waitStart = DateTime.Now;

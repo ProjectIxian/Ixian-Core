@@ -1,14 +1,4 @@
-﻿// TODO: Kludge - move this into Node abstraction
-#if S2_BUILD
-using S2.Meta;
-#elif LW_BUILD
-using LW.Meta;
-#elif SPIXI_BUILD
-using SPIXI.Meta;
-#else
-using DLT.Meta;
-#endif
-using IXICore.Meta;
+﻿using IXICore.Meta;
 using IXICore.Network;
 using System;
 using System.Collections.Generic;
@@ -434,7 +424,7 @@ namespace IXICore
                     writer.Write(CoreConfig.protocolVersion);
 
                     // Send the public node address
-                    byte[] address = Node.walletStorage.getPrimaryAddress();
+                    byte[] address = IxianHandler.getWalletStorage().getPrimaryAddress();
                     writer.Write(address.Length);
                     writer.Write(address);
 
@@ -451,8 +441,8 @@ namespace IXICore
                     writer.Write(CoreConfig.device_id);
 
                     // Send the wallet public key
-                    writer.Write(Node.walletStorage.getPrimaryPublicKey().Length);
-                    writer.Write(Node.walletStorage.getPrimaryPublicKey());
+                    writer.Write(IxianHandler.getWalletStorage().getPrimaryPublicKey().Length);
+                    writer.Write(IxianHandler.getWalletStorage().getPrimaryPublicKey());
 
                     // Send listening port
                     writer.Write(NetworkServer.getListeningPort());
@@ -462,7 +452,7 @@ namespace IXICore
                     writer.Write(timestamp);
 
                     // send signature
-                    byte[] signature = CryptoManager.lib.getSignature(Encoding.UTF8.GetBytes(ConsensusConfig.ixianChecksumLockString + "-" + CoreConfig.device_id + "-" + timestamp + "-" + publicHostname), Node.walletStorage.getPrimaryPrivateKey());
+                    byte[] signature = CryptoManager.lib.getSignature(Encoding.UTF8.GetBytes(ConsensusConfig.ixianChecksumLockString + "-" + CoreConfig.device_id + "-" + timestamp + "-" + publicHostname), IxianHandler.getWalletStorage().getPrimaryPrivateKey());
                     writer.Write(signature.Length);
                     writer.Write(signature);
 
@@ -506,7 +496,7 @@ namespace IXICore
                     {
                         List<byte> challenge = new List<byte>();
 
-                        challenge.AddRange(Node.walletStorage.getPrimaryAddress());
+                        challenge.AddRange(IxianHandler.getWalletStorage().getPrimaryAddress());
                         Random rnd = new Random();
                         challenge.AddRange(BitConverter.GetBytes(rnd.Next(20000)));
 

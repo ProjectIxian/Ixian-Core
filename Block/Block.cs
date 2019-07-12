@@ -1,13 +1,3 @@
-// TODO: Kludge - move this into Node abstraction
-#if S2_BUILD
-using S2.Meta;
-#elif LW_BUILD
-using LW.Meta;
-#elif SPIXI_BUILD
-using SPIXI.Meta;
-#else
-using DLT.Meta;
-#endif
 using IXICore.Meta;
 using IXICore.Utils;
 using System;
@@ -742,16 +732,16 @@ namespace IXICore
         public byte[][] applySignature()
         {
             // Note: we don't need any further validation, since this block has already passed through BlockProcessor.verifyBlock() at this point.
-            byte[] myAddress = Node.walletStorage.getPrimaryAddress();
+            byte[] myAddress = IxianHandler.getWalletStorage().getPrimaryAddress();
             if (containsSignature(myAddress))
             {
                 return null;
             }
 
-            byte[] myPubKey = Node.walletStorage.getPrimaryPublicKey();
+            byte[] myPubKey = IxianHandler.getWalletStorage().getPrimaryPublicKey();
 
             // TODO: optimize this in case our signature is already in the block, without locking signatures for too long
-            byte[] private_key = Node.walletStorage.getPrimaryPrivateKey();
+            byte[] private_key = IxianHandler.getWalletStorage().getPrimaryPrivateKey();
             byte[] signature = CryptoManager.lib.getSignature(blockChecksum, private_key);
 
             Wallet w = IxianHandler.getWallet(myAddress);
@@ -1000,10 +990,10 @@ namespace IXICore
                 return false;
             }
 
-            byte[] node_address = Node.walletStorage.getPrimaryAddress();
+            byte[] node_address = IxianHandler.getWalletStorage().getPrimaryAddress();
             if (public_key == null)
             {
-                public_key = Node.walletStorage.getPrimaryPublicKey();
+                public_key = IxianHandler.getWalletStorage().getPrimaryPublicKey();
             }
             else
             {
