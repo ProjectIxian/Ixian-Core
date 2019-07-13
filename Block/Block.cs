@@ -731,6 +731,12 @@ namespace IXICore
         /// <returns>Byte array with the node's signature and public key or address.</returns>
         public byte[][] applySignature()
         {
+            if (compacted)
+            {
+                Logging.error("Trying to sapply signature on a compacted block {0}", blockNum);
+                return null;
+            }
+
             // Note: we don't need any further validation, since this block has already passed through BlockProcessor.verifyBlock() at this point.
             byte[] myAddress = IxianHandler.getWalletStorage().getPrimaryAddress();
             if (containsSignature(myAddress))
@@ -895,7 +901,13 @@ namespace IXICore
         /// <returns>Public key, matching the given address, or null, if the public key is not known.</returns>
         public byte[] getSignerPubKey(byte[] address_or_pub_key)
         {
-            if(address_or_pub_key == null)
+            if (compacted)
+            {
+                Logging.error("Trying to set signer pubkey on a compacted block {0}", blockNum);
+                return null;
+            }
+
+            if (address_or_pub_key == null)
             {
                 return null;
             }
@@ -1212,6 +1224,7 @@ namespace IXICore
             compacted = true;
 
             signatureCount = getFrozenSignatureCount();
+            frozenSignatures = null;
             signatures = null;
 
             superBlockSegments = null;
@@ -1253,6 +1266,12 @@ namespace IXICore
 
         public void setFrozenSignatures(List<byte[][]> frozen_sigs)
         {
+            if (compacted)
+            {
+                Logging.error("Trying to set frozen signatures on a compacted block {0}", blockNum);
+                return;
+            }
+
             lock (signatures)
             {
                 frozenSignatures = frozen_sigs;
