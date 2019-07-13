@@ -41,7 +41,7 @@ namespace IXICore.Network
         private static Dictionary<string, DateTime> nodeBlacklist = new Dictionary<string, DateTime>();
         private static ThreadLiveCheck TLC;
 
-        private static DateTime lastIncomingConnectionTime = DateTime.UtcNow;
+        private static DateTime lastIncomingConnectionTime = DateTime.MinValue;
         /// <summary>
         ///  Flag, indicating whether the listening socket is open and accepting connections.
         /// </summary>

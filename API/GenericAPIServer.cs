@@ -1078,7 +1078,7 @@ namespace IXICore
         {
             JsonError error = null;
 
-            String[] res = NetworkClientManager.getConnectedClients();
+            String[] res = NetworkClientManager.getConnectedClients(true);
 
             return new JsonResponse { result = res, error = error };
         }
@@ -1120,7 +1120,7 @@ namespace IXICore
                 networkArray.Add("Workers", PresenceList.countPresences('W'));
 
                 networkArray.Add("Network Clients", NetworkServer.getConnectedClients());
-                networkArray.Add("Network Servers", NetworkClientManager.getConnectedClients());
+                networkArray.Add("Network Servers", NetworkClientManager.getConnectedClients(true));
             }
 
 

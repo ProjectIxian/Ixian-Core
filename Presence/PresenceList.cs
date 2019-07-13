@@ -26,13 +26,19 @@ namespace IXICore
         public static bool forceSendKeepAlive = false;
 
 
+        private static string _myPublicAddress = "";
+        private static char _myPresenceType = 'C';
+
         // Generate an initial presence list
-        public static void generatePresenceList(string initial_ip, int port, char type = 'M')
+        public static void init(string initial_ip, int port, char type = 'M')
         {
             Logging.info("Generating presence list.");
 
+            _myPublicAddress = string.Format("{0}:{1}", initial_ip, port);
+            _myPresenceType = type;
+
             // Initialize with the default presence state
-            curNodePresenceAddress = new PresenceAddress(CoreConfig.device_id, string.Format("{0}:{1}", initial_ip, port), type, CoreConfig.productVersion, 0, null);
+            curNodePresenceAddress = new PresenceAddress(CoreConfig.device_id, _myPublicAddress, type, CoreConfig.productVersion, 0, null);
             curNodePresence = new Presence(IxianHandler.getWalletStorage().getPrimaryAddress(), IxianHandler.getWalletStorage().getPrimaryPublicKey(), null, curNodePresenceAddress);
         }
 
@@ -849,14 +855,28 @@ namespace IXICore
 
         public static string myPublicAddress
         {
-            get { return curNodePresenceAddress.address; }
-            set { curNodePresenceAddress.address = value; }
+            get { return _myPublicAddress; }
+            set
+            {
+                _myPublicAddress = value;
+                if (curNodePresenceAddress != null)
+                {
+                    curNodePresenceAddress.address = value;
+                }
+            }
         }
 
         public static char myPresenceType
         {
-            get { return curNodePresenceAddress.type; }
-            set { curNodePresenceAddress.type = value; }
+            get { return _myPresenceType; }
+            set
+            {
+                _myPresenceType = value;
+                if (curNodePresenceAddress != null)
+                {
+                    curNodePresenceAddress.type = value;
+                }
+            }
         }
     }
 }

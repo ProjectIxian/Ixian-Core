@@ -52,7 +52,7 @@ namespace IXICore.Network
         }
 
 
-        static public void configureNetwork(string externalIp)
+        static public void configureNetwork(string externalIp, int port)
         {
             // Network configuration
             UPnP upnp = new UPnP();
@@ -89,15 +89,18 @@ namespace IXICore.Network
                             if (public_ip.Result != null)
                             {
                                 Logging.info(String.Format("UPNP-determined public IP: {0}. Attempting to configure a port-forwarding rule.", public_ip.Result.ToString()));
-                                if (upnp.MapPublicPort(NetworkServer.getListeningPort(), primary_local))
+                                if (upnp.MapPublicPort(port, primary_local))
                                 {
                                     IxianHandler.publicIP = public_ip.Result.ToString(); //upnp.getMappedIP();
                                     Logging.info(string.Format("Network configured. Public IP is: {0}", IxianHandler.publicIP));
+                                }else
+                                {
+                                    Logging.warn("UPnP configuration failed, please set port forwarding for port {0} manually.", port);
                                 }
                             }
                             else
                             {
-                                Logging.warn("UPnP configuration failed.");
+                                Logging.warn("UPnP configuration failed, please set port forwarding for port {0} manually.", port);
                             }
                         }
 

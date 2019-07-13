@@ -1,4 +1,5 @@
 ﻿using IXICore.Meta;
+using IXICore.Utils;
 using System;
 using System.Collections.Generic;
 using System.Linq;
@@ -43,7 +44,7 @@ namespace IXICore.Network
 
             // Connect to a random node first
             bool firstSeedConnected = false;
-            while (firstSeedConnected == false)
+            while (firstSeedConnected == false && IxianHandler.forceShutdown == false)
             {
                 Peer p = PeerStorage.getRandomMasterNodeAddress();
                 if (p != null)
@@ -312,7 +313,7 @@ namespace IXICore.Network
         }
 
         // Returns all the connected clients
-        public static string[] getConnectedClients()
+        public static string[] getConnectedClients(bool only_fully_connected = false)
         {
             List<String> result = new List<String>();
 
@@ -322,6 +323,11 @@ namespace IXICore.Network
                 {
                     if (client.isConnected())
                     {
+                        if (only_fully_connected && !client.helloReceived)
+                        {
+                            continue;
+                        }
+
                         try
                         {
                             string client_name = client.getFullAddress();
@@ -329,7 +335,7 @@ namespace IXICore.Network
                         }
                         catch (Exception e)
                         {
-                            Logging.warn(string.Format("NetworkClientManager->getConnectedClients: {0}", e.ToString()));
+                            Logging.error(string.Format("NetworkClientManager->getConnectedClients: {0}", e.ToString()));
                         }
                     }
                 }
@@ -505,7 +511,7 @@ namespace IXICore.Network
                     // Scan for and connect to a new neighbor
                     connectToRandomNeighbor();
                 }
-                else if (getConnectedClients().Count() > CoreConfig.simultaneousConnectedNeighbors)
+                else if (getConnectedClients(true).Count() > CoreConfig.simultaneousConnectedNeighbors)
                 {
                     List<NetworkClient> netClients = null;
                     lock (networkClients)

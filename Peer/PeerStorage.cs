@@ -88,7 +88,7 @@ namespace IXICore
             try
             {
                 port = Int32.Parse(server[1]);
-            }catch(Exception e)
+            }catch(Exception)
             {
                 return false;
             }

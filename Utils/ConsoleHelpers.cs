@@ -10,7 +10,6 @@ namespace IXICore.Utils
     class ConsoleHelpers
     {
         public static bool verboseConsoleOutput = false; // Flag for verbose console output
-        static public bool forceShutdown = false;
 
         // STD_INPUT_HANDLE (DWORD): -10 is the standard input device.
         const int STD_INPUT_HANDLE = -10;
@@ -117,7 +116,7 @@ namespace IXICore.Utils
             StringBuilder sb = new StringBuilder();
             while (true)
             {
-                if (forceShutdown)
+                if (IxianHandler.forceShutdown)
                 {
                     return "";
                 }
@@ -141,6 +140,10 @@ namespace IXICore.Utils
                         sb.Remove(sb.Length - 1, 1);
                         Console.Write("\b \b");
                     }
+                }else if(i.Key == ConsoleKey.Escape)
+                {
+                    IxianHandler.forceShutdown = true;
+                    return "";
                 }
                 else if (i.KeyChar != '\u0000')
                 {

@@ -26,6 +26,9 @@ namespace IXICore.Meta
 
         private static string _publicIP = "";
 
+        public static bool forceShutdown = false;
+
+
         public static void setHandler(IxianNode handler_class)
         {
             handlerClass = handler_class;
