@@ -1099,7 +1099,7 @@ namespace IXICore
             networkArray.Add("Network type", netType);
             networkArray.Add("My time", Clock.getTimestamp());
             networkArray.Add("Network time difference", Core.networkTimeDifference);
-            networkArray.Add("My External IP", NetworkClientManager.publicIP);
+            networkArray.Add("My External IP", IxianHandler.publicIP);
             //networkArray.Add("Listening interface", context.Request.RemoteEndPoint.Address.ToString());
             networkArray.Add("Queues", "Rcv: " + NetworkQueue.getQueuedMessageCount() + ", RcvTx: " + NetworkQueue.getTxQueuedMessageCount()
                 + ", SendClients: " + NetworkServer.getQueuedMessageCount() + ", SendServers: " + NetworkClientManager.getQueuedMessageCount()
@@ -1108,7 +1108,7 @@ namespace IXICore
             networkArray.Add("Block Height", IxianHandler.getLastBlockHeight());
             networkArray.Add("Block Version", IxianHandler.getLastBlockVersion());
             networkArray.Add("Network Block Height", IxianHandler.getHighestKnownNetworkBlockHeight());
-            networkArray.Add("Node Type", IxianHandler.getNodeType());
+            networkArray.Add("Node Type", PresenceList.myPresenceType);
             networkArray.Add("Connectable", NetworkServer.isConnectable());
 
             if (parameters.ContainsKey("verbose"))

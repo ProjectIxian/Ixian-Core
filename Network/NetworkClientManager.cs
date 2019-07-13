@@ -17,8 +17,6 @@ namespace IXICore.Network
         private static bool running = false;
         private static ThreadLiveCheck TLC;
 
-        public static string publicIP = "";
-
         // Starts the Network Client Manager. First it connects to one of the seed nodes in order to fetch the Presence List.
         // Afterwards, it starts the reconnect and keepalive threads
         public static void start()
@@ -160,7 +158,7 @@ namespace IXICore.Network
 
             // Verify against the publicly disclosed ip
             // Don't connect to self
-            if (resolved_server_name.Equals(NetworkClientManager.publicIP, StringComparison.Ordinal))
+            if (resolved_server_name.Equals(IxianHandler.publicIP, StringComparison.Ordinal))
             {
                 if (server[1].Equals(string.Format("{0}", NetworkServer.getListeningPort()), StringComparison.Ordinal))
                 {
@@ -616,11 +614,6 @@ namespace IXICore.Network
                 }
                 return lastClient;
             }
-        }
-
-        public static string getFullPublicAddress()
-        {
-            return publicIP + ":" + NetworkServer.getListeningPort();
         }
     }
 }

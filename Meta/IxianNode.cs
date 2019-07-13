@@ -10,7 +10,6 @@ namespace IXICore.Meta
         public abstract Block getLastBlock();
         public abstract ulong getLastBlockHeight();
         public abstract int getLastBlockVersion();
-        public abstract char getNodeType();
         public abstract bool addTransaction(Transaction tx);
         public abstract bool isAcceptingConnections();
         public abstract Wallet getWallet(byte[] id);
@@ -23,7 +22,9 @@ namespace IXICore.Meta
 
     static class IxianHandler
     {
-        private static IxianNode handlerClass = null; 
+        private static IxianNode handlerClass = null;
+
+        private static string _publicIP = "";
 
         public static void setHandler(IxianNode handler_class)
         {
@@ -64,15 +65,6 @@ namespace IXICore.Meta
                 throw new Exception("Handler Class must be specified in IxianHandler Class");
             }
             return handlerClass.getLastBlockVersion();
-        }
-
-        public static char getNodeType()
-        {
-            if (handlerClass == null)
-            {
-                throw new Exception("Handler Class must be specified in IxianHandler Class");
-            }
-            return handlerClass.getNodeType();
         }
 
         public static bool addTransaction(Transaction tx)
@@ -136,6 +128,16 @@ namespace IXICore.Meta
                 throw new Exception("Handler Class must be specified in IxianHandler Class");
             }
             handlerClass.shutdown();
+        }
+
+        public static string publicIP
+        {
+            get { return _publicIP; }
+            set
+            {
+                _publicIP = value;
+                PresenceList.myPublicAddress = NetworkServer.getFullPublicAddress();
+            }
         }
 
         // Extension methods

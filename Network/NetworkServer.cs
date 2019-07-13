@@ -75,7 +75,7 @@ namespace IXICore.Network
             nod.listenAddress = new IPEndPoint(IPAddress.Any, listeningPort);
             netControllerThread.Start(nod);
 
-            Logging.info(string.Format("Public network node address: {0} port {1}", NetworkClientManager.publicIP, NetworkServer.listeningPort));
+            Logging.info(string.Format("Public network node address: {0} port {1}", IxianHandler.publicIP, NetworkServer.listeningPort));
 
         }
 
@@ -596,6 +596,11 @@ namespace IXICore.Network
         static public int getListeningPort()
         {
             return listeningPort;
+        }
+
+        public static string getFullPublicAddress()
+        {
+            return IxianHandler.publicIP + ":" + getListeningPort();
         }
     }
 }

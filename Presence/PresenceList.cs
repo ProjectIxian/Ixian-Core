@@ -13,8 +13,8 @@ namespace IXICore
     {
         public static List<Presence> presences = new List<Presence> { }; // The presence list
 
-        public static PresenceAddress curNodePresenceAddress = null;
-        public static Presence curNodePresence = null;
+        private static PresenceAddress curNodePresenceAddress = null;
+        private static Presence curNodePresence = null;
 
         // private
         private static Dictionary<char, long> presenceCount = new Dictionary<char, long>();
@@ -561,7 +561,7 @@ namespace IXICore
                         }
                         else if (node_type == 'M' || node_type == 'H')
                         {
-                            if (IxianHandler.getNodeType() == 'M' || IxianHandler.getNodeType() == 'H')
+                            if (myPresenceType == 'M' || myPresenceType == 'H')
                             {
                                 // check balance
                                 if (IxianHandler.getWalletBalance(wallet) < ConsensusConfig.minimumMasterNodeFunds)
@@ -845,6 +845,18 @@ namespace IXICore
                 var sorted_presences = presences.FindAll(x => x.addresses.Find(y => y.type == 'M' || y.type == 'H') != null).OrderBy(x => x.wallet, new ByteArrayComparer());
                 return new PresenceOrderedEnumerator(sorted_presences, address_len, selector, target_count);
             }
+        }
+
+        public static string myPublicAddress
+        {
+            get { return curNodePresenceAddress.address; }
+            set { curNodePresenceAddress.address = value; }
+        }
+
+        public static char myPresenceType
+        {
+            get { return curNodePresenceAddress.type; }
+            set { curNodePresenceAddress.type = value; }
         }
     }
 }

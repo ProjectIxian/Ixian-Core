@@ -59,21 +59,21 @@ namespace IXICore.Network
 
             if (externalIp != "" && IPAddress.TryParse(externalIp, out _))
             {
-                NetworkClientManager.publicIP = externalIp;
+                IxianHandler.publicIP = externalIp;
             }
             else
             {
-                NetworkClientManager.publicIP = "";
+                IxianHandler.publicIP = "";
                 List<IPAndMask> local_ips = CoreNetworkUtils.GetAllLocalIPAddressesAndMasks();
                 foreach (IPAndMask local_ip in local_ips)
                 {
                     if (IPv4Subnet.IsPublicIP(local_ip.Address))
                     {
                         Logging.info(String.Format("Public IP detected: {0}, mask {1}.", local_ip.Address.ToString(), local_ip.SubnetMask.ToString()));
-                        NetworkClientManager.publicIP = local_ip.Address.ToString();
+                        IxianHandler.publicIP = local_ip.Address.ToString();
                     }
                 }
-                if (NetworkClientManager.publicIP == "")
+                if (IxianHandler.publicIP == "")
                 {
                     IPAddress primary_local = CoreNetworkUtils.GetPrimaryIPAddress();
                     if (primary_local == null)
@@ -91,8 +91,8 @@ namespace IXICore.Network
                                 Logging.info(String.Format("UPNP-determined public IP: {0}. Attempting to configure a port-forwarding rule.", public_ip.Result.ToString()));
                                 if (upnp.MapPublicPort(NetworkServer.getListeningPort(), primary_local))
                                 {
-                                    NetworkClientManager.publicIP = public_ip.Result.ToString(); //upnp.getMappedIP();
-                                    Logging.info(string.Format("Network configured. Public IP is: {0}", NetworkClientManager.publicIP));
+                                    IxianHandler.publicIP = public_ip.Result.ToString(); //upnp.getMappedIP();
+                                    Logging.info(string.Format("Network configured. Public IP is: {0}", IxianHandler.publicIP));
                                 }
                             }
                             else

@@ -418,7 +418,7 @@ namespace IXICore
             {
                 using (BinaryWriter writer = new BinaryWriter(m))
                 {
-                    string publicHostname = NetworkClientManager.getFullPublicAddress();
+                    string publicHostname = NetworkServer.getFullPublicAddress();
 
                     // Send the node version
                     writer.Write(CoreConfig.protocolVersion);
@@ -431,7 +431,7 @@ namespace IXICore
                     // Send the testnet designator
                     writer.Write(CoreConfig.isTestNet);
 
-                    char node_type = IxianHandler.getNodeType();
+                    char node_type = PresenceList.myPresenceType;
                     writer.Write(node_type);
 
                     // Send the version
