@@ -51,6 +51,18 @@ namespace IXICore.Network
             return "";
         }
 
+        static public bool validateIP(string ip)
+        {
+            // TODO add local exceptions - 127.0.0.1, ::1, 0.0.0.0 etc...
+
+            IPAddress addr;
+            if(IPAddress.TryParse(ip, out addr) && addr.ToString() == ip)
+            {
+                return true;
+            }
+            return false;
+        }
+
 
         static public void configureNetwork(string externalIp, int port)
         {

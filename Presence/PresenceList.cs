@@ -11,7 +11,7 @@ namespace IXICore
 {
     public class PresenceList
     {
-        public static List<Presence> presences = new List<Presence> { }; // The presence list
+        private static List<Presence> presences = new List<Presence> { }; // The presence list
 
         private static PresenceAddress curNodePresenceAddress = null;
         private static Presence curNodePresence = null;
@@ -30,7 +30,7 @@ namespace IXICore
         private static char _myPresenceType = 'C';
 
         // Generate an initial presence list
-        public static void init(string initial_ip, int port, char type = 'M')
+        public static void init(string initial_ip, int port, char type)
         {
             Logging.info("Generating presence list.");
 
@@ -73,80 +73,75 @@ namespace IXICore
                 return null;
             }
 
-            bool entryUpdated = false;
-
-            Presence return_presence = null;
             lock(presences)
             {
                 Presence pr = presences.Find(x => x.wallet.SequenceEqual(presence.wallet));
                 if (pr != null)
                 {
-                    entryUpdated = false;
-
-                    // Go through all addresses and add any missing ones
-                    foreach (PresenceAddress local_addr in presence.addresses)
+                    lock (pr)
                     {
-                        long currentTime = Core.getCurrentTimestamp();
-                        long lTimestamp = local_addr.lastSeenTime;
-
-                        int expiration_time = CoreConfig.serverPresenceExpiration;
-
-                        if (local_addr.type == 'C')
+                        // Go through all addresses and add any missing ones
+                        foreach (PresenceAddress local_addr in presence.addresses)
                         {
-                            expiration_time = CoreConfig.clientPresenceExpiration;
-                        }
+                            long currentTime = Core.getCurrentTimestamp();
+                            long lTimestamp = local_addr.lastSeenTime;
 
-                        // Check for tampering. Includes a +300, -30 second synchronization zone
-                        if ((currentTime - lTimestamp) > expiration_time || (currentTime - lTimestamp) < -30)
-                        {
-                            Logging.warn(string.Format("[PL] Potential KEEPALIVE tampering for {0} {1}. Skipping; {2} - {3}", Crypto.hashToString(pr.wallet), local_addr.address, currentTime, lTimestamp));
-                            continue;
-                        }
+                            int expiration_time = CoreConfig.serverPresenceExpiration;
 
-                        bool addressfound = false;
-
-                        PresenceAddress addr = pr.addresses.Find(x => x.device == local_addr.device);
-                        if (addr != null)
-                        {
-                            addressfound = true;
-                            if (addr.lastSeenTime < local_addr.lastSeenTime)
+                            if (local_addr.type == 'C')
                             {
-                                addr.version = local_addr.version;
-                                addr.address = local_addr.address;
-                                addr.lastSeenTime = local_addr.lastSeenTime;
-                                addr.signature = local_addr.signature;
-                                entryUpdated = true;
-                                //Console.WriteLine("[PL] Last time updated for {0}", addr.device);
+                                expiration_time = CoreConfig.clientPresenceExpiration;
                             }
-                        }
 
-                        // Add the address if it's not found
-                        if (addressfound == false && entryUpdated == false)
-                        {
-                            //Logging.info("[PL] Adding new address for {0}", presence.wallet);
-                            pr.addresses.Add(local_addr);
-                            entryUpdated = true;
-
-                            lock (presenceCount)
+                            // Check for tampering. Includes a +300, -30 second synchronization zone
+                            if ((currentTime - lTimestamp) > expiration_time || (currentTime - lTimestamp) < -30)
                             {
-                                if (!presenceCount.ContainsKey(local_addr.type))
+                                Logging.warn(string.Format("[PL] Potential KEEPALIVE tampering for {0} {1}. Skipping; {2} - {3}", Crypto.hashToString(pr.wallet), local_addr.address, currentTime, lTimestamp));
+                                continue;
+                            }
+
+                            PresenceAddress addr = pr.addresses.Find(x => x.device == local_addr.device);
+                            if (addr != null)
+                            {
+                                if (addr.lastSeenTime < local_addr.lastSeenTime)
                                 {
-                                    presenceCount.Add(local_addr.type, 0);
+                                    addr.version = local_addr.version;
+                                    addr.address = local_addr.address;
+                                    addr.lastSeenTime = local_addr.lastSeenTime;
+                                    addr.signature = local_addr.signature;
+
+                                    if (addr.type == 'M' || addr.type == 'H')
+                                    {
+                                        PeerStorage.addPeerToPeerList(addr.address, presence.wallet);
+                                    }
+
+                                    //Console.WriteLine("[PL] Last time updated for {0}", addr.device);
                                 }
-                                presenceCount[local_addr.type]++;
+                            }
+                            else
+                            {
+                                // Add the address if it's not found
+                                //Logging.info("[PL] Adding new address for {0}", presence.wallet);
+                                pr.addresses.Add(local_addr);
+
+                                if (addr.type == 'M' || addr.type == 'H')
+                                {
+                                    PeerStorage.addPeerToPeerList(addr.address, presence.wallet);
+                                }
+
+                                lock (presenceCount)
+                                {
+                                    if (!presenceCount.ContainsKey(local_addr.type))
+                                    {
+                                        presenceCount.Add(local_addr.type, 0);
+                                    }
+                                    presenceCount[local_addr.type]++;
+                                }
                             }
                         }
 
-                    }
-
-                    // Check if the entry was updated
-                    if(entryUpdated == false)
-                    {
                         return pr;
                     }
-
-                    // Return the stored presence list entity
-                    return_presence = pr;
                 }else
                 {
                     // Insert a new entry
@@ -157,6 +152,11 @@ namespace IXICore
                     {
                         foreach (PresenceAddress pa in presence.addresses)
                         {
+                            if (pa.type == 'M' || pa.type == 'H')
+                            {
+                                PeerStorage.addPeerToPeerList(pa.address, presence.wallet);
+                            }
+
                             if (!presenceCount.ContainsKey(pa.type))
                             {
                                 presenceCount.Add(pa.type, 0);
@@ -165,11 +165,9 @@ namespace IXICore
                         }
                     }
 
-                    return_presence = presence;
+                    return presence;
                 }
             }
-
-            return return_presence;
         }
 
         public static bool removeAddressEntry(byte[] wallet_address, PresenceAddress address)
@@ -182,77 +180,80 @@ namespace IXICore
                 // Check if there is such an entry in the presence list
                 if (listEntry != null)
                 {
-                    var addresses_to_remove = listEntry.addresses.FindAll(x => x == address);
-
-                    foreach (var addr in addresses_to_remove)
+                    lock (listEntry)
                     {
-                        lock (presenceCount)
+                        var addresses_to_remove = listEntry.addresses.FindAll(x => x == address);
+
+                        foreach (var addr in addresses_to_remove)
                         {
-                            if (presenceCount.ContainsKey(addr.type))
+                            lock (presenceCount)
                             {
-                                presenceCount[addr.type]--;
-                            }
-                        }
-                        listEntry.addresses.Remove(addr);
-                    }
-
-                    int address_count = listEntry.addresses.Count;
-                    //Console.WriteLine("[PL] --->> Addresses: {0}", address_count);
-
-                    if (address_count == 0)
-                    {
-                        // Remove it from the list
-                        presences.Remove(listEntry);
-                    }
-
-                    // If presence address is a relay node, remove all other presences with matching ip:port
-                    // TODO: find a better way to handle this while preventing modify-during-enumeration issues
-                    if (address.type == 'R')
-                    {
-                        // Retrieve the ip+port of the relay address
-                        string relay_address = address.address;
-
-                        // Store a copy of the presence list to allow safe modifications while enumerating
-                        List<Presence> safe_presences = new List<Presence>(presences);
-
-                        // Go through the entire presence list
-                        foreach (Presence pr in safe_presences)
-                        {
-                            // Store a list of presence addresses that correspond to the relay node we're removing
-                            List<PresenceAddress> relayClients = new List<PresenceAddress>();
-
-                            foreach (PresenceAddress pa in pr.addresses)
-                            {
-                                if (pa.address.SequenceEqual(relay_address))
+                                if (presenceCount.ContainsKey(addr.type))
                                 {
-                                    // Check if it's a client node
-                                    if (pa.type == 'C')
+                                    presenceCount[addr.type]--;
+                                }
+                            }
+                            listEntry.addresses.Remove(addr);
+                        }
+
+                        int address_count = listEntry.addresses.Count;
+                        //Console.WriteLine("[PL] --->> Addresses: {0}", address_count);
+
+                        if (address_count == 0)
+                        {
+                            // Remove it from the list
+                            presences.Remove(listEntry);
+                        }
+
+                        // If presence address is a relay node, remove all other presences with matching ip:port
+                        // TODO: find a better way to handle this while preventing modify-during-enumeration issues
+                        if (address.type == 'R')
+                        {
+                            // Retrieve the ip+port of the relay address
+                            string relay_address = address.address;
+
+                            // Store a copy of the presence list to allow safe modifications while enumerating
+                            List<Presence> safe_presences = new List<Presence>(presences);
+
+                            // Go through the entire presence list
+                            foreach (Presence pr in safe_presences)
+                            {
+                                // Store a list of presence addresses that correspond to the relay node we're removing
+                                List<PresenceAddress> relayClients = new List<PresenceAddress>();
+
+                                foreach (PresenceAddress pa in pr.addresses)
+                                {
+                                    if (pa.address.SequenceEqual(relay_address))
                                     {
-                                        relayClients.Add(pa);
+                                        // Check if it's a client node
+                                        if (pa.type == 'C')
+                                        {
+                                            relayClients.Add(pa);
+                                        }
                                     }
                                 }
-                            }
 
-                            // Check if the presence contains at least one relay client
-                            if (relayClients.Count > 0)
-                            {
-                                // Go through each relay client and safely remove it's address entry
-                                // Note that it also propagates network messages
-                                foreach (PresenceAddress par in relayClients)
+                                // Check if the presence contains at least one relay client
+                                if (relayClients.Count > 0)
                                 {
-                                    removeAddressEntry(pr.wallet, par);
+                                    // Go through each relay client and safely remove it's address entry
+                                    // Note that it also propagates network messages
+                                    foreach (PresenceAddress par in relayClients)
+                                    {
+                                        removeAddressEntry(pr.wallet, par);
+                                    }
+
+                                    relayClients.Clear();
                                 }
 
-                                relayClients.Clear();
                             }
 
+                            // Clear the safe list of presences
+                            safe_presences.Clear();
                         }
 
-                        // Clear the safe list of presences
-                        safe_presences.Clear();
+                        return true;
                     }
-
-                    return true;
                 }
             }
 
@@ -378,7 +379,6 @@ namespace IXICore
                 }
 
                 valid_addresses.Add(entry);
-
             }
 
             if(valid_addresses.Count > 0)
@@ -669,11 +669,6 @@ namespace IXICore
                                     }
                                     pa.type = node_type;
 
-                                    if (pa.type == 'M' || pa.type == 'H')
-                                    {
-                                        PeerStorage.addPeerToPeerList(hostname, wallet);
-                                    }
-
                                     //Console.WriteLine("[PL] LASTSEEN for {0} - {1} set to {2}", hostname, deviceid, pa.lastSeenTime);
                                     return true;
                                 }
@@ -731,53 +726,56 @@ namespace IXICore
 
                 foreach (Presence pr in safe_presences)
                 {
-                    if(pr.addresses.Count == 0)
+                    lock (pr)
                     {
-                        presences.Remove(pr);
-                        continue;
-                    }
-
-                    List<PresenceAddress> safe_addresses = new List<PresenceAddress>(pr.addresses);
-
-                    foreach (PresenceAddress pa in safe_addresses)
-                    {
-                        // Don't remove self address from presence list
-                        /*if(pa == curNodePresenceAddress)
+                        if (pr.addresses.Count == 0)
                         {
-                            continue;
-                        }*/
-
-                        try
-                        {
-                            int expiration_time = CoreConfig.serverPresenceExpiration;
-
-                            if (pa.type == 'C')
-                            {
-                                expiration_time = CoreConfig.clientPresenceExpiration;
-                            }
-
-                            // Check if timestamp is older than 300 seconds
-                            if ((currentTime - pa.lastSeenTime) > expiration_time)
-                            {
-                                Logging.info(string.Format("Expired lastseen for {0} / {1}", pa.address, pa.device));
-                                removeAddressEntry(pr.wallet, pa);
-                            }
-                            else if ((currentTime - pa.lastSeenTime) < -30) // future time + 30 seconds amortization
-                            {
-                                Logging.info(string.Format("Expired future lastseen for {0} / {1}", pa.address, pa.device));
-                                removeAddressEntry(pr.wallet, pa);
-                            }
-                        }
-                        catch(Exception e)
-                        {
-                            // Ignore this entry for now
-                            Logging.error("Exception occured in PL performCleanup: " + e);
+                            presences.Remove(pr);
                             continue;
                         }
-                    }
 
-                    // Clear the safe list of addresses
-                    safe_addresses.Clear();
+                        List<PresenceAddress> safe_addresses = new List<PresenceAddress>(pr.addresses);
+
+                        foreach (PresenceAddress pa in safe_addresses)
+                        {
+                            // Don't remove self address from presence list
+                            /*if(pa == curNodePresenceAddress)
+                            {
+                                continue;
+                            }*/
+
+                            try
+                            {
+                                int expiration_time = CoreConfig.serverPresenceExpiration;
+
+                                if (pa.type == 'C')
+                                {
+                                    expiration_time = CoreConfig.clientPresenceExpiration;
+                                }
+
+                                // Check if timestamp is older than 300 seconds
+                                if ((currentTime - pa.lastSeenTime) > expiration_time)
+                                {
+                                    Logging.info(string.Format("Expired lastseen for {0} / {1}", pa.address, pa.device));
+                                    removeAddressEntry(pr.wallet, pa);
+                                }
+                                else if ((currentTime - pa.lastSeenTime) < -30) // future time + 30 seconds amortization
+                                {
+                                    Logging.info(string.Format("Expired future lastseen for {0} / {1}", pa.address, pa.device));
+                                    removeAddressEntry(pr.wallet, pa);
+                                }
+                            }
+                            catch (Exception e)
+                            {
+                                // Ignore this entry for now
+                                Logging.error("Exception occured in PL performCleanup: " + e);
+                                continue;
+                            }
+                        }
+
+                        // Clear the safe list of addresses
+                        safe_addresses.Clear();
+                    }
                 }
 
                 // Clear the safe list of presences
@@ -834,12 +832,31 @@ namespace IXICore
             }
         }
 
+        public static Presence getPresenceByDeviceId(string device_id)
+        {
+            if(String.IsNullOrWhiteSpace(device_id))
+            {
+                throw new Exception("Device id is empty while getting presences by device id");
+            }
+
+            lock (presences)
+            {
+                return presences.Find(x => x.addresses.Find(y => y.device == device_id) != null);
+            }
+        }
+
         public static List<Presence> getPresencesByType(char type)
         {
             lock (presences)
             {
                 return presences.FindAll(x => x.addresses.Find(y => y.type == type) != null);
             }
+        }
+
+        // for debugging purposes only, do not use!
+        public static List<Presence> getPresences()
+        {
+            return presences;
         }
 
         public static PresenceOrderedEnumerator getElectedSignerList(byte[] rnd_bytes, int target_count)

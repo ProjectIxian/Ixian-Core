@@ -1113,15 +1113,15 @@ namespace IXICore
 
             if (parameters.ContainsKey("verbose"))
             {
-                networkArray.Add("Presences", PresenceList.getTotalPresences());
-                networkArray.Add("Masters", PresenceList.countPresences('M'));
-                networkArray.Add("Relays", PresenceList.countPresences('R'));
-                networkArray.Add("Clients", PresenceList.countPresences('C'));
-                networkArray.Add("Workers", PresenceList.countPresences('W'));
-
                 networkArray.Add("Network Clients", NetworkServer.getConnectedClients());
                 networkArray.Add("Network Servers", NetworkClientManager.getConnectedClients(true));
             }
+
+            networkArray.Add("Presences", PresenceList.getTotalPresences());
+            networkArray.Add("Masters", PresenceList.countPresences('M'));
+            networkArray.Add("Relays", PresenceList.countPresences('R'));
+            networkArray.Add("Clients", PresenceList.countPresences('C'));
+            networkArray.Add("Workers", PresenceList.countPresences('W'));
 
 
             return new JsonResponse { result = networkArray, error = error };
