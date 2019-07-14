@@ -389,8 +389,8 @@ namespace IXICore
             catch (Exception e)
             {
                 // Disconnect the node in case of any reading errors
-                Logging.warn(string.Format("Older node connected. {0}", e.ToString()));
-                sendBye(endpoint, ProtocolByeCode.deprecated, "Please update your Ixian node to connect.", "", true);
+                Logging.warn(string.Format("Exception occured in Hello Message {0}", e.ToString()));
+                sendBye(endpoint, ProtocolByeCode.deprecated, "Something went wrong during hello, make sure you're running the latest version of Ixian DLT.", "");
                 return false;
             }
 

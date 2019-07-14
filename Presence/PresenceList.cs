@@ -124,9 +124,9 @@ namespace IXICore
                                 //Logging.info("[PL] Adding new address for {0}", presence.wallet);
                                 pr.addresses.Add(local_addr);
 
-                                if (addr.type == 'M' || addr.type == 'H')
+                                if (local_addr.type == 'M' || local_addr.type == 'H')
                                 {
-                                    PeerStorage.addPeerToPeerList(addr.address, presence.wallet);
+                                    PeerStorage.addPeerToPeerList(local_addr.address, presence.wallet);
                                 }
 
                                 lock (presenceCount)
