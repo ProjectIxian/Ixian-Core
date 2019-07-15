@@ -1221,7 +1221,17 @@ namespace IXICore
                 address = (string)parameters["address"];
             }
 
-            if(!Address.validateChecksum(Base58Check.Base58CheckEncoding.DecodePlain(address)))
+            byte[] address_bytes = null;
+            try
+            {
+                address_bytes = Base58Check.Base58CheckEncoding.DecodePlain(address);
+            }
+            catch(Exception)
+            {
+                address_bytes = null;
+            }
+
+            if (address_bytes == null || !Address.validateChecksum(address_bytes))
             {
                 return new JsonResponse { result = null, error = new JsonError() { code = (int)RPCErrorCode.RPC_INVALID_ADDRESS_OR_KEY, message = "Invalid address was specified" } };
             }
