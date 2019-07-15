@@ -94,7 +94,7 @@ namespace IXICore
 
         public IPAddress GetPublicPortMapping(int public_port)
         {
-            if (public_port < 0 || public_port > 65535)
+            if (public_port <= 0 || public_port > 65535)
             {
                 Logging.error(String.Format("Invalid port number: {0}", public_port));
                 return null;
@@ -111,7 +111,7 @@ namespace IXICore
 
         public bool MapPublicPort(int public_port, IPAddress local_ip)
         {
-            if (public_port < 0 || public_port > 65535)
+            if (public_port <= 0 || public_port > 65535)
             {
                 Logging.error(String.Format("Invalid port number: {0}", public_port));
                 return false;

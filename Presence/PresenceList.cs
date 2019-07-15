@@ -447,11 +447,19 @@ namespace IXICore
                     {
                         return;
                     }
-                    if(forceSendKeepAlive)
+                    if (IxianHandler.publicIP == "")
                     {
-                        Thread.Sleep(1000);
-                        forceSendKeepAlive = false;
-                        break;
+                        // do not send KA
+                        i = 0;
+                    }
+                    else
+                    {
+                        if (forceSendKeepAlive)
+                        {
+                            Thread.Sleep(1000);
+                            forceSendKeepAlive = false;
+                            break;
+                        }
                     }
                     // Sleep for one second
                     Thread.Sleep(1000);
@@ -464,7 +472,6 @@ namespace IXICore
 
                 try
                 {
-
                     byte[] ka_bytes = null;
                     ka_bytes = keepAlive_v1();
 

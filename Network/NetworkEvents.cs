@@ -9,9 +9,11 @@ namespace IXICore.Network
         // Message codes are for the most part pairs (send/receive)
         public enum Type
         {
+            all = -1, // only used for detaching
             keepAlive,
             transactionFrom,
-            transactionTo
+            transactionTo,
+            balance
         }
 
 
@@ -75,13 +77,24 @@ namespace IXICore.Network
                 using (BinaryReader reader = new BinaryReader(m))
                 {
                     int type = reader.ReadInt32();
-                    int addrLen = reader.ReadInt32();
-                    byte[] address = reader.ReadBytes(addrLen);
+                    if(type == -1)
+                    {
+                        endpoint.detachEvents((NetworkEvents.Type) type);
+                        return;
+                    }
 
-                    endpoint.detachEvent((NetworkEvents.Type)type, address);
+                    int addr_len = reader.ReadInt32();
+                    if(addr_len == 0)
+                    {
+                        endpoint.detachEvents((NetworkEvents.Type) type);
+                        return;
+                    }
+
+                    byte[] address = reader.ReadBytes(addr_len);
+
+                    endpoint.detachEvent((NetworkEvents.Type) type, address);
                 }
             }
         }
-
     }
 }

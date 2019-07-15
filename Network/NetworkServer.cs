@@ -24,12 +24,6 @@ namespace IXICore.Network
     /// </summary>
     public class NetworkServer
     {
-        /// <summary>
-        ///  IP address on which the server will listen. For security reasons this is pre-set to the local loopback address and must be specifically
-        ///  overwritten when starting the server.
-        /// </summary>
-        private static int listeningPort = 0;
-
         private static bool continueRunning = false;
         private static Thread netControllerThread = null;
         private static TcpListener listener;
@@ -50,7 +44,7 @@ namespace IXICore.Network
         /// <summary>
         ///  Starts listening for and accepting network connections.
         /// </summary>
-        public static void beginNetworkOperations(int listening_port)
+        public static void beginNetworkOperations()
         {
             if (netControllerThread != null)
             {
@@ -59,9 +53,9 @@ namespace IXICore.Network
                 return;
             }
 
-            if (listening_port > 0)
+            if(IxianHandler.publicPort <= 0 || IxianHandler.publicPort > 65535)
             {
-                listeningPort = listening_port;
+                Logging.error("Cannot start network server, public port is invalid");
             }
 
             TLC = new ThreadLiveCheck();
@@ -72,10 +66,10 @@ namespace IXICore.Network
 
             // Read the server port from the configuration
             NetOpsData nod = new NetOpsData();
-            nod.listenAddress = new IPEndPoint(IPAddress.Any, listeningPort);
+            nod.listenAddress = new IPEndPoint(IPAddress.Any, IxianHandler.publicPort);
             netControllerThread.Start(nod);
 
-            Logging.info(string.Format("Public network node address: {0} port {1}", IxianHandler.publicIP, NetworkServer.listeningPort));
+            Logging.info(string.Format("Public network node address: {0} port {1}", IxianHandler.publicIP, IxianHandler.publicPort));
 
         }
 
@@ -150,13 +144,13 @@ namespace IXICore.Network
         /// <summary>
         ///  Restarts the network server.
         /// </summary>
-        public static void restartNetworkOperations(int server_port = 0)
+        public static void restartNetworkOperations()
         {
             Logging.info("Stopping network server...");
             stopNetworkOperations();
             Thread.Sleep(1000);
             Logging.info("Restarting network server...");
-            beginNetworkOperations(server_port);
+            beginNetworkOperations();
         }
 
         private static void networkOpsLoop(object data)
@@ -273,39 +267,46 @@ namespace IXICore.Network
         public static bool broadcastEventData(NetworkEvents.Type type, ProtocolMessageCode code, byte[] data, byte[] address, byte[] helper_data, RemoteEndpoint skipEndpoint = null)
         {
             bool result = false;
-            lock (connectedClients)
+            try
             {
-                foreach (RemoteEndpoint endpoint in connectedClients)
+                lock (connectedClients)
                 {
-                    if (skipEndpoint != null)
+                    foreach (RemoteEndpoint endpoint in connectedClients)
                     {
-                        if (endpoint == skipEndpoint)
+                        if (skipEndpoint != null)
+                        {
+                            if (endpoint == skipEndpoint)
+                                continue;
+                        }
+
+                        if (!endpoint.isConnected())
+                        {
                             continue;
-                    }
+                        }
 
-                    if (!endpoint.isConnected())
-                    {
-                        continue;
-                    }
+                        if (endpoint.helloReceived == false)
+                        {
+                            continue;
+                        }
 
-                    if (endpoint.helloReceived == false)
-                    {
-                        continue;
-                    }
+                        if (endpoint.presenceAddress == null || endpoint.presenceAddress.type != 'C')
+                        {
+                            continue;
+                        }
 
-                    if (endpoint.presenceAddress == null || endpoint.presenceAddress.type != 'C')
-                    {
-                        continue;
-                    }
-
-                    // Finally, check if the endpoint is subscribed to this event and address
-                    if (endpoint.isSubscribedToEvent(type, address))
-                    {
-                        endpoint.sendData(code, data, helper_data);
-                        result = true;
+                        // Finally, check if the endpoint is subscribed to this event and address
+                        if (endpoint.isSubscribedToEvent(type, address))
+                        {
+                            endpoint.sendData(code, data, helper_data);
+                            result = true;
+                        }
                     }
                 }
+            }catch(Exception e)
+            {
+                Logging.error("Exception occured in NetworkServer.broadcastEventData: " + e);
             }
+
             return result;
         }
 
@@ -591,16 +592,6 @@ namespace IXICore.Network
             }
 
             return connectable;
-        }
-
-        static public int getListeningPort()
-        {
-            return listeningPort;
-        }
-
-        public static string getFullPublicAddress()
-        {
-            return IxianHandler.publicIP + ":" + getListeningPort();
         }
     }
 }

@@ -157,28 +157,31 @@ namespace IXICore.Network
 
             string resolved_host = string.Format("{0}:{1}", resolved_server_name, server[1]);
 
-            // Verify against the publicly disclosed ip
-            // Don't connect to self
-            if (resolved_server_name.Equals(IxianHandler.publicIP, StringComparison.Ordinal))
+            if (NetworkServer.isRunning())
             {
-                if (server[1].Equals(string.Format("{0}", NetworkServer.getListeningPort()), StringComparison.Ordinal))
-                {
-                    Logging.info(string.Format("Skipping connection to public self seed node {0}", host));
-                    return false;
-                }
-            }
-
-            // Get all self addresses and run through them
-            List<string> self_addresses = CoreNetworkUtils.GetAllLocalIPAddresses();
-            foreach (string self_address in self_addresses)
-            {
+                // Verify against the publicly disclosed ip
                 // Don't connect to self
-                if (resolved_server_name.Equals(self_address, StringComparison.Ordinal))
+                if (resolved_server_name.Equals(IxianHandler.publicIP, StringComparison.Ordinal))
                 {
-                    if (server[1].Equals(string.Format("{0}", NetworkServer.getListeningPort()), StringComparison.Ordinal))
+                    if (server[1].Equals(string.Format("{0}", IxianHandler.publicPort), StringComparison.Ordinal))
                     {
-                        Logging.info(string.Format("Skipping connection to self seed node {0}", host));
+                        Logging.info(string.Format("Skipping connection to public self seed node {0}", host));
                         return false;
+                    }
+                }
+
+                // Get all self addresses and run through them
+                List<string> self_addresses = CoreNetworkUtils.GetAllLocalIPAddresses();
+                foreach (string self_address in self_addresses)
+                {
+                    // Don't connect to self
+                    if (resolved_server_name.Equals(self_address, StringComparison.Ordinal))
+                    {
+                        if (server[1].Equals(string.Format("{0}", IxianHandler.publicPort), StringComparison.Ordinal))
+                        {
+                            Logging.info(string.Format("Skipping connection to self seed node {0}", host));
+                            return false;
+                        }
                     }
                 }
             }
@@ -457,16 +460,19 @@ namespace IXICore.Network
                 if (addr_valid == false)
                     continue;
 
-                // Get all self addresses and run through them
-                List<string> self_addresses = CoreNetworkUtils.GetAllLocalIPAddresses();
-                foreach (string self_address in self_addresses)
+                if (NetworkServer.isRunning())
                 {
-                    // Don't connect to self
-                    if (resolved_server_name.Equals(self_address, StringComparison.Ordinal))
+                    // Get all self addresses and run through them
+                    List<string> self_addresses = CoreNetworkUtils.GetAllLocalIPAddresses();
+                    foreach (string self_address in self_addresses)
                     {
-                        if (server[1].Equals(string.Format("{0}", NetworkServer.getListeningPort()), StringComparison.Ordinal))
+                        // Don't connect to self
+                        if (resolved_server_name.Equals(self_address, StringComparison.Ordinal))
                         {
-                            addr_valid = false;
+                            if (server[1].Equals(string.Format("{0}", IxianHandler.publicPort), StringComparison.Ordinal))
+                            {
+                                addr_valid = false;
+                            }
                         }
                     }
                 }

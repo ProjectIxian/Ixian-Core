@@ -394,7 +394,7 @@ namespace IXICore
                 return false;
             }
 
-            if(NetworkClientManager.getConnectedClients(true).Count() == 1)
+            if(NetworkClientManager.getConnectedClients().Count() == 1)
             {
                 PresenceList.forceSendKeepAlive = true;
             }
@@ -418,7 +418,7 @@ namespace IXICore
             {
                 using (BinaryWriter writer = new BinaryWriter(m))
                 {
-                    string publicHostname = NetworkServer.getFullPublicAddress();
+                    string publicHostname = IxianHandler.getFullPublicAddress();
 
                     // Send the node version
                     writer.Write(CoreConfig.protocolVersion);
@@ -445,7 +445,7 @@ namespace IXICore
                     writer.Write(IxianHandler.getWalletStorage().getPrimaryPublicKey());
 
                     // Send listening port
-                    writer.Write(NetworkServer.getListeningPort());
+                    writer.Write(IxianHandler.publicPort);
 
                     // Send timestamp
                     long timestamp = Core.getCurrentTimestamp();

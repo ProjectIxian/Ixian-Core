@@ -69,6 +69,8 @@ namespace IXICore.Network
             // Network configuration
             UPnP upnp = new UPnP();
 
+            IxianHandler.publicPort = port;
+
             if (externalIp != "" && IPAddress.TryParse(externalIp, out _))
             {
                 IxianHandler.publicIP = externalIp;

@@ -25,6 +25,7 @@ namespace IXICore.Meta
         private static IxianNode handlerClass = null;
 
         private static string _publicIP = "";
+        private static int _publicPort = 0;
 
         public static bool forceShutdown = false;
 
@@ -133,14 +134,35 @@ namespace IXICore.Meta
             handlerClass.shutdown();
         }
 
+        /// <summary>
+        ///  IP Address on which the node is reachable.
+        /// </summary>
         public static string publicIP
         {
             get { return _publicIP; }
             set
             {
                 _publicIP = value;
-                PresenceList.myPublicAddress = NetworkServer.getFullPublicAddress();
+                PresenceList.myPublicAddress = getFullPublicAddress();
             }
+        }
+
+        /// <summary>
+        ///  Port on which the node is reachable.
+        /// </summary>
+        public static int publicPort
+        {
+            get { return _publicPort; }
+            set
+            {
+                _publicPort = value;
+                PresenceList.myPublicAddress = getFullPublicAddress();
+            }
+        }
+
+        public static string getFullPublicAddress()
+        {
+            return publicIP + ":" + publicPort;
         }
 
         // Extension methods

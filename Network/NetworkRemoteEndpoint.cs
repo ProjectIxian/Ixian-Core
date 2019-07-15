@@ -953,6 +953,30 @@ namespace IXICore.Network
             return false;
         }
 
+
+        // Unsubscribe multiple events
+        public bool detachEvents(NetworkEvents.Type type)
+        {
+            lock (subscribedAddresses)
+            {
+                // remove all types
+                if(type == NetworkEvents.Type.all)
+                {
+                    subscribedAddresses = new Dictionary<byte[], NetworkEvents.Type>();
+                    return true;
+                }
+
+                foreach (var entry in subscribedAddresses)
+                {
+                    if (entry.Value == type)
+                    {
+                        subscribedAddresses.Remove(entry.Key);
+                    }
+                }
+            }
+
+            return true;
+        }
         public long calculateTimeDifference()
         {
             lock (timeSyncs)
