@@ -584,9 +584,9 @@ namespace IXICore.Network
         {
             if (message.helperData != null)
             {
-                if (message_queue.Exists(x => x.code == message.code && message.helperData.SequenceEqual(x.helperData)))
+                if (message_queue.Exists(x => x.code == message.code && x.helperData != null && message.helperData.SequenceEqual(x.helperData)))
                 {
-                    int msg_index = message_queue.FindIndex(x => x.code == message.code && message.helperData.SequenceEqual(x.helperData));
+                    int msg_index = message_queue.FindIndex(x => x.code == message.code && x.helperData != null && message.helperData.SequenceEqual(x.helperData));
                     message_queue[msg_index] = message;
                     return;
                 }
