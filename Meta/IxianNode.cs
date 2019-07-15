@@ -35,102 +35,77 @@ namespace IXICore.Meta
             handlerClass = handler_class;
         }
 
-        public static ulong getHighestKnownNetworkBlockHeight()
+        private static void verifyHandler()
         {
             if (handlerClass == null)
             {
                 throw new Exception("Handler Class must be specified in IxianHandler Class");
             }
+        }
+
+        public static ulong getHighestKnownNetworkBlockHeight()
+        {
+            verifyHandler();
             return handlerClass.getHighestKnownNetworkBlockHeight();
         }
 
         public static Block getLastBlock()
         {
-            if (handlerClass == null)
-            {
-                throw new Exception("Handler Class must be specified in IxianHandler Class");
-            }
+            verifyHandler();
             return handlerClass.getLastBlock();
         }
 
         public static ulong getLastBlockHeight()
         {
-            if (handlerClass == null)
-            {
-                throw new Exception("Handler Class must be specified in IxianHandler Class");
-            }
+            verifyHandler();
             return handlerClass.getLastBlockHeight();
         }
 
         public static int getLastBlockVersion()
         {
-            if (handlerClass == null)
-            {
-                throw new Exception("Handler Class must be specified in IxianHandler Class");
-            }
+            verifyHandler();
             return handlerClass.getLastBlockVersion();
         }
 
         public static bool addTransaction(Transaction tx)
         {
-            if (handlerClass == null)
-            {
-                throw new Exception("Handler Class must be specified in IxianHandler Class");
-            }
+            verifyHandler();
             return handlerClass.addTransaction(tx);
         }
 
         public static bool isAcceptingConnections()
         {
-            if (handlerClass == null)
-            {
-                throw new Exception("Handler Class must be specified in IxianHandler Class");
-            }
+            verifyHandler();
             return handlerClass.isAcceptingConnections();
         }
 
         public static Wallet getWallet(byte[] id)
         {
-            if (handlerClass == null)
-            {
-                throw new Exception("Handler Class must be specified in IxianHandler Class");
-            }
+            verifyHandler();
             return handlerClass.getWallet(id);
         }
 
         public static IxiNumber getWalletBalance(byte[] id)
         {
-            if (handlerClass == null)
-            {
-                throw new Exception("Handler Class must be specified in IxianHandler Class");
-            }
+            verifyHandler();
             return handlerClass.getWalletBalance(id);
         }
 
         public static WalletStorage getWalletStorage()
         {
-            if (handlerClass == null)
-            {
-                throw new Exception("Handler Class must be specified in IxianHandler Class");
-            }
+            verifyHandler();
             return handlerClass.getWalletStorage();
         }
 
         public static void parseProtocolMessage(ProtocolMessageCode code, byte[] data, RemoteEndpoint endpoint)
         {
-            if (handlerClass == null)
-            {
-                throw new Exception("Handler Class must be specified in IxianHandler Class");
-            }
+            verifyHandler();
             handlerClass.parseProtocolMessage(code, data, endpoint);
         }
 
         public static void shutdown()
         {
-            if (handlerClass == null)
-            {
-                throw new Exception("Handler Class must be specified in IxianHandler Class");
-            }
+            verifyHandler();
             handlerClass.shutdown();
         }
 
