@@ -612,30 +612,30 @@ namespace IXICore
 
                     if (types == null)
                     {
-                        servers = NetworkClientManager.networkClients.FindAll(x => x.blockHeight > block_num);
-                        clients = NetworkServer.connectedClients.FindAll(x => x.blockHeight > block_num);
+                        servers = NetworkClientManager.networkClients.FindAll(x => x.blockHeight > block_num && x.isConnected() && x.helloReceived);
+                        clients = NetworkServer.connectedClients.FindAll(x => x.blockHeight > block_num && x.isConnected() && x.helloReceived);
 
                         serverCount = servers.Count();
                         clientCount = clients.Count();
 
                         if (serverCount == 0 && clientCount == 0)
                         {
-                            servers = NetworkClientManager.networkClients.FindAll(x => x.blockHeight == block_num);
-                            clients = NetworkServer.connectedClients.FindAll(x => x.blockHeight == block_num);
+                            servers = NetworkClientManager.networkClients.FindAll(x => x.blockHeight == block_num && x.isConnected() && x.helloReceived);
+                            clients = NetworkServer.connectedClients.FindAll(x => x.blockHeight == block_num && x.isConnected() && x.helloReceived);
                         }
                     }
                     else
                     {
-                        servers = NetworkClientManager.networkClients.FindAll(x => x.blockHeight > block_num && x.presenceAddress != null && types.Contains(x.presenceAddress.type));
-                        clients = NetworkServer.connectedClients.FindAll(x => x.blockHeight > block_num && x.presenceAddress != null && types.Contains(x.presenceAddress.type));
+                        servers = NetworkClientManager.networkClients.FindAll(x => x.blockHeight > block_num && x.presenceAddress != null && types.Contains(x.presenceAddress.type) && x.isConnected() && x.helloReceived);
+                        clients = NetworkServer.connectedClients.FindAll(x => x.blockHeight > block_num && x.presenceAddress != null && types.Contains(x.presenceAddress.type) && x.isConnected() && x.helloReceived);
 
                         serverCount = servers.Count();
                         clientCount = clients.Count();
 
                         if (serverCount == 0 && clientCount == 0)
                         {
-                            servers = NetworkClientManager.networkClients.FindAll(x => x.blockHeight == block_num && x.presenceAddress != null && types.Contains(x.presenceAddress.type));
-                            clients = NetworkServer.connectedClients.FindAll(x => x.blockHeight == block_num && x.presenceAddress != null && types.Contains(x.presenceAddress.type));
+                            servers = NetworkClientManager.networkClients.FindAll(x => x.blockHeight == block_num && x.presenceAddress != null && types.Contains(x.presenceAddress.type) && x.isConnected() && x.helloReceived);
+                            clients = NetworkServer.connectedClients.FindAll(x => x.blockHeight == block_num && x.presenceAddress != null && types.Contains(x.presenceAddress.type) && x.isConnected() && x.helloReceived);
                         }
                     }
 
