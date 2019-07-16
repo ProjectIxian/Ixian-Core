@@ -105,10 +105,13 @@ namespace IXICore
                             {
                                 if (addr.lastSeenTime < local_addr.lastSeenTime)
                                 {
-                                    addr.version = local_addr.version;
-                                    addr.address = local_addr.address;
-                                    addr.lastSeenTime = local_addr.lastSeenTime;
-                                    addr.signature = local_addr.signature;
+                                    if (local_addr.signature != null)
+                                    {
+                                        addr.version = local_addr.version;
+                                        addr.address = local_addr.address;
+                                        addr.lastSeenTime = local_addr.lastSeenTime;
+                                        addr.signature = local_addr.signature;
+                                    }
 
                                     if (addr.type == 'M' || addr.type == 'H')
                                     {
@@ -391,18 +394,18 @@ namespace IXICore
         }
 
         // Update a presence from a byte array
-        public static bool updateFromBytes(byte[] bytes)
+        public static Presence updateFromBytes(byte[] bytes)
         {
             Presence presence = new Presence(bytes);
 
             if(verifyPresence(presence))
             {
                 updateEntry(presence);
-                return true;
+                return presence;
             }
 
 
-            return false;
+            return null;
         }
 
         public static void startKeepAlive()
@@ -514,7 +517,6 @@ namespace IXICore
 
                     string hostname = curNodePresenceAddress.address;
                     writer.Write(hostname);
-
                     writer.Write(PresenceList.curNodePresenceAddress.type);
 
                     // Add a verifiable signature
