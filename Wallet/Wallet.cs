@@ -130,55 +130,62 @@ namespace IXICore
             {
                 using (BinaryWriter writer = new BinaryWriter(m))
                 {
-                    try
-                    {
-                        writer.Write(id.Length);
-                        writer.Write(id);
-                        writer.Write(balance.ToString());
-
-                        if (data != null)
-                        {
-                            writer.Write(data.Length);
-                            writer.Write(data);
-                        }else
-                        {
-                            writer.Write((int)0);
-                        }
-
-                        writer.Write((byte)type);
-                        writer.Write(requiredSigs);
-                        if (allowedSigners != null)
-                        {
-                            writer.Write(allowedSigners.Length);
-                            for (int i = 0; i < allowedSigners.Length; i++)
-                            {
-                                writer.Write(allowedSigners[i].Length);
-                                writer.Write(allowedSigners[i]);
-                            }
-                        }
-                        else
-                        {
-                            writer.Write((byte)0);
-                        }
-
-                        if (publicKey != null)
-                        {
-                            writer.Write(publicKey.Length);
-                            writer.Write(publicKey);
-                        }else
-                        {
-                            writer.Write((int)0);
-                        }
-                    }
-                    catch (Exception)
-                    {
-
-                    }
+                    writeBytes(writer);
 #if TRACE_MEMSTREAM_SIZES
                     Logging.info(String.Format("Wallet::getBytes: {0}", m.Length));
 #endif
                 }
                 return m.ToArray();
+            }
+        }
+
+        public void writeBytes(BinaryWriter writer)
+        {
+            try
+            {
+                writer.Write(id.Length);
+                writer.Write(id);
+                writer.Write(balance.ToString());
+
+                if (data != null)
+                {
+                    writer.Write(data.Length);
+                    writer.Write(data);
+                }
+                else
+                {
+                    writer.Write((int)0);
+                }
+
+                writer.Write((byte)type);
+                writer.Write(requiredSigs);
+                if (allowedSigners != null)
+                {
+                    writer.Write(allowedSigners.Length);
+                    for (int i = 0; i < allowedSigners.Length; i++)
+                    {
+                        writer.Write(allowedSigners[i].Length);
+                        writer.Write(allowedSigners[i]);
+                    }
+                }
+                else
+                {
+                    writer.Write((byte)0);
+                }
+
+                if (publicKey != null)
+                {
+                    writer.Write(publicKey.Length);
+                    writer.Write(publicKey);
+                }
+                else
+                {
+                    writer.Write((int)0);
+                }
+            }
+            catch (Exception)
+            {
+
             }
         }
 
