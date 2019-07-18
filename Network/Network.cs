@@ -105,7 +105,7 @@ namespace IXICore.Network
         s2data = 26,
         s2failed = 27,
         s2signature = 28,
-        s2keys = 29,
+        /*s2keys = 29,*/
         /*ping = 30,
         pong = 31,*/
         getBalance = 32,

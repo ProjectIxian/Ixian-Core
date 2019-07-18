@@ -171,6 +171,13 @@ namespace IXICore
         /// <param name="kp">Ixian RSA key pair to be tested.</param>
         /// <returns>True, if the keys are able to successfully encrypt and sign data.</returns>
         bool testKeys(byte[] sample, IxianKeyPair kp);
+
+        /// <summary>
+        /// Generates secure random bytes according to the specified length.
+        /// </summary>
+        /// <param name="length">Length of the random data.</param>
+        /// <returns>Byte array of cryptographically secure random data.</returns>
+        byte[] getSecureRandomBytes(int length);
     }
 
 
@@ -247,6 +254,11 @@ namespace IXICore
         public bool testKeys(byte[] plaintext, IxianKeyPair kp)
         {
             return _cryptoLib.testKeys(plaintext, kp);
+        }
+
+        public byte[] getSecureRandomBytes(int length)
+        {
+            return _cryptoLib.getSecureRandomBytes(length);
         }
     }
 }
