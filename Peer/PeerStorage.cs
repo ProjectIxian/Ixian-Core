@@ -3,6 +3,7 @@ using System;
 using System.Collections.Generic;
 using System.IO;
 using System.Linq;
+using System.Reflection;
 
 namespace IXICore
 {
@@ -10,7 +11,22 @@ namespace IXICore
     {
         private static List<Peer> peerList = new List<Peer>();
 
-        public static string peersFilename = "peers.dat";
+        private static string folderPath = "";
+        private static string fullPeersPath = "peers.dat";
+
+        public static void init(string filename = "peers.dat")
+        {
+            // Obtain paths and cache them
+            if (Assembly.GetEntryAssembly() != null)
+            {
+                folderPath = System.IO.Path.GetDirectoryName(Assembly.GetEntryAssembly().Location);
+            }
+            else
+            {
+                folderPath = System.Environment.GetFolderPath(System.Environment.SpecialFolder.Personal);
+            }
+            fullPeersPath = Path.Combine(folderPath, filename);
+        }
 
         public static bool addPeerToPeerList(string hostname, byte[] walletAddress, bool storePeersFile = true)
         {
@@ -128,7 +144,7 @@ namespace IXICore
                 if (peerList.Count < 2)
                     return;
 
-                using (TextWriter tw = new StreamWriter(peersFilename))
+                using (TextWriter tw = new StreamWriter(fullPeersPath))
                 {
                     foreach (Peer p in peerList)
                     {
@@ -150,7 +166,7 @@ namespace IXICore
         public static bool readPeersFile()
         {
             // Check if the presence file exists
-            if (File.Exists(peersFilename))
+            if (File.Exists(fullPeersPath))
             {
                 Logging.info("Peers file found. Adding addresses to initial connections.");
             }
@@ -164,7 +180,7 @@ namespace IXICore
                 lock (peerList)
                 {
                     peerList.Clear();
-                    List<string> ips = File.ReadAllLines(peersFilename).ToList();
+                    List<string> ips = File.ReadAllLines(fullPeersPath).ToList();
                     foreach (string ip in ips)
                     {
                         string[] split_hostname = ip.Split(';');
@@ -190,9 +206,9 @@ namespace IXICore
         // Deletes the presence file cache
         public static void deletePeersFile()
         {
-            if (File.Exists(peersFilename))
+            if (File.Exists(fullPeersPath))
             {
-                File.Delete(peersFilename);
+                File.Delete(fullPeersPath);
             }
 
             return;

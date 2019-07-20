@@ -92,8 +92,15 @@ namespace IXICore.Meta
             try
             {
                 // Obtain paths and cache them
-                folderpath = System.IO.Path.GetDirectoryName(Assembly.GetEntryAssembly().Location);
-                logfilepath = Path.Combine(folderpath, Path.GetFileNameWithoutExtension(logfilename));
+                if(Assembly.GetEntryAssembly() != null)
+                {
+                    folderpath = System.IO.Path.GetDirectoryName(Assembly.GetEntryAssembly().Location);
+                }
+                else
+                {
+                    folderpath = System.Environment.GetFolderPath(System.Environment.SpecialFolder.Personal);
+                }
+                logfilepath = Path.Combine(folderpath, logfilename);
                 wildcard = Path.GetFileNameWithoutExtension(logfilename) + "*" + Path.GetExtension(logfilename);
                 logfilepathpart = Path.Combine(folderpath, Path.GetFileNameWithoutExtension(logfilename));
 
@@ -290,9 +297,10 @@ namespace IXICore.Meta
                 {
                     return;
                 }
-                if (File.Exists(logfilename))
+
+                if (File.Exists(logfilepath))
                 {
-                    var length = new FileInfo(logfilename).Length;
+                    var length = new FileInfo(logfilepath).Length;
                     if (length > maxLogSize || (length > 0 && forceRoll))
                     {
                         if (logFileStream != null)
@@ -324,7 +332,7 @@ namespace IXICore.Meta
 
                             // Move original file
                             var targetPath = logfilepathpart + ".0" + Path.GetExtension(logfilename);
-                            File.Move(logfilename, targetPath);
+                            File.Move(logfilepath, targetPath);
                         }
                     }
                 }
@@ -339,7 +347,7 @@ namespace IXICore.Meta
             {
                 if (logFileStream == null)
                 {
-                    logFileStream = File.Open(logfilename, FileMode.OpenOrCreate, FileAccess.Write, FileShare.Read);
+                    logFileStream = File.Open(logfilepath, FileMode.OpenOrCreate, FileAccess.Write, FileShare.Read);
                 }
             }
             catch (Exception e)
