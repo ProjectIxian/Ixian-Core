@@ -15,8 +15,11 @@ namespace IXICore
 {
     class BouncyCastle : ICryptoLib
     {
+        private static RNGCryptoServiceProvider rngCsp = new RNGCryptoServiceProvider();
+
         // Private variables used for AES key expansion
         private int PBKDF2_iterations = 10000;
+        //private string AES_algorithm = "AES/GCM/NoPadding";
         private string AES_algorithm = "AES/CBC/PKCS7Padding";
 
         // Private variables used for Chacha
@@ -232,7 +235,7 @@ namespace IXICore
         public byte[] encryptWithRSA(byte[] input, byte[] publicKey)
         {
             RSACryptoServiceProvider rsa = rsaKeyFromBytes(publicKey);
-            return rsa.Encrypt(input, false);
+            return rsa.Encrypt(input, true);
         }
 
 
@@ -240,7 +243,7 @@ namespace IXICore
         public byte[] decryptWithRSA(byte[] input, byte[] privateKey)
         {
             RSACryptoServiceProvider rsa = rsaKeyFromBytes(privateKey);
-            return rsa.Decrypt(input, false);
+            return rsa.Decrypt(input, true);
         }
 
         // Encrypt data using AES
@@ -250,12 +253,7 @@ namespace IXICore
 
             int blockSize = outCipher.GetBlockSize();
             // Perform key expansion
-            byte[] salt = new byte[blockSize];
-            using (RNGCryptoServiceProvider rngCsp = new RNGCryptoServiceProvider())
-            {
-                // Fill the array with a random value.
-                rngCsp.GetBytes(salt);
-            }
+            byte[] salt = getSecureRandomBytes(blockSize);
 
             ParametersWithIV withIV = new ParametersWithIV(new KeyParameter(key), salt);
             try
@@ -316,12 +314,7 @@ namespace IXICore
         // Encrypt using password
         public byte[] encryptWithPassword(byte[] data, string password)
         {
-            byte[] salt = new byte[16];
-            using (RNGCryptoServiceProvider rngCsp = new RNGCryptoServiceProvider())
-            {
-                // Fill the array with a random value.
-                rngCsp.GetBytes(salt);
-            }
+            byte[] salt = getSecureRandomBytes(16);
             byte[] key = getPbkdf2BytesFromPassphrase(password, salt, PBKDF2_iterations, 16);
             byte[] ret_data = encryptDataAES(data, key);
 
@@ -351,13 +344,7 @@ namespace IXICore
             byte[] outData = new byte[input.Length + 8];
 
             // Generate the 8 byte nonce
-            byte[] nonce = new byte[8];
-
-            using (RNGCryptoServiceProvider rngCsp = new RNGCryptoServiceProvider())
-            {
-                // Fill the array with a random value.
-                rngCsp.GetBytes(nonce);
-            }
+            byte[] nonce = getSecureRandomBytes(8);
 
             // Prevent leading 0 to avoid edge cases
             if (nonce[0] == 0)
@@ -452,5 +439,11 @@ namespace IXICore
             return rsaKeyToBytes(newRsa, true, false);
         }
 
+        public byte[] getSecureRandomBytes(int length)
+        {
+            byte[] random_data = new byte[length];
+            rngCsp.GetBytes(random_data);
+            return random_data;
+        }
     }
 }

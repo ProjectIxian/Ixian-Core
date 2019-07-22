@@ -610,7 +610,7 @@ namespace IXICore
         ///  Constructs a transaction object from the serialized transaction data. See also `getBytes()`.
         /// </summary>
         /// <param name="bytes">Byte-field with the serialized transaction</param>
-        public Transaction(byte[] bytes)
+        public Transaction(byte[] bytes, bool include_applied = false)
         {
             try
             {
@@ -688,6 +688,19 @@ namespace IXICore
                                 pubKey = reader.ReadBytes(pkLen);
                             }
 
+                            try
+                            {
+                                // remove the try/catch wrapper after the upgrade
+                                ulong tmp_applied = reader.ReadUInt64();
+                                if(include_applied)
+                                {
+                                    applied = tmp_applied;
+                                }
+                            }catch(Exception)
+                            {
+
+                            }
+
                             id = generateID();
                         }else
                         {
@@ -707,7 +720,7 @@ namespace IXICore
         ///  Serializes the transaction object for transmission and returns a byte-field. See also the constructor `Transaction(byte[])`.
         /// </summary>
         /// <returns>Byte-field with the serialized transaction, suiteable for network transmission.</returns>
-        public byte[] getBytes()
+        public byte[] getBytes(bool include_applied = false)
         {
             using (MemoryStream m = new MemoryStream(832))
             {
@@ -786,6 +799,15 @@ namespace IXICore
                     {
                         writer.Write((int)0);
                     }
+
+                    if (include_applied)
+                    {
+                        writer.Write(applied);
+                    }else
+                    {
+                        writer.Write((ulong)0);
+                    }
+
 #if TRACE_MEMSTREAM_SIZES
                     Logging.info(String.Format("Transaction::getBytes: {0}", m.Length));
 #endif
