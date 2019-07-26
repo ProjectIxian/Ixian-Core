@@ -197,29 +197,7 @@ namespace IXICore
                 {
                     // Set the balance
                     wallet.balance = balance;
-                }
-
-                // Prepare the balance data
-                using (MemoryStream mw = new MemoryStream())
-                {
-                    using (BinaryWriter writerw = new BinaryWriter(mw))
-                    {
-                        // Send the address
-                        writerw.Write(id.Length);
-                        writerw.Write(id);
-                        // Send the balance
-                        writerw.Write(balance.ToString());
-                        // Send the block height for this balance
-                        writerw.Write(IxianHandler.getLastBlockHeight());
-#if TRACE_MEMSTREAM_SIZES
-                        Logging.info(String.Format("WalletState::setWalletBalance: {0}", mw.Length));
-#endif
-
-                        // Send balance message to all connected clients
-                        CoreProtocolMessage.broadcastEventDataMessage(NetworkEvents.Type.balance, id, ProtocolMessageCode.balance, mw.ToArray(), id, null);
-                    }
-                }
-                
+                }               
 
                 if (snapshot == false)
                 {
@@ -234,6 +212,27 @@ namespace IXICore
                     cachedChecksum = null;
                     cachedTotalSupply = new IxiNumber(0);
                     cachedDeltaChecksum = null;
+
+                    // Prepare the balance data
+                    using (MemoryStream mw = new MemoryStream())
+                    {
+                        using (BinaryWriter writerw = new BinaryWriter(mw))
+                        {
+                            // Send the address
+                            writerw.Write(id.Length);
+                            writerw.Write(id);
+                            // Send the balance
+                            writerw.Write(balance.ToString());
+                            // Send the block height for this balance
+                            writerw.Write(IxianHandler.getLastBlockHeight());
+#if TRACE_MEMSTREAM_SIZES
+                        Logging.info(String.Format("WalletState::setWalletBalance: {0}", mw.Length));
+#endif
+
+                            // Send balance message to all connected clients
+                            CoreProtocolMessage.broadcastEventDataMessage(NetworkEvents.Type.balance, id, ProtocolMessageCode.balance, mw.ToArray(), id, null);
+                        }
+                    }
                 }
                 else
                 {

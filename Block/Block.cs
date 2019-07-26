@@ -332,7 +332,7 @@ namespace IXICore
                                 byte[] sig = reader.ReadBytes(sigLen);
                                 int sigAddresLen = reader.ReadInt32();
                                 byte[] sigAddress = reader.ReadBytes(sigAddresLen);
-                                if (!containsSignature(sigAddress))
+                                if (!containsSignature(new Address(sigAddress)))
                                 {
                                     byte[][] newSig = new byte[2][];
                                     newSig[0] = sig;
@@ -739,7 +739,7 @@ namespace IXICore
 
             // Note: we don't need any further validation, since this block has already passed through BlockProcessor.verifyBlock() at this point.
             byte[] myAddress = IxianHandler.getWalletStorage().getPrimaryAddress();
-            if (containsSignature(myAddress))
+            if (containsSignature(new Address(myAddress, null, false)))
             {
                 return null;
             }
@@ -778,7 +778,7 @@ namespace IXICore
         /// </summary>
         /// <param name="address_or_pub_key">The signer's address or public key.</param>
         /// <returns></returns>
-        public bool containsSignature(byte[] address_or_pub_key)
+        public bool containsSignature(Address p_address)
         {
             if (compacted)
             {
@@ -786,8 +786,6 @@ namespace IXICore
                 return false;
             }
 
-            // Generate an address in case we got the pub key
-            Address p_address = new Address(address_or_pub_key);
             byte[] cmp_address = p_address.address;
 
             lock (signatures)
@@ -831,7 +829,7 @@ namespace IXICore
                 List<byte[][]> added_signatures = new List<byte[][]>();
                 foreach (byte[][] sig in other.signatures)
                 {
-                    if (!containsSignature(sig[1]))
+                    if (!containsSignature(new Address(sig[1])))
                     {
                         count++;
                         signatures.Add(sig);
@@ -877,7 +875,7 @@ namespace IXICore
             }
             lock (signatures)
             {
-                if (!containsSignature(address_or_pub_key))
+                if (!containsSignature(new Address(address_or_pub_key)))
                 {
                     byte[] pub_key = getSignerPubKey(address_or_pub_key);
                     if (pub_key != null && verifySignature(signature, pub_key))
@@ -1010,7 +1008,7 @@ namespace IXICore
             else
             {
                 // Generate an address
-                Address p_address = new Address(public_key);
+                Address p_address = new Address(public_key, null, false);
                 node_address = p_address.address;
             }
 
@@ -1110,7 +1108,7 @@ namespace IXICore
                         pubKeyBytes = keyOrAddress;
                         if (convert_pubkeys)
                         {
-                            Address address = new Address(pubKeyBytes);
+                            Address address = new Address(pubKeyBytes, null, false);
                             addressBytes = address.address;
                         }else
                         {
