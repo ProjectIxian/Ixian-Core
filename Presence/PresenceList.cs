@@ -66,12 +66,14 @@ namespace IXICore
 
         // Update a presence entry. If the wallet address is not found, it creates a new entry in the Presence List.
         // If the wallet address is found in the presence list, it adds any new addresses from the specified presence.
-        public static Presence updateEntry(Presence presence, RemoteEndpoint skipEndpoint = null)
+        public static Presence updateEntry(Presence presence, bool return_presence_only_if_updated = false)
         {
             if(presence == null)
             {
                 return null;
             }
+
+            bool updated = false;
 
             lock(presences)
             {
@@ -111,6 +113,7 @@ namespace IXICore
                                         addr.address = local_addr.address;
                                         addr.lastSeenTime = local_addr.lastSeenTime;
                                         addr.signature = local_addr.signature;
+                                        updated = true;
                                     }
 
                                     if (addr.type == 'M' || addr.type == 'H')
@@ -140,12 +143,22 @@ namespace IXICore
                                     }
                                     presenceCount[local_addr.type]++;
                                 }
+
+                                updated = true;
                             }
                         }
 
-                        return pr;
+                        if (!updated && return_presence_only_if_updated)
+                        {
+                            return null;
+                        }
+                        else
+                        {
+                            return pr;
+                        }
                     }
-                }else
+                }
+                else
                 {
                     // Insert a new entry
                     //Console.WriteLine("[PL] Adding new entry for {0}", presence.wallet);
@@ -165,10 +178,18 @@ namespace IXICore
                                 presenceCount.Add(pa.type, 0);
                             }
                             presenceCount[pa.type]++;
+
+                            updated = true;
                         }
                     }
 
-                    return presence;
+                    if (!updated && return_presence_only_if_updated)
+                    {
+                        return null;
+                    }else
+                    {
+                        return presence;
+                    }
                 }
             }
         }
@@ -374,7 +395,7 @@ namespace IXICore
                 {
                     continue;
                 }
-
+                
                 if (!entry.verifySignature(presence.wallet, presence.pubkey))
                 {
                     Logging.warn("Invalid presence address received in verifyPresence, signature verification failed for {0}.", Base58Check.Base58CheckEncoding.EncodePlain(presence.wallet));
@@ -400,8 +421,7 @@ namespace IXICore
 
             if(verifyPresence(presence))
             {
-                updateEntry(presence);
-                return presence;
+                return updateEntry(presence, true);
             }
 
 

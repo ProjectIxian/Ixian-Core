@@ -12,19 +12,12 @@ namespace IXICore
         private static List<Peer> peerList = new List<Peer>();
 
         private static string folderPath = "";
-        private static string fullPeersPath = "peers.dat";
+        private static string fullPeersPath = "peers.ixi";
 
-        public static void init(string filename = "peers.dat")
+        public static void init(string path, string filename = "peers.ixi")
         {
             // Obtain paths and cache them
-            if (Assembly.GetEntryAssembly() != null)
-            {
-                folderPath = System.IO.Path.GetDirectoryName(Assembly.GetEntryAssembly().Location);
-            }
-            else
-            {
-                folderPath = System.Environment.GetFolderPath(System.Environment.SpecialFolder.Personal);
-            }
+            folderPath = path;
             fullPeersPath = Path.Combine(folderPath, filename);
         }
 

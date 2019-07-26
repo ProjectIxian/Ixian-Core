@@ -81,7 +81,7 @@ namespace IXICore.Meta
         /// <summary>
         /// Initialize and start the logging thread.
         /// </summary>
-        public static void start()
+        public static void start(string path)
         {
             if (running)
             {
@@ -92,14 +92,7 @@ namespace IXICore.Meta
             try
             {
                 // Obtain paths and cache them
-                if(Assembly.GetEntryAssembly() != null)
-                {
-                    folderpath = System.IO.Path.GetDirectoryName(Assembly.GetEntryAssembly().Location);
-                }
-                else
-                {
-                    folderpath = System.Environment.GetFolderPath(System.Environment.SpecialFolder.Personal);
-                }
+                folderpath = path;
                 logfilepath = Path.Combine(folderpath, logfilename);
                 wildcard = Path.GetFileNameWithoutExtension(logfilename) + "*" + Path.GetExtension(logfilename);
                 logfilepathpart = Path.Combine(folderpath, Path.GetFileNameWithoutExtension(logfilename));
