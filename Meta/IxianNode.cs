@@ -6,6 +6,7 @@ namespace IXICore.Meta
 {
     abstract class IxianNode
     {
+        // Required
         public abstract ulong getHighestKnownNetworkBlockHeight();
         public abstract Block getLastBlock();
         public abstract ulong getLastBlockHeight();
@@ -18,6 +19,9 @@ namespace IXICore.Meta
         public abstract void parseProtocolMessage(ProtocolMessageCode code, byte[] data, RemoteEndpoint endpoint);
 
         public abstract void shutdown();
+
+        // Optional
+        public virtual void receivedTransactionInclusionVerificationResponse(string txid, bool verified) { }
     }
 
     static class IxianHandler
@@ -95,6 +99,15 @@ namespace IXICore.Meta
         {
             verifyHandler();
             return handlerClass.getWalletStorage();
+        }
+
+        public static void receivedTransactionInclusionVerificationResponse(string txid, bool verified)
+        {
+            if (handlerClass == null)
+            {
+                throw new Exception("Handler Class must be specified in IxianHandler Class");
+            }
+            handlerClass.receivedTransactionInclusionVerificationResponse(txid, verified);
         }
 
         public static void parseProtocolMessage(ProtocolMessageCode code, byte[] data, RemoteEndpoint endpoint)
