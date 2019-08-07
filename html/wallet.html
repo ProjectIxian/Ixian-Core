@@ -279,7 +279,7 @@
 
             function getActivity() {
                 var activity_type_el = document.getElementById("activity_type");
-                $.getJSON("activity?type=" + activity_type_el.options[activity_type_el.selectedIndex].value, {})
+                $.getJSON("activity?type=" + activity_type_el.options[activity_type_el.selectedIndex].value + "&descending=true", {})
                     .done(function (data) {
                         document.getElementById("payments").innerHTML = "";
                         for (var i in data["result"]) {

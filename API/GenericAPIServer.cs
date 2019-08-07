@@ -1159,15 +1159,21 @@ namespace IXICore
                 type = Int32.Parse((string)parameters["type"]);
             }
 
+            bool descending = false;
+            if(parameters.ContainsKey("descending") && (string)parameters["descending"] == "true")
+            {
+                descending = true;
+            }
+
             List<Activity> res = null;
 
             if (type == -1)
             {
-                res = ActivityStorage.getActivitiesBySeedHash(IxianHandler.getWalletStorage().getSeedHash(), Int32.Parse(fromIndex), Int32.Parse(count), true);
+                res = ActivityStorage.getActivitiesBySeedHash(IxianHandler.getWalletStorage().getSeedHash(), Int32.Parse(fromIndex), Int32.Parse(count), descending);
             }
             else
             {
-                res = ActivityStorage.getActivitiesBySeedHashAndType(IxianHandler.getWalletStorage().getSeedHash(), (ActivityType)type, Int32.Parse(fromIndex), Int32.Parse(count), true);
+                res = ActivityStorage.getActivitiesBySeedHashAndType(IxianHandler.getWalletStorage().getSeedHash(), (ActivityType)type, Int32.Parse(fromIndex), Int32.Parse(count), descending);
             }
             return new JsonResponse { result = res, error = error };
 #else
