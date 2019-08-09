@@ -19,6 +19,12 @@ namespace IXICore
             return (long)unixTimestamp;
         }
 
+        public static string getRelativeTime(long timestamp)
+        {
+            DateTime epoch = new DateTime(1970, 1, 1, 0, 0, 0, 0).ToLocalTime();
+            return getRelativeTime(epoch.AddSeconds(timestamp));
+        }
+
         public static string getRelativeTime(DateTime targetTime)
         {
             var span = new TimeSpan(DateTime.UtcNow.Ticks - targetTime.Ticks);
