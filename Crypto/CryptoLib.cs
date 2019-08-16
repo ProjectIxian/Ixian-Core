@@ -140,16 +140,17 @@ namespace IXICore
         ///  Encrypts the provided data with the given password. This function uses Bouncy Castle's 'ChaCha' method as the internal encryption primitive, but
         ///  abstracts away some of the detail around key processing.
         /// </summary>
-        /// <param name="data">Cleartext data.</param>
-        /// <param name="password">Encryption password.</param>
+        /// <param name="input">Cleartext data.</param>
+        /// <param name="key">Encryption password.</param>
         /// <returns>Ciphertext data.</returns>
         byte[] encryptWithChacha(byte[] input, byte[] key);
+
         /// <summary>
         ///  Decrypts the provided data with the given password. This function uses Bouncy Castle's 'ChaCha' method as the internal encryption primitive, but
         ///  abstracts away some of the detail around key processing.
         /// </summary>
-        /// <param name="data">Ciphertext data.</param>
-        /// <param name="password">Decryption password.</param>
+        /// <param name="input">Ciphertext data.</param>
+        /// <param name="key">Decryption password.</param>
         /// <returns>Cleartext data.</returns>
         byte[] decryptWithChacha(byte[] input, byte[] key);
 

@@ -337,7 +337,12 @@ namespace IXICore
             return decryptDataAES(data, key, 16);
         }
 
-        // Encrypt data using Chacha engine
+        /// <summary>
+        /// Encrypt the given data using the Chacha engine.
+        /// </summary>
+        /// <param name="input">Cleartext data.</param>
+        /// <param name="key">Chacha encryption key.</param>
+        /// <returns>Encrypted (ciphertext) data or null in the event of a failure.</returns>
         public byte[] encryptWithChacha(byte[] input, byte[] key)
         {
             // Create a buffer that will contain the encrypted output and an 8 byte nonce
@@ -374,7 +379,12 @@ namespace IXICore
             return outData;
         }
 
-        // Decrypt data using Chacha engine
+        /// <summary>
+        /// Decrypt the given data using the Chacha engine.
+        /// </summary>
+        /// <param name="input">Ciphertext data.</param>
+        /// <param name="key">Chacha decryption key.</param>
+        /// <returns>Decrypted (cleartext) data or null in the event of a failure.</returns>
         public byte[] decryptWithChacha(byte[] input, byte[] key)
         {
             // Extract the nonce from the input
