@@ -75,7 +75,9 @@ namespace IXICore
 
             bool updated = false;
 
-            lock(presences)
+            long currentTime = Core.getCurrentTimestamp();
+
+            lock (presences)
             {
                 Presence pr = presences.Find(x => x.wallet.SequenceEqual(presence.wallet));
                 if (pr != null)
@@ -85,7 +87,6 @@ namespace IXICore
                         // Go through all addresses and add any missing ones
                         foreach (PresenceAddress local_addr in presence.addresses)
                         {
-                            long currentTime = Core.getCurrentTimestamp();
                             long lTimestamp = local_addr.lastSeenTime;
 
                             int expiration_time = CoreConfig.serverPresenceExpiration;
@@ -96,11 +97,18 @@ namespace IXICore
                             }
 
                             // Check for tampering. Includes a +300, -30 second synchronization zone
-                            if ((currentTime - lTimestamp) > expiration_time || (currentTime - lTimestamp) < -30)
+                            if ((currentTime - lTimestamp) > expiration_time)
                             {
-                                Logging.warn(string.Format("[PL] Potential KEEPALIVE tampering for {0} {1}. Skipping; {2} - {3}", Crypto.hashToString(pr.wallet), local_addr.address, currentTime, lTimestamp));
+                                Logging.warn(string.Format("[PL] Received expired presence for {0} {1}. Skipping; {2} - {3}", Crypto.hashToString(pr.wallet), local_addr.address, currentTime, lTimestamp));
                                 continue;
                             }
+
+                            if ((currentTime - lTimestamp) < -30)
+                            {
+                                Logging.warn(string.Format("[PL] Potential presence tampering for {0} {1}. Skipping; {2} - {3}", Crypto.hashToString(pr.wallet), local_addr.address, currentTime, lTimestamp));
+                                continue;
+                            }
+
 
                             PresenceAddress addr = pr.addresses.Find(x => x.device == local_addr.device);
                             if (addr != null)
@@ -162,25 +170,29 @@ namespace IXICore
                 {
                     // Insert a new entry
                     //Console.WriteLine("[PL] Adding new entry for {0}", presence.wallet);
-                    presences.Add(presence);
 
-                    lock (presenceCount)
+                    foreach (PresenceAddress pa in presence.addresses)
                     {
-                        foreach (PresenceAddress pa in presence.addresses)
+                        if (pa.type == 'M' || pa.type == 'H')
                         {
-                            if (pa.type == 'M' || pa.type == 'H')
-                            {
-                                PeerStorage.addPeerToPeerList(pa.address, presence.wallet);
-                            }
+                            PeerStorage.addPeerToPeerList(pa.address, presence.wallet);
+                        }
 
+                        lock (presenceCount)
+                        {
                             if (!presenceCount.ContainsKey(pa.type))
                             {
                                 presenceCount.Add(pa.type, 0);
                             }
                             presenceCount[pa.type]++;
-
-                            updated = true;
                         }
+
+                        updated = true;
+                    }
+
+                    if (updated)
+                    {
+                        presences.Add(presence);
                     }
 
                     if (!updated && return_presence_only_if_updated)
@@ -315,7 +327,7 @@ namespace IXICore
             }
         }
 
-        public static bool syncFromBytes(byte[] bytes)
+        /*public static bool syncFromBytes(byte[] bytes)
         {
             using (MemoryStream m = new MemoryStream(bytes))
             {
@@ -363,7 +375,7 @@ namespace IXICore
             }
 
             return true;
-        }
+        }*/
 
         public static bool verifyPresence(Presence presence)
         {
@@ -378,6 +390,8 @@ namespace IXICore
             }
 
             List<PresenceAddress> valid_addresses = new List<PresenceAddress>();
+
+            long currentTime = Core.getCurrentTimestamp();
 
             foreach (var entry in presence.addresses)
             {
@@ -395,7 +409,29 @@ namespace IXICore
                 {
                     continue;
                 }
-                
+
+                long lTimestamp = entry.lastSeenTime;
+
+                int expiration_time = CoreConfig.serverPresenceExpiration;
+
+                if (entry.type == 'C')
+                {
+                    expiration_time = CoreConfig.clientPresenceExpiration;
+                }
+
+                // Check for tampering. Includes a +300, -30 second synchronization zone
+                if ((currentTime - lTimestamp) > expiration_time)
+                {
+                    Logging.warn(string.Format("[PL] Received expired presence for {0} {1}. Skipping; {2} - {3}", Crypto.hashToString(presence.wallet), entry.address, currentTime, lTimestamp));
+                    continue;
+                }
+
+                if ((currentTime - lTimestamp) < -30)
+                {
+                    Logging.warn(string.Format("[PL] Potential presence tampering for {0} {1}. Skipping; {2} - {3}", Crypto.hashToString(presence.wallet), entry.address, currentTime, lTimestamp));
+                    continue;
+                }
+
                 if (!entry.verifySignature(presence.wallet, presence.pubkey))
                 {
                     Logging.warn("Invalid presence address received in verifyPresence, signature verification failed for {0}.", Base58Check.Base58CheckEncoding.EncodePlain(presence.wallet));
@@ -616,7 +652,7 @@ namespace IXICore
                             Presence listEntry = presences.Find(x => x.wallet.SequenceEqual(wallet));
                             if (listEntry == null && wallet.SequenceEqual(IxianHandler.getWalletStorage().getPrimaryAddress()))
                             {
-                                Logging.error(string.Format("My entry was removed from local PL, readding."));
+                                Logging.warn("My entry was removed from local PL, readding.");
                                 updateEntry(curNodePresence);
                                 listEntry = presences.Find(x => x.wallet.SequenceEqual(wallet));
                             }
@@ -674,7 +710,13 @@ namespace IXICore
                                     }
 
                                     // Check for tampering. Includes a +300, -30 second synchronization zone
-                                    if ((currentTime - timestamp) > expiration_time || (currentTime - timestamp) < -30)
+                                    if ((currentTime - timestamp) > expiration_time)
+                                    {
+                                        Logging.warn(string.Format("[PL] Received expired KEEPALIVE for {0} {1}. Timestamp {2}", Base58Check.Base58CheckEncoding.EncodePlain(listEntry.wallet), pa.address, timestamp));
+                                        return false;
+                                    }
+
+                                    if ((currentTime - timestamp) < -30)
                                     {
                                         Logging.warn(string.Format("[PL] Potential KEEPALIVE tampering for {0} {1}. Timestamp {2}", Base58Check.Base58CheckEncoding.EncodePlain(listEntry.wallet), pa.address, timestamp));
                                         return false;

@@ -164,6 +164,8 @@ namespace IXICore.Utils
         /// Constructor used by inheritence only
         /// </summary>
         /// <param name="words">The words to be used in the wordlist</param>
+        /// <param name="space">The desired whitespace character (word separator).</param>
+        /// <param name="name">Currently unused.</param>
         public Wordlist(String[] words, char space, string name)
         {
             _words = words

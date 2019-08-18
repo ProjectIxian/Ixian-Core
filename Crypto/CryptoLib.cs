@@ -95,8 +95,9 @@ namespace IXICore
         /// </remarks>
         /// <param name="input">Cleartext data.</param>
         /// <param name="key">Encryption key.</param>
+        /// <param name="use_GCM">Uses GCM mode.</param>
         /// <returns>AES-Encrypted data (Ciphertext) and the random salt value used in encryption.</returns>
-        byte[] encryptDataAES(byte[] input, byte[] key);
+        byte[] encryptWithAES(byte[] input, byte[] key, bool use_GCM);
         /// <summary>
         ///  Decrypts the provided block of data with a variant of the AES algorithm and using the provided symmetrical encryption key.
         /// </summary>
@@ -107,12 +108,13 @@ namespace IXICore
         /// </remarks>
         /// <param name="input">Ciphertext data to decrypt</param>
         /// <param name="key">Decryption key.</param>
+        /// <param name="use_GCM">Uses GCM mode.</param>
         /// <param name="offset">Offset of the encrypted data in the byte-field. This is usually 0.</param>
         /// <returns></returns>
-        byte[] decryptDataAES(byte[] input, byte[] key, int offset = 0);
+        byte[] decryptWithAES(byte[] input, byte[] key, bool use_GCM, int offset = 0);
 
         /// <summary>
-        ///  Encrypts the provided data with the given password. This function uses `encryptDataAES()` as the internal encryption primitive, but
+        ///  Encrypts the provided data with the given password. This function uses `encryptWithAES()` as the internal encryption primitive, but
         ///  abstracts away some of the detail around key and salt generation.
         /// </summary>
         /// <remarks>
@@ -121,10 +123,11 @@ namespace IXICore
         /// </remarks>
         /// <param name="data">Cleartext data.</param>
         /// <param name="password">Encryption password.</param>
+        /// <param name="use_GCM">Uses GCM mode.</param>
         /// <returns>Ciphertext data with a random salt value.</returns>
-        byte[] encryptWithPassword(byte[] data, string password);
+        byte[] encryptWithPassword(byte[] data, string password, bool use_GCM);
         /// <summary>
-        ///  Encrypts the provided data with the given password. This function uses `decryptDataAES()` as the internal encryption primitive, but
+        ///  Encrypts the provided data with the given password. This function uses `decryptWithAES()` as the internal encryption primitive, but
         ///  abstracts away some of the detail around key and salt processing.
         /// </summary>
         /// <remarks>
@@ -133,23 +136,25 @@ namespace IXICore
         /// </remarks>
         /// <param name="data">Ciphertext data.</param>
         /// <param name="password">Encryption password.</param>
+        /// <param name="use_GCM">Uses GCM mode.</param>
         /// <returns>Cleartext data.</returns>
-        byte[] decryptWithPassword(byte[] data, string password);
+        byte[] decryptWithPassword(byte[] data, string password, bool use_GCM);
 
         /// <summary>
         ///  Encrypts the provided data with the given password. This function uses Bouncy Castle's 'ChaCha' method as the internal encryption primitive, but
         ///  abstracts away some of the detail around key processing.
         /// </summary>
-        /// <param name="data">Cleartext data.</param>
-        /// <param name="password">Encryption password.</param>
+        /// <param name="input">Cleartext data.</param>
+        /// <param name="key">Encryption password.</param>
         /// <returns>Ciphertext data.</returns>
         byte[] encryptWithChacha(byte[] input, byte[] key);
+
         /// <summary>
         ///  Decrypts the provided data with the given password. This function uses Bouncy Castle's 'ChaCha' method as the internal encryption primitive, but
         ///  abstracts away some of the detail around key processing.
         /// </summary>
-        /// <param name="data">Ciphertext data.</param>
-        /// <param name="password">Decryption password.</param>
+        /// <param name="input">Ciphertext data.</param>
+        /// <param name="key">Decryption password.</param>
         /// <returns>Cleartext data.</returns>
         byte[] decryptWithChacha(byte[] input, byte[] key);
 
@@ -216,24 +221,24 @@ namespace IXICore
             return _cryptoLib.decryptWithRSA(input, privateKey);
         }
 
-        public byte[] encryptDataAES(byte[] input, byte[] key)
+        public byte[] encryptWithAES(byte[] input, byte[] key, bool use_GCM)
         {
-            return _cryptoLib.encryptDataAES(input, key);
+            return _cryptoLib.encryptWithAES(input, key, use_GCM);
         }
 
-        public byte[] decryptDataAES(byte[] input, byte[] key, int offset = 0)
+        public byte[] decryptWithAES(byte[] input, byte[] key, bool use_GCM, int offset = 0)
         {
-            return _cryptoLib.decryptDataAES(input, key, offset);
+            return _cryptoLib.decryptWithAES(input, key, use_GCM, offset);
         }
 
-        public byte[] encryptWithPassword(byte[] data, string password)
+        public byte[] encryptWithPassword(byte[] data, string password, bool use_GCM)
         {
-            return _cryptoLib.encryptWithPassword(data, password);
+            return _cryptoLib.encryptWithPassword(data, password, use_GCM);
         }
 
-        public byte[] decryptWithPassword(byte[] data, string password)
+        public byte[] decryptWithPassword(byte[] data, string password, bool use_GCM)
         {
-            return _cryptoLib.decryptWithPassword(data, password);
+            return _cryptoLib.decryptWithPassword(data, password, use_GCM);
         }
 
         public byte[] encryptWithChacha(byte[] input, byte[] key)

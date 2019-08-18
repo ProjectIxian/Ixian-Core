@@ -471,8 +471,8 @@ namespace IXICore
             try
             {
                 // Decrypt
-                privateKey = CryptoManager.lib.decryptWithPassword(b_privateKey, password);
-                publicKey = CryptoManager.lib.decryptWithPassword(b_publicKey, password);
+                privateKey = CryptoManager.lib.decryptWithPassword(b_privateKey, password, false);
+                publicKey = CryptoManager.lib.decryptWithPassword(b_publicKey, password, false);
                 walletPassword = password;
             }
             catch (Exception)
@@ -504,7 +504,7 @@ namespace IXICore
 
                 if (b_last_nonce != null)
                 {
-                    byte[] last_nonce_bytes = CryptoManager.lib.decryptWithPassword(b_last_nonce, walletPassword);
+                    byte[] last_nonce_bytes = CryptoManager.lib.decryptWithPassword(b_last_nonce, walletPassword, false);
                     bool last_address_found = false;
                     while (last_address_found == false)
                     {
@@ -531,7 +531,7 @@ namespace IXICore
             try
             {
                 // Decrypt
-                masterSeed = CryptoManager.lib.decryptWithPassword(b_master_seed, password);
+                masterSeed = CryptoManager.lib.decryptWithPassword(b_master_seed, password, true);
                 seedHash = Crypto.sha512sqTrunc(masterSeed);
                 walletPassword = password;
             }
@@ -573,8 +573,8 @@ namespace IXICore
                     enc_nonce = reader.ReadBytes(len);
                 }
 
-                byte[] dec_private_key = CryptoManager.lib.decryptWithPassword(enc_private_key, password);
-                byte[] dec_public_key = CryptoManager.lib.decryptWithPassword(enc_public_key, password);
+                byte[] dec_private_key = CryptoManager.lib.decryptWithPassword(enc_private_key, password, true);
+                byte[] dec_public_key = CryptoManager.lib.decryptWithPassword(enc_public_key, password, true);
                 byte[] tmp_address = (new Address(dec_public_key)).address;
 
                 IxianKeyPair kp = new IxianKeyPair();
@@ -583,7 +583,7 @@ namespace IXICore
                 kp.addressBytes = tmp_address;
                 if (enc_nonce != null)
                 {
-                    kp.lastNonceBytes = CryptoManager.lib.decryptWithPassword(enc_nonce, password);
+                    kp.lastNonceBytes = CryptoManager.lib.decryptWithPassword(enc_nonce, password, true);
                 }
 
                 if (privateKey == null)
@@ -606,7 +606,7 @@ namespace IXICore
 
             int seed_len = reader.ReadInt32();
             byte[] enc_derived_seed = reader.ReadBytes(seed_len);
-            derivedMasterSeed = CryptoManager.lib.decryptWithPassword(enc_derived_seed, password);
+            derivedMasterSeed = CryptoManager.lib.decryptWithPassword(enc_derived_seed, password, true);
 
             return true;
         }
@@ -725,8 +725,8 @@ namespace IXICore
                 return false;
 
             // Encrypt data first
-            byte[] b_privateKey = CryptoManager.lib.encryptWithPassword(privateKey, password);
-            byte[] b_publicKey = CryptoManager.lib.encryptWithPassword(publicKey, password);
+            byte[] b_privateKey = CryptoManager.lib.encryptWithPassword(privateKey, password, false);
+            byte[] b_publicKey = CryptoManager.lib.encryptWithPassword(publicKey, password, false);
 
             BinaryWriter writer;
             try
@@ -752,7 +752,7 @@ namespace IXICore
 
                 if (myKeys.First().Value.lastNonceBytes != null)
                 {
-                    byte[] b_last_nonce = CryptoManager.lib.encryptWithPassword(myKeys.First().Value.lastNonceBytes, password);
+                    byte[] b_last_nonce = CryptoManager.lib.encryptWithPassword(myKeys.First().Value.lastNonceBytes, password, false);
                     writer.Write(b_last_nonce.Length);
                     writer.Write(b_last_nonce);
                 }
@@ -792,7 +792,7 @@ namespace IXICore
                 writer.Write(walletVersion);
 
                 // Write the master seed
-                byte[] enc_master_seed = CryptoManager.lib.encryptWithPassword(masterSeed, password);
+                byte[] enc_master_seed = CryptoManager.lib.encryptWithPassword(masterSeed, password, true);
                 writer.Write(enc_master_seed.Length);
                 writer.Write(enc_master_seed);
 
@@ -802,17 +802,17 @@ namespace IXICore
 
                     foreach (var entry in myKeys)
                     {
-                        byte[] enc_private_key = CryptoManager.lib.encryptWithPassword(entry.Value.privateKeyBytes, password);
+                        byte[] enc_private_key = CryptoManager.lib.encryptWithPassword(entry.Value.privateKeyBytes, password, true);
                         writer.Write(enc_private_key.Length);
                         writer.Write(enc_private_key);
 
-                        byte[] enc_public_key = CryptoManager.lib.encryptWithPassword(entry.Value.publicKeyBytes, password);
+                        byte[] enc_public_key = CryptoManager.lib.encryptWithPassword(entry.Value.publicKeyBytes, password, true);
                         writer.Write(enc_public_key.Length);
                         writer.Write(enc_public_key);
 
                         if (entry.Value.lastNonceBytes != null)
                         {
-                            byte[] enc_nonce = CryptoManager.lib.encryptWithPassword(entry.Value.lastNonceBytes, password);
+                            byte[] enc_nonce = CryptoManager.lib.encryptWithPassword(entry.Value.lastNonceBytes, password, true);
                             writer.Write(enc_nonce.Length);
                             writer.Write(enc_nonce);
                         }
@@ -823,7 +823,7 @@ namespace IXICore
                     }
                 }
 
-                byte[] enc_derived_master_seed = CryptoManager.lib.encryptWithPassword(derivedMasterSeed, password);
+                byte[] enc_derived_master_seed = CryptoManager.lib.encryptWithPassword(derivedMasterSeed, password, true);
                 writer.Write(enc_derived_master_seed.Length);
                 writer.Write(enc_derived_master_seed);
             }

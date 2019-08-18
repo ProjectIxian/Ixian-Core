@@ -610,6 +610,7 @@ namespace IXICore
         ///  Constructs a transaction object from the serialized transaction data. See also `getBytes()`.
         /// </summary>
         /// <param name="bytes">Byte-field with the serialized transaction</param>
+        /// <param name="include_applied">Whether to include the 'applied' flag when reading the transaction data.</param>
         public Transaction(byte[] bytes, bool include_applied = false)
         {
             try

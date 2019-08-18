@@ -329,7 +329,7 @@ namespace IXICore.Network
         /// <summary>
         ///  Checks if the given IP address, given as a string, is a member of this IPv4 subnet.
         /// </summary>
-        /// <param name="addr">IP address to check.</param>
+        /// <param name="ipaddr">IP address to check.</param>
         /// <returns>True, if the IP address is a part of the subnet this object represents.</returns>
         public bool IsIPInSubnet(String ipaddr)
         {

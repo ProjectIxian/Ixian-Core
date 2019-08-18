@@ -19,8 +19,8 @@ namespace IXICore
 
         // Private variables used for AES key expansion
         private int PBKDF2_iterations = 10000;
-        //private string AES_algorithm = "AES/GCM/NoPadding";
         private string AES_algorithm = "AES/CBC/PKCS7Padding";
+        private string AES_GCM_algorithm = "AES/GCM/NoPadding";
 
         // Private variables used for Chacha
         private readonly int chacha_rounds = 20;
@@ -247,9 +247,15 @@ namespace IXICore
         }
 
         // Encrypt data using AES
-        public byte[] encryptDataAES(byte[] input, byte[] key)
+        public byte[] encryptWithAES(byte[] input, byte[] key, bool use_GCM)
         {
-            IBufferedCipher outCipher = CipherUtilities.GetCipher(AES_algorithm);
+            string algo = AES_algorithm;
+            if (use_GCM)
+            {
+                algo = AES_GCM_algorithm;
+            }
+
+            IBufferedCipher outCipher = CipherUtilities.GetCipher(algo);
 
             int blockSize = outCipher.GetBlockSize();
             // Perform key expansion
@@ -274,10 +280,15 @@ namespace IXICore
         }
 
         // Decrypt data using AES
-        public byte[] decryptDataAES(byte[] input, byte [] key, int inOffset = 0)
+        public byte[] decryptWithAES(byte[] input, byte [] key, bool use_GCM, int inOffset = 0)
         {
+            string algo = AES_algorithm;
+            if (use_GCM)
+            {
+                algo = AES_GCM_algorithm;
+            }
 
-            IBufferedCipher inCipher = CipherUtilities.GetCipher(AES_algorithm);
+            IBufferedCipher inCipher = CipherUtilities.GetCipher(algo);
 
             int blockSize = inCipher.GetBlockSize();
             // Perform key expansion
@@ -312,11 +323,11 @@ namespace IXICore
         }
 
         // Encrypt using password
-        public byte[] encryptWithPassword(byte[] data, string password)
+        public byte[] encryptWithPassword(byte[] data, string password, bool use_GCM)
         {
             byte[] salt = getSecureRandomBytes(16);
             byte[] key = getPbkdf2BytesFromPassphrase(password, salt, PBKDF2_iterations, 16);
-            byte[] ret_data = encryptDataAES(data, key);
+            byte[] ret_data = encryptWithAES(data, key, use_GCM);
 
             List<byte> tmpList = new List<byte>();
             tmpList.AddRange(salt);
@@ -326,7 +337,7 @@ namespace IXICore
         }
 
         // Decrypt using password
-        public byte[] decryptWithPassword(byte[] data, string password)
+        public byte[] decryptWithPassword(byte[] data, string password, bool use_GCM)
         {
             byte[] salt = new byte[16];
             for(int i = 0; i < 16; i++)
@@ -334,10 +345,15 @@ namespace IXICore
                 salt[i] = data[i];
             }
             byte[] key = getPbkdf2BytesFromPassphrase(password, salt, PBKDF2_iterations, 16);
-            return decryptDataAES(data, key, 16);
+            return decryptWithAES(data, key, use_GCM, 16);
         }
 
-        // Encrypt data using Chacha engine
+        /// <summary>
+        /// Encrypt the given data using the Chacha engine.
+        /// </summary>
+        /// <param name="input">Cleartext data.</param>
+        /// <param name="key">Chacha encryption key.</param>
+        /// <returns>Encrypted (ciphertext) data or null in the event of a failure.</returns>
         public byte[] encryptWithChacha(byte[] input, byte[] key)
         {
             // Create a buffer that will contain the encrypted output and an 8 byte nonce
@@ -374,7 +390,12 @@ namespace IXICore
             return outData;
         }
 
-        // Decrypt data using Chacha engine
+        /// <summary>
+        /// Decrypt the given data using the Chacha engine.
+        /// </summary>
+        /// <param name="input">Ciphertext data.</param>
+        /// <param name="key">Chacha decryption key.</param>
+        /// <returns>Decrypted (cleartext) data or null in the event of a failure.</returns>
         public byte[] decryptWithChacha(byte[] input, byte[] key)
         {
             // Extract the nonce from the input

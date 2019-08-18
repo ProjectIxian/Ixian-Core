@@ -206,7 +206,7 @@ namespace IXICore.Meta
             if (!tableInfo.Any())
             {
                 // Create the activity table
-                string sql = "CREATE TABLE `activity` (`id` TEXT, `seedHash` BLOB, `wallet` TEXT, `from` TEXT, `toList` TEXT, `type` INTEGER, `data` BLOB, `value` TEXT, `timestamp` INTEGER, `status` INTEGER, `blockHeight` INTEGER, `txid` TEXT, PRIMARY KEY(`id`));";
+                string sql = "CREATE TABLE `activity` (`id` TEXT, `seedHash` BLOB, `wallet` TEXT, `from` TEXT, `toList` TEXT, `type` INTEGER, `data` BLOB, `value` TEXT, `timestamp` INTEGER, `status` INTEGER, `blockHeight` INTEGER, `txid` TEXT, `insertedTimestamp` INTEGER, PRIMARY KEY(`id`));";
                 executeSQL(sql);
 
                 sql = "CREATE INDEX `seedHash` ON `activity` (`seedHash`);";
@@ -227,11 +227,13 @@ namespace IXICore.Meta
                 executeSQL(sql);
                 sql = "CREATE INDEX `txid` ON `activity` (`txid`);";
                 executeSQL(sql);
+                sql = "CREATE INDEX `insertedTimestamp` ON `activity` (`insertedTimestamp`);";
+                executeSQL(sql);
             }
             else
             {
                 // database exists, check if it needs upgrading
-                if (!tableInfo.Exists(x => x.Name == "txid"))
+                if (!tableInfo.Exists(x => x.Name == "insertedTimestamp"))
                 {
                     sqlConnection.Close();
                     File.Delete(filename);
@@ -259,10 +261,10 @@ namespace IXICore.Meta
                 return null;
             }
 
-            string orderBy = " ORDER BY `timestamp` ASC";
+            string orderBy = " ORDER BY `insertedTimestamp` ASC";
             if (descending)
             {
-                orderBy = " ORDER BY `timestamp` DESC";
+                orderBy = " ORDER BY `insertedTimestamp` DESC";
             }
 
             string sql = "select * from `activity` where `wallet` = ?" + orderBy + " LIMIT " + fromIndex + ", " + count;
@@ -286,10 +288,10 @@ namespace IXICore.Meta
 
         public static List<Activity> getActivitiesBySeedHash(byte[] seed_hash, int fromIndex, int count, bool descending)
         {
-            string orderBy = " ORDER BY `timestamp` ASC";
+            string orderBy = " ORDER BY `insertedTimestamp` ASC";
             if (descending)
             {
-                orderBy = " ORDER BY `timestamp` DESC";
+                orderBy = " ORDER BY `insertedTimestamp` DESC";
             }
 
             if (seed_hash == null)
@@ -318,10 +320,10 @@ namespace IXICore.Meta
 
         public static List<Activity> getActivitiesBySeedHashAndType(byte[] seed_hash, ActivityType type, int fromIndex, int count, bool descending)
         {
-            string orderBy = " ORDER BY `timestamp` ASC";
+            string orderBy = " ORDER BY `insertedTimestamp` ASC";
             if (descending)
             {
-                orderBy = " ORDER BY `timestamp` DESC";
+                orderBy = " ORDER BY `insertedTimestamp` DESC";
             }
 
             if (seed_hash == null)
@@ -350,10 +352,10 @@ namespace IXICore.Meta
 
         public static List<Activity> getActivitiesByStatus(ActivityStatus status, int fromIndex, int count, bool descending)
         {
-            string orderBy = " ORDER BY `timestamp` ASC";
+            string orderBy = " ORDER BY `insertedTimestamp` ASC";
             if (descending)
             {
-                orderBy = " ORDER BY `timestamp` DESC";
+                orderBy = " ORDER BY `insertedTimestamp` DESC";
             }
 
             string sql = "select * from `activity` where `status` = ?" + orderBy + " LIMIT " + fromIndex + ", " + count;
@@ -378,10 +380,10 @@ namespace IXICore.Meta
 
         public static List<Activity> getActivitiesByType(ActivityType type, int fromIndex, int count, bool descending)
         {
-            string orderBy = " ORDER BY `timestamp` ASC";
+            string orderBy = " ORDER BY `insertedTimestamp` ASC";
             if (descending)
             {
-                orderBy = " ORDER BY `timestamp` DESC";
+                orderBy = " ORDER BY `insertedTimestamp` DESC";
             }
 
             string sql = "select * from `activity` where `type` = ?" + orderBy + " LIMIT " + fromIndex + ", " + count;
@@ -458,8 +460,8 @@ namespace IXICore.Meta
             {
                 if (getActivityById(activity.id) == null)
                 {
-                    string sql = "INSERT INTO `activity` (`id`, `seedHash`, `wallet`, `from`, `toList`, `type`, `data`, `value`, `timestamp`, `status`, `blockHeight`, `txid`) VALUES (?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?);";
-                    result = executeSQL(sql, activity.id, seed_hash, activity.wallet, activity.from, activity.toList, activity.type, activity.data, activity.value, activity.timestamp, activity.status, activity.blockHeight, activity.txid);
+                    string sql = "INSERT INTO `activity` (`id`, `seedHash`, `wallet`, `from`, `toList`, `type`, `data`, `value`, `timestamp`, `status`, `blockHeight`, `txid`, `insertedTimestamp`) VALUES (?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?);";
+                    result = executeSQL(sql, activity.id, seed_hash, activity.wallet, activity.from, activity.toList, activity.type, activity.data, activity.value, activity.timestamp, activity.status, activity.blockHeight, activity.txid, Clock.getTimestampMillis());
                 }
                 else
                 {

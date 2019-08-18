@@ -776,7 +776,7 @@ namespace IXICore
         /// <summary>
         ///  Checks if the block's signatures field contains the signature of the specified node. Either the node's address or its public key is accepted.
         /// </summary>
-        /// <param name="address_or_pub_key">The signer's address or public key.</param>
+        /// <param name="p_address">The signer's address.</param>
         /// <returns></returns>
         public bool containsSignature(Address p_address)
         {
