@@ -168,6 +168,20 @@ namespace IXICore.Meta
             else
                 dico.Add(key, value);
         }
-
     }
+
+    // Extension - lambda comparer for stuff like SortedSet
+    public class LambdaComparer<T> : IComparer<T>
+    {
+        private readonly Comparison<T> comparison;
+        public LambdaComparer(Comparison<T> comparison)
+        {
+            this.comparison = comparison;
+        }
+        public int Compare(T x, T y)
+        {
+            return comparison(x, y);
+        }
+    }
+
 }
