@@ -579,9 +579,9 @@ namespace IXICore.Network
             // Reset the network receive queue
             NetworkQueue.reset();
 
-            if (!IxianHandler.isAcceptingConnections())
+            if (PresenceList.myPresenceType == 'W')
             {
-                Logging.info("Network server is not enabled in modes other than master node.");
+                Logging.info("Network server is not enabled in worker mode.");
                 NetworkServer.stopNetworkOperations();
             }
             else
@@ -598,9 +598,9 @@ namespace IXICore.Network
         static public void isolate()
         {
             NetworkClientManager.isolate();
-            if (!IxianHandler.isAcceptingConnections())
+            if (PresenceList.myPresenceType == 'W')
             {
-                Logging.info("Network server is not enabled in modes other than master node.");
+                Logging.info("Network server is not enabled in worker mode.");
                 NetworkServer.stopNetworkOperations();
             }
             else
