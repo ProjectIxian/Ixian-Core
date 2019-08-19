@@ -223,13 +223,27 @@ namespace IXICore
                             writerw.Write(id);
                             // Send the balance
                             writerw.Write(balance.ToString());
-                            // Send the block height for this balance
-                            writerw.Write(IxianHandler.getLastBlockHeight());
+
+                            Block tmp_block = IxianHandler.getLastBlock();
+                            if (tmp_block != null)
+                            {
+                                // Send the block height for this balance
+                                writerw.Write(tmp_block.blockNum);
+                                // Send the block checksum for this balance
+                                writerw.Write(tmp_block.blockChecksum.Length);
+                                writerw.Write(tmp_block.blockChecksum);
+                            }else // genesis edge case
+                            {
+                                // Send the block height for this balance
+                                writerw.Write((ulong)1);
+                                // Send the block checksum for this balance
+                                writerw.Write(0); // TODO TODO fill out genesis checksum
+                            }
 #if TRACE_MEMSTREAM_SIZES
-                        Logging.info(String.Format("WalletState::setWalletBalance: {0}", mw.Length));
+                            Logging.info(String.Format("WalletState::setWalletBalance: {0}", mw.Length));
 #endif
 
-                            // Send balance message to all connected clients
+                            // Send balance message to all subscribed clients
                             CoreProtocolMessage.broadcastEventDataMessage(NetworkEvents.Type.balance, id, ProtocolMessageCode.balance, mw.ToArray(), id, null);
                         }
                     }

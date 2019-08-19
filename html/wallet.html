@@ -236,9 +236,14 @@
 
                         if (keyList.length > 1) {
                             html += "<div class=\"dropDown\">";
+                            var first = true;
                             for (var i in data) {
-
-                                html += "<span onclick=\"setReceiveAddress('" + i + "');\">" + i + " (" + data[i] + ")</span><br/>";
+                                var primaryDesignator = "";
+                                if (first) {
+                                    primaryDesignator = " - Primary Address";
+                                    first = false;
+                                }
+                                html += "<span onclick=\"setReceiveAddress('" + i + "');\">" + i + " (" + data[i] + ")" + primaryDesignator + "</span><br/>";
                             }
 
                             html += "</div>";

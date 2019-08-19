@@ -81,8 +81,8 @@ namespace IXICore.Network
         bye = 2,
         getBlock = 3,
         blockData = 4,
-        /*getMeta = 5,
-        metaData = 6,
+        blockHeight = 5,
+        /*metaData = 6,
         getWallet = 7,
         walletData = 8,*/
         getTransaction = 9,
