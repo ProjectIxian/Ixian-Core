@@ -733,11 +733,9 @@ namespace IXICore
         /// <returns>Byte array with the node's signature and public key or address.</returns>
         public byte[][] applySignature()
         {
-            Logging.info("Applying signature on block {0}.", blockNum);
-
             if (compacted)
             {
-                Logging.error("Trying to sapply signature on a compacted block {0}", blockNum);
+                Logging.error("Trying to apply signature on a compacted block {0}", blockNum);
                 return null;
             }
 
