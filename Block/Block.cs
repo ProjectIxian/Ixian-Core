@@ -393,7 +393,7 @@ namespace IXICore
                 throw;
             }
         }
-        
+
         /// <summary>
         ///  Retrieves the block in its serialized, 'byte stream' format. See also `Block(byte[] bytes)`.
         /// </summary>
@@ -401,8 +401,10 @@ namespace IXICore
         ///  A block can be serialized for network transmission using this function. All relevant fields will be encoded and a byte buffer will
         ///  be returned. The byte buffer contains a copy of the block, so no thread synchronization is required.
         /// </remarks>
+        /// <param name="include_sb_segments">Includes superblock segments if true.</param>
+        /// <param name="frozen_sigs_only">Returns only frozen signatures if true. If false it returns all signatures, if they are still available, otherwise falls back to frozen signatures.</param>
         /// <returns>Byte buffer with the serialized block.</returns>
-        public byte[] getBytes( bool include_sb_segments = true)
+        public byte[] getBytes(bool include_sb_segments = true, bool frozen_sigs_only = true)
         {
             if(compacted)
             {
@@ -430,7 +432,7 @@ namespace IXICore
                     lock (signatures)
                     {
                         List<byte[][]> tmp_signatures = signatures;
-                        if(frozenSignatures != null)
+                        if(frozen_sigs_only && frozenSignatures != null)
                         {
                             tmp_signatures = frozenSignatures;
                         }
@@ -733,7 +735,7 @@ namespace IXICore
         {
             if (compacted)
             {
-                Logging.error("Trying to sapply signature on a compacted block {0}", blockNum);
+                Logging.error("Trying to apply signature on a compacted block {0}", blockNum);
                 return null;
             }
 

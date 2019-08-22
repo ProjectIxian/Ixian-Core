@@ -21,7 +21,7 @@ namespace IXICore
 
         public static string getRelativeTime(long timestamp)
         {
-            DateTime epoch = new DateTime(1970, 1, 1, 0, 0, 0, 0).ToLocalTime();
+            DateTime epoch = new DateTime(1970, 1, 1);
             return getRelativeTime(epoch.AddSeconds(timestamp));
         }
 
