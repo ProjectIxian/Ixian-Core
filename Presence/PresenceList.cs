@@ -583,6 +583,7 @@ namespace IXICore
 
                     PresenceList.curNodePresenceAddress.lastSeenTime = timestamp;
                     PresenceList.curNodePresenceAddress.signature = signature;
+
 #if TRACE_MEMSTREAM_SIZES
                     Logging.info(String.Format("PresenceList::keepAlive_v1: {0}", m.Length));
 #endif
@@ -653,6 +654,8 @@ namespace IXICore
                             if (listEntry == null && wallet.SequenceEqual(IxianHandler.getWalletStorage().getPrimaryAddress()))
                             {
                                 Logging.warn("My entry was removed from local PL, readding.");
+                                curNodePresence.addresses.Clear();
+                                curNodePresence.addresses.Add(curNodePresenceAddress);
                                 updateEntry(curNodePresence);
                                 listEntry = presences.Find(x => x.wallet.SequenceEqual(wallet));
                             }
@@ -748,6 +751,8 @@ namespace IXICore
                             {
                                 if (wallet.SequenceEqual(IxianHandler.getWalletStorage().getPrimaryAddress()))
                                 {
+                                    curNodePresence.addresses.Clear();
+                                    curNodePresence.addresses.Add(curNodePresenceAddress);
                                     updateEntry(curNodePresence);
                                     return true;
                                 }
