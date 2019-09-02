@@ -183,9 +183,9 @@ namespace IXICore
                     writer.Write((int)0);
                 }
             }
-            catch (Exception)
+            catch (Exception ex)
             {
-
+                Logging.error(String.Format("Error while serializing wallet: {0}", ex.Message));
             }
         }
 
