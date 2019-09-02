@@ -7,7 +7,7 @@ using System.Text;
 
 namespace IXICore
 {
-    public enum WalletType:byte
+    public enum WalletType : byte
     {
         Normal,
         Multisig
@@ -31,7 +31,7 @@ namespace IXICore
                 return (byte)allowedSigners.Length;
             }
         }
-        
+
 
         public Wallet()
         {
@@ -61,7 +61,7 @@ namespace IXICore
             balance = wallet.balance;
             type = wallet.type;
             requiredSigs = wallet.requiredSigs;
-            if(wallet.allowedSigners != null)
+            if (wallet.allowedSigners != null)
             {
                 allowedSigners = new byte[wallet.allowedSigners.Length][];
                 for (int i = 0; i < wallet.allowedSigners.Length; i++)
@@ -118,7 +118,7 @@ namespace IXICore
                     }
                     catch (Exception)
                     {
-                        
+
                     }
                 }
             }
@@ -219,7 +219,8 @@ namespace IXICore
             if (block_version <= 2)
             {
                 return Crypto.sha512quTrunc(rawData.ToArray());
-            }else
+            }
+            else
             {
                 return Crypto.sha512sqTrunc(rawData.ToArray(), 0, 0, 64);
             }
@@ -251,7 +252,8 @@ namespace IXICore
                     tmp[i] = allowedSigners[i];
                 }
                 pos = allowedSigners.Length;
-            } else
+            }
+            else
             {
                 tmp = new byte[1][];
             }
@@ -265,13 +267,25 @@ namespace IXICore
             if (id.SequenceEqual(address)) return; // can't remove self
             byte[][] tmp = new byte[allowedSigners.Length - 1][];
             int idx = 0;
-            foreach(var allowed_signer in allowedSigners)
+            foreach (var allowed_signer in allowedSigners)
             {
                 if (allowed_signer.SequenceEqual(address)) continue;
                 tmp[idx] = allowed_signer;
                 idx++;
             }
             allowedSigners = tmp;
+        }
+
+        /// <summary>
+        /// Returns true if this wallet has no data, no public key, no multisig data nor any balance (it can be deleted from WalletState)
+        /// </summary>
+        /// <returns>True, if the Wallet may be safely deleted from WalletState.</returns>
+        public bool isEmptyWallet()
+        {
+            return (balance.getAmount() == 0 // if wallets have any balance they may not be deleted
+                && type == WalletType.Normal  // Multisig wallets may not be deleted
+                );
+
         }
     }
 }
