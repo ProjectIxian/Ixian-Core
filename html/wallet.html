@@ -431,7 +431,7 @@
                             }
                         }
 
-                        if (data["result"]["Update"] != "") {
+                        if (data["result"]["Update"] != "" && data["result"]["Update"] != undefined) {
                             warning_bar.style.display = "block";
                             if (warning_bar.firstElementChild.innerHTML != "") {
                                 warning_bar.firstElementChild.innerHTML += "<br/>";

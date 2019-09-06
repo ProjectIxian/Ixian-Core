@@ -355,6 +355,44 @@ namespace IXICore.Network
         }
 
         /// <summary>
+        ///  Sends the specified network message to all connected clients
+        /// </summary>
+        /// <param name="address">Ixian Wallet Address - the recipient of the message</param>
+        /// <param name="code">Type of the network message to send</param>
+        /// <param name="message">Byte-field with the required data, as specified by `code`.</param>
+        /// <returns>True, if the message was delivered.</returns>
+        public static bool forwardMessage(ProtocolMessageCode code, byte[] message, byte[] exclude_address = null)
+        {
+            Logging.info(String.Format(">>>> Preparing to forward to everyone"));
+
+            lock (connectedClients)
+            {
+                foreach (RemoteEndpoint endpoint in connectedClients)
+                {
+                    // Skip connections without presence information
+                    if (endpoint.presence == null)
+                        continue;
+
+                    byte[] client_wallet = endpoint.presence.wallet;
+
+                    if (client_wallet != null)
+                    {
+                        if(exclude_address != null && client_wallet.SequenceEqual(exclude_address))
+                        {
+                            continue;
+                        }
+                        Logging.info(">>>> Forwarding message");
+                        endpoint.sendData(code, message);
+
+                    }
+
+                }
+            }
+
+            return false;
+        }
+
+        /// <summary>
         ///  Sends the protocol message to the specified neighbor node, given as a Hostname or IP address and port.
         /// </summary>
         /// <param name="neighbor">IP address or hostname and port for the neighbor.</param>
