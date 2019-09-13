@@ -463,6 +463,7 @@ namespace IXICore
                         if (block == null)
                         {
                             Logging.warn("Clients are connecting, but we have no blocks yet to send them!");
+                            CoreProtocolMessage.sendBye(endpoint, ProtocolByeCode.notReady, string.Format("The node isn't ready yet, please try again later."), "", true);
                             return;
                         }
 
