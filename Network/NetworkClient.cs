@@ -62,7 +62,8 @@ namespace IXICore.Network
 
             tcpHostname = hostname;
             tcpPort = port;
-            address = string.Format("{0}:{1}", hostname, port);
+            address = hostname;
+            fullAddress = hostname + ":" + port;
             incomingPort = port;
             serverWalletAddress = wallet_address;
 
