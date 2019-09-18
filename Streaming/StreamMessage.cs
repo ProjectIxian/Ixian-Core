@@ -1,6 +1,7 @@
 ﻿using IXICore;
 using IXICore.Meta;
 using System;
+using System.Collections.Generic;
 using System.IO;
 using System.Linq;
 
@@ -25,6 +26,8 @@ namespace IXICore
 
     class StreamMessage
     {
+        public int version = 0;                 // Stream Message version
+
         public StreamMessageCode type;          // Stream Message type
         public byte[] realSender = null;        // Used by group chat bots, isn't transmitted to the network
         public byte[] sender = null;            // Sender wallet
@@ -32,7 +35,9 @@ namespace IXICore
 
         public byte[] transaction = null;       // Unsigned transaction
         public byte[] data = null;              // Actual message data, encrypted
-        public byte[] sigdata = null;           // Signature data, encrypted
+        public byte[] sigdata = null;           // Signature data (for S2), encrypted
+
+        public byte[] signature = null;         // Sender's signature
 
         public StreamMessageEncryptionCode encryptionType;
 
@@ -61,6 +66,8 @@ namespace IXICore
                 {
                     using (BinaryReader reader = new BinaryReader(m))
                     {
+                        int version = reader.ReadInt32();
+
                         int id_len = reader.ReadInt32();
                         id = reader.ReadBytes(id_len);
 
@@ -86,12 +93,16 @@ namespace IXICore
                         if (tx_length > 0)
                             transaction = reader.ReadBytes(tx_length);
 
-                        int sig_length = reader.ReadInt32();
-                        if (sig_length > 0)
-                            sigdata = reader.ReadBytes(sig_length);
+                        int sigdata_length = reader.ReadInt32();
+                        if (sigdata_length > 0)
+                            sigdata = reader.ReadBytes(sigdata_length);
 
                         encrypted = reader.ReadBoolean();
                         sigEncrypted = reader.ReadBoolean();
+
+                        int sig_length = reader.ReadInt32();
+                        if (sig_length > 0)
+                            signature = reader.ReadBytes(sig_length);
                     }
                 }
             }
@@ -107,6 +118,8 @@ namespace IXICore
             {
                 using (BinaryWriter writer = new BinaryWriter(m))
                 {
+                    writer.Write(version);
+
                     writer.Write(id.Length);
                     writer.Write(id);
 
@@ -163,7 +176,7 @@ namespace IXICore
                     }
 
 
-                    // Write the sig
+                    // Write the sigdata
                     if (sigdata != null)
                     {
                         writer.Write(sigdata.Length);
@@ -177,6 +190,16 @@ namespace IXICore
                     writer.Write(encrypted);
                     writer.Write(sigEncrypted);
 
+                    // Write the sig
+                    if (signature != null)
+                    {
+                        writer.Write(signature.Length);
+                        writer.Write(signature);
+                    }
+                    else
+                    {
+                        writer.Write(0);
+                    }
                 }
                 return m.ToArray();
             }
@@ -236,6 +259,24 @@ namespace IXICore
                 return true;
             }
             return false;
+        }
+
+        private byte[] calculateChecksum()
+        {
+            return Crypto.sha512(getBytes());
+        }
+
+        public bool sign(byte[] private_key)
+        {
+            byte[] checksum = calculateChecksum();
+            signature = CryptoManager.lib.getSignature(checksum, private_key);
+            return false;
+        }
+
+        public bool verifySignature(byte[] public_key)
+        {
+            byte[] checksum = calculateChecksum();
+            return CryptoManager.lib.verifySignature(checksum, public_key, signature);
         }
 
         private byte[] _encrypt(byte[] data_to_encrypt, byte[] public_key, byte[] aes_key, byte[] chacha_key)
