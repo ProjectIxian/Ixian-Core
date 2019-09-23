@@ -919,6 +919,10 @@ namespace IXICore
             {
                 // Extract the public key from the walletstate
                 Wallet signer_wallet = IxianHandler.getWallet(address_or_pub_key);
+                if(signer_wallet.publicKey != null && signer_wallet.publicKey.Length < 50)
+                {
+                    Logging.error("Wallet {0} has an invalid value stored for public key ({1} bytes)!", DLT.WalletState.Addr2String(address_or_pub_key), signer_wallet.publicKey == null ? 0 : signer_wallet.publicKey.Length);
+                }
                return signer_wallet.publicKey;
             }
             return null;
