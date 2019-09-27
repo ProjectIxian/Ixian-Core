@@ -67,7 +67,11 @@ namespace IXICore.Network
         /// <summary>
         ///  The remote node's address does not match the known address for that node.
         /// </summary>
-        addressMismatch = 604
+        addressMismatch = 604,
+        /// <summary>
+        ///  The serving node isn't ready yet
+        /// </summary>
+        notReady = 700
     }
 
     /// <summary>

@@ -589,6 +589,11 @@ namespace IXICore.Network
                 {
                     networkClients.Remove(client);
                 }
+                // Remove this node from the connecting clients list
+                lock (connectingClients)
+                {
+                    connectingClients.Remove(client.getFullAddress(true));
+                }
             }
         }
 

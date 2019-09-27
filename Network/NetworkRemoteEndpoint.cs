@@ -22,6 +22,8 @@ namespace IXICore.Network
         public string address = "127.0.0.1";
         public int incomingPort = 0;
 
+        public long connectionStartTime = 0;
+
         public long timeDifference = 0;
         public bool timeSyncComplete = false;
 
@@ -122,6 +124,8 @@ namespace IXICore.Network
             fullAddress = address + ":" + remoteIP.Port;
             presence = null;
             presenceAddress = null;
+
+            connectionStartTime = Clock.getTimestamp();
 
             lock (subscribedAddresses)
             {
@@ -369,7 +373,15 @@ namespace IXICore.Network
             {
                 TLC.Report();
                 long curTime = Clock.getTimestamp();
-                if(curTime - lastDataReceivedTime > CoreConfig.pingTimeout)
+                if(helloReceived == false && curTime - connectionStartTime > 10)
+                {
+                    // haven't received hello message for 10 seconds, stop running
+                    Logging.warn(String.Format("Node {0} hasn't received hello data from remote endpoint for over 10 seconds, disconnecting.", getFullAddress()));
+                    state = RemoteEndpointState.Closed;
+                    running = false;
+                    break;
+                }
+                if (curTime - lastDataReceivedTime > CoreConfig.pingTimeout)
                 {
                     // haven't received any data for 10 seconds, stop running
                     Logging.warn(String.Format("Node {0} hasn't received any data from remote endpoint for over {1} seconds, disconnecting.", getFullAddress(), CoreConfig.pingTimeout));

@@ -177,6 +177,7 @@ namespace IXICore
 
                 try
                 {
+                    Logging.info("Processing request " + context.Request.Url);
                     if (!processRequest(context, method_name, method_params))
                     {
                         processGenericRequest(context, method_name, method_params);
@@ -363,6 +364,7 @@ namespace IXICore
                 {
                     processed_request = true;
                 }
+
                 sendResponse(context.Response, response);
             }else
             {
@@ -500,6 +502,8 @@ namespace IXICore
         public void sendResponse(HttpListenerResponse responseObject, JsonResponse response)
         {
             string responseString = JsonConvert.SerializeObject(response);
+
+            Logging.info("Processed request, sending response: " + responseString);
 
             byte[] buffer = Encoding.UTF8.GetBytes(responseString);
 
