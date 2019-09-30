@@ -34,8 +34,10 @@ namespace IXICore
         public byte[] recipient = null;         // Recipient wallet 
 
         public byte[] transaction = null;       // Unsigned transaction
-        public byte[] data = null;              // Actual message data, encrypted
+        public byte[] data = null;              // Actual message data, encrypted or decrypted
         public byte[] sigdata = null;           // Signature data (for S2), encrypted
+
+        public byte[] originalData = null;      // Actual message data as was sent (before decryption)
 
         public byte[] signature = null;         // Sender's signature
 
@@ -112,7 +114,7 @@ namespace IXICore
             }
         }
 
-        public byte[] getBytes()
+        public byte[] getBytes(bool for_checksum = false)
         {
             using (MemoryStream m = new MemoryStream())
             {
@@ -152,7 +154,6 @@ namespace IXICore
                         writer.Write(0);
                     }
 
-
                     // Write the data
                     if (data != null)
                     {
@@ -187,11 +188,15 @@ namespace IXICore
                         writer.Write(0);
                     }
 
-                    writer.Write(encrypted);
-                    writer.Write(sigEncrypted);
+                    if (!for_checksum)
+                    {
+                        // TODO this likely doesn't have to be transmitted over network - it's more of a local helper
+                        writer.Write(encrypted);
+                        writer.Write(sigEncrypted);
+                    }
 
                     // Write the sig
-                    if (signature != null)
+                    if (!for_checksum && signature != null)
                     {
                         writer.Write(signature.Length);
                         writer.Write(signature);
@@ -224,9 +229,14 @@ namespace IXICore
 
         public bool decrypt(byte[] private_key, byte[] aes_key, byte[] chacha_key)
         {
+            if(originalData != null)
+            {
+                return true;
+            }
             byte[] decrypted_data = _decrypt(data, private_key, aes_key, chacha_key);
             if (decrypted_data != null)
             {
+                originalData = data;
                 data = decrypted_data;
                 return true;
             }
@@ -263,13 +273,17 @@ namespace IXICore
 
         private byte[] calculateChecksum()
         {
-            return Crypto.sha512(getBytes());
+            return Crypto.sha512(getBytes(true));
         }
 
         public bool sign(byte[] private_key)
         {
             byte[] checksum = calculateChecksum();
             signature = CryptoManager.lib.getSignature(checksum, private_key);
+            if (signature != null)
+            {
+                return true;
+            }
             return false;
         }
 

@@ -26,7 +26,9 @@ namespace IXICore
         callData,
         requestFundsResponse,
         acceptAddBot,
-        getMessages
+        getMessages,
+        appData,
+        appRequest
     }
 
     class SpixiMessage

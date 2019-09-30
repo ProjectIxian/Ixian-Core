@@ -45,6 +45,7 @@
     <Compile Include="$(MSBuildThisFileDirectory)Presence\Presence.cs" />
     <Compile Include="$(MSBuildThisFileDirectory)Presence\PresenceList.cs" />
     <Compile Include="$(MSBuildThisFileDirectory)Presence\PresenceSelector.cs" />
+    <Compile Include="$(MSBuildThisFileDirectory)Streaming\SpixiAppData.cs" />
     <Compile Include="$(MSBuildThisFileDirectory)Streaming\SpixiMessage.cs" />
     <Compile Include="$(MSBuildThisFileDirectory)Streaming\StreamMessage.cs" />
     <Compile Include="$(MSBuildThisFileDirectory)Time\Time.cs" />
