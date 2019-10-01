@@ -681,12 +681,11 @@ namespace IXICore
                 Logging.error("Cannot read from wallet file. {0}", e.Message);
                 return false;
             }
+            reader.Close();
             if (success && myAddresses.Count > 0)
             {
                 backup();
             }
-
-            reader.Close();
 
             return success;
         }
