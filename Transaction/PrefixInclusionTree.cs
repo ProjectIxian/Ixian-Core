@@ -1,4 +1,5 @@
 ﻿using System;
+using System.Linq;
 using System.IO;
 using System.Collections.Generic;
 using System.Text;
@@ -38,6 +39,10 @@ namespace IXICore
             if (level >= (levels - 1))
             {
                 // we've reached last non-leaf level
+                if(cn.data == null)
+                {
+                    cn.data = new SortedSet<byte[]>();
+                }
                 cn.data.Add(binaryTxid);
                 return;
             }
@@ -45,7 +50,10 @@ namespace IXICore
             if(!cn.childNodes.ContainsKey(cb))
             {
                 PITNode n = new PITNode(level + 1);
-                n.childNodes = new SortedList<byte, PITNode>();
+                if (level + 1 < levels - 1)
+                {
+                    n.childNodes = new SortedList<byte, PITNode>();
+                }
                 cn.childNodes.Add(cb, n);
             }
             addIntRec(binaryTxid, cn.childNodes[cb], (byte)(level + 1));
@@ -57,7 +65,7 @@ namespace IXICore
             if (cn.data != null)
             {
                 // we've reached the last non-leaf level
-                cn.data.Remove(binaryTxid);
+                cn.data.RemoveWhere(x => x.SequenceEqual(binaryTxid));
                 return cn.data.Count == 0;
             }
             if (cn.childNodes != null && cn.childNodes.ContainsKey(cb))
@@ -73,21 +81,38 @@ namespace IXICore
             return false;
         }
 
+        private bool containsIntRec(byte[] binaryTxid, PITNode cn)
+        {
+            byte cb = binaryTxid[cn.level];
+            if(cn.data != null)
+            {
+                if(cn.data.Any(x => x.SequenceEqual(binaryTxid)))
+                {
+                    return true;
+                }
+            }
+            if(cn.childNodes != null && cn.childNodes.ContainsKey(cb))
+            {
+                return containsIntRec(binaryTxid, cn.childNodes[cb]);
+            }
+            return false;
+        }
+
         private void calcHashInt(PITNode cn)
         {
             if(cn.data != null)
             {
                 // last non-leaf level
-                byte[] indata = new byte[cn.data.Count * hashLength];
+                int all_hashes_len = cn.data.Aggregate(0, (sum, x) => sum + x.Length);
+                byte[] indata = new byte[all_hashes_len];
                 int idx = 0;
                 foreach(var d in cn.data)
                 {
-                    Array.Copy(d, 0, indata, idx * hashLength, d.Length);
-                    idx += 1;
+                    Array.Copy(d, 0, indata, idx, d.Length);
+                    idx += d.Length;
                 }
                 cn.hash = Crypto.sha512sqTrunc(indata, 0, indata.Length, hashLength);
-            }
-            if(cn.childNodes != null)
+            } else if(cn.childNodes != null)
             {
                 byte[] indata = new byte[cn.childNodes.Count * hashLength];
                 int idx = 0;
@@ -178,6 +203,14 @@ namespace IXICore
             lock(threadLock)
             {
                 delIntRec(UTF8Encoding.UTF8.GetBytes(txid), root);
+            }
+        }
+
+        public bool contains(string txid)
+        {
+            lock(threadLock)
+            {
+                return containsIntRec(UTF8Encoding.UTF8.GetBytes(txid), root);
             }
         }
 
