@@ -142,6 +142,7 @@ namespace IXICore
                     wr.Write(txid.Length);
                     wr.Write(txid);
                 }
+                wr.Write(cn.hash);
             }
             if(cn.childNodes != null)
             {
@@ -174,6 +175,7 @@ namespace IXICore
                     byte[] txid = br.ReadBytes(txid_len);
                     cn.data.Add(txid);
                 }
+                cn.hash = br.ReadBytes(hashLength);
             } else if(type == -2)
             {
                 // normal non-leaf node, following are hashes for child nodes and then the next node down
@@ -181,12 +183,63 @@ namespace IXICore
                 cn.childNodes = new SortedList<byte, PITNode>(num_child);
                 for(int i=0;i<num_child;i++)
                 {
-                    byte cb = br.ReadByte();
+                    byte cb1 = br.ReadByte();
                     PITNode n = new PITNode(cn.level + 1);
                     n.hash = br.ReadBytes(hashLength);
-                    // downwards direction:
-                    cb = br.ReadByte();
-                    readMinTreeInt(br, cn.childNodes[cb]);
+                    cn.childNodes.Add(cb1, n);
+                }
+                // downwards direction:
+                byte cb = br.ReadByte();
+                readMinTreeInt(br, cn.childNodes[cb]);
+            }
+        }
+
+        private bool verifyMinInt(PITNode cn)
+        {
+            if(cn.data != null)
+            {
+                // this node contains our target TX as a leaf
+                // we verify that all TXIDs in this node return the same hash as the reconstructed node
+                int all_hashes_len = cn.data.Aggregate(0, (sum, x) => sum + x.Length);
+                byte[] indata = new byte[all_hashes_len];
+                int idx = 0;
+                foreach (var d in cn.data)
+                {
+                    Array.Copy(d, 0, indata, idx, d.Length);
+                    idx += d.Length;
+                }
+                byte[] verify_hash = Crypto.sha512sqTrunc(indata, 0, indata.Length, hashLength);
+                return verify_hash.SequenceEqual(cn.hash);
+            } else
+            {
+                if (cn.childNodes != null)
+                {
+                    // this node is part of the minimal tree - we must verify that its calculated hash matches the received one
+                    // we verify that all child node hashes return the same has as this reconstructed node
+                    byte[] indata = new byte[cn.childNodes.Count * hashLength];
+                    int idx = 0;
+                    foreach (var n in cn.childNodes)
+                    {
+                        if (n.Value.hash == null)
+                        {
+                            // this is an error!
+                            return false;
+                        }
+                        // verify if the child node also has the correct hash:
+                        if (!verifyMinInt(n.Value))
+                        {
+                            // we can exit early
+                            return false;
+                        }
+                        Array.Copy(n.Value.hash, 0, indata, idx * hashLength, n.Value.hash.Length);
+                        idx += 1;
+                    }
+                    byte[] verify_hash = Crypto.sha512sqTrunc(indata, 0, indata.Length, hashLength);
+                    return verify_hash.SequenceEqual(cn.hash);
+                } else // no child nodes exist
+                {
+                    // this path is not part of the minimum tree - we can't verify down this branch
+                    return true;
                 }
             }
         }
@@ -228,12 +281,17 @@ namespace IXICore
         {
             lock(threadLock)
             {
+                if(root.hash == null)
+                {
+                    calculateTreeHash();
+                }
                 MemoryStream ms = new MemoryStream();
                 using (BinaryWriter bw = new BinaryWriter(ms, Encoding.UTF8, true))
                 {
                     bw.Write(levels);
                     bw.Write(hashLength);
                     writeMinTreeInt(UTF8Encoding.UTF8.GetBytes(txid), bw, root);
+                    bw.Write(root.hash);
                 }
                 return ms.ToArray();
             }
@@ -250,7 +308,16 @@ namespace IXICore
                     levels = br.ReadByte();
                     hashLength = br.ReadInt32();
                     readMinTreeInt(br, root);
+                    root.hash = br.ReadBytes(hashLength);
                 }
+            }
+        }
+
+        public bool verifyMinimumTreeHash()
+        {
+            lock(threadLock)
+            {
+                return verifyMinInt(root);
             }
         }
     }
