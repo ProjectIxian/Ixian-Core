@@ -3,6 +3,7 @@ using System.Linq;
 using System.IO;
 using System.Collections.Generic;
 using System.Text;
+using IXICore.Utils;
 
 namespace IXICore
 {
@@ -41,7 +42,7 @@ namespace IXICore
                 // we've reached last non-leaf level
                 if(cn.data == null)
                 {
-                    cn.data = new SortedSet<byte[]>();
+                    cn.data = new SortedSet<byte[]>(new ByteArrayComparer());
                 }
                 cn.data.Add(binaryTxid);
                 return;
@@ -166,7 +167,7 @@ namespace IXICore
             {
                 // final non-leaf node, what follows are TXids
                 int num_tx = br.ReadInt32();
-                cn.data = new SortedSet<byte[]>();
+                cn.data = new SortedSet<byte[]>(new ByteArrayComparer());
                 for(int i=0;i<num_tx;i++)
                 {
                     int txid_len = br.ReadInt32();
