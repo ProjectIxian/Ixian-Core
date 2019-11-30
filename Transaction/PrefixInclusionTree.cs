@@ -27,6 +27,15 @@ namespace IXICore
         private PITNode root = new PITNode(0);
         private readonly object threadLock = new object();
 
+        /// <summary>
+        /// Creates an empty Prefix-Inclusion-Tree with the specified hash length and number of levels.
+        ///  PIT will always have the number of levels given here and the hashing result over same data 
+        ///  will change if the number of levels is different.
+        /// </summary>
+        /// <param name="hash_length">Length of the hashes used inside the Prefix Inclusion Tree. Higher number 
+        ///  makes it more secure, but increases the size of the Tree as well as the length of generated Minimal Tree bytestreams.</param>
+        /// <param name="numLevels">Number of levels for the Prefix Inclusion Tree. Higher number reduces the overall number of 
+        ///  transaction IDs in each leaf node, but increases the size of the tree as well as the length of the generated Minimal Tree byestreams.</param>
         public PrefixInclusionTree(int hash_length = 16, byte numLevels = 4)
         {
             hashLength = hash_length;
@@ -244,6 +253,11 @@ namespace IXICore
             }
         }
 
+        /// <summary>
+        /// Adds the specified transaction ID (string) to the Prefix Inclusion Tree. The transaction
+        ///  will always be placed in the same leaf node, depending on the tree's number of levels.
+        /// </summary>
+        /// <param name="txid">Transaction ID to add to the tree.</param>
         public void add(string txid)
         {
             lock(threadLock)
@@ -252,6 +266,13 @@ namespace IXICore
             }
         }
 
+        /// <summary>
+        /// Removes the specified transaction from the Prefix Inclusion Tree.
+        /// </summary>
+        /// <remarks>
+        /// If the transaction ID is not in the tree, no change is done.
+        /// </remarks>
+        /// <param name="txid">Transaction ID to remove from the tree.</param>
         public void remove(string txid)
         {
             lock(threadLock)
@@ -260,6 +281,11 @@ namespace IXICore
             }
         }
 
+        /// <summary>
+        /// Verifies that the given transaction ID is present in the Prefix Inclusion Tree.
+        /// </summary>
+        /// <param name="txid">Transaction ID to search for in the Tree.</param>
+        /// <returns>True, if `txid` was found in the tree, false otherwise.</returns>
         public bool contains(string txid)
         {
             lock(threadLock)
@@ -268,6 +294,17 @@ namespace IXICore
             }
         }
 
+        /// <summary>
+        /// Calculates a summary hash of the Prefix Inclusion Tree. Given the summary hash
+        ///  and the minimal tree representation, it is possible to verify with an extremely high degree of 
+        ///  certainty that a specific transaction is included in the Tree.
+        /// </summary>
+        /// <remarks>
+        /// False positives are proportional to the conflict possibility of the `SHA512SqTrunc` algorithm (see 
+        ///  the IXICore.Crypto namespace for details). False positive chance is reduced depending on the hash_length
+        ///  parameter with which the Tree was constructed.
+        /// </remarks>
+        /// <returns>A byte array containing the Tree hash (length depends on the `hash_length` parameter with which the Tree was constructed).</returns>
         public byte[] calculateTreeHash()
         {
             lock(threadLock)
@@ -277,6 +314,18 @@ namespace IXICore
             }
         }
 
+        /// <summary>
+        /// Retrieves the minimal amount of information required to reconstruct a Partial Inclusion Tree and verify that the given
+        ///  transaction `txid` is present in the tree.
+        /// </summary>
+        /// <remarks>
+        /// In order to verify transaction inclusion in a certain DLT block, a minimum tree can be requested from any node, after which
+        ///  you must call the `reconstructMinimumTree()` function, followed by the `verifyMinimumTreeHash()` function.
+        ///  If the verification function returns `true`, that means that the tree is internally consistent. After that is proven,
+        ///  you must compare the tree's hash (obtained by calling the `calculateTreeHash()` function with the hash value in the DLT block.
+        /// </remarks>
+        /// <param name="txid">Transaction ID for which the minimal tree will be constructed/</param>
+        /// <returns>Byte stream containig the minimal tree for the specified transaction.</returns>
         public byte[] getMinimumTree(string txid)
         {
             lock(threadLock)
@@ -297,6 +346,16 @@ namespace IXICore
             }
         }
 
+        /// <summary>
+        /// Reconstructs a minimal tree representation from the given bytestream.
+        /// <remarks>
+        /// In order to verify transaction inclusion in a certain DLT block, a minimum tree can be requested from any node, after which
+        ///  you must call the `reconstructMinimumTree()` function, followed by the `verifyMinimumTreeHash()` function.
+        ///  If the verification function returns `true`, that means that the tree is internally consistent. After that is proven,
+        ///  you must compare the tree's hash (obtained by calling the `calculateTreeHash()` function with the hash value in the DLT block.
+        /// </remarks>
+        /// </summary>
+        /// <param name="data"></param>
         public void reconstructMinimumTree(byte[] data)
         {
             lock(threadLock)
@@ -313,6 +372,16 @@ namespace IXICore
             }
         }
 
+        /// <summary>
+        /// Verifies the internal consistency of the partially reconstructed tree, as created by the `reconstructMinimumTree()` function.
+        /// </summary>
+        /// <remarks>
+        /// In order to verify transaction inclusion in a certain DLT block, a minimum tree can be requested from any node, after which
+        ///  you must call the `reconstructMinimumTree()` function, followed by the `verifyMinimumTreeHash()` function.
+        ///  If the verification function returns `true`, that means that the tree is internally consistent. After that is proven,
+        ///  you must compare the tree's hash (obtained by calling the `calculateTreeHash()` function with the hash value in the DLT block.
+        /// </remarks>
+        /// <returns>True, if the tree is internally consistent and the transaction ID values hash correctly into the received data.</returns>
         public bool verifyMinimumTreeHash()
         {
             lock(threadLock)
