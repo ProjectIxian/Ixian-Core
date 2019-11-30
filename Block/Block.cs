@@ -62,6 +62,13 @@ namespace IXICore
         public List<byte[][]> signatures = new List<byte[][]> { };
 
         /// <summary>
+        /// Prefix Inclusion Tree (PIT) checksum which enables the TIV protocol.
+        /// </summary>
+        public byte[] pitChecksum { get; set; }
+
+        private PrefixInclusionTree transactionPIT;
+
+        /// <summary>
         /// The list of Frozen Master Node signatures which enable the Ixian Consensus algorithm.
         /// </summary>
         public List<byte[][]> frozenSignatures = null;
@@ -172,6 +179,7 @@ namespace IXICore
             version = BlockVer.v0;
             blockNum = 0;
             transactions = new List<string>();
+            initPITTree();
         }
 
         /// <summary>
@@ -186,6 +194,7 @@ namespace IXICore
         {
             version = block.version;
             blockNum = block.blockNum;
+            initPITTree();
 
             lastSuperBlockNum = block.lastSuperBlockNum;
 
@@ -198,6 +207,7 @@ namespace IXICore
             foreach (string txid in block.transactions)
             {
                 transactions.Add(txid);
+                transactionPIT.add(txid);
             }
 
             foreach (byte[][] signature in block.signatures)
@@ -287,6 +297,7 @@ namespace IXICore
         /// <param name="bytes">Block bytes, usually received from the network.</param>
         public Block(byte[] bytes)
         {
+            initPITTree();
             try
             {
                 using (MemoryStream m = new MemoryStream(bytes))
@@ -315,6 +326,7 @@ namespace IXICore
                             {
                                 string txid = reader.ReadString();
                                 transactions.Add(txid);
+                                transactionPIT.add(txid);
                             }
 
                             // Get the signatures
@@ -392,6 +404,12 @@ namespace IXICore
                 Logging.warn(string.Format("Cannot create block from bytes: {0}", e.ToString()));
                 throw;
             }
+        }
+
+        private void initPITTree()
+        {
+            // Number of levels is intended for 2K transactions in block. Increase when num of transactions increases.
+            transactionPIT = new PrefixInclusionTree(44, 3);
         }
 
         /// <summary>
@@ -590,6 +608,7 @@ namespace IXICore
             if (!transactions.Contains(txid))
             {
                 transactions.Add(txid);
+                transactionPIT.add(txid);
             }else
             {
                 Logging.warn(String.Format("Tried to add a duplicate transaction {0} to block {1}.", txid, blockNum));
@@ -628,7 +647,14 @@ namespace IXICore
             rawData.AddRange(ConsensusConfig.ixianChecksumLock);
             rawData.AddRange(BitConverter.GetBytes(version));
             rawData.AddRange(BitConverter.GetBytes(blockNum));
-            rawData.AddRange(Encoding.UTF8.GetBytes(merged_txids.ToString()));
+            if( version < BlockVer.v6)
+            {
+                rawData.AddRange(Encoding.UTF8.GetBytes(merged_txids.ToString()));
+            } else
+            {
+                // PIT is included in checksum since v6
+                rawData.AddRange(transactionPIT.calculateTreeHash());
+            }
 
             if (lastBlockChecksum != null)
             {
