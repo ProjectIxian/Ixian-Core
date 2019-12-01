@@ -22,6 +22,12 @@ namespace IXICore
             }
         }
 
+        enum PIT_MinimumTreeType
+        {
+            SingleTX = 1,
+            Anonymized = 2,
+        }
+
         private byte levels;
         private int hashLength;
         private PITNode root = new PITNode(0);
@@ -173,24 +179,25 @@ namespace IXICore
         private void readMinTreeInt(BinaryReader br, PITNode cn)
         {
             int type = br.ReadInt32();
-            if(type == -1)
+            if (type == -1)
             {
                 // final non-leaf node, what follows are TXids
                 int num_tx = br.ReadInt32();
                 cn.data = new SortedSet<byte[]>(new ByteArrayComparer());
-                for(int i=0;i<num_tx;i++)
+                for (int i = 0; i < num_tx; i++)
                 {
                     int txid_len = br.ReadInt32();
                     byte[] txid = br.ReadBytes(txid_len);
                     cn.data.Add(txid);
                 }
                 cn.hash = br.ReadBytes(hashLength);
-            } else if(type == -2)
+            }
+            else if (type == -2)
             {
                 // normal non-leaf node, following are hashes for child nodes and then the next node down
                 int num_child = br.ReadInt32();
                 cn.childNodes = new SortedList<byte, PITNode>(num_child);
-                for(int i=0;i<num_child;i++)
+                for (int i = 0; i < num_child; i++)
                 {
                     byte cb1 = br.ReadByte();
                     PITNode n = new PITNode(cn.level + 1);
@@ -200,6 +207,70 @@ namespace IXICore
                 // downwards direction:
                 byte cb = br.ReadByte();
                 readMinTreeInt(br, cn.childNodes[cb]);
+            }
+        }
+
+        private void writeMinTreeAInt(BinaryWriter wr, PITNode cn)
+        {
+            if(cn.data != null)
+            {
+                // leaf node - write node's hash and transactions (only if more than one)
+                wr.Write((int)-1); // marker for the leaf node
+                if(cn.data.Count > 1)
+                {
+                    wr.Write(cn.data.Count);
+                    foreach (var txid in cn.data)
+                    {
+                        wr.Write(txid.Length);
+                        wr.Write(txid);
+                    }
+                } else
+                {
+                    wr.Write(0); // zero transactions needed
+                }
+                wr.Write(cn.hash);
+                if(cn.childNodes != null)
+                {
+                    wr.Write((int)-2); // marker for non-leaf node
+                    wr.Write(cn.childNodes.Count);
+                    foreach (var n in cn.childNodes)
+                    {
+                        wr.Write(n.Key);
+                        writeMinTreeAInt(wr, n.Value);
+                    }
+                }
+            }
+        }
+
+        private void readMinTreeAInt(BinaryReader br, PITNode cn)
+        {
+            int type = br.ReadInt32();
+            if (type == -1)
+            {
+                // leaf node
+                int count_txids = br.ReadInt32();
+                if (count_txids > 0)
+                {
+                    cn.data = new SortedSet<byte[]>();
+                    for (int i = 0; i < count_txids; i++)
+                    {
+                        int txid_len = br.ReadInt32();
+                        byte[] txid = br.ReadBytes(txid_len);
+                        cn.data.Add(txid);
+                    }
+                }
+                cn.hash = br.ReadBytes(hashLength);
+            } else if (type == -2)
+            {
+                int num_child = br.ReadInt32();
+                cn.childNodes = new SortedList<byte, PITNode>(num_child);
+                for (int i = 0; i < num_child; i++)
+                {
+                    byte cb1 = br.ReadByte();
+                    PITNode n = new PITNode(cn.level + 1);
+                    readMinTreeAInt(br, n);
+                    cn.childNodes.Add(cb1, n);
+                }
             }
         }
 
@@ -337,9 +408,31 @@ namespace IXICore
                 MemoryStream ms = new MemoryStream();
                 using (BinaryWriter bw = new BinaryWriter(ms, Encoding.UTF8, true))
                 {
+                    bw.Write((int)(PIT_MinimumTreeType.SingleTX));
                     bw.Write(levels);
                     bw.Write(hashLength);
                     writeMinTreeInt(UTF8Encoding.UTF8.GetBytes(txid), bw, root);
+                    bw.Write(root.hash);
+                }
+                return ms.ToArray();
+            }
+        }
+
+        public byte[] getMinimumTreeAnonymized()
+        {
+            lock(threadLock)
+            {
+                if (root.hash == null)
+                {
+                    calculateTreeHash();
+                }
+                MemoryStream ms = new MemoryStream();
+                using (BinaryWriter bw = new BinaryWriter(ms, Encoding.UTF8, true))
+                {
+                    bw.Write((int)(PIT_MinimumTreeType.Anonymized));
+                    bw.Write(levels);
+                    bw.Write(hashLength);
+                    writeMinTreeAInt(bw, root);
                     bw.Write(root.hash);
                 }
                 return ms.ToArray();
@@ -364,9 +457,16 @@ namespace IXICore
                 root.childNodes = new SortedList<byte, PITNode>();
                 using (BinaryReader br = new BinaryReader(new MemoryStream(data)))
                 {
+                    PIT_MinimumTreeType type = (PIT_MinimumTreeType)br.ReadInt32();
                     levels = br.ReadByte();
                     hashLength = br.ReadInt32();
-                    readMinTreeInt(br, root);
+                    if (type == PIT_MinimumTreeType.SingleTX)
+                    {
+                        readMinTreeInt(br, root);
+                    } else if (type == PIT_MinimumTreeType.Anonymized)
+                    {
+                        readMinTreeAInt(br, root);
+                    }
                     root.hash = br.ReadBytes(hashLength);
                 }
             }
