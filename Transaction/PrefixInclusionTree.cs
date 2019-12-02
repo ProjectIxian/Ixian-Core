@@ -49,20 +49,25 @@ namespace IXICore
             root.childNodes = new SortedList<byte, PITNode>();
         }
 
-        private void addIntRec(byte[] binaryTxid, PITNode cn, byte level)
+        private bool addIntRec(byte[] binaryTxid, PITNode cn, byte level)
         {
             byte cb = binaryTxid[level];
             if (level >= (levels - 1))
             {
-                // we've reached last non-leaf level
-                if(cn.data == null)
+                // we've reached last (leaf) level
+                if (cn.data == null)
                 {
                     cn.data = new SortedSet<byte[]>(new ByteArrayComparer());
                 }
-                cn.data.Add(binaryTxid);
-                return;
+                if (!cn.data.Contains(binaryTxid))
+                {
+                    cn.data.Add(binaryTxid);
+                    cn.hash = null;
+                    return true; // something has changed
+                }
+                return false; // nothing has changed
             }
-
+            bool changed = false;
             if(!cn.childNodes.ContainsKey(cb))
             {
                 PITNode n = new PITNode(level + 1);
@@ -71,28 +76,47 @@ namespace IXICore
                     n.childNodes = new SortedList<byte, PITNode>();
                 }
                 cn.childNodes.Add(cb, n);
+                changed = true;
             }
-            addIntRec(binaryTxid, cn.childNodes[cb], (byte)(level + 1));
+            changed |= addIntRec(binaryTxid, cn.childNodes[cb], (byte)(level + 1));
+            if(changed)
+            {
+                cn.hash = null;
+            }
+            return changed;
         }
 
         private bool delIntRec(byte[] binaryTxid, PITNode cn)
         {
-            byte cb = binaryTxid[cn.level];
             if (cn.data != null)
             {
                 // we've reached the last non-leaf level
-                cn.data.RemoveWhere(x => x.SequenceEqual(binaryTxid));
-                return cn.data.Count == 0;
-            }
-            if (cn.childNodes != null && cn.childNodes.ContainsKey(cb))
-            {
-                bool r = delIntRec(binaryTxid, cn.childNodes[cb]);
-                if(r)
+                if(cn.data.RemoveWhere(x => x.SequenceEqual(binaryTxid)) > 0)
                 {
-                    // child node has no leaves
-                    cn.childNodes.Remove(cb);
+                    cn.hash = null;
+                    return true; // something has changed
                 }
-                return cn.childNodes.Count == 0;
+            }
+            else if (cn.childNodes != null)
+            {
+                bool changed = false;
+                byte cb = binaryTxid[cn.level];
+                if (cn.childNodes.ContainsKey(cb))
+                {
+                    PITNode t_node = cn.childNodes[cb];
+                    changed = delIntRec(binaryTxid, t_node);
+                    if((t_node.childNodes == null || t_node.childNodes.Count == 0) && (t_node.data == null || t_node.data.Count == 0)) {
+                        // the child node at `cb` has neither further children nor data, we can drop it
+                        cn.childNodes.Remove(cb);
+                        changed = true;
+                    }
+                    if (changed)
+                    {
+                        // child node has no leaves
+                        cn.hash = null;
+                    }
+                }
+                return changed;
             }
             return false;
         }
@@ -116,19 +140,24 @@ namespace IXICore
 
         private void calcHashInt(PITNode cn)
         {
-            if(cn.data != null)
+            if (cn.hash != null)
+            {
+                // hash is already cached (or retrieved in the minimal tree)
+                return;
+            }
+            if (cn.data != null)
             {
                 // last non-leaf level
                 int all_hashes_len = cn.data.Aggregate(0, (sum, x) => sum + x.Length);
                 byte[] indata = new byte[all_hashes_len];
                 int idx = 0;
-                foreach(var d in cn.data)
+                foreach (var d in cn.data)
                 {
                     Array.Copy(d, 0, indata, idx, d.Length);
                     idx += d.Length;
                 }
                 cn.hash = Crypto.sha512sqTrunc(indata, 0, indata.Length, hashLength);
-            } else if(cn.childNodes != null)
+            } else if (cn.childNodes != null)
             {
                 byte[] indata = new byte[cn.childNodes.Count * hashLength];
                 int idx = 0;
@@ -157,20 +186,24 @@ namespace IXICore
                     wr.Write(txid.Length);
                     wr.Write(txid);
                 }
-                wr.Write(cn.hash);
             }
             if(cn.childNodes != null)
             {
-                // intermediate node - write all prefixes and hashes, so the partial tree can be reconstructed
+                // intermediate node - write all prefixes and hashes, except for the downward tree, so the partial tree can be reconstructed
                 wr.Write((int)-2); // marker for the non-leaf node
-                wr.Write(cn.childNodes.Count);
-                foreach(var n in cn.childNodes)
+                wr.Write(cn.childNodes.Count - 1);
+                byte cb = binaryTxid[cn.level];
+                foreach (var n in cn.childNodes)
                 {
+                    if (n.Key == cb)
+                    {
+                        // skip our target branch - we will write that last
+                        continue;
+                    }
                     wr.Write(n.Key);
                     wr.Write(n.Value.hash);
                 }
-                // only follow downwards direction for the transaction we're adding
-                byte cb = binaryTxid[cn.level];
+                // follow the downwards direction for the transaction we're adding
                 wr.Write(cb);
                 writeMinTreeInt(binaryTxid, wr, cn.childNodes[cb]);
             }
@@ -190,13 +223,12 @@ namespace IXICore
                     byte[] txid = br.ReadBytes(txid_len);
                     cn.data.Add(txid);
                 }
-                cn.hash = br.ReadBytes(hashLength);
             }
             else if (type == -2)
             {
                 // normal non-leaf node, following are hashes for child nodes and then the next node down
-                int num_child = br.ReadInt32();
-                cn.childNodes = new SortedList<byte, PITNode>(num_child);
+                int num_child = br.ReadInt32(); // children except for the downward
+                cn.childNodes = new SortedList<byte, PITNode>(num_child + 1);
                 for (int i = 0; i < num_child; i++)
                 {
                     byte cb1 = br.ReadByte();
@@ -206,17 +238,19 @@ namespace IXICore
                 }
                 // downwards direction:
                 byte cb = br.ReadByte();
-                readMinTreeInt(br, cn.childNodes[cb]);
+                PITNode n_down = new PITNode(cn.level + 1);
+                readMinTreeInt(br, n_down);
+                cn.childNodes.Add(cb, n_down);
             }
         }
 
         private void writeMinTreeAInt(BinaryWriter wr, PITNode cn)
         {
-            if(cn.data != null)
+            if (cn.data != null)
             {
                 // leaf node - write node's hash and transactions (only if more than one)
                 wr.Write((int)-1); // marker for the leaf node
-                if(cn.data.Count > 1)
+                if (cn.data.Count > 1)
                 {
                     wr.Write(cn.data.Count);
                     foreach (var txid in cn.data)
@@ -224,20 +258,21 @@ namespace IXICore
                         wr.Write(txid.Length);
                         wr.Write(txid);
                     }
-                } else
+                }
+                else
                 {
                     wr.Write(0); // zero transactions needed
                 }
                 wr.Write(cn.hash);
-                if(cn.childNodes != null)
+            }
+            if (cn.childNodes != null)
+            {
+                wr.Write((int)-2); // marker for non-leaf node
+                wr.Write(cn.childNodes.Count);
+                foreach (var n in cn.childNodes)
                 {
-                    wr.Write((int)-2); // marker for non-leaf node
-                    wr.Write(cn.childNodes.Count);
-                    foreach (var n in cn.childNodes)
-                    {
-                        wr.Write(n.Key);
-                        writeMinTreeAInt(wr, n.Value);
-                    }
+                    wr.Write(n.Key);
+                    writeMinTreeAInt(wr, n.Value);
                 }
             }
         }
@@ -251,7 +286,7 @@ namespace IXICore
                 int count_txids = br.ReadInt32();
                 if (count_txids > 0)
                 {
-                    cn.data = new SortedSet<byte[]>();
+                    cn.data = new SortedSet<byte[]>(new ByteArrayComparer());
                     for (int i = 0; i < count_txids; i++)
                     {
                         int txid_len = br.ReadInt32();
@@ -270,56 +305,6 @@ namespace IXICore
                     PITNode n = new PITNode(cn.level + 1);
                     readMinTreeAInt(br, n);
                     cn.childNodes.Add(cb1, n);
-                }
-            }
-        }
-
-        private bool verifyMinInt(PITNode cn)
-        {
-            if(cn.data != null)
-            {
-                // this node contains our target TX as a leaf
-                // we verify that all TXIDs in this node return the same hash as the reconstructed node
-                int all_hashes_len = cn.data.Aggregate(0, (sum, x) => sum + x.Length);
-                byte[] indata = new byte[all_hashes_len];
-                int idx = 0;
-                foreach (var d in cn.data)
-                {
-                    Array.Copy(d, 0, indata, idx, d.Length);
-                    idx += d.Length;
-                }
-                byte[] verify_hash = Crypto.sha512sqTrunc(indata, 0, indata.Length, hashLength);
-                return verify_hash.SequenceEqual(cn.hash);
-            } else
-            {
-                if (cn.childNodes != null)
-                {
-                    // this node is part of the minimal tree - we must verify that its calculated hash matches the received one
-                    // we verify that all child node hashes return the same has as this reconstructed node
-                    byte[] indata = new byte[cn.childNodes.Count * hashLength];
-                    int idx = 0;
-                    foreach (var n in cn.childNodes)
-                    {
-                        if (n.Value.hash == null)
-                        {
-                            // this is an error!
-                            return false;
-                        }
-                        // verify if the child node also has the correct hash:
-                        if (!verifyMinInt(n.Value))
-                        {
-                            // we can exit early
-                            return false;
-                        }
-                        Array.Copy(n.Value.hash, 0, indata, idx * hashLength, n.Value.hash.Length);
-                        idx += 1;
-                    }
-                    byte[] verify_hash = Crypto.sha512sqTrunc(indata, 0, indata.Length, hashLength);
-                    return verify_hash.SequenceEqual(cn.hash);
-                } else // no child nodes exist
-                {
-                    // this path is not part of the minimum tree - we can't verify down this branch
-                    return true;
                 }
             }
         }
@@ -391,9 +376,9 @@ namespace IXICore
         /// </summary>
         /// <remarks>
         /// In order to verify transaction inclusion in a certain DLT block, a minimum tree can be requested from any node, after which
-        ///  you must call the `reconstructMinimumTree()` function, followed by the `verifyMinimumTreeHash()` function.
-        ///  If the verification function returns `true`, that means that the tree is internally consistent. After that is proven,
-        ///  you must compare the tree's hash (obtained by calling the `calculateTreeHash()` function with the hash value in the DLT block.
+        ///  you must call the `reconstructMinimumTree()` function, followed by the `calculateTreehash()` function.
+        ///  After that is calculated successfully, you must compare the tree's hash (obtained by calling the `calculateTreeHash()` function 
+        ///  with the hash value in the DLT block.
         /// </remarks>
         /// <param name="txid">Transaction ID for which the minimal tree will be constructed/</param>
         /// <returns>Byte stream containig the minimal tree for the specified transaction.</returns>
@@ -412,7 +397,6 @@ namespace IXICore
                     bw.Write(levels);
                     bw.Write(hashLength);
                     writeMinTreeInt(UTF8Encoding.UTF8.GetBytes(txid), bw, root);
-                    bw.Write(root.hash);
                 }
                 return ms.ToArray();
             }
@@ -433,7 +417,6 @@ namespace IXICore
                     bw.Write(levels);
                     bw.Write(hashLength);
                     writeMinTreeAInt(bw, root);
-                    bw.Write(root.hash);
                 }
                 return ms.ToArray();
             }
@@ -443,9 +426,8 @@ namespace IXICore
         /// Reconstructs a minimal tree representation from the given bytestream.
         /// <remarks>
         /// In order to verify transaction inclusion in a certain DLT block, a minimum tree can be requested from any node, after which
-        ///  you must call the `reconstructMinimumTree()` function, followed by the `verifyMinimumTreeHash()` function.
-        ///  If the verification function returns `true`, that means that the tree is internally consistent. After that is proven,
-        ///  you must compare the tree's hash (obtained by calling the `calculateTreeHash()` function with the hash value in the DLT block.
+        ///  you must call the `reconstructMinimumTree()` function, followed by the `calculateTreeHash()` function.
+        /// The root hash will be calculated based on the provided data. You can then compare this value with the value in a block header.
         /// </remarks>
         /// </summary>
         /// <param name="data"></param>
@@ -467,26 +449,7 @@ namespace IXICore
                     {
                         readMinTreeAInt(br, root);
                     }
-                    root.hash = br.ReadBytes(hashLength);
                 }
-            }
-        }
-
-        /// <summary>
-        /// Verifies the internal consistency of the partially reconstructed tree, as created by the `reconstructMinimumTree()` function.
-        /// </summary>
-        /// <remarks>
-        /// In order to verify transaction inclusion in a certain DLT block, a minimum tree can be requested from any node, after which
-        ///  you must call the `reconstructMinimumTree()` function, followed by the `verifyMinimumTreeHash()` function.
-        ///  If the verification function returns `true`, that means that the tree is internally consistent. After that is proven,
-        ///  you must compare the tree's hash (obtained by calling the `calculateTreeHash()` function with the hash value in the DLT block.
-        /// </remarks>
-        /// <returns>True, if the tree is internally consistent and the transaction ID values hash correctly into the received data.</returns>
-        public bool verifyMinimumTreeHash()
-        {
-            lock(threadLock)
-            {
-                return verifyMinInt(root);
             }
         }
     }
