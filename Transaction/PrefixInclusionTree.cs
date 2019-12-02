@@ -22,10 +22,13 @@ namespace IXICore
             }
         }
 
-        enum PIT_MinimumTreeType
+        enum PIT_MinimumTreeType:byte
         {
             SingleTX = 1,
             Anonymized = 2,
+            // Not implemented yet
+            SingleTXCompressed = 3,
+            AnonymizedCompressed = 4
         }
 
         private byte levels;
@@ -42,7 +45,7 @@ namespace IXICore
         ///  makes it more secure, but increases the size of the Tree as well as the length of generated Minimal Tree bytestreams.</param>
         /// <param name="numLevels">Number of levels for the Prefix Inclusion Tree. Higher number reduces the overall number of 
         ///  transaction IDs in each leaf node, but increases the size of the tree as well as the length of the generated Minimal Tree byestreams.</param>
-        public PrefixInclusionTree(int hash_length = 16, byte numLevels = 4)
+        public PrefixInclusionTree(int hash_length = 44, byte numLevels = 4)
         {
             hashLength = hash_length;
             levels = numLevels;
@@ -179,7 +182,7 @@ namespace IXICore
             if(cn.data != null)
             {
                 // final node - write all txids, because they are required to calculate node hash
-                wr.Write((int)-1); // marker for the leaf node
+                wr.Write((byte)255); // marker for the leaf node
                 wr.Write(cn.data.Count);
                 foreach(var txid in cn.data)
                 {
@@ -190,7 +193,7 @@ namespace IXICore
             if(cn.childNodes != null)
             {
                 // intermediate node - write all prefixes and hashes, except for the downward tree, so the partial tree can be reconstructed
-                wr.Write((int)-2); // marker for the non-leaf node
+                wr.Write((byte)254); // marker for the non-leaf node
                 wr.Write(cn.childNodes.Count - 1);
                 byte cb = binaryTxid[cn.level];
                 foreach (var n in cn.childNodes)
@@ -211,8 +214,8 @@ namespace IXICore
 
         private void readMinTreeInt(BinaryReader br, PITNode cn)
         {
-            int type = br.ReadInt32();
-            if (type == -1)
+            byte type = br.ReadByte();
+            if (type == 255)
             {
                 // final non-leaf node, what follows are TXids
                 int num_tx = br.ReadInt32();
@@ -224,7 +227,7 @@ namespace IXICore
                     cn.data.Add(txid);
                 }
             }
-            else if (type == -2)
+            else if (type == 254)
             {
                 // normal non-leaf node, following are hashes for child nodes and then the next node down
                 int num_child = br.ReadInt32(); // children except for the downward
@@ -249,7 +252,7 @@ namespace IXICore
             if (cn.data != null)
             {
                 // leaf node - write node's hash and transactions (only if more than one)
-                wr.Write((int)-1); // marker for the leaf node
+                wr.Write((byte)255); // marker for the leaf node
                 if (cn.data.Count > 1)
                 {
                     wr.Write(cn.data.Count);
@@ -267,7 +270,7 @@ namespace IXICore
             }
             if (cn.childNodes != null)
             {
-                wr.Write((int)-2); // marker for non-leaf node
+                wr.Write((byte)254); // marker for non-leaf node
                 wr.Write(cn.childNodes.Count);
                 foreach (var n in cn.childNodes)
                 {
@@ -279,8 +282,8 @@ namespace IXICore
 
         private void readMinTreeAInt(BinaryReader br, PITNode cn)
         {
-            int type = br.ReadInt32();
-            if (type == -1)
+            byte type = br.ReadByte();
+            if (type == 255)
             {
                 // leaf node
                 int count_txids = br.ReadInt32();
@@ -295,7 +298,7 @@ namespace IXICore
                     }
                 }
                 cn.hash = br.ReadBytes(hashLength);
-            } else if (type == -2)
+            } else if (type == 254)
             {
                 int num_child = br.ReadInt32();
                 cn.childNodes = new SortedList<byte, PITNode>(num_child);
@@ -393,7 +396,7 @@ namespace IXICore
                 MemoryStream ms = new MemoryStream();
                 using (BinaryWriter bw = new BinaryWriter(ms, Encoding.UTF8, true))
                 {
-                    bw.Write((int)(PIT_MinimumTreeType.SingleTX));
+                    bw.Write((byte)PIT_MinimumTreeType.SingleTX);
                     bw.Write(levels);
                     bw.Write(hashLength);
                     writeMinTreeInt(UTF8Encoding.UTF8.GetBytes(txid), bw, root);
@@ -402,6 +405,12 @@ namespace IXICore
             }
         }
 
+        /// <summary>
+        /// Retrieves an 'anonymized' minimal tree. This allows a client to verify the inclusion of any transaction for the specified root
+        ///  hash, without revealing the specific transactions to any DLT Node. The function works similarly to `getMinimumTree()`, but
+        ///  will produce a larger byte stream.
+        /// </summary>
+        /// <returns>Byte stream which allows reconstructing a minimal tree, which is used for transaction inclusion verification (TIV).</returns>
         public byte[] getMinimumTreeAnonymized()
         {
             lock(threadLock)
@@ -413,7 +422,7 @@ namespace IXICore
                 MemoryStream ms = new MemoryStream();
                 using (BinaryWriter bw = new BinaryWriter(ms, Encoding.UTF8, true))
                 {
-                    bw.Write((int)(PIT_MinimumTreeType.Anonymized));
+                    bw.Write((byte)PIT_MinimumTreeType.Anonymized);
                     bw.Write(levels);
                     bw.Write(hashLength);
                     writeMinTreeAInt(bw, root);
@@ -439,7 +448,7 @@ namespace IXICore
                 root.childNodes = new SortedList<byte, PITNode>();
                 using (BinaryReader br = new BinaryReader(new MemoryStream(data)))
                 {
-                    PIT_MinimumTreeType type = (PIT_MinimumTreeType)br.ReadInt32();
+                    PIT_MinimumTreeType type = (PIT_MinimumTreeType)br.ReadByte();
                     levels = br.ReadByte();
                     hashLength = br.ReadInt32();
                     if (type == PIT_MinimumTreeType.SingleTX)
