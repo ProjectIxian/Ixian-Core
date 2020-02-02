@@ -64,7 +64,7 @@ namespace IXICore
         /// <summary>
         /// Prefix Inclusion Tree (PIT) checksum which enables the TIV protocol.
         /// </summary>
-        public byte[] pitChecksum { get; set; }
+        public byte[] pitChecksum { get { return transactionPIT.calculateTreeHash(); } }
 
         private PrefixInclusionTree transactionPIT;
 
@@ -636,19 +636,18 @@ namespace IXICore
                 merged_segments.AddRange(entry.Value.blockChecksum);
             }
 
-            StringBuilder merged_txids = new StringBuilder();
-            foreach (string txid in transactions)
-            {
-                merged_txids.Append(txid);
-            }
-
-
             List<byte> rawData = new List<byte>();
             rawData.AddRange(ConsensusConfig.ixianChecksumLock);
             rawData.AddRange(BitConverter.GetBytes(version));
             rawData.AddRange(BitConverter.GetBytes(blockNum));
             if( version < BlockVer.v6)
             {
+                StringBuilder merged_txids = new StringBuilder();
+                foreach (string txid in transactions)
+                {
+                    merged_txids.Append(txid);
+                }
+
                 rawData.AddRange(Encoding.UTF8.GetBytes(merged_txids.ToString()));
             } else
             {

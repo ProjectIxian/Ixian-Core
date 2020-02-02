@@ -141,5 +141,9 @@
         /// </summary>
         public static string productVersion = "";
 
+        /// <summary>
+        /// Number of block headers to save in a single file.
+        /// </summary>
+        public static ulong maxBlockHeadersPerDatabase = 1000;
     }
 }

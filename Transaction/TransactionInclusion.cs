@@ -16,18 +16,15 @@ namespace IXICore
 
         private readonly int candidateThreshold = 3;    // Minimum number of same exact block candidates
 
-        private ulong minimumCacheBlockHeight = 0;
+        Dictionary<string, Transaction> txQueue = new Dictionary<string, Transaction>(); // List of all transactions that should be verified
 
-        //List<BlockHeader> cachedHeaders = new List<BlockHeader>((int)ConsensusConfig.getRedactedWindowSize());
-        Dictionary<ulong, BlockHeader> cachedHeaders = new Dictionary<ulong, BlockHeader>(); // Storage for quick lookups
-        //Dictionary<ulong,BlockHeader> cachedHeadersCandidates = new Dictionary<ulong,BlockHeader>();
+        BlockHeader lastBlockHeader = null;
 
-        ulong verifiedDownTo = UInt64.MaxValue;
+        long lastRequestedBlockTime = 0;
 
-        List<string> requestsQueue = new List<string>(); // List of all transactions that should be verified
-
-        public TransactionInclusion()
+        public TransactionInclusion(BlockHeader last_block_header)
         {
+            lastBlockHeader = last_block_header;
             running = true;
             // Start the thread
             tiv_thread = new Thread(onUpdate);
@@ -39,45 +36,43 @@ namespace IXICore
         {
             while (running)
             {
-                int requestCount = 0;
-                lock(requestsQueue)
+                if(updateBlockHeaders())
                 {
-                    requestCount = requestsQueue.Count();
-                }
-
-                if(requestCount < 1)
+                    verifyUnprocessedTransactions();
+                    Thread.Sleep(ConsensusConfig.blockGenerationInterval);
+                }else
                 {
-                    Thread.Sleep(2500);
-                    continue;
+                    Thread.Sleep(10);
                 }
-
-
-                lock (requestsQueue)
-                {
-                    for (int i = 0; i < requestCount; i++)
-                    {
-                        string txid = requestsQueue[i];
-                        ulong bheight = blockHeightFromTxid(txid);
-                        if(traverseCache(bheight, txid) == false)
-                        {
-                            Thread.Sleep(1000);
-                            break;
-                        }
-
-                        // Remove from queue
-                        requestsQueue.RemoveAt(i);
-                        //verifiedDownTo = UInt64.MaxValue;
-                        break;
-                    }
-                }
-
-                Thread.Yield();
             }
         }
 
         public void stop()
         {
             running = false;
+        }
+
+        private bool updateBlockHeaders()
+        {
+            long currentTime = Core.getCurrentTimestamp();
+
+            // Check if the request expired
+            if (currentTime - lastRequestedBlockTime > ConsensusConfig.blockGenerationInterval)
+            {
+                ulong lastRequestedBlockHeight = 1;
+                if (lastBlockHeader != null)
+                {
+                    lastRequestedBlockHeight = lastBlockHeader.blockNum + 1;
+                }
+                lastRequestedBlockTime = currentTime;
+
+                // request next blocks
+                requestBlockHeaders(lastRequestedBlockHeight, lastRequestedBlockHeight + 100);
+
+                return true;
+            }
+
+            return false;
         }
 
         private ulong blockHeightFromTxid(string txid)
@@ -97,64 +92,94 @@ namespace IXICore
             return txbnum;
         }
 
-        public void verifyTransactionInclusion(Transaction tx)
-        {
-            verifyTransactionInclusion(tx.id, tx.blockHeight);
-        }
-
-        public void verifyTransactionInclusion(string txid)
-        {
-            verifyTransactionInclusion(txid, blockHeightFromTxid(txid));
-        }
-
         /// <summary>
         ///  Posts a verify transaction inclusion request
         /// </summary>
         /// <param name="txid">transaction id string</param>
-        /// <param name="blockheight">corresponding blockheight of transaction</param>
-        public void verifyTransactionInclusion(string txid, ulong blockheight)
+        public bool receivedNewTransaction(Transaction t)
         {
-            if (requestsQueue.Count() > 0)
+            // TODO verify transaction checksum/validity
+
+            lock (txQueue)
             {
-                if (requestsQueue.Contains(txid))
+                if (txQueue.Count() > 0)
                 {
-                    // Already in the requests queue
-                    return;
+                    if (txQueue.ContainsKey(t.id))
+                    {
+                        // Already in the requests queue
+                        if (txQueue[t.id].applied == 0)
+                        {
+                            txQueue[t.id] = t;
+                        }
+                        return false;
+                    }
                 }
-            }
 
-            lock (requestsQueue)
-            {
-                requestsQueue.Add(txid);
+                txQueue.Add(t.id, t);
+                return true;
             }
-
-            if (blockheight < minimumCacheBlockHeight)
-                minimumCacheBlockHeight = blockheight;
         }
 
-        public void processBlockHeader(BlockHeader header)
+        private void verifyUnprocessedTransactions()
         {
-            // Check if the candidate block is already cached
-            if(cachedHeaders.ContainsKey(header.blockNum))
+            lock (txQueue)
             {
-                // TODO: verify the top-most block from 3 different sources and make sure the checksums match
-         /*       cachedHeadersCandidates[header]++;
-
-                // Check if candidate threshold is reached
-                if(cachedHeadersCandidates[header] > candidateThreshold)
+                var tmp_txQueue = txQueue.Values.Where(x => x.applied != 0 && x.applied <= lastBlockHeader.blockNum).ToArray();
+                foreach(var tx in tmp_txQueue)
                 {
-                    // Add to cache
-                    int index = 0;
-                    cachedHeaders.Insert(index, header);
-                }*/
+                    BlockHeader bh = BlockHeaderStorage.getBlockHeader(tx.applied);
+                    if (bh.version < 6)
+                    {
+                        txQueue.Remove(tx.id);
 
-                return;
+                        if(bh.transactions.Contains(tx.id))
+                        {
+                            // valid
+                            IxianHandler.receivedTransactionInclusionVerificationResponse(tx.id, true);
+                        }else
+                        {
+                            // invalid
+                            IxianHandler.receivedTransactionInclusionVerificationResponse(tx.id, false);
+                        }
+
+                    }
+                    else
+                    {
+                        // TODO request PIT; also optimize for multiple tx requests in the same block
+                    }
+                }
+            }
+        }
+
+            private bool processBlockHeader(BlockHeader header)
+        {
+            if(lastBlockHeader != null && !header.lastBlockChecksum.SequenceEqual(lastBlockHeader.blockChecksum))
+            {
+                Logging.warn("TIV: Invalid last block checksum");
+
+                // discard the block
+
+                // require previous block to get verifications from 3 nodes
+
+                // if in verification mode, detect liar and flag him
+
+                return false;
             }
 
-            // Check the newer block's previous block checksum
-            Console.WriteLine("Adding {0} to cache", header.blockNum);
-            // Add to candidates
-            cachedHeaders.Add(header.blockNum, header);
+            if(!header.calculateChecksum().SequenceEqual(header.blockChecksum))
+            {
+                Logging.warn("TIV: Invalid block checksum");
+                return false;
+            }
+
+            lastBlockHeader = header;
+
+            if(!BlockHeaderStorage.saveBlockHeader(lastBlockHeader))
+            {
+                return false;
+            }
+
+            return true;
         }
 
         /// <summary>
@@ -168,101 +193,29 @@ namespace IXICore
             {
                 using (BinaryReader reader = new BinaryReader(m))
                 {
-                    ulong headers_num = reader.ReadUInt64();
+                    bool processed = false;
 
-                    for (ulong i = 0; i < headers_num; i++)
+                    while(m.Position < m.Length)
                     {
                         int header_len = reader.ReadInt32();
                         byte[] header_bytes = reader.ReadBytes(header_len);
 
                         // Create the blockheader from the data and process it
                         BlockHeader header = new BlockHeader(header_bytes);
-                        processBlockHeader(header);
+                        if(!processBlockHeader(header))
+                        {
+                            break;
+                        }
+                        processed = true;
                     }
-                }
-            }
-        }
-
-        /// <summary>
-        ///  Traverses the entire blockheaders cache and searches for block containing the txid
-        /// </summary>
-        /// <param name="targetheight">minimum block height the cache must have</param>
-        /// <param name="txid">transaction id</param>
-        private bool traverseCache(ulong targetheight, string txid)
-        {
-            ulong last_block = IxianHandler.getLastBlockHeight();
-            if(last_block == 0)
-            {
-                return false;
-            }
-
-            if (cachedHeaders.ContainsKey(last_block-1) == false)
-            {
-                Console.WriteLine("Requesting latest blocks");
-                requestBlockHeaders(last_block - 5, last_block);
-                return false;
-            }
-
-            for(ulong i = last_block; i >= targetheight; i--)
-            {
-                if(cachedHeaders.ContainsKey(i-1) == false)
-                {
-                    // Request more block headers
-                    requestBlockHeaders(i - 100, i);
-                    return false;
-                }
-
-                if (i == last_block)
-                    continue;
-
-                // Verify block checksum
-                BlockHeader bheader = cachedHeaders[i];
-
-                if(i < last_block - 2 && verifiedDownTo > i)
-                {
-                    BlockHeader pheader = cachedHeaders[i - 1];
-                    if(bheader.lastBlockChecksum.SequenceEqual(pheader.blockChecksum) == false)
+                    if (processed)
                     {
-                        // Request near blocks again
-                        requestBlockHeaders(i - 4, i + 1);
-                        return false;
+                        lastRequestedBlockTime = 0;
                     }
                 }
-
-                if (i < verifiedDownTo)
-                    verifiedDownTo = i;
-
-                if (containsTransaction(bheader, txid))
-                {
-                    // TODO verification of this block's checksum could be done here for extra safety
-                    IxianHandler.receivedTransactionInclusionVerificationResponse(txid, true);
-                    return true;
-                }
             }
-
-            if(cachedHeaders.ContainsKey(targetheight) == false)
-            {
-                // Should never reach this point
-                requestBlockHeaders(targetheight - 10, targetheight);
-                return false;
-            }
-
-
-            IxianHandler.receivedTransactionInclusionVerificationResponse(txid, false);           
-            return true;
         }
-
-       
-        private bool containsTransaction(BlockHeader header, string txid)
-        {
-            if (header.transactions.Contains(txid) == false)
-            {
-                return false;
-            }
-            return true;
-        }
-
-
+        
         private void requestBlockHeaders(ulong from, ulong to)
         {
             Console.WriteLine("Requesting block headers from {0} to {1}", from, to);
@@ -278,7 +231,7 @@ namespace IXICore
                 //NetworkClientManager.broadcastData(new char[] { 'M', 'H' }, ProtocolMessageCode.getBlockHeaders, mOut.ToArray(), null);
 
                 // Request from a single random node
-                CoreProtocolMessage.broadcastProtocolMessageToSingleRandomNode(new char[] { 'M'}, ProtocolMessageCode.getBlockHeaders, mOut.ToArray(), IxianHandler.getLastBlockHeight());
+                CoreProtocolMessage.broadcastProtocolMessageToSingleRandomNode(new char[] { 'M' }, ProtocolMessageCode.getBlockHeaders, mOut.ToArray(), 0);
             }
         }
 

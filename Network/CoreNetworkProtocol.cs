@@ -712,5 +712,32 @@ namespace IXICore
             }
             return true;
         }
+
+        /// <summary>
+        /// Subscribes client to transactionFrom, transactionTo and balance
+        /// </summary>
+        /// <remarks>
+        ///  This function is used to ensure that the remote endpoing has listed the correct IP and port information for their `PresenceList` entry.
+        /// </remarks>
+        /// <param name="endpoint">Target endpoint to verify for connectivity.</param>
+        public static void subscribeToEvents(RemoteEndpoint endpoint)
+        {
+            if (endpoint.presenceAddress.type != 'M')
+            {
+                return;
+            }
+
+            // TODO TODO TODO events can be optimized as there is no real need to subscribe them to every connected node
+
+            // Subscribe to transaction events
+            byte[] event_data = NetworkEvents.prepareEventMessageData(NetworkEvents.Type.transactionFrom, IxianHandler.getWalletStorage().getPrimaryAddress());
+            endpoint.sendData(ProtocolMessageCode.attachEvent, event_data);
+
+            event_data = NetworkEvents.prepareEventMessageData(NetworkEvents.Type.transactionTo, IxianHandler.getWalletStorage().getPrimaryAddress());
+            endpoint.sendData(ProtocolMessageCode.attachEvent, event_data);
+
+            event_data = NetworkEvents.prepareEventMessageData(NetworkEvents.Type.balance, IxianHandler.getWalletStorage().getPrimaryAddress());
+            endpoint.sendData(ProtocolMessageCode.attachEvent, event_data);
+        }
     }
 }

@@ -80,6 +80,10 @@ namespace IXICore
         ///  Miners are able to work on any block in the Redacted History window, with the target block specifying its difficulty to which the posted solution must conform.
         /// </remarks>
         public ulong difficulty = 0;
+        /// <summary>
+        ///  PIT Hash - transaction root hash, available from block v6
+        /// </summary>
+        public byte[] pitHash = null;
 
         public BlockHeader()
         {
@@ -104,10 +108,16 @@ namespace IXICore
                 superBlockSegments.Add(entry.Key, new SuperBlockSegment(entry.Key, entry.Value.blockChecksum));
             }
 
-            // Add transactions and signatures from the old block
-            foreach (string txid in block.transactions)
+            if (block.version < BlockVer.v6)
             {
-                transactions.Add(txid);
+                // Add transactions and signatures from the old block
+                foreach (string txid in block.transactions)
+                {
+                    transactions.Add(txid);
+                }
+            }else
+            {
+                pitHash = block.pitChecksum;
             }
 
             if (block.blockChecksum != null)
@@ -167,12 +177,19 @@ namespace IXICore
                         if (version <= Block.maxVersion)
                         {
 
-                            // Get the transaction ids
-                            int num_transactions = reader.ReadInt32();
-                            for (int i = 0; i < num_transactions; i++)
+                            if (version < BlockVer.v6)
                             {
-                                string txid = reader.ReadString();
-                                transactions.Add(txid);
+                                // Get the transaction ids
+                                int num_transactions = reader.ReadInt32();
+                                for (int i = 0; i < num_transactions; i++)
+                                {
+                                    string txid = reader.ReadString();
+                                    transactions.Add(txid);
+                                }
+                            }else
+                            {
+                                int pit_hash_len = reader.ReadInt32();
+                                pitHash = reader.ReadBytes(pit_hash_len);
                             }
 
                             int dataLen = reader.ReadInt32();
@@ -247,14 +264,21 @@ namespace IXICore
 
                     writer.Write(blockNum);
 
-                    // Write the number of transactions
-                    int num_transactions = transactions.Count;
-                    writer.Write(num_transactions);
-
-                    // Write each wallet
-                    foreach (string txid in transactions)
+                    if (version < 6)
                     {
-                        writer.Write(txid);
+                        // Write the number of transactions
+                        int num_transactions = transactions.Count;
+                        writer.Write(num_transactions);
+
+                        // Write each wallet
+                        foreach (string txid in transactions)
+                        {
+                            writer.Write(txid);
+                        }
+                    }else
+                    {
+                        writer.Write(pitHash.Length);
+                        writer.Write(pitHash);
                     }
 
                     writer.Write(blockChecksum.Length);
@@ -329,18 +353,25 @@ namespace IXICore
                 merged_segments.AddRange(entry.Value.blockChecksum);
             }
 
-            StringBuilder merged_txids = new StringBuilder();
-            foreach (string txid in transactions)
-            {
-                merged_txids.Append(txid);
-            }
-
-
             List<byte> rawData = new List<byte>();
             rawData.AddRange(ConsensusConfig.ixianChecksumLock);
             rawData.AddRange(BitConverter.GetBytes(version));
             rawData.AddRange(BitConverter.GetBytes(blockNum));
-            rawData.AddRange(Encoding.UTF8.GetBytes(merged_txids.ToString()));
+            if (version < BlockVer.v6)
+            {
+                StringBuilder merged_txids = new StringBuilder();
+                foreach (string txid in transactions)
+                {
+                    merged_txids.Append(txid);
+                }
+
+                rawData.AddRange(Encoding.UTF8.GetBytes(merged_txids.ToString()));
+            }
+            else
+            {
+                // PIT is included in checksum since v6
+                rawData.AddRange(pitHash);
+            }
 
             if (lastBlockChecksum != null)
             {
