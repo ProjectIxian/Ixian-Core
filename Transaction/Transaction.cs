@@ -306,7 +306,19 @@ namespace IXICore
         private void setVersion()
         {
             int lastBlockVersion = IxianHandler.getLastBlockVersion();
-            if(lastBlockVersion == 5)
+            if (lastBlockVersion == BlockVer.v0)
+            {
+                version = 0;
+            }
+            else if (lastBlockVersion == BlockVer.v1)
+            {
+                version = 1;
+            }
+            else if (lastBlockVersion == BlockVer.v2)
+            {
+                version = 2;
+            }
+            else if (lastBlockVersion < BlockVer.v6)
             {
                 version = 3;
             }else
@@ -319,7 +331,7 @@ namespace IXICore
         /// Creates an empty transaction of the specified type.
         /// </summary>
         /// <param name="tx_type">Transaction type. See `Transaction.Type`.</param>
-        public Transaction(int tx_type)
+        public Transaction(int tx_type, byte[] tx_data_checksum = null, byte[] tx_data = null)
         {
             setVersion();
 
@@ -334,6 +346,9 @@ namespace IXICore
             nonce = (int)((DateTimeOffset.Now.ToUnixTimeMilliseconds() - (DateTimeOffset.Now.ToUnixTimeSeconds() * 1000)) * 100) + r.Next(100);
 
             applied = 0;
+
+            dataChecksum = tx_data_checksum;
+            _data = tx_data;
         }
 
         /// <summary>
@@ -581,10 +596,16 @@ namespace IXICore
             }
 
 
-            if (tx_transaction.data != null)
+            if (tx_transaction.dataChecksum != null)
             {
-                data = new byte[tx_transaction.data.Length];
-                Array.Copy(tx_transaction.data, data, data.Length);
+                dataChecksum = new byte[tx_transaction.dataChecksum.Length];
+                Array.Copy(tx_transaction.dataChecksum, dataChecksum, dataChecksum.Length);
+            }
+
+            if (tx_transaction._data != null)
+            {
+                _data = new byte[tx_transaction._data.Length];
+                Array.Copy(tx_transaction._data, _data, _data.Length);
             }
 
             blockHeight = tx_transaction.blockHeight;
@@ -1124,7 +1145,7 @@ namespace IXICore
         {
             if(_data != null)
             {
-                return Crypto.sha512sqTrunc(_data);
+                return Crypto.sha512sqTrunc(_data, 0, 0, 32);
             }
             return null;
         }
