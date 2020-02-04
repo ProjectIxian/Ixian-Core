@@ -229,7 +229,26 @@ namespace IXICore
         /// <summary>
         ///  Optional data included with the transaction. This can be any byte-field. The transaction fee will increase with the amount of data.
         /// </summary>
-        public byte[] data;
+        private byte[] _data;
+
+        /// <summary>
+        ///  Optional data included with the transaction. This can be any byte-field. The transaction fee will increase with the amount of data.
+        /// </summary>
+        public byte[] data
+        {
+            get { return _data; }
+            set {
+                _data = value;
+                if (_data != null)
+                {
+                    dataChecksum = calculateDataChecksum();
+                }
+            }
+        }
+        /// <summary>
+        ///  Checksum of optional data included with the transaction.
+        /// </summary>
+        public byte[] dataChecksum;
         /// <summary>
         ///  Block number when the transaction was generated.
         /// </summary>
@@ -279,7 +298,7 @@ namespace IXICore
         /// <summary>
         ///  Currently latest transaction version.
         /// </summary>
-        public static int maxVersion = 3;
+        public static int maxVersion = 4;
 
         /// <summary>
         ///  Sets the transaction's version appropriately, based on the current block version.
@@ -287,16 +306,7 @@ namespace IXICore
         private void setVersion()
         {
             int lastBlockVersion = IxianHandler.getLastBlockVersion();
-            if (lastBlockVersion == 0)
-            {
-                version = 0;
-            }else if (lastBlockVersion == 1)
-            {
-                version = 1;
-            }else if(lastBlockVersion == 2)
-            {
-                version = 2;
-            }else if(lastBlockVersion == 3)
+            if(lastBlockVersion == 5)
             {
                 version = 3;
             }else
@@ -659,11 +669,21 @@ namespace IXICore
                                 }
                             }
 
+                            if (version >= 4)
+                            {
+                                int dataChecksumLen = reader.ReadInt32();
+                                if (dataChecksumLen > 0)
+                                {
+                                    dataChecksum = reader.ReadBytes(dataChecksumLen);
+                                }
+                            }
+
                             int dataLen = reader.ReadInt32();
                             if (dataLen > 0)
                             {
-                                data = reader.ReadBytes(dataLen);
+                                _data = reader.ReadBytes(dataLen);
                             }
+
 
                             blockHeight = reader.ReadUInt64();
 
@@ -703,6 +723,19 @@ namespace IXICore
                             }
 
                             id = generateID();
+
+                            if(version >= 4 && data != null)
+                            {
+                                if(dataChecksum == null)
+                                {
+                                    throw new Exception("Invalid transaction's data checksum, should be non null.");
+                                }
+
+                                if(!calculateDataChecksum().SequenceEqual(dataChecksum))
+                                {
+                                    throw new Exception("Invalid transaction's data checksum.");
+                                }
+                            }
                         }else
                         {
                             throw new Exception("Unknown transaction version " + version);
@@ -756,6 +789,19 @@ namespace IXICore
                             writer.Write(entry.Key.Length);
                             writer.Write(entry.Key);
                             writer.Write(entry.Value.ToString());
+                        }
+                    }
+
+                    if(version >= 4)
+                    {
+                        if (dataChecksum != null)
+                        {
+                            writer.Write(dataChecksum.Length);
+                            writer.Write(dataChecksum);
+                        }
+                        else
+                        {
+                            writer.Write((int)0);
                         }
                     }
 
@@ -992,9 +1038,18 @@ namespace IXICore
                 }
             }
 
-            if (transaction.data != null)
+            if (transaction.version < 4)
             {
-                rawData.AddRange(transaction.data);
+                if (transaction.data != null)
+                {
+                    rawData.AddRange(transaction.data);
+                }
+            }else
+            {
+                if (transaction.dataChecksum != null)
+                {
+                    rawData.AddRange(transaction.dataChecksum);
+                }
             }
 
             rawData.AddRange(BitConverter.GetBytes(transaction.blockHeight));
@@ -1059,6 +1114,19 @@ namespace IXICore
         {
             id = generateID();
             checksum = calculateChecksum(this);
+        }
+
+        /// <summary>
+        ///  Calculates the transaction's data checksum and returns it.
+        /// </summary>
+        /// <returns>Transaction's data checksum, or null transaction data is null.</returns>
+        public byte[] calculateDataChecksum()
+        {
+            if(_data != null)
+            {
+                return Crypto.sha512sqTrunc(_data);
+            }
+            return null;
         }
 
         /// <summary>

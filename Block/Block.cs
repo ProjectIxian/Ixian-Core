@@ -17,6 +17,7 @@ namespace IXICore
         public static int v4 = 4;
         public static int v5 = 5;
         public static int v6 = 6;
+        public static int v7 = 7;
     }
 
     public class SuperBlockSegment
@@ -306,13 +307,12 @@ namespace IXICore
                     {
                         version = reader.ReadInt32();
 
-
-                        if (version > BlockVer.v5 && bytes.Length > 10240000)
-                        {
-                            throw new Exception("Block size is bigger than 10MB.");
-                        }else if(version < BlockVer.v6 && bytes.Length > 49152000)
+                        if(version < BlockVer.v6 && bytes.Length > 49152000)
                         {
                             throw new Exception("Block size is bigger than 49MB.");
+                        }else if (bytes.Length > 10240000)
+                        {
+                            throw new Exception("Block size is bigger than 10MB.");
                         }
 
                         blockNum = reader.ReadUInt64();
