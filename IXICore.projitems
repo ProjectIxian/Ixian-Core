@@ -59,6 +59,7 @@
     <Compile Include="$(MSBuildThisFileDirectory)Utils\BitWriter.cs" />
     <Compile Include="$(MSBuildThisFileDirectory)Utils\ByteArrayComparer.cs" />
     <Compile Include="$(MSBuildThisFileDirectory)Utils\ConsoleHelpers.cs" />
+    <Compile Include="$(MSBuildThisFileDirectory)Utils\Cuckoo.cs" />
     <Compile Include="$(MSBuildThisFileDirectory)Utils\IxiNumber.cs" />
     <Compile Include="$(MSBuildThisFileDirectory)Utils\IxiUtils.cs" />
     <Compile Include="$(MSBuildThisFileDirectory)Utils\KDTable.cs" />
