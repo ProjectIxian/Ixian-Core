@@ -75,7 +75,7 @@ namespace IXICore
 
             bool updated = false;
 
-            long currentTime = Core.getCurrentTimestamp();
+            long currentTime = Clock.getNetworkTimestamp();
 
             lock (presences)
             {
@@ -391,7 +391,7 @@ namespace IXICore
 
             List<PresenceAddress> valid_addresses = new List<PresenceAddress>();
 
-            long currentTime = Core.getCurrentTimestamp();
+            long currentTime = Clock.getNetworkTimestamp();
 
             foreach (var entry in presence.addresses)
             {
@@ -568,7 +568,7 @@ namespace IXICore
                     writer.Write(CoreConfig.device_id);
 
                     // Add the unix timestamp
-                    long timestamp = Core.getCurrentTimestamp();
+                    long timestamp = Clock.getNetworkTimestamp();
                     writer.Write(timestamp);
 
                     string hostname = curNodePresenceAddress.address;
@@ -601,7 +601,7 @@ namespace IXICore
             address = null;
 
             // Get the current timestamp
-            long currentTime = Core.getCurrentTimestamp();
+            long currentTime = Clock.getNetworkTimestamp();
 
             try
             {
@@ -794,7 +794,7 @@ namespace IXICore
         public static bool performCleanup()
         {
             // Get the current timestamp
-            long currentTime = Core.getCurrentTimestamp();
+            long currentTime = Clock.getNetworkTimestamp();
             lock (presences)
             {
                 // Store a copy of the presence list to allow safe modifications while enumerating

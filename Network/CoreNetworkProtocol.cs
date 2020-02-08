@@ -298,7 +298,7 @@ namespace IXICore
                     }*/
                     // TODO store the full address if connectable
                     // Store the presence address for this remote endpoint
-                    endpoint.presenceAddress = new PresenceAddress(device_id, "", node_type, node_version, Core.getCurrentTimestamp() - CoreConfig.clientKeepAliveInterval, null);
+                    endpoint.presenceAddress = new PresenceAddress(device_id, "", node_type, node_version, Clock.getNetworkTimestamp() - CoreConfig.clientKeepAliveInterval, null);
                 }
                 else
                 {
@@ -310,7 +310,7 @@ namespace IXICore
                     }
 
                     // Store the presence address for this remote endpoint
-                    endpoint.presenceAddress = new PresenceAddress(device_id, endpoint.getFullAddress(true), node_type, node_version, Core.getCurrentTimestamp() - CoreConfig.serverKeepAliveInterval, null);
+                    endpoint.presenceAddress = new PresenceAddress(device_id, endpoint.getFullAddress(true), node_type, node_version, Clock.getNetworkTimestamp() - CoreConfig.serverKeepAliveInterval, null);
                 }
 
                 // if we're a client update the network time difference
@@ -448,7 +448,7 @@ namespace IXICore
                     writer.Write(IxianHandler.publicPort);
 
                     // Send timestamp
-                    long timestamp = Core.getCurrentTimestamp();
+                    long timestamp = Clock.getNetworkTimestamp();
                     writer.Write(timestamp);
 
                     // send signature

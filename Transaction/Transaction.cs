@@ -337,7 +337,7 @@ namespace IXICore
 
             type = tx_type;
 
-            timeStamp = Core.getCurrentTimestamp();
+            timeStamp = Clock.getNetworkTimestamp();
             amount = new IxiNumber("0");
             fee = new IxiNumber("0");
             blockHeight = 0;
@@ -396,7 +396,7 @@ namespace IXICore
                 timeStamp = tx_timestamp;
             }else
             {
-                timeStamp = Core.getCurrentTimestamp();
+                timeStamp = Clock.getNetworkTimestamp();
             }
 
             pubKey = tx_pubKey;
@@ -470,7 +470,7 @@ namespace IXICore
             }
             else
             {
-                timeStamp = Core.getCurrentTimestamp();
+                timeStamp = Clock.getNetworkTimestamp();
             }
 
             pubKey = tx_pubKey;
@@ -540,7 +540,7 @@ namespace IXICore
                 nonce = tx_nonce;
             }
 
-            timeStamp = Core.getCurrentTimestamp();
+            timeStamp = Clock.getNetworkTimestamp();
 
             pubKey = tx_pubKey;
 

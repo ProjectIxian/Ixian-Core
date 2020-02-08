@@ -338,7 +338,7 @@ namespace IXICore.Network
             {
                 time_sync_data.Clear();
                 time_sync_data.Add(2);
-                time_sync_data.AddRange(BitConverter.GetBytes(Core.getCurrentTimestampMillis()));
+                time_sync_data.AddRange(BitConverter.GetBytes(Clock.getNetworkTimestampMillis()));
                 try
                 {
                     int time_sync_data_len = time_sync_data.ToArray().Length;

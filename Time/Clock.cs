@@ -5,6 +5,30 @@ namespace IXICore
 
     public class Clock
     {
+        /// <summary>
+        ///  Value represents the detected time offset from the network majority and is used when time synchronization is required.
+        /// </summary>
+        public static long networkTimeDifference = 0;
+
+        /// <summary>
+        ///  Retrieves the current time as a 64-bit unix epoch value, adjusted for the detected time offset from the network majority.
+        /// </summary>
+        /// <returns>Unix epoch (number of seconds since 1970-01-01)</returns>
+        public static long getNetworkTimestamp()
+        {
+            return (long)(getTimestamp() - networkTimeDifference);
+        }
+
+        /// <summary>
+        ///  Retrieves the current time as a 64-bit unix epoch value with the millisecon precision. The value is already adjusted for the detected
+        ///  time offset from the network majority.
+        /// </summary>
+        /// <returns>Number of milliseconds since the unix epoch - 1970-01-01.</returns>
+        public static long getNetworkTimestampMillis()
+        {
+            return (long)(getTimestampMillis() - (networkTimeDifference * 1000));
+        }
+        
         // Obtain the unix timestamp
         public static long getTimestamp()
         {

@@ -54,7 +54,7 @@ namespace IXICore
 
         private bool updateBlockHeaders()
         {
-            long currentTime = Core.getCurrentTimestamp();
+            long currentTime = Clock.getNetworkTimestamp();
 
             // Check if the request expired
             if (currentTime - lastRequestedBlockTime > ConsensusConfig.blockGenerationInterval)

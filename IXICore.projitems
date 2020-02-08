@@ -49,7 +49,7 @@
     <Compile Include="$(MSBuildThisFileDirectory)Streaming\SpixiAppData.cs" />
     <Compile Include="$(MSBuildThisFileDirectory)Streaming\SpixiMessage.cs" />
     <Compile Include="$(MSBuildThisFileDirectory)Streaming\StreamMessage.cs" />
-    <Compile Include="$(MSBuildThisFileDirectory)Time\Time.cs" />
+    <Compile Include="$(MSBuildThisFileDirectory)Time\Clock.cs" />
     <Compile Include="$(MSBuildThisFileDirectory)Transaction\PendingTransactions.cs" />
     <Compile Include="$(MSBuildThisFileDirectory)Transaction\PrefixInclusionTree.cs" />
     <Compile Include="$(MSBuildThisFileDirectory)Transaction\Transaction.cs" />

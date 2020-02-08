@@ -359,7 +359,7 @@ namespace IXICore.Network
         {
             if(CoreConfig.forceTimeOffset != int.MaxValue)
             {
-                Core.networkTimeDifference = CoreConfig.forceTimeOffset;
+                Clock.networkTimeDifference = CoreConfig.forceTimeOffset;
                 return;
             }
             lock (networkClients)
@@ -388,7 +388,7 @@ namespace IXICore.Network
                     timeDiff = 0;
                 }
 
-                Core.networkTimeDifference = timeDiff;
+                Clock.networkTimeDifference = timeDiff;
             }
         }
 
