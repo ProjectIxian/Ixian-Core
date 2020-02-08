@@ -26,6 +26,13 @@ namespace IXICore.Network
             {
                 return;
             }
+
+            if(CoreConfig.preventNetworkOperations)
+            {
+                Logging.warn("Not starting NetworkClientManager thread due to preventNetworkOperations flag being set.");
+                return;
+            }
+
             running = true;
             networkClients = new List<NetworkClient>();
 

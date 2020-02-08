@@ -651,6 +651,11 @@ namespace IXICore
 
         private JsonResponse onAddTransaction(Dictionary<string, object> parameters)
         {
+            if (IxianHandler.status != NodeStatus.ready)
+            {
+                return new JsonResponse { result = null, error = new JsonError() { code = (int)RPCErrorCode.RPC_IN_WARMUP, message = String.Format("There was an error while creating the transaction: The node isn't ready to process this request yet.") } };
+            }
+
             object r = createTransactionHelper(parameters);
             Transaction transaction = null;
             if (r is JsonResponse)
@@ -685,6 +690,11 @@ namespace IXICore
 
         private JsonResponse onCreateRawTransaction(Dictionary<string, object> parameters)
         {
+            if (IxianHandler.status != NodeStatus.ready)
+            {
+                return new JsonResponse { result = null, error = new JsonError() { code = (int)RPCErrorCode.RPC_IN_WARMUP, message = String.Format("There was an error while creating the transaction: The node isn't ready to process this request yet.") } };
+            }
+
             // Create a transaction, but do not add it to the TX pool on the node. Useful for:
             // - offline transactions
             // - manually adjusting fee
@@ -760,6 +770,11 @@ namespace IXICore
 
         private JsonResponse onSendRawTransaction(Dictionary<string, object> parameters)
         {
+            if (IxianHandler.status != NodeStatus.ready)
+            {
+                return new JsonResponse { result = null, error = new JsonError() { code = (int)RPCErrorCode.RPC_IN_WARMUP, message = String.Format("There was an error while creating the transaction: The node isn't ready to process this request yet.") } };
+            }
+
             JsonError error = null;
 
             // transaction which alters a multisig wallet
@@ -815,6 +830,11 @@ namespace IXICore
 
         private JsonResponse onAddMultiSigTxSignature(Dictionary<string, object> parameters)
         {
+            if (IxianHandler.status != NodeStatus.ready)
+            {
+                return new JsonResponse { result = null, error = new JsonError() { code = (int)RPCErrorCode.RPC_IN_WARMUP, message = String.Format("There was an error while creating the transaction: The node isn't ready to process this request yet.") } };
+            }
+
             JsonError error = null;
 
             // transaction which alters a multisig wallet
@@ -854,6 +874,11 @@ namespace IXICore
 
         private JsonResponse onAddMultiSigTransaction(Dictionary<string, object> parameters)
         {
+            if (IxianHandler.status != NodeStatus.ready)
+            {
+                return new JsonResponse { result = null, error = new JsonError() { code = (int)RPCErrorCode.RPC_IN_WARMUP, message = String.Format("There was an error while creating the transaction: The node isn't ready to process this request yet.") } };
+            }
+
             JsonError error = null;
 
             // Add a new transaction. This test allows sending and receiving from arbitrary addresses
@@ -945,6 +970,11 @@ namespace IXICore
 
         private JsonResponse onAddMultiSigKey(Dictionary<string, object> parameters)
         {
+            if (IxianHandler.status != NodeStatus.ready)
+            {
+                return new JsonResponse { result = null, error = new JsonError() { code = (int)RPCErrorCode.RPC_IN_WARMUP, message = String.Format("There was an error while creating the transaction: The node isn't ready to process this request yet.") } };
+            }
+
             // transaction which alters a multisig wallet
             if (!parameters.ContainsKey("wallet"))
             {
@@ -972,6 +1002,11 @@ namespace IXICore
 
         private JsonResponse onDelMultiSigKey(Dictionary<string, object> parameters)
         {
+            if (IxianHandler.status != NodeStatus.ready)
+            {
+                return new JsonResponse { result = null, error = new JsonError() { code = (int)RPCErrorCode.RPC_IN_WARMUP, message = String.Format("There was an error while creating the transaction: The node isn't ready to process this request yet.") }};
+            }
+
             // transaction which alters a multisig wallet
             object res = "Incorrect transaction parameters.";
 
@@ -1002,6 +1037,11 @@ namespace IXICore
 
         private JsonResponse onChangeMultiSigs(Dictionary<string, object> parameters)
         {
+            if (IxianHandler.status != NodeStatus.ready)
+            {
+                return new JsonResponse { result = null, error = new JsonError() { code = (int)RPCErrorCode.RPC_IN_WARMUP, message = String.Format("There was an error while creating the transaction: The node isn't ready to process this request yet.") } };
+            }
+
             // transaction which alters a multisig wallet
             object res = "Incorrect transaction parameters.";
 
@@ -1108,6 +1148,8 @@ namespace IXICore
             networkArray.Add("Queues", "Rcv: " + NetworkQueue.getQueuedMessageCount() + ", RcvTx: " + NetworkQueue.getTxQueuedMessageCount()
                 + ", SendClients: " + NetworkServer.getQueuedMessageCount() + ", SendServers: " + NetworkClientManager.getQueuedMessageCount()
                 + ", Logging: " + Logging.getRemainingStatementsCount() + ", Pending Transactions: " + PendingTransactions.pendingTransactionCount());
+
+            networkArray.Add("Core Status", IxianHandler.status);
 
             networkArray.Add("Block Height", IxianHandler.getLastBlockHeight());
             networkArray.Add("Block Version", IxianHandler.getLastBlockVersion());

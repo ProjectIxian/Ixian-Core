@@ -56,6 +56,13 @@ namespace IXICore.Network
             if(IxianHandler.publicPort <= 0 || IxianHandler.publicPort > 65535)
             {
                 Logging.error("Cannot start network server, public port is invalid");
+                return;
+            }
+
+            if (CoreConfig.preventNetworkOperations)
+            {
+                Logging.warn("Not starting NetworkClientManager thread due to preventNetworkOperations flag being set.");
+                return;
             }
 
             TLC = new ThreadLiveCheck();

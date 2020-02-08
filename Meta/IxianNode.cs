@@ -4,6 +4,14 @@ using System.Collections.Generic;
 
 namespace IXICore.Meta
 {
+    enum NodeStatus
+    {
+        warmUp = 0, // when the node is warming up
+        ready = 1, // when the node is ready to process all data
+        stalled = 2, // when the node hasn't received any block updates from the network for over 30 minutes
+        stopping = 3 // when the node is stopping
+    }
+
     abstract class IxianNode
     {
         // Required
@@ -33,6 +41,7 @@ namespace IXICore.Meta
 
         public static bool forceShutdown = false;
 
+        public static NodeStatus status = NodeStatus.warmUp;
 
         public static void setHandler(IxianNode handler_class)
         {

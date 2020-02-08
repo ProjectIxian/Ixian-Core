@@ -307,12 +307,18 @@ namespace IXICore
                     {
                         version = reader.ReadInt32();
 
-                        if(version < BlockVer.v6 && bytes.Length > 49152000)
+                        if(version < BlockVer.v6)
                         {
-                            throw new Exception("Block size is bigger than 49MB.");
-                        }else if (bytes.Length > 10240000)
+                            if (bytes.Length > 49152000)
+                            {
+                                throw new Exception("Block size is bigger than 49MB.");
+                            }
+                        }else
                         {
-                            throw new Exception("Block size is bigger than 10MB.");
+                            if (bytes.Length > 10240000)
+                            {
+                                throw new Exception("Block size is bigger than 19MB.");
+                            }
                         }
 
                         blockNum = reader.ReadUInt64();

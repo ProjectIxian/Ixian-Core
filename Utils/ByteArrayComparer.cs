@@ -35,13 +35,33 @@ namespace IXICore.Utils
             {
                 return left == right;
             }
+            if (ReferenceEquals(left, right))
+            {
+                return true;
+            }
+            if (left.Length != right.Length)
+            {
+                return false;
+            }
             return left.SequenceEqual(right);
         }
         public int GetHashCode(byte[] key)
         {
             if (key == null)
-                throw new ArgumentNullException("key");
-            return key.Sum(b => b);
+            {
+                return -1;
+            }
+            int value = key.Length;
+            if (value >= 4)
+            {
+                return BitConverter.ToInt32(key, value - 4); // take last 4 bytes
+            }
+            foreach (var b in key)
+            {
+                value <<= 8;
+                value += b;
+            }
+            return value;
         }
     }
 }

@@ -145,5 +145,10 @@
         /// Number of block headers to save in a single file.
         /// </summary>
         public static ulong maxBlockHeadersPerDatabase = 1000;
+
+        /// <summary>
+        /// Prevents client/server network operations. Useful for offline data verification and other offline tests.
+        /// </summary>
+        public static bool preventNetworkOperations = false;
     }
 }
