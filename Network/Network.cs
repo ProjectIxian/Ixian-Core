@@ -128,7 +128,9 @@ namespace IXICore.Network
         getNextSuperBlock = 45,
         getBlockHeaders = 46,
         blockHeaders = 47,
-        getRandomPresences = 48
+        getRandomPresences = 48,
+        getPIT = 49,
+        pitData = 50
     }
 
     /// <summary>

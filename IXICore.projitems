@@ -25,7 +25,6 @@
     <Compile Include="$(MSBuildThisFileDirectory)Crypto\KeyDerivation.cs" />
     <Compile Include="$(MSBuildThisFileDirectory)Meta\Activity.cs" />
     <Compile Include="$(MSBuildThisFileDirectory)Meta\ConsensusConfig.cs" />
-    <Compile Include="$(MSBuildThisFileDirectory)Meta\Core.cs" />
     <Compile Include="$(MSBuildThisFileDirectory)Meta\CoreConfig.cs" />
     <Compile Include="$(MSBuildThisFileDirectory)Meta\IxianNode.cs" />
     <Compile Include="$(MSBuildThisFileDirectory)Meta\Logging.cs" />
