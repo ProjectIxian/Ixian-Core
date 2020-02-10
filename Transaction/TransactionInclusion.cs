@@ -175,7 +175,7 @@ namespace IXICore
                         lock (pitCache)
                         {
                             // check if we already have the partial tree for this transaction
-                            if (pitCache.ContainsKey(tx.applied) || pitCache[tx.applied].pit != null)
+                            if (pitCache.ContainsKey(tx.applied) && pitCache[tx.applied].pit != null)
                             {
                                 // Note: PIT has been verified against the block header when it was received, so additional verification is not needed here.
                                 // Note: the PIT we have cached might have been requested for different txids (the current txid could have been added later)
