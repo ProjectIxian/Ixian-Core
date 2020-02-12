@@ -55,7 +55,7 @@ namespace IXICore
                 if(updateBlockHeaders())
                 {
                     verifyUnprocessedTransactions();
-                    long currentTime = Clock.getNetworkTimestamp();
+                    long currentTime = Clock.getTimestamp();
                     if(currentTime - lastPITPruneTime > pitCachePruneInterval)
                     {
                         prunePITCache();
@@ -75,7 +75,7 @@ namespace IXICore
 
         private bool updateBlockHeaders()
         {
-            long currentTime = Clock.getNetworkTimestamp();
+            long currentTime = Clock.getTimestamp();
 
             // Check if the request expired
             if (currentTime - lastRequestedBlockTime > ConsensusConfig.blockGenerationInterval)
@@ -231,7 +231,7 @@ namespace IXICore
         {
             lock(pitCache)
             {
-                long currentTime = Clock.getNetworkTimestamp();
+                long currentTime = Clock.getTimestamp();
                 // Request might already have been sent. In that case, we re-send it we have been waiting for too long.
                 if(!pitCache.ContainsKey(block_num) || currentTime - pitCache[block_num].requestSent > pitRequestTimeout)
                 {
@@ -253,7 +253,7 @@ namespace IXICore
                     {
                         pit = null,
                         requestedForTXIDs = txids,
-                        requestSent = Clock.getNetworkTimestamp()
+                        requestSent = Clock.getTimestamp()
                     };
                     pitCache.AddOrReplace(block_num, ci);
                 }
