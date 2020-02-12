@@ -451,7 +451,7 @@
                         var network_time_diff = data["result"]["Network time difference"];
                         var real_network_time_diff = data["result"]["Real network time difference"];
 
-                        if (network_time_diff != real_network_time_diff) {
+                        if (data["result"]["Network Servers"] > 2 && network_time_diff != real_network_time_diff) {
                             warning_bar.style.display = "block";
                             if (warning_bar.firstElementChild.innerHTML != "") {
                                 warning_bar.firstElementChild.innerHTML += "<br/>";

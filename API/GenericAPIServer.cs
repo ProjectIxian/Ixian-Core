@@ -1158,11 +1158,8 @@ namespace IXICore
             networkArray.Add("Node Type", PresenceList.myPresenceType);
             networkArray.Add("Connectable", NetworkServer.isConnectable());
 
-            if (parameters.ContainsKey("verbose"))
-            {
-                networkArray.Add("Network Clients", NetworkServer.getConnectedClients());
-                networkArray.Add("Network Servers", NetworkClientManager.getConnectedClients(true));
-            }
+            networkArray.Add("Network Clients", NetworkServer.getConnectedClients());
+            networkArray.Add("Network Servers", NetworkClientManager.getConnectedClients(true));
 
             networkArray.Add("Presences", PresenceList.getTotalPresences());
             networkArray.Add("Masters", PresenceList.countPresences('M'));
