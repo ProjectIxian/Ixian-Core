@@ -17,6 +17,7 @@ namespace IXICore
 
         /// <summary>
         ///  Retrieves the current time as a 64-bit unix epoch value, adjusted for the detected time offset from the network majority.
+        ///  Should only be used for network related time operations.
         /// </summary>
         /// <returns>Unix epoch (number of seconds since 1970-01-01)</returns>
         public static long getNetworkTimestamp()
@@ -27,21 +28,30 @@ namespace IXICore
         /// <summary>
         ///  Retrieves the current time as a 64-bit unix epoch value with the millisecon precision. The value is already adjusted for the detected
         ///  time offset from the network majority.
+        ///  Should only be used for network related time operations.
         /// </summary>
         /// <returns>Number of milliseconds since the unix epoch - 1970-01-01.</returns>
         public static long getNetworkTimestampMillis()
         {
             return (long)(getTimestampMillis() - (networkTimeDifference * 1000));
         }
-        
-        // Obtain the unix timestamp
+
+        /// <summary>
+        ///  Retrieves the current local time as a 64-bit unix epoch value.
+        ///  Should be used for all local time operations.
+        /// </summary>
+        /// <returns>Unix epoch (number of seconds since 1970-01-01)</returns>
         public static long getTimestamp()
         {
             double unixTimestamp = (DateTime.UtcNow.Subtract(new DateTime(1970, 1, 1))).TotalSeconds;
             return (long)unixTimestamp;
         }
 
-        // Obtain the unix timestamp
+        /// <summary>
+        ///  Retrieves the current local time as a 64-bit unix epoch value with the millisecon precision.
+        ///  Should be used for all local time operations.
+        /// </summary>
+        /// <returns>Unix epoch (number of seconds since 1970-01-01)</returns>
         public static long getTimestampMillis()
         {
             double unixTimestamp = (DateTime.UtcNow.Subtract(new DateTime(1970, 1, 1))).TotalMilliseconds;
