@@ -30,7 +30,7 @@
         <nav class="navbar navbar-default navbar-fixed-top">
             <div class="row">
                 <div class="col-xs-10"><img src="resources/img/logofull.png" /></div>
-                <div class="col-xs-2 navbar-version" id="version"></div>
+                <div class="navbar-version" id="version"></div>
                 <div id="MinerSection"></div>
             </div>
         </nav>
@@ -114,23 +114,30 @@
 
                     </div>
 
-                    <div class="send_address">
-                        enter address or scan QR code
-                    </div>
-
                     <form id="sendForm">
+                        <div id="sendSection">
+                            <div class="single_send_section">
+                                <div class="send_address">
+                                    enter address or scan QR code
+                                </div>
 
-                        <div class="address_edit">
-                            <input type="text" id="address" placeholder="" class="input-sm form-control address_input">
-                            <img class="camerabtn" onclick="javascript:readQR()" src="resources/img/camera.png" style="display: inline-block" />
+                                <div class="address_edit">
+                                    <input type="text" name="address" placeholder="" class="input-sm form-control address_input">
+                                    <img class="camerabtn" onclick="javascript:readQR(this.previousElementSibling)" src="resources/img/camera.png" style="display: inline-block" />
+                                </div>
+
+                                <div class="send_amount">
+                                    enter amount
+                                </div>
+
+                                <div class="amount_edit">
+                                    <input type="text" name="amount" placeholder="" class="input-sm form-control" onkeyup="calculateTransactionAmounts();">
+                                </div>
+                            </div>
                         </div>
 
-                        <div class="send_amount">
-                            enter amount
-                        </div>
-
-                        <div class="amount_edit">
-                            <input type="text" id="amount" placeholder="" class="input-sm form-control" onkeyup="calculateTransactionAmounts();">
+                        <div class="send_button_wrap">
+                            <div class="btn sendbtn" onclick="addRecipient();">Add another recipient</div>
                         </div>
 
                         <div id="transaction_amounts">
@@ -329,19 +336,26 @@
             }
 
             function sendTransaction() {
-                var address = document.getElementById("address").value.trim();
-                var amount = document.getElementById("amount").value.trim();
 
-                console.log("Amount " + amount);
-                if (amount <= 0) //  || amount > balance)
-                {
-                    alert("Incorrect amount. Make sure you have enough IXI available.");
-                    return;
+                var dltAPI = "addtransaction?to=";
+
+                var addressEls = document.getElementsByName("address");
+                var amountEls = document.getElementsByName("amount");
+                for (var i = 0; i < addressEls.length; i++) {
+                    if (i > 0) {
+                        dltAPI += "-";
+                    }
+
+                    var amount = amountEls[i];
+                    if (amount == null || amount.value.trim() <= 0)
+                    {
+                        alert("Incorrect amount specified.");
+                        return;
+                    }
+
+                    dltAPI += addressEls[i].value.trim() + "_" + amount.value.trim();
                 }
 
-                //            console.log("Sending " + amount + " to " + address);
-
-                var dltAPI ="addtransaction?to=" + address + "_" + amount;
                 $.getJSON(dltAPI, { format: "json" })
                     .done(function (data) {
                         if (data["result"] != null) {
@@ -376,10 +390,23 @@
             }
 
             function calculateTransactionAmounts() {
-                var address = document.getElementById("address").value.trim();
-                var amount = document.getElementById("amount").value.trim();
+                var dltAPI = "createrawtransaction?to=";
 
-                var dltAPI = "createrawtransaction?to=" + address + "_" + amount+"&json=true";
+                var addressEls = document.getElementsByName("address");
+                var amountEls = document.getElementsByName("amount");
+                for (var i = 0; i < addressEls.length; i++) {
+                    if (i > 0) {
+                        dltAPI += "-";
+                    }
+
+                    var amount = amountEls[i];
+                    if (amount == null || amount.value.trim() <= 0) {
+                        continue;
+                    }
+
+                    dltAPI += addressEls[i].value.trim() + "_" + amount.value.trim();
+                }
+                dltAPI += "&json=true";
                 $.getJSON(dltAPI, { format: "json" })
                     .done(function (data) {
                         if (data["result"] != null) {
@@ -397,6 +424,8 @@
                 var dltAPI = "status";
                 $.getJSON(dltAPI, { format: "json" })
                     .done(function (data) {
+                        document.getElementById("version").innerHTML = data["result"]["Node Version"] + " (" + data["result"]["Core Version"] + ")";
+
                         sync_status = data["result"]["DLT Status"];
 
                         var warning_bar = document.getElementById("warning_bar");
@@ -470,13 +499,13 @@
 
             }
 
-            function readQR() {
+            function readQR(addressEl) {
                 console.log("Starting QR code reader");
 
                 let scanner = new Instascan.Scanner({});
                 scanner.addListener('scan', function (content) {
                     console.log("QRscanner: " + content);
-                    document.getElementById("address").innerHTML = content;
+                    addressEl.innerHTML = content;
                 });
                 Instascan.Camera.getCameras().then(function (cameras) {
                     if (cameras.length > 0) {
@@ -489,6 +518,14 @@
                     console.error(e);
                 });
 
+            }
+
+            function addRecipient() {
+                var div = document.createElement("div");
+                div.className = "single_send_section";
+                div.innerHTML = document.getElementsByClassName("single_send_section")[0].innerHTML;
+
+                document.getElementById("sendSection").appendChild(div);
             }
 
 
