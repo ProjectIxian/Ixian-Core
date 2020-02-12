@@ -302,7 +302,7 @@ namespace IXICore.Network
                         }
 
                         // Finally, check if the endpoint is subscribed to this event and address
-                        if (endpoint.isSubscribedToEvent(type, address))
+                        if (endpoint.isSubscribedToAddress(type, address))
                         {
                             endpoint.sendData(code, data, helper_data);
                             result = true;

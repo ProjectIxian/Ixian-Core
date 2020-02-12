@@ -51,7 +51,7 @@ namespace IXICore.Network
         protected bool running = false;
 
         // Maintain a list of subscribed event addresses with event type
-        private Dictionary<byte[], NetworkEvents.Type> subscribedAddresses = new Dictionary<byte[], NetworkEvents.Type>();
+        private Dictionary<NetworkEvents.Type, Cuckoo> subscribedFilters = new Dictionary<NetworkEvents.Type, Cuckoo>();
 
         // Maintain a queue of messages to send
         private List<QueueMessage> sendQueueMessagesHighPriority = new List<QueueMessage>();
@@ -128,9 +128,9 @@ namespace IXICore.Network
 
             connectionStartTime = Clock.getTimestamp();
 
-            lock (subscribedAddresses)
+            lock (subscribedFilters)
             {
-                subscribedAddresses.Clear();
+                subscribedFilters.Clear();
             }
 
             lastDataReceivedTime = Clock.getTimestamp();
@@ -217,9 +217,9 @@ namespace IXICore.Network
                 recvRawQueueMessages.Clear();
             }
 
-            lock (subscribedAddresses)
+            lock (subscribedFilters)
             {
-                subscribedAddresses.Clear();
+                subscribedFilters.Clear();
             }
 
             // Abort all related threads
@@ -898,22 +898,36 @@ namespace IXICore.Network
 
 
         // Subscribe to event
-        public bool attachEvent(NetworkEvents.Type type, byte[] address)
+        public bool attachEvent(NetworkEvents.Type type, byte[] filter)
         {
             if (address == null)
                 return false;
 
-            lock (subscribedAddresses)
+            lock (subscribedFilters)
             {
                 // Check the quota
-                if (subscribedAddresses.Count > CoreConfig.maximumSubscribableEvents)
-                    return false;
-
-                // Check if we're subscribed already to this address
-                if (subscribedAddresses.ContainsKey(address) == false)
+                int num_subscribed_addresses = subscribedFilters.Values.Aggregate(0, (acc, f) => acc + f.numItems);
+                if (num_subscribed_addresses > CoreConfig.maximumSubscribableEvents)
                 {
-                    subscribedAddresses.Add(address, type);
+                    return false;
                 }
+            }
+            Cuckoo cuckoo_filter = null;
+            try
+            {
+                cuckoo_filter = new Cuckoo(filter);
+            } catch(Exception e)
+            {
+                Logging.warn("Error while attempting to replace {0} filter for enpoint {1}",
+                    type.ToString(),
+                    getFullAddress()
+                    );
+            }
+
+
+            lock (subscribedFilters) {
+                // Subscribing a new cuckoo for a particular event type will replace the old one
+                subscribedFilters.AddOrReplace(type, cuckoo_filter);
             }
 
             return true;
@@ -921,76 +935,54 @@ namespace IXICore.Network
 
 
         // Unsubscribe from event
-        public bool detachEvent(NetworkEvents.Type type, byte[] address)
+        public bool detachEventType(NetworkEvents.Type type)
         {
-            if (address == null)
-                return false;
-
-            lock (subscribedAddresses)
+            lock (subscribedFilters)
             {
                 // Check if we're subscribed already to this address
-                if (subscribedAddresses.ContainsKey(address) == true)
+                if (subscribedFilters.ContainsKey(type) == true)
                 {
-                    subscribedAddresses.Remove(address);
+                    subscribedFilters.Remove(type);
                 }
             }
 
             return true;
         }
 
+        public bool detachEventAddress(NetworkEvents.Type type, byte[] address)
+        {
+            if(address == null)
+            {
+                return true;
+            }
+            lock(subscribedFilters)
+            {
+                if(subscribedFilters.ContainsKey(type) == true)
+                {
+                    subscribedFilters[type].Delete(address);
+                }
+            }
+            return true;
+        }
+
         // Check if the remote endpoint is subscribed to an event for a specific address
         // Returns true if subscribed
-        public bool isSubscribedToEvent(NetworkEvents.Type type, byte[] address)
+        public bool isSubscribedToAddress(NetworkEvents.Type type, byte[] address)
         {
             if (address == null)
                 return false;
 
-            lock (subscribedAddresses)
+            lock (subscribedFilters)
             {
-                foreach (var entry in subscribedAddresses)
+                if(subscribedFilters.ContainsKey(type) == true)
                 {
-                    // Check for the specific event type
-                    if(entry.Value != type)
-                    {
-                        continue;
-                    }
-
-                    // Use the address matcher to see if this address qualifies
-                    if(AddressMatcher.matches(entry.Key, address, CoreConfig.matcherBytesPerAddress))
-                    {
-                        return true;
-                    }
-
+                    return subscribedFilters[type].Contains(address);
                 }
             }
 
             return false;
         }
 
-
-        // Unsubscribe multiple events
-        public bool detachEvents(NetworkEvents.Type type)
-        {
-            lock (subscribedAddresses)
-            {
-                // remove all types
-                if(type == NetworkEvents.Type.all)
-                {
-                    subscribedAddresses = new Dictionary<byte[], NetworkEvents.Type>();
-                    return true;
-                }
-
-                foreach (var entry in subscribedAddresses)
-                {
-                    if (entry.Value == type)
-                    {
-                        subscribedAddresses.Remove(entry.Key);
-                    }
-                }
-            }
-
-            return true;
-        }
         public long calculateTimeDifference()
         {
             lock (timeSyncs)

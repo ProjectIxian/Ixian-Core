@@ -1,6 +1,8 @@
 ﻿using IXICore.Meta;
 using System;
 using System.IO;
+using IXICore.Utils;
+using System.Text;
 
 namespace IXICore.Network
 {
@@ -18,27 +20,23 @@ namespace IXICore.Network
 
 
         // Prepares an event message data with a provided type and address
-        public static byte[] prepareEventMessageData(Type type, byte[] address)
+        public static byte[] prepareEventMessageData(Type type, byte[] cuckoo_filter)
         {
-            if (address == null)
+            if (cuckoo_filter == null || cuckoo_filter.Length == 0)
                 return null;
 
-            byte[] data = null;
-            using (MemoryStream m = new MemoryStream())
+            MemoryStream m = new MemoryStream();
+            using (BinaryWriter writer = new BinaryWriter(m, Encoding.UTF8, true))
             {
-                using (BinaryWriter writer = new BinaryWriter(m))
-                {
-                    writer.Write((int)type);
-                    writer.Write(address.Length);
-                    writer.Write(address);
+                writer.Write((int)type);
+                writer.Write(cuckoo_filter.Length);
+                writer.Write(cuckoo_filter);
 #if TRACE_MEMSTREAM_SIZES
-                        Logging.info(String.Format("NetworkEvents::prepareEventMessageData: {0}", m.Length));
+                    Logging.info(String.Format("NetworkEvents::prepareEventMessageData: {0}", m.Length));
 #endif
-                    data = m.ToArray();
-                }
             }
 
-            return data;
+            return m.ToArray();
         }
 
         // Handles a received attach event message and adds event subscriptions for the provided endpoint
@@ -55,10 +53,10 @@ namespace IXICore.Network
                 using (BinaryReader reader = new BinaryReader(m))
                 {
                     int type = reader.ReadInt32();
-                    int addrLen = reader.ReadInt32();
-                    byte[] address = reader.ReadBytes(addrLen);
+                    int filter_len = reader.ReadInt32();
+                    byte[] filter = reader.ReadBytes(filter_len);
 
-                    endpoint.attachEvent((NetworkEvents.Type)type, address);
+                    endpoint.attachEvent((NetworkEvents.Type)type, filter);
                 }
             }
         }
@@ -79,20 +77,20 @@ namespace IXICore.Network
                     int type = reader.ReadInt32();
                     if(type == -1)
                     {
-                        endpoint.detachEvents((NetworkEvents.Type) type);
+                        endpoint.detachEventType((NetworkEvents.Type) type);
                         return;
                     }
 
                     int addr_len = reader.ReadInt32();
                     if(addr_len == 0)
                     {
-                        endpoint.detachEvents((NetworkEvents.Type) type);
+                        endpoint.detachEventType((NetworkEvents.Type) type);
                         return;
                     }
 
                     byte[] address = reader.ReadBytes(addr_len);
 
-                    endpoint.detachEvent((NetworkEvents.Type) type, address);
+                    endpoint.detachEventAddress((NetworkEvents.Type) type, address);
                 }
             }
         }

@@ -214,6 +214,12 @@ namespace IXICore.Utils
             calculateIndexAndTag(item, ref idx1, ref tag);
             int idx2 = calculateAltIndex(idx1, tag);
 
+            if(bucketHasItem(idx1, tag) || bucketHasItem(idx2, tag))
+            {
+                // already in the filter
+                return CuckooStatus.OK;
+            }
+
             if(bucketHasRoom(idx1))
             {
                 insertIntoBucket(idx1, tag);

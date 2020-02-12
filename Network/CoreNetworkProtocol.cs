@@ -1,5 +1,6 @@
 ﻿using IXICore.Meta;
 using IXICore.Network;
+using IXICore.Utils;
 using System;
 using System.Collections.Generic;
 using System.IO;
@@ -729,14 +730,21 @@ namespace IXICore
 
             // TODO TODO TODO events can be optimized as there is no real need to subscribe them to every connected node
 
-            // Subscribe to transaction events
-            byte[] event_data = NetworkEvents.prepareEventMessageData(NetworkEvents.Type.transactionFrom, IxianHandler.getWalletStorage().getPrimaryAddress());
+            // Subscribe to transaction events, for own addresses
+            var my_addresses = IxianHandler.getWalletStorage().getMyAddresses();
+            Cuckoo filter = new Cuckoo(my_addresses.Count());
+            foreach(var addr in my_addresses)
+            {
+                filter.Add(addr.address);
+            }
+            byte[] filter_data = filter.getFilterBytes();
+            byte[] event_data = NetworkEvents.prepareEventMessageData(NetworkEvents.Type.transactionFrom, filter_data);
             endpoint.sendData(ProtocolMessageCode.attachEvent, event_data);
 
-            event_data = NetworkEvents.prepareEventMessageData(NetworkEvents.Type.transactionTo, IxianHandler.getWalletStorage().getPrimaryAddress());
+            event_data = NetworkEvents.prepareEventMessageData(NetworkEvents.Type.transactionTo, filter_data);
             endpoint.sendData(ProtocolMessageCode.attachEvent, event_data);
 
-            event_data = NetworkEvents.prepareEventMessageData(NetworkEvents.Type.balance, IxianHandler.getWalletStorage().getPrimaryAddress());
+            event_data = NetworkEvents.prepareEventMessageData(NetworkEvents.Type.balance, filter_data);
             endpoint.sendData(ProtocolMessageCode.attachEvent, event_data);
         }
     }
