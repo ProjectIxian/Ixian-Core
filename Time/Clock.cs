@@ -8,6 +8,11 @@ namespace IXICore
         /// <summary>
         ///  Value represents the detected time offset from the network majority and is used when time synchronization is required.
         /// </summary>
+        public static long realNetworkTimeDifference = 0;
+
+        /// <summary>
+        ///  Value represents the normalized time offset from the network majority and is used when time synchronization is required.
+        /// </summary>
         public static long networkTimeDifference = 0;
 
         /// <summary>

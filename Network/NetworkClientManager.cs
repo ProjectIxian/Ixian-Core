@@ -355,11 +355,18 @@ namespace IXICore.Network
         }
 
 
+        /// <summary>
+        ///  Recalculates local time difference depending on 2/3rd of connected servers time differences.
+        ///  Maximum time difference is enforced with CoreConfig.maxTimeDifferenceAdjustment.
+        ///  If CoreConfig.forceTimeOffset is used, both Clock.networkTimeDifference and
+        ///  Clock.realNetworkTimeDifference will be forced to the value of CoreConfig.forceTimeOffset.
+        /// </summary>
         public static void recalculateLocalTimeDifference()
         {
             if(CoreConfig.forceTimeOffset != int.MaxValue)
             {
                 Clock.networkTimeDifference = CoreConfig.forceTimeOffset;
+                Clock.realNetworkTimeDifference = CoreConfig.forceTimeOffset;
                 return;
             }
             lock (networkClients)
@@ -367,28 +374,43 @@ namespace IXICore.Network
                 if (networkClients.Count < 1)
                     return;
 
-                long totalTimeDiff = 0;
+                long total_time_diff = 0;
 
-                int client_count = 0;
+                List<long> time_diffs = new List<long>();
 
                 foreach (NetworkClient client in networkClients)
                 {
                     if (client.helloReceived && client.timeSyncComplete)
                     {
-                        totalTimeDiff += client.timeDifference;
-                        client_count++;
+                        time_diffs.Add(client.timeDifference);
                     }
                 }
 
-                long timeDiff = totalTimeDiff / client_count;
+                time_diffs.Sort();
 
-                // amortize +- 2 seconds
-                if (timeDiff >= -2 && timeDiff <= 2)
+                var time_diffs_majority = time_diffs.Take((time_diffs.Count * 2 / 3) + 1);
+
+                foreach (long time in time_diffs_majority)
                 {
-                    timeDiff = 0;
+                    total_time_diff += time;
                 }
 
-                Clock.networkTimeDifference = timeDiff;
+                long timeDiff = total_time_diff / time_diffs_majority.Count();
+
+                Clock.realNetworkTimeDifference = timeDiff;
+
+                if (timeDiff > CoreConfig.maxTimeDifferenceAdjustment)
+                {
+                    Clock.networkTimeDifference = CoreConfig.maxTimeDifferenceAdjustment;
+                }
+                else if (timeDiff < -CoreConfig.maxTimeDifferenceAdjustment)
+                {
+                    Clock.networkTimeDifference = -CoreConfig.maxTimeDifferenceAdjustment;
+                }
+                else
+                {
+                    Clock.networkTimeDifference = timeDiff;
+                }
             }
         }
 

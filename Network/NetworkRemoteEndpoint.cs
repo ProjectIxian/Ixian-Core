@@ -13,6 +13,7 @@ namespace IXICore.Network
     public class TimeSyncData
     {
         public long timeDifference = 0;
+        public long remoteTime = 0;
         public long processedTime = 0;
     }
 
@@ -763,13 +764,14 @@ namespace IXICore.Network
             lock (timeSyncs)
             {
                 long my_cur_time = Clock.getTimestampMillis();
-                long time_difference = my_cur_time - BitConverter.ToInt64(socketReadBuffer, 0);
+                long cur_remote_time = BitConverter.ToInt64(socketReadBuffer, 0);
+                long time_difference = my_cur_time - cur_remote_time;
                 if (timeSyncs.Count > 0)
                 {
                     TimeSyncData prev_tsd = timeSyncs.Last();
                     time_difference -= my_cur_time - prev_tsd.processedTime;
                 }
-                TimeSyncData tsd = new TimeSyncData() { timeDifference = time_difference, processedTime = my_cur_time };
+                TimeSyncData tsd = new TimeSyncData() { timeDifference = time_difference, remoteTime = cur_remote_time, processedTime = my_cur_time };
                 timeSyncs.Add(tsd);
                 if(timeSyncs.Count() >= 5)
                 {

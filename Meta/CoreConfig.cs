@@ -150,5 +150,10 @@
         /// Prevents client/server network operations. Useful for offline data verification and other offline tests.
         /// </summary>
         public static bool preventNetworkOperations = false;
+
+        /// <summary>
+        /// Maximum time difference adjustment in seconds. Clock.networkTime value will not be adjusted to above this number.
+        /// </summary>
+        public static long maxTimeDifferenceAdjustment = 30;
     }
 }

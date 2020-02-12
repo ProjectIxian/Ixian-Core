@@ -448,6 +448,13 @@
                             warning_bar.firstElementChild.innerHTML = "";
                         }
 
+                        var network_time_diff = data["result"]["Network time difference"];
+                        var real_network_time_diff = data["result"]["Real network time difference"];
+
+                        if (network_time_diff != real_network_time_diff) {
+                            warning_bar.firstElementChild.innerHTML += "Please make sure that your computer's date and time are correct.";
+                        }
+
                         var node_type = data["result"]["Node Type"];
                         if ((node_type == "M" || node_type == "H")
                             && data["result"]["Network Servers"] == "[]") {

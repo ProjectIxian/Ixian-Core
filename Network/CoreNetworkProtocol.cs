@@ -448,7 +448,7 @@ namespace IXICore
                     writer.Write(IxianHandler.publicPort);
 
                     // Send timestamp
-                    long timestamp = Clock.getNetworkTimestamp();
+                    long timestamp = Clock.getTimestamp() + endpoint.calculateTimeDifference();
                     writer.Write(timestamp);
 
                     // send signature
