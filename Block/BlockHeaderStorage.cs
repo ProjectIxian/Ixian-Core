@@ -28,6 +28,11 @@ namespace IXICore
                 ulong file_block_num = ((ulong)(block_num / CoreConfig.maxBlockHeadersPerDatabase)) * CoreConfig.maxBlockHeadersPerDatabase;
 
                 string db_path = path + Path.DirectorySeparatorChar + "0000" + Path.DirectorySeparatorChar + file_block_num + ".dat";
+                string p = Path.GetDirectoryName(Path.GetFullPath(db_path));
+                if(!Directory.Exists(p))
+                {
+                    Directory.CreateDirectory(p);
+                }
 
                 FileStream fs = File.Open(db_path, FileMode.OpenOrCreate, FileAccess.ReadWrite, FileShare.None);
 
