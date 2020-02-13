@@ -317,7 +317,15 @@ namespace IXICore.Utils
                 w.Write((byte)itemSize);
                 w.Write((byte)associativity);
                 w.Write(numBuckets);
-                w.Write(kickVictim);
+                if (kickVictim != null)
+                {
+                    w.Write(kickVictim.Length);
+                    w.Write(kickVictim);
+                }
+                else
+                {
+                    w.Write(0);
+                }
                 w.Write(numItems);
                 for(int i=0;i<numBuckets;i++)
                 {
@@ -338,7 +346,11 @@ namespace IXICore.Utils
                 itemSize = (int)r.ReadByte();
                 associativity = (int)r.ReadByte();
                 numBuckets = r.ReadInt32();
-                kickVictim = r.ReadBytes(itemSize);
+                int kick_victim_len = r.ReadInt32();
+                if (kick_victim_len > 0)
+                {
+                    kickVictim = r.ReadBytes(kick_victim_len);
+                }
                 numItems = r.ReadInt32();
                 cuckooData = new byte[numBuckets * bucketSize];
                 for(int i = 0; i< numBuckets;i++)
