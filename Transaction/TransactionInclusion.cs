@@ -38,8 +38,12 @@ namespace IXICore
         long lastRequestedBlockTime = 0;
         long lastPITPruneTime = 0;
 
-        public TransactionInclusion(BlockHeader last_block_header)
+        public TransactionInclusion()
         {
+            BlockHeaderStorage.init();
+
+            BlockHeader last_block_header = BlockHeaderStorage.getLastBlockHeader();
+            
             lastBlockHeader = last_block_header;
             running = true;
             // Start the thread
@@ -71,6 +75,8 @@ namespace IXICore
         public void stop()
         {
             running = false;
+
+            BlockHeaderStorage.stop();
         }
 
         private bool updateBlockHeaders()
@@ -88,7 +94,7 @@ namespace IXICore
                 lastRequestedBlockTime = currentTime;
 
                 // request next blocks
-                requestBlockHeaders(lastRequestedBlockHeight, lastRequestedBlockHeight + 100);
+                requestBlockHeaders(lastRequestedBlockHeight, lastRequestedBlockHeight + 1000);
 
                 return true;
             }

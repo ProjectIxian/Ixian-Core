@@ -1,5 +1,6 @@
 ﻿using IXICore.Meta;
 using System;
+using System.Collections.Generic;
 using System.IO;
 
 namespace IXICore
@@ -13,6 +14,22 @@ namespace IXICore
         public static string path = "headers";
 
         private static object lockObject = new object();
+
+        private static Dictionary<string, object[]> fileCache = new Dictionary<string, object[]>();
+
+        public static void init()
+        {
+            string db_path = path + Path.DirectorySeparatorChar + "0000";
+            if (!Directory.Exists(db_path))
+            {
+                Directory.CreateDirectory(db_path);
+            }
+        }
+
+        public static void stop()
+        {
+            cleanupFileCache(true);
+        }
 
         /// <summary>
         ///  Saves block header to local storage
@@ -28,13 +45,8 @@ namespace IXICore
                 ulong file_block_num = ((ulong)(block_num / CoreConfig.maxBlockHeadersPerDatabase)) * CoreConfig.maxBlockHeadersPerDatabase;
 
                 string db_path = path + Path.DirectorySeparatorChar + "0000" + Path.DirectorySeparatorChar + file_block_num + ".dat";
-                string p = Path.GetDirectoryName(Path.GetFullPath(db_path));
-                if(!Directory.Exists(p))
-                {
-                    Directory.CreateDirectory(p);
-                }
 
-                FileStream fs = File.Open(db_path, FileMode.OpenOrCreate, FileAccess.ReadWrite, FileShare.None);
+                FileStream fs = getStorageFile(db_path, true); // File.Open(db_path, FileMode.OpenOrCreate, FileAccess.ReadWrite, FileShare.None);
 
                 if (fs.Length > 0)
                 {
@@ -44,7 +56,6 @@ namespace IXICore
                     fs.Read(file_block_header_bytes, 0, 8);
                     if (BitConverter.ToUInt64(file_block_header_bytes, 0) + 1 != block_num)
                     {
-                        fs.Close();
                         return false;
                     }
                 }
@@ -82,7 +93,6 @@ namespace IXICore
                     Logging.error("Exception occured while saving block header: {0}", e);
                 }
 
-                fs.Close();
                 return true;
             }
         }
@@ -101,7 +111,9 @@ namespace IXICore
 
                 string db_path = path + Path.DirectorySeparatorChar + "0000" + Path.DirectorySeparatorChar + file_block_num + ".dat";
 
-                FileStream fs = File.Open(db_path, FileMode.OpenOrCreate, FileAccess.Read, FileShare.None);
+                FileStream fs = getStorageFile(db_path, true); //File.Open(db_path, FileMode.OpenOrCreate, FileAccess.Read, FileShare.None);
+
+                fs.Seek(0, SeekOrigin.Begin);
 
                 BlockHeader block_header = null;
 
@@ -140,8 +152,6 @@ namespace IXICore
                 {
                     Logging.error("Exception occured while trying to get block header #{0}: {1}", block_num, e);
                 }
-
-                fs.Close();
 
                 return block_header;
             }
@@ -183,7 +193,9 @@ namespace IXICore
                     return null;
                 }
 
-                FileStream fs = File.Open(db_path, FileMode.OpenOrCreate, FileAccess.Read, FileShare.None);
+                FileStream fs = getStorageFile(db_path, true); // File.Open(db_path, FileMode.OpenOrCreate, FileAccess.Read, FileShare.None);
+
+                fs.Seek(0, SeekOrigin.Begin);
 
                 BlockHeader block_header = null;
 
@@ -213,8 +225,6 @@ namespace IXICore
                     Logging.error("Exception occured while trying to get last block header: {0}", e);
                 }
 
-                fs.Close();
-
                 return block_header;
             }
         }
@@ -228,6 +238,8 @@ namespace IXICore
         {
             lock (lockObject)
             {
+                cleanupFileCache(true);
+
                 bool truncate = true;
                 ulong file_block_num = ((ulong)(block_num / CoreConfig.maxBlockHeadersPerDatabase)) * CoreConfig.maxBlockHeadersPerDatabase;
                 while (truncate)
@@ -293,11 +305,62 @@ namespace IXICore
 
         public static void deleteCache()
         {
-            string db_path = path + Path.DirectorySeparatorChar + "0000" + Path.DirectorySeparatorChar;
-            string[] fileNames = Directory.GetFiles(db_path);
-            foreach (string fileName in fileNames)
+            lock (lockObject)
             {
-                File.Delete(fileName);
+                cleanupFileCache(true);
+
+                string db_path = path + Path.DirectorySeparatorChar + "0000" + Path.DirectorySeparatorChar;
+                string[] fileNames = Directory.GetFiles(db_path);
+                foreach (string fileName in fileNames)
+                {
+                    File.Delete(fileName);
+                }
+            }
+        }
+
+        private static void cleanupFileCache(bool force = false)
+        {
+            lock (fileCache)
+            {
+                long curTime = Clock.getTimestamp();
+                Dictionary<string, object[]> tmp_cache = new Dictionary<string, object[]>(fileCache);
+                foreach (var entry in tmp_cache)
+                {
+                    if (force == true || curTime - (long)entry.Value[1] > 60)
+                    {
+                        ((FileStream)entry.Value[0]).Close();
+                        fileCache.Remove(entry.Key);
+
+                        // Fix for occasional locked database error
+                        GC.Collect();
+                        GC.WaitForPendingFinalizers();
+                        // End of fix
+                    }
+                }
+            }
+        }
+
+        private static FileStream getStorageFile(string path, bool cache = false)
+        {
+            lock (fileCache)
+            {
+                if (fileCache.ContainsKey(path))
+                {
+                    if (cache)
+                    {
+                        fileCache[path][1] = Clock.getTimestamp();
+                        cleanupFileCache();
+                    }
+                    return (FileStream)fileCache[path][0];
+                }
+
+                FileStream fs = File.Open(path, FileMode.OpenOrCreate, FileAccess.ReadWrite, FileShare.None);
+                if (cache)
+                {
+                    fileCache.Add(path, new object[2] { fs, Clock.getTimestamp() });
+                }
+                
+                return fs;
             }
         }
 
