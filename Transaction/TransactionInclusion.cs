@@ -188,6 +188,8 @@ namespace IXICore
                                 // For that reason, the list of TXIDs we requested is stored together with the cached PIT
                                 if (pitCache[tx.applied].requestedForTXIDs.Contains(tx.id))
                                 {
+                                    txQueue.Remove(tx.id);
+
                                     if (pitCache[tx.applied].pit.contains(tx.id))
                                     {
                                         // valid
@@ -312,7 +314,7 @@ namespace IXICore
                 if(len > 0)
                 {
                     byte[] pit_data = r.ReadBytes(len);
-                    PrefixInclusionTree pit = new PrefixInclusionTree();
+                    PrefixInclusionTree pit = new PrefixInclusionTree(44, 3);
                     try
                     {
                         pit.reconstructMinimumTree(pit_data);
