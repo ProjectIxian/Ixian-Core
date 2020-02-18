@@ -113,7 +113,7 @@ namespace IXICore
             }
             catch (Exception e)
             {
-                Console.WriteLine("TIV exception: {0}", e.Message);
+                Logging.error("TIV exception: {0}", e.Message);
                 return 0;
             }
             return txbnum;
@@ -382,7 +382,7 @@ namespace IXICore
         
         private void requestBlockHeaders(ulong from, ulong to)
         {
-            Console.WriteLine("Requesting block headers from {0} to {1}", from, to);
+            Logging.info("Requesting block headers from {0} to {1}", from, to);
             using (MemoryStream mOut = new MemoryStream())
             {
                 using (BinaryWriter writer = new BinaryWriter(mOut))
