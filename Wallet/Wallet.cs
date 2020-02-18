@@ -161,7 +161,7 @@ namespace IXICore
                 writer.Write(requiredSigs);
                 if (allowedSigners != null)
                 {
-                    writer.Write(allowedSigners.Length);
+                    writer.Write((byte)allowedSigners.Length);
                     for (int i = 0; i < allowedSigners.Length; i++)
                     {
                         writer.Write(allowedSigners[i].Length);
