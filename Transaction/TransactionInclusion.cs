@@ -296,6 +296,8 @@ namespace IXICore
                 return false;
             }
 
+            IxianHandler.receivedBlockHeader(lastBlockHeader, true);
+
             return true;
         }
 
@@ -424,6 +426,11 @@ namespace IXICore
                     }
                 }
             }
+        }
+
+        public BlockHeader getLastBlockHeader()
+        {
+            return lastBlockHeader;
         }
     }
 }

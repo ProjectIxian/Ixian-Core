@@ -30,6 +30,7 @@ namespace IXICore.Meta
 
         // Optional
         public virtual void receivedTransactionInclusionVerificationResponse(string txid, bool verified) { }
+        public virtual void receivedBlockHeader(BlockHeader block_header, bool verified) { }
     }
 
     static class IxianHandler
@@ -117,6 +118,15 @@ namespace IXICore.Meta
                 throw new Exception("Handler Class must be specified in IxianHandler Class");
             }
             handlerClass.receivedTransactionInclusionVerificationResponse(txid, verified);
+        }
+
+        public static void receivedBlockHeader(BlockHeader block_header, bool verified)
+        {
+            if (handlerClass == null)
+            {
+                throw new Exception("Handler Class must be specified in IxianHandler Class");
+            }
+            handlerClass.receivedBlockHeader(block_header, verified);
         }
 
         public static void parseProtocolMessage(ProtocolMessageCode code, byte[] data, RemoteEndpoint endpoint)
