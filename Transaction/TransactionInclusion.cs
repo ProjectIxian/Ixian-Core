@@ -368,6 +368,10 @@ namespace IXICore
 
                         // Create the blockheader from the data and process it
                         BlockHeader header = new BlockHeader(header_bytes);
+                        if(lastBlockHeader != null && header.blockNum < lastBlockHeader.blockNum)
+                        {
+                            continue;
+                        }
                         if(!processBlockHeader(header))
                         {
                             break;
