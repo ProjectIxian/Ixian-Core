@@ -360,25 +360,31 @@ namespace IXICore
                 using (BinaryReader reader = new BinaryReader(m))
                 {
                     bool processed = false;
-
-                    while(m.Position < m.Length)
+                    try
                     {
-                        int header_len = reader.ReadInt32();
-                        byte[] header_bytes = reader.ReadBytes(header_len);
 
-                        // Create the blockheader from the data and process it
-                        BlockHeader header = new BlockHeader(header_bytes);
-                        if(lastBlockHeader != null && header.blockNum < lastBlockHeader.blockNum)
+                        while (m.Position < m.Length)
                         {
-                            continue;
+                            int header_len = reader.ReadInt32();
+                            byte[] header_bytes = reader.ReadBytes(header_len);
+
+                            // Create the blockheader from the data and process it
+                            BlockHeader header = new BlockHeader(header_bytes);
+                            if (lastBlockHeader != null && header.blockNum < lastBlockHeader.blockNum)
+                            {
+                                continue;
+                            }
+                            if (!processBlockHeader(header))
+                            {
+                                break;
+                            }
+                            processed = true;
                         }
-                        if(!processBlockHeader(header))
+                        if (processed)
                         {
-                            break;
+                            lastRequestedBlockTime = 0;
                         }
-                        processed = true;
-                    }
-                    if (processed)
+                    }catch(Exception e)
                     {
                         lastRequestedBlockTime = 0;
                     }
