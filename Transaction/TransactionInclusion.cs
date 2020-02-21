@@ -94,7 +94,7 @@ namespace IXICore
                 lastRequestedBlockTime = currentTime;
 
                 // request next blocks
-                requestBlockHeaders(lastRequestedBlockHeight, lastRequestedBlockHeight + 1000);
+                requestBlockHeaders(lastRequestedBlockHeight, lastRequestedBlockHeight + 500);
 
                 return true;
             }
@@ -370,7 +370,7 @@ namespace IXICore
 
                             // Create the blockheader from the data and process it
                             BlockHeader header = new BlockHeader(header_bytes);
-                            if (lastBlockHeader != null && header.blockNum < lastBlockHeader.blockNum)
+                            if (lastBlockHeader != null && header.blockNum <= lastBlockHeader.blockNum)
                             {
                                 continue;
                             }
