@@ -296,7 +296,7 @@ namespace IXICore.Network
                             continue;
                         }
 
-                        if (endpoint.presenceAddress == null || endpoint.presenceAddress.type != 'C')
+                        if (endpoint.presenceAddress == null || (endpoint.presenceAddress.type != 'C' && endpoint.presenceAddress.type != 'R'))
                         {
                             continue;
                         }

@@ -916,9 +916,9 @@ namespace IXICore.Network
             try
             {
                 cuckoo_filter = new Cuckoo(filter);
-            } catch(Exception e)
+            } catch(Exception)
             {
-                Logging.warn("Error while attempting to replace {0} filter for enpoint {1}",
+                Logging.warn("Error while attempting to replace {0} filter for endpoint {1}",
                     type.ToString(),
                     getFullAddress()
                     );

@@ -384,8 +384,9 @@ namespace IXICore
                         {
                             lastRequestedBlockTime = 0;
                         }
-                    }catch(Exception e)
+                    }catch(Exception)
                     {
+                        // TODO blacklist sender
                         lastRequestedBlockTime = 0;
                     }
                 }

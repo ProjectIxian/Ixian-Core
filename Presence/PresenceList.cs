@@ -540,7 +540,7 @@ namespace IXICore
                     PresenceList.receiveKeepAlive(ka_bytes, out address, null);
 
                     // Send this keepalive to all connected non-clients
-                    CoreProtocolMessage.broadcastProtocolMessage(new char[] { 'M', 'R', 'H', 'W' }, ProtocolMessageCode.keepAlivePresence, ka_bytes, address);
+                    CoreProtocolMessage.broadcastProtocolMessage(new char[] { 'M', 'H', 'W' }, ProtocolMessageCode.keepAlivePresence, ka_bytes, address);
 
                     // Send this keepalive message to all connected clients
                     CoreProtocolMessage.broadcastEventDataMessage(NetworkEvents.Type.keepAlive, address, ProtocolMessageCode.keepAlivePresence, ka_bytes, address);
