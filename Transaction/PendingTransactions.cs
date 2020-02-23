@@ -3,6 +3,7 @@ using System.Linq;
 
 namespace IXICore
 {
+    // TODO TODO TODO make PendingTransactions persistent
     public class PendingTransactions
     {
         public static List<object[]> pendingTransactions = new List<object[]>();
@@ -39,7 +40,7 @@ namespace IXICore
                     Transaction tx = (Transaction)entry[0];
                     if (primary_address == null || (new Address(tx.pubKey)).address.SequenceEqual(primary_address))
                     {
-                        amount += tx.amount;
+                        amount += tx.amount + tx.fee;
                     }
                 }
             }
