@@ -11,14 +11,15 @@ namespace IXICore
     /// 
     class BlockHeaderStorage
     {
-        public static string path = "headers";
+        private static string path = "headers";
 
         private static object lockObject = new object();
 
         private static Dictionary<string, object[]> fileCache = new Dictionary<string, object[]>();
 
-        public static void init()
+        public static void init(string storage_path = "")
         {
+            path = storage_path + Path.DirectorySeparatorChar + path;
             string db_path = path + Path.DirectorySeparatorChar + "0000";
             if (!Directory.Exists(db_path))
             {

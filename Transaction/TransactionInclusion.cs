@@ -38,9 +38,9 @@ namespace IXICore
         long lastRequestedBlockTime = 0;
         long lastPITPruneTime = 0;
 
-        public TransactionInclusion()
+        public TransactionInclusion(string block_header_storage_path = "")
         {
-            BlockHeaderStorage.init();
+            BlockHeaderStorage.init(block_header_storage_path);
 
             BlockHeader last_block_header = BlockHeaderStorage.getLastBlockHeader();
             
