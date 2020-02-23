@@ -60,6 +60,10 @@ namespace IXICore
         /// </remarks>
         public byte[] signatureFreezeChecksum = null;
         /// <summary>
+        ///  Unix Epoch value of when the block was generated.
+        /// </summary>
+        public long timestamp = 0;
+        /// <summary>
         ///  List of blocks and their checksums - used only in the superblock functionality.
         /// </summary>
         public Dictionary<ulong, SuperBlockSegment> superBlockSegments = new Dictionary<ulong, SuperBlockSegment>();
@@ -152,6 +156,8 @@ namespace IXICore
 
             difficulty = block.difficulty;
 
+            timestamp = block.timestamp;
+
         }
 
         /// <summary>
@@ -235,6 +241,14 @@ namespace IXICore
                                 }
                             }
 
+                            try
+                            {
+                                timestamp = reader.ReadInt64();
+                            }catch(Exception)
+                            {
+                                // try/catch wrapper can be removed after everyone upgrades
+                            }
+                            
                         }
                     }
                 }
@@ -335,6 +349,8 @@ namespace IXICore
                         writer.Write(entry.Value.blockChecksum.Length);
                         writer.Write(entry.Value.blockChecksum);
                     }
+
+                    writer.Write(timestamp);
                 }
                 return m.ToArray();
             }
@@ -412,7 +428,7 @@ namespace IXICore
         ///  Checks if the two blockheaders are exactly equal.
         /// </summary>
         /// <param name="bh">Other blockheader.</param>
-        /// <returns>True if both objects represent the same Ixian transaction.</returns>
+        /// <returns>True if both objects represent the same Block Header.</returns>
         public bool Equals(BlockHeader bh)
         {
             byte[] a1 = getBytes();
