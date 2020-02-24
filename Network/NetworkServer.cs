@@ -350,13 +350,12 @@ namespace IXICore.Network
                     {
                         Logging.info(">>>> Forwarding message");
                         endpoint.sendData(code, message);
-
+                        return true;
                     }
 
                 }
             }
 
-            // TODO: broadcast to network if no connect clients found?
 
             return false;
         }
