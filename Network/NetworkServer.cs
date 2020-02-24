@@ -344,6 +344,10 @@ namespace IXICore.Network
                     if (endpoint.presence == null)
                         continue;
 
+                    // SKip disconnected endpoints
+                    if(!endpoint.isConnected())
+                        continue;
+
                     byte[] client_wallet = endpoint.presence.wallet;
 
                     if (client_wallet != null && address.SequenceEqual(client_wallet))
