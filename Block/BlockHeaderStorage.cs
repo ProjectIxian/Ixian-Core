@@ -19,7 +19,10 @@ namespace IXICore
 
         public static void init(string storage_path = "")
         {
-            path = storage_path + Path.DirectorySeparatorChar + path;
+            if (storage_path != "")
+            {
+                path = storage_path + Path.DirectorySeparatorChar + path;
+            }
             string db_path = path + Path.DirectorySeparatorChar + "0000";
             if (!Directory.Exists(db_path))
             {
