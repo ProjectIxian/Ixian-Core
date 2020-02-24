@@ -206,7 +206,7 @@ namespace IXICore
             }
         }
 
-        public static bool removeAddressEntry(byte[] wallet_address, PresenceAddress address)
+        public static bool removeAddressEntry(byte[] wallet_address, PresenceAddress address = null)
         {
             lock (presences)
             {
@@ -218,7 +218,15 @@ namespace IXICore
                 {
                     lock (listEntry)
                     {
-                        var addresses_to_remove = listEntry.addresses.FindAll(x => x == address);
+                        List<PresenceAddress> addresses_to_remove = null;
+
+                        if (address != null)
+                        {
+                            addresses_to_remove = listEntry.addresses.FindAll(x => x == address);
+                        }else
+                        {
+                            addresses_to_remove = listEntry.addresses;
+                        }
 
                         foreach (var addr in addresses_to_remove)
                         {
@@ -243,7 +251,7 @@ namespace IXICore
 
                         // If presence address is a relay node, remove all other presences with matching ip:port
                         // TODO: find a better way to handle this while preventing modify-during-enumeration issues
-                        if (address.type == 'R')
+                        if (address != null && address.type == 'R')
                         {
                             // Retrieve the ip+port of the relay address
                             string relay_address = address.address;
