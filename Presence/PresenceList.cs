@@ -225,7 +225,7 @@ namespace IXICore
                             addresses_to_remove = listEntry.addresses.FindAll(x => x == address);
                         }else
                         {
-                            addresses_to_remove = listEntry.addresses;
+                            addresses_to_remove = new List<PresenceAddress>(listEntry.addresses);
                         }
 
                         foreach (var addr in addresses_to_remove)
