@@ -22,15 +22,21 @@ namespace IXICore.Network
         // Prepares an event message data with a provided type and address
         public static byte[] prepareEventMessageData(Type type, byte[] cuckoo_filter)
         {
-            if (cuckoo_filter == null || cuckoo_filter.Length == 0)
-                return null;
-
             MemoryStream m = new MemoryStream();
             using (BinaryWriter writer = new BinaryWriter(m, Encoding.UTF8, true))
             {
                 writer.Write((int)type);
-                writer.Write(cuckoo_filter.Length);
-                writer.Write(cuckoo_filter);
+                if(cuckoo_filter != null)
+                {
+                    writer.Write(cuckoo_filter.Length);
+                    if (cuckoo_filter.Length > 0)
+                    {
+                        writer.Write(cuckoo_filter);
+                    }
+                }else
+                {
+                    writer.Write((int)0);
+                }
 #if TRACE_MEMSTREAM_SIZES
                     Logging.info(String.Format("NetworkEvents::prepareEventMessageData: {0}", m.Length));
 #endif
