@@ -172,10 +172,20 @@ namespace IXICore
                 bool found = false;
                 bool found_at_least_one = false;
                 string db_path = "";
+                string db_path_root = path + Path.DirectorySeparatorChar + "0000" + Path.DirectorySeparatorChar;
+
+                var files = Directory.EnumerateFiles(db_path_root, "*.dat", SearchOption.TopDirectoryOnly);
+
+                string file = files.GetEnumerator().Current;
+
+                if (file != null)
+                {
+                    file_block_num = UInt64.Parse(Path.GetFileNameWithoutExtension(file));
+                }
 
                 while (!found)
                 {
-                    db_path = path + Path.DirectorySeparatorChar + "0000" + Path.DirectorySeparatorChar + file_block_num + ".dat";
+                    db_path = db_path_root + file_block_num + ".dat";
                     if (File.Exists(db_path))
                     {
                         file_block_num += CoreConfig.maxBlockHeadersPerDatabase;
@@ -187,7 +197,7 @@ namespace IXICore
                         {
                             file_block_num -= CoreConfig.maxBlockHeadersPerDatabase;
                         }
-                        db_path = path + Path.DirectorySeparatorChar + "0000" + Path.DirectorySeparatorChar + file_block_num + ".dat";
+                        db_path = db_path_root + file_block_num + ".dat";
                         found = true;
                     }
                 }
@@ -233,12 +243,45 @@ namespace IXICore
             }
         }
 
+        public static void removeAllBlocksBefore(ulong block_num)
+        {
+            lock(lockObject)
+            {
+                cleanupFileCache(true);
+
+                ulong file_block_num = ((ulong)(block_num / CoreConfig.maxBlockHeadersPerDatabase)) * CoreConfig.maxBlockHeadersPerDatabase;
+
+                bool first_file = false;
+
+                while (!first_file)
+                {
+                    string db_path = path + Path.DirectorySeparatorChar + "0000" + Path.DirectorySeparatorChar + file_block_num + ".dat";
+
+                    if(!File.Exists(db_path))
+                    {
+                        break;
+                    }
+
+                    File.Delete(db_path);
+
+                    if (file_block_num > 0)
+                    {
+                        file_block_num -= CoreConfig.maxBlockHeadersPerDatabase;
+                    }
+                    else if (file_block_num == 0)
+                    {
+                        first_file = true;
+                    }
+                }
+            }
+        }
+
         /// <summary>
         ///  Truncates database to specified block header number. All block headers after it will be deleted.
         /// </summary>
         /// <param name="block_num">Block height of the block header to truncate to.</param>
         /// <exception cref="Exception">Exception occured while trying to get block header.</exception>
-        public static void truncateDatabaseTo(ulong block_num)
+        public static void removeAllBlocksAfter(ulong block_num)
         {
             lock (lockObject)
             {
@@ -409,7 +452,7 @@ namespace IXICore
             tmp_bh = getBlockHeader(4);
             Console.WriteLine("Got block header #" + tmp_bh.blockNum + ", expecting 4");
 
-            truncateDatabaseTo(2);
+            removeAllBlocksAfter(2);
             Console.WriteLine("Truncated database to 2");
 
             tmp_bh = getBlockHeader(1);
@@ -456,13 +499,13 @@ namespace IXICore
             tmp_bh = getBlockHeader(1001);
             Console.WriteLine("Got block header #" + tmp_bh.blockNum + ", expecting 1001");
 
-            truncateDatabaseTo(1000);
+            removeAllBlocksAfter(1000);
             Console.WriteLine("Truncated database to 1000");
 
             tmp_bh = getLastBlockHeader();
             Console.WriteLine("Got block header #" + tmp_bh.blockNum + ", expecting 1000");
 
-            truncateDatabaseTo(999);
+            removeAllBlocksAfter(999);
             Console.WriteLine("Truncated database to 999");
 
             tmp_bh = getLastBlockHeader();

@@ -38,8 +38,14 @@ namespace IXICore
         long lastRequestedBlockTime = 0;
         long lastPITPruneTime = 0;
 
-        public TransactionInclusion(string block_header_storage_path = "")
+        ulong startingBlockHeight = 1;
+        byte[] startingBlockChecksum = null;
+
+        public TransactionInclusion(string block_header_storage_path = "", ulong starting_block_height = 1, byte[] starting_block_checksum = null)
         {
+            startingBlockHeight = starting_block_height;
+            startingBlockChecksum = starting_block_checksum;
+
             BlockHeaderStorage.init(block_header_storage_path);
 
             BlockHeader last_block_header = BlockHeaderStorage.getLastBlockHeader();
@@ -86,7 +92,7 @@ namespace IXICore
             // Check if the request expired
             if (currentTime - lastRequestedBlockTime > ConsensusConfig.blockGenerationInterval)
             {
-                ulong lastRequestedBlockHeight = 1;
+                ulong lastRequestedBlockHeight = startingBlockHeight;
                 if (lastBlockHeader != null)
                 {
                     lastRequestedBlockHeight = lastBlockHeader.blockNum + 1;
@@ -294,6 +300,12 @@ namespace IXICore
             if (!BlockHeaderStorage.saveBlockHeader(lastBlockHeader))
             {
                 return false;
+            }
+
+            // Cleanup every n blocks
+            if ((header.blockNum > CoreConfig.maxBlockHeadersPerDatabase * 25) && header.blockNum % CoreConfig.maxBlockHeadersPerDatabase == 0)
+            {
+                BlockHeaderStorage.removeAllBlocksBefore(header.blockNum - (CoreConfig.maxBlockHeadersPerDatabase * 25));
             }
 
             IxianHandler.receivedBlockHeader(lastBlockHeader, true);
