@@ -11,7 +11,7 @@ namespace IXICore
     /// 
     class BlockHeaderStorage
     {
-        private static string path = "headers";
+        public static string path = "headers"; // temporary set to public for beta testers, change back to private before release
 
         private static object lockObject = new object();
 
@@ -21,7 +21,7 @@ namespace IXICore
         {
             if (storage_path != "")
             {
-                path = storage_path + Path.DirectorySeparatorChar + path;
+                path = storage_path;
             }
             string db_path = path + Path.DirectorySeparatorChar + "0000";
             if (!Directory.Exists(db_path))
