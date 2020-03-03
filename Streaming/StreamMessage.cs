@@ -24,7 +24,7 @@ namespace IXICore
         spixi1
     }
 
-    class StreamMessage
+    public class StreamMessage
     {
         public int version = 0;                 // Stream Message version
 
