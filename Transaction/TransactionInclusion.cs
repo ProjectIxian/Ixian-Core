@@ -51,6 +51,15 @@ namespace IXICore
             BlockHeader last_block_header = BlockHeaderStorage.getLastBlockHeader();
             
             lastBlockHeader = last_block_header;
+        }
+
+        public void start()
+        {
+            if (running)
+            {
+                return;
+            }
+
             running = true;
             // Start the thread
             tiv_thread = new Thread(onUpdate);
@@ -80,6 +89,10 @@ namespace IXICore
 
         public void stop()
         {
+            if(!running)
+            {
+                return;
+            }
             running = false;
 
             BlockHeaderStorage.stop();

@@ -25,6 +25,8 @@ namespace IXICore.Network
         private static bool shouldStop = false; // flag to signal shutdown of threads
         private static ThreadLiveCheck TLC;
 
+        private static bool running = false;
+
         // Internal queue message entity with socket and remoteendpoint support
         struct QueueMessageRecv
         {
@@ -156,6 +158,13 @@ namespace IXICore.Network
         // Start the network queue
         public static void start()
         {
+            if (running)
+            {
+                return;
+            }
+
+            running = true;
+
             shouldStop = false;
             queueMessages.Clear();
             txqueueMessages.Clear();
@@ -180,6 +189,7 @@ namespace IXICore.Network
         public static bool stop()
         {
             shouldStop = true;
+            running = false;
             return true;
         }
 

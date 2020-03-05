@@ -33,6 +33,8 @@ namespace IXICore
         protected byte[] address = null;
         protected byte[] lastAddress = null;
 
+        protected bool walletLoaded = false;
+
         public WalletStorage(string file_name)
         {
             filename = file_name;
@@ -634,6 +636,11 @@ namespace IXICore
         // Try to read wallet information from the file
         public bool readWallet(string password)
         {
+            if (walletLoaded)
+            {
+                Logging.error("Can't read wallet, wallet already loaded.");
+                return false;
+            }
 
             if (File.Exists(filename) == false)
             {
@@ -682,9 +689,13 @@ namespace IXICore
                 return false;
             }
             reader.Close();
-            if (success && myAddresses.Count > 0)
+            if (success)
             {
-                backup();
+                walletLoaded = true;
+                if (myAddresses.Count > 0)
+                {
+                    backup();
+                }
             }
 
             return success;
@@ -853,6 +864,12 @@ namespace IXICore
         // Generate a new wallet with matching private/public key pairs
         public bool generateWallet(string password)
         {
+            if(walletLoaded)
+            {
+                Logging.error("Can't generate wallet, wallet already loaded.");
+                return false;
+            }
+
             Logging.flush();
 
             walletVersion = 2;
@@ -904,6 +921,9 @@ namespace IXICore
                 backup();
                 return true;
             }
+
+            walletLoaded = true;
+
             return false;
         }
 
@@ -938,6 +958,11 @@ namespace IXICore
         public byte[] getRawWallet()
         {
             return File.ReadAllBytes(filename);
+        }
+
+        public bool isLoadded()
+        {
+            return walletLoaded;
         }
     }
 }

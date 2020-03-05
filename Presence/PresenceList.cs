@@ -29,6 +29,8 @@ namespace IXICore
         private static string _myPublicAddress = "";
         private static char _myPresenceType = 'C';
 
+        public static bool running = false;
+
         // Generate an initial presence list
         public static void init(string initial_ip, int port, char type)
         {
@@ -474,6 +476,14 @@ namespace IXICore
 
         public static void startKeepAlive()
         {
+            if (running)
+            {
+                return;
+            }
+
+            running = true;
+
+
             TLC = new ThreadLiveCheck();
             // Start the keepalive thread
             autoKeepalive = true;
@@ -484,6 +494,13 @@ namespace IXICore
 
         public static void stopKeepAlive()
         {
+            if (!running)
+            {
+                return;
+            }
+
+            running = false;
+
             autoKeepalive = false;
             if (keepAliveThread != null)
             {
