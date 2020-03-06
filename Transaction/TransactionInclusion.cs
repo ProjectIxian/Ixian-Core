@@ -404,6 +404,7 @@ namespace IXICore
                                 break;
                             }
                             processed = true;
+                            Thread.Yield();
                         }
                         if (processed)
                         {
