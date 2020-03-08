@@ -28,7 +28,8 @@ namespace IXICore
         acceptAddBot,
         getMessages,
         appData,
-        appRequest
+        appRequest,
+        fileFullyReceived
     }
 
     class SpixiMessage
