@@ -690,15 +690,22 @@ namespace IXICore
 
         private JsonResponse onCreateRawTransaction(Dictionary<string, object> parameters)
         {
+            // Create a transaction, but do not add it to the TX pool on the node. Useful for:
+            // - offline transactions
+            // - manually adjusting fee
+
             if (IxianHandler.status != NodeStatus.ready)
             {
                 return new JsonResponse { result = null, error = new JsonError() { code = (int)RPCErrorCode.RPC_IN_WARMUP, message = String.Format("There was an error while creating the transaction: The node isn't ready to process this request yet.") } };
             }
 
-            // Create a transaction, but do not add it to the TX pool on the node. Useful for:
-            // - offline transactions
-            // - manually adjusting fee
-            object r = createTransactionHelper(parameters, false);
+            bool sign = false;
+            if (parameters.ContainsKey("sign"))
+            {
+                sign = true;
+            }
+
+            object r = createTransactionHelper(parameters, sign);
             Transaction transaction = null;
             if (r is JsonResponse)
             {
