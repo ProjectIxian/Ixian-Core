@@ -51,7 +51,7 @@ namespace IXICore.Meta
         private static string logfilename = "ixian.log";
         private static string logfilepath = ""; // Stores the full log path
         private static string folderpath = ""; // Stores just the folder path
-        private static string wildcard = "*";
+        private static string wildcard = "ixian*log";
         private static string logfilepathpart = "";
         private static Thread thread = null;
         private static bool running = false;
@@ -307,13 +307,13 @@ namespace IXICore.Meta
                         if (logFileList.Length > 0)
                         {
                             // + 2 because of the . and digit [0-9]
-                            var rolledLogFileList = logFileList.Where(fileName => Path.GetFileName(fileName).Length == (logfilename.Length + 2)).ToArray();
+                            var rolledLogFileList = logFileList.Where(fileName => Path.GetFileName(fileName).Length >= (logfilename.Length + 2)).ToArray();
                             Array.Sort(rolledLogFileList, 0, rolledLogFileList.Length);
-                            if (rolledLogFileList.Length >= maxLogCount)
+                            while (rolledLogFileList.Length >= maxLogCount)
                             {
-                                File.Delete(rolledLogFileList[9]);
+                                File.Delete(rolledLogFileList[rolledLogFileList.Length - 1]);
                                 var list = rolledLogFileList.ToList();
-                                list.RemoveAt(9);
+                                list.RemoveAt(rolledLogFileList.Length - 1);
                                 rolledLogFileList = list.ToArray();
                             }
 
