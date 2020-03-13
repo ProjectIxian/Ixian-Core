@@ -307,21 +307,21 @@ namespace IXICore
                     {
                         version = reader.ReadInt32();
 
-                        if(version < BlockVer.v6)
+                        blockNum = reader.ReadUInt64();
+
+                        if (version < BlockVer.v6)
                         {
                             if (bytes.Length > 49152000)
                             {
-                                throw new Exception("Block size is bigger than 49MB.");
+                                throw new Exception("Block #" + blockNum + " size is bigger than 49MB.");
                             }
                         }else
                         {
                             if (bytes.Length > 10240000)
                             {
-                                throw new Exception("Block size is bigger than 19MB.");
+                                throw new Exception("Block #" + blockNum + " size is bigger than 19MB.");
                             }
                         }
-
-                        blockNum = reader.ReadUInt64();
 
                         if (version <= maxVersion)
                         {
@@ -331,6 +331,11 @@ namespace IXICore
                             for (int i = 0; i < num_transactions; i++)
                             {
                                 string txid = reader.ReadString();
+                                if (transactions.Contains(txid))
+                                {
+                                    // Block contains duplicate txid
+                                    throw new Exception("Block #" + blockNum + " contains duplicate txid");
+                                }
                                 transactions.Add(txid);
                                 transactionPIT.add(txid);
                             }
@@ -340,7 +345,7 @@ namespace IXICore
 
                             if (num_signatures > ConsensusConfig.maximumBlockSigners * 2)
                             {
-                                throw new Exception("Block " + blockNum + " has more than " + (ConsensusConfig.maximumBlockSigners * 2) + " signatures");
+                                throw new Exception("Block #" + blockNum + " has more than " + (ConsensusConfig.maximumBlockSigners * 2) + " signatures");
                             }
 
 
