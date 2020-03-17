@@ -67,6 +67,7 @@
     <Compile Include="$(MSBuildThisFileDirectory)Utils\Wordlist.cs" />
     <Compile Include="$(MSBuildThisFileDirectory)Utils\WordlistSources.cs" />
     <Compile Include="$(MSBuildThisFileDirectory)Wallet\Wallet.cs" />
+    <Compile Include="$(MSBuildThisFileDirectory)Wallet\WalletLib.cs" />
     <Compile Include="$(MSBuildThisFileDirectory)Wallet\WalletStorage.cs" />
   </ItemGroup>
   <ItemGroup>
