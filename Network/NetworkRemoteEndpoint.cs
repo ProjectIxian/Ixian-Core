@@ -922,6 +922,16 @@ namespace IXICore.Network
                     type.ToString(),
                     getFullAddress()
                     );
+                return false;
+            }
+
+            if (cuckoo_filter == null)
+            {
+                Logging.warn("Cannot attach event {0} to Remote Endpoint {1}, cuckoo filter is null.",
+                    type.ToString(),
+                    getFullAddress()
+                    );
+                return false;
             }
 
 
