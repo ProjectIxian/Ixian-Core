@@ -399,16 +399,24 @@ namespace IXICore.Network
 
                 Clock.realNetworkTimeDifference = timeDiff;
 
-                if (timeDiff > CoreConfig.maxTimeDifferenceAdjustment)
+                if(PresenceList.myPresenceType == 'M' && PresenceList.myPresenceType == 'H')
                 {
-                    Clock.networkTimeDifference = CoreConfig.maxTimeDifferenceAdjustment;
-                }
-                else if (timeDiff < -CoreConfig.maxTimeDifferenceAdjustment)
+                    // if Master/full History node, do time adjustment within max time difference
+                    if (timeDiff > CoreConfig.maxTimeDifferenceAdjustment)
+                    {
+                        Clock.networkTimeDifference = CoreConfig.maxTimeDifferenceAdjustment;
+                    }
+                    else if (timeDiff < -CoreConfig.maxTimeDifferenceAdjustment)
+                    {
+                        Clock.networkTimeDifference = -CoreConfig.maxTimeDifferenceAdjustment;
+                    }
+                    else
+                    {
+                        Clock.networkTimeDifference = timeDiff;
+                    }
+                }else
                 {
-                    Clock.networkTimeDifference = -CoreConfig.maxTimeDifferenceAdjustment;
-                }
-                else
-                {
+                    // If non-Master/full History node adjust time to network time
                     Clock.networkTimeDifference = timeDiff;
                 }
             }
