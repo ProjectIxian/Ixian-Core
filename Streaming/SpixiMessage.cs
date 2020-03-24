@@ -31,7 +31,9 @@ namespace IXICore
         appRequest,
         fileFullyReceived,
         avatar,
-        getAvatar
+        getAvatar,
+        getPubKey,
+        pubKey
     }
 
     class SpixiMessage
