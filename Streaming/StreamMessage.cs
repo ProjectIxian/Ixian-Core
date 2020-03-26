@@ -38,6 +38,7 @@ namespace IXICore
         public byte[] sigdata = null;           // Signature data (for S2), encrypted
 
         public byte[] originalData = null;      // Actual message data as was sent (before decryption)
+        public byte[] originalChecksum = null;  // Checksum as it was before decryption
 
         public byte[] signature = null;         // Sender's signature
 
@@ -247,6 +248,10 @@ namespace IXICore
             {
                 return true;
             }
+            if(originalChecksum == null)
+            {
+                originalChecksum = calculateChecksum();
+            }
             byte[] decrypted_data = _decrypt(data, private_key, aes_key, chacha_key);
             if (decrypted_data != null)
             {
@@ -285,7 +290,7 @@ namespace IXICore
             return false;
         }
 
-        private byte[] calculateChecksum()
+        public byte[] calculateChecksum()
         {
             return Crypto.sha512(getBytes(true));
         }
@@ -303,7 +308,11 @@ namespace IXICore
 
         public bool verifySignature(byte[] public_key)
         {
-            byte[] checksum = calculateChecksum();
+            byte[] checksum = originalChecksum;
+            if(checksum == null)
+            {
+                checksum = calculateChecksum();
+            }
             return CryptoManager.lib.verifySignature(checksum, public_key, signature);
         }
 
