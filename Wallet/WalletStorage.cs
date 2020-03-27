@@ -658,7 +658,7 @@ namespace IXICore
             {
                 reader = new BinaryReader(new FileStream(filename, FileMode.Open));
             }
-            catch (IOException e)
+            catch (Exception e)
             {
                 Logging.log(LogSeverity.error, String.Format("Cannot open wallet file. {0}", e.Message));
                 return false;
@@ -683,7 +683,7 @@ namespace IXICore
                     return false;
                 }
             }
-            catch (IOException e)
+            catch (Exception e)
             {
                 Logging.error("Cannot read from wallet file. {0}", e.Message);
                 return false;
@@ -743,7 +743,7 @@ namespace IXICore
             {
                 writer = new BinaryWriter(new FileStream(filename, FileMode.Create));
             }
-            catch (IOException e)
+            catch (Exception e)
             {
                 Logging.error("Cannot create wallet file. {0}", e.Message);
                 return false;
@@ -769,7 +769,7 @@ namespace IXICore
 
             }
 
-            catch (IOException e)
+            catch (Exception e)
             {
                 Logging.error("Cannot write to wallet file. {0}", e.Message);
                 return false;
@@ -791,7 +791,7 @@ namespace IXICore
             {
                 writer = new BinaryWriter(new FileStream(filename, FileMode.Create));
             }
-            catch (IOException e)
+            catch (Exception e)
             {
                 Logging.error("Cannot create wallet file. {0}", e.Message);
                 return false;
@@ -838,7 +838,7 @@ namespace IXICore
                 writer.Write(enc_derived_master_seed);
             }
 
-            catch (IOException e)
+            catch (Exception e)
             {
                 Logging.error("Cannot write to wallet file. {0}", e.Message);
                 return false;
