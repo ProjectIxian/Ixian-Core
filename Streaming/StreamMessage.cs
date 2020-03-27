@@ -248,10 +248,6 @@ namespace IXICore
             {
                 return true;
             }
-            if(originalChecksum == null)
-            {
-                originalChecksum = calculateChecksum();
-            }
             byte[] decrypted_data = _decrypt(data, private_key, aes_key, chacha_key);
             if (decrypted_data != null)
             {
