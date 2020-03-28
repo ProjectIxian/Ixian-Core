@@ -61,7 +61,7 @@ namespace IXICore
             data = null;
             sigdata = null;
             encryptionType = StreamMessageEncryptionCode.spixi1;
-            timestamp = Clock.getTimestamp();
+            timestamp = Clock.getNetworkTimestamp();
         }
 
         public StreamMessage(byte[] bytes)
