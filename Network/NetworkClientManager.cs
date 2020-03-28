@@ -371,7 +371,7 @@ namespace IXICore.Network
             }
             lock (networkClients)
             {
-                if (networkClients.Count < 1)
+                if (networkClients.Count < 3)
                     return;
 
                 long total_time_diff = 0;
