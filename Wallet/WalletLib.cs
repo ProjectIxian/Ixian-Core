@@ -95,28 +95,9 @@ namespace IXICore
         /// The binary format is undefined and depends on the specific library. It is expected that
         /// the values returned from the library when creating a wallet will be accepted on subsequent starts as
         /// a valid wallet.
-        /// If `privateKey` is `null`, then this WalletKeyPair represents a public address only in the library's
-        /// native format.
         /// </summary>
-        public abstract class ExtWalletKeyPair
+        public abstract class IExtWalletKeyPair
         {
-            /// <summary>
-            /// Private key bytes - set by the external library and not touched by Ixian, except for encrypting when saving into a wallet file.
-            /// This field may be null if the wallet only represents the public key or address.
-            /// </summary>
-            public byte[] privateKey;
-            /// <summary>
-            /// Public key bytes - set by the external library and not touched by Ixian, except for encrypting when saving into a wallet file.
-            /// This field must always be present, otherwise this wallet is considered invalid or null.
-            /// </summary>
-            public byte[] publicKey;
-            /// <summary>
-            /// For external blockchains which support the functionality of derived wallets (e.g.: Bitcoin's HD wallet), this field is set
-            /// to an identifier which was used to create the derived wallet, if applicable.
-            /// The value of this field may be null.
-            /// </summary>
-            public byte[] derivationIndex;
-
             /// <summary>
             /// Returns a textual representation of the public key or address, such as is displayed to the user when referencing this wallet.
             /// </summary>
@@ -129,6 +110,13 @@ namespace IXICore
             public abstract bool hasPrivateKey();
 
             // TODO: Save/Load (connected with IxiWalletFile?)
+            /// <summary>
+            /// Returns the key-pair (public and private) encoded in a byte array. Ixian will use this to save the information
+            /// into the wallet file, but will not otherwise touch it.
+            /// If the `ExtWalletKeyPair` does not contain a private key, this functin should return null;
+            /// </summary>
+            /// <returns>Byte array with the encoded keypair.</returns>
+            public abstract byte[] getKeypair();
         }
         /// <summary>
         /// Represents the concept of a sender/receiver wallet, combined with an amount.
@@ -140,7 +128,7 @@ namespace IXICore
             /// Retrieves the wallet, connected with this input or output. If input, then the wallet must contain a private key.
             /// </summary>
             /// <returns>Wallet or address connected with this sender or receiver.</returns>
-            ExtWalletKeyPair getAddress();
+            IExtWalletKeyPair getAddress();
             /// <summary>
             /// Amount of money to withdraw from or deposit to the sender or receiver.
             /// </summary>
@@ -232,7 +220,7 @@ namespace IXICore
             /// This function must also generate the private key for this wallet and set it accordingly.
             /// </summary>
             /// <returns>Wallet with private key</returns>
-            ExtWalletKeyPair generateWallet();
+            IExtWalletKeyPair generateWallet();
             /// <summary>
             /// If the external blockchain supports deterministic wallets, this function generates
             /// such a wallet based on the `base_wallet`. A derivation key may be provided, if the 
@@ -245,7 +233,7 @@ namespace IXICore
             /// <param name="base_wallet">Original wallet which should be derived into a new one.</param>
             /// <param name="derivation_key">Optional key, which is used in the derivation process.</param>
             /// <returns>A new wallet, derived from the base wallet.</returns>
-            ExtWalletKeyPair deriveWallet(ExtWalletKeyPair base_wallet, byte[] derivation_key =  null);
+            IExtWalletKeyPair deriveWallet(IExtWalletKeyPair base_wallet, byte[] derivation_key =  null);
 
             /// <summary>
             /// Converts the given wallet into a valid transaction input object, which can then be used to create transactions.
@@ -253,14 +241,14 @@ namespace IXICore
             /// <param name="wallet">Wallet to withdraw from.</param>
             /// <param name="amount">Amount of currency to withdraw from wallet.</param>
             /// <returns>A valid transaction input object.</returns>
-            IExtTXInputOuput walletAsInput(ExtWalletKeyPair wallet, IxiNumber amount);
+            IExtTXInputOuput walletAsInput(IExtWalletKeyPair wallet, IxiNumber amount);
             /// <summary>
             /// Converts the given wallet into a valid transaction output object, which can then be used to create transactions.
             /// </summary>
             /// <param name="wallet">Destination wallet.</param>
             /// <param name="amount">Amount of currency to be deposited.</param>
             /// <returns>A valid transaction output object.</returns>
-            IExtTXInputOuput walletAsOutput(ExtWalletKeyPair wallet, IxiNumber amount);
+            IExtTXInputOuput walletAsOutput(IExtWalletKeyPair wallet, IxiNumber amount);
             /// <summary>
             /// Converts the address into a valid transaction output object, which can then be used to create transactions.
             /// </summary>
@@ -268,6 +256,14 @@ namespace IXICore
             /// <param name="amount">Amount of currency to be deposited.</param>
             /// <returns>A valid transaction output object.</returns>
             IExtTXInputOuput addressAsOutput(string address, IxiNumber amount);
+
+            /// <summary>
+            /// This is the reverse function of `IExtWalletKeyPair.getKeypair`. It accepts a byte-array previously
+            /// generated by the library's `getKeypair()` function and reconstructs the keypair wallet.
+            /// </summary>
+            /// <param name="wallet_keypair"></param>
+            /// <returns>Wallet with both private and public keys.</returns>
+            IExtWalletKeyPair walletFromBytes(byte[] wallet_keypair);
 
             /// <summary>
             /// Generates a transaction object appropriate for the external blockchain network. Withdrawal wallets and destination
