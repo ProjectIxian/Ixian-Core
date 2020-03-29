@@ -964,5 +964,14 @@ namespace IXICore
         {
             return walletLoaded;
         }
+
+        public bool isValidPassword(string password)
+        {
+            if(password != null && password.Length > 0 && password == walletPassword)
+            {
+                return true;
+            }
+            return false;
+        }
     }
 }
