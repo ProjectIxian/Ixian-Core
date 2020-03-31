@@ -168,6 +168,10 @@ namespace IXICore
 
         private void verifyUnprocessedTransactions()
         {
+            if(lastBlockHeader == null)
+            {
+                return;
+            }
             lock (txQueue)
             {
                 var tmp_txQueue = txQueue.Values.Where(x => x.applied != 0 && x.applied <= lastBlockHeader.blockNum).ToArray();
