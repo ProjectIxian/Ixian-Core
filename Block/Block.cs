@@ -352,9 +352,19 @@ namespace IXICore
                             for (int i = 0; i < num_signatures; i++)
                             {
                                 int sigLen = reader.ReadInt32();
-                                byte[] sig = reader.ReadBytes(sigLen);
+                                byte[] sig = null;
+                                if (sigLen > 0)
+                                {
+                                    sig = reader.ReadBytes(sigLen);
+                                }
+
                                 int sigAddresLen = reader.ReadInt32();
-                                byte[] sigAddress = reader.ReadBytes(sigAddresLen);
+                                byte[] sigAddress = null;
+                                if (sigAddresLen > 0)
+                                {
+                                    sigAddress = reader.ReadBytes(sigAddresLen);
+                                }
+
                                 if (!containsSignature(new Address(sigAddress)))
                                 {
                                     byte[][] newSig = new byte[2][];
@@ -363,8 +373,12 @@ namespace IXICore
                                     signatures.Add(newSig);
                                 }
                             }
+
                             int dataLen = reader.ReadInt32();
-                            blockChecksum = reader.ReadBytes(dataLen);
+                            if(dataLen > 0)
+                            {
+                                blockChecksum = reader.ReadBytes(dataLen);
+                            }
 
                             dataLen = reader.ReadInt32();
                             if (dataLen > 0)
@@ -402,7 +416,11 @@ namespace IXICore
                                 {
                                     ulong seg_block_num = reader.ReadUInt64();
                                     int seg_bc_len = reader.ReadInt32();
-                                    byte[] seg_bc = reader.ReadBytes(seg_bc_len);
+                                    byte[] seg_bc = null;
+                                    if (seg_bc_len > 0)
+                                    {
+                                        seg_bc = reader.ReadBytes(seg_bc_len);
+                                    }
                                     superBlockSegments.Add(seg_block_num, new SuperBlockSegment(seg_block_num, seg_bc));
                                 }
                             }

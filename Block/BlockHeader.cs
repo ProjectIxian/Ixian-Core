@@ -195,11 +195,17 @@ namespace IXICore
                             }else
                             {
                                 int pit_hash_len = reader.ReadInt32();
-                                pitHash = reader.ReadBytes(pit_hash_len);
+                                if (pit_hash_len > 0)
+                                {
+                                    pitHash = reader.ReadBytes(pit_hash_len);
+                                }
                             }
 
                             int dataLen = reader.ReadInt32();
-                            blockChecksum = reader.ReadBytes(dataLen);
+                            if (dataLen > 0)
+                            {
+                                blockChecksum = reader.ReadBytes(dataLen);
+                            }
 
                             dataLen = reader.ReadInt32();
                             if (dataLen > 0)
@@ -236,7 +242,11 @@ namespace IXICore
                                 {
                                     ulong seg_block_num = reader.ReadUInt64();
                                     int seg_bc_len = reader.ReadInt32();
-                                    byte[] seg_bc = reader.ReadBytes(seg_bc_len);
+                                    byte[] seg_bc = null;
+                                    if (seg_bc_len > 0)
+                                    {
+                                        reader.ReadBytes(seg_bc_len);
+                                    }
                                     superBlockSegments.Add(seg_block_num, new SuperBlockSegment(seg_block_num, seg_bc));
                                 }
                             }

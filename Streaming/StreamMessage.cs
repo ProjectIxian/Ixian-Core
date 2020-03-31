@@ -75,7 +75,10 @@ namespace IXICore
                         int version = reader.ReadInt32();
 
                         int id_len = reader.ReadInt32();
-                        id = reader.ReadBytes(id_len);
+                        if (id_len > 0)
+                        {
+                            id = reader.ReadBytes(id_len);
+                        }
 
                         int message_type = reader.ReadInt32();
                         type = (StreamMessageCode)message_type;

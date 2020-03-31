@@ -258,7 +258,11 @@ namespace IXICore
                 string device_id = reader.ReadString();
 
                 int pkLen = reader.ReadInt32();
-                byte[] pubkey = reader.ReadBytes(pkLen);
+                byte[] pubkey = null;
+                if (pkLen > 0)
+                {
+                    pubkey = reader.ReadBytes(pkLen);
+                }
 
                 endpoint.serverPubKey = pubkey;
 

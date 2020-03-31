@@ -667,7 +667,11 @@ namespace IXICore
                             for (int i = 0; i < toListLen; i++)
                             {
                                 int addrLen = reader.ReadInt32();
-                                byte[] address = reader.ReadBytes(addrLen);
+                                byte[] address = null;
+                                if (addrLen > 0)
+                                {
+                                    address = reader.ReadBytes(addrLen);
+                                }
                                 IxiNumber amount = new IxiNumber(reader.ReadString());
                                 toList.Add(address, amount);
                             }
@@ -684,7 +688,11 @@ namespace IXICore
                                 for (int i = 0; i < fromListLen; i++)
                                 {
                                     int addrLen = reader.ReadInt32();
-                                    byte[] address = reader.ReadBytes(addrLen);
+                                    byte[] address = null;
+                                    if (addrLen > 0)
+                                    {
+                                        address = reader.ReadBytes(addrLen);
+                                    }
                                     IxiNumber amount = new IxiNumber(reader.ReadString());
                                     fromList.Add(address, amount);
                                 }
