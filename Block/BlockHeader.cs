@@ -245,7 +245,7 @@ namespace IXICore
                                     byte[] seg_bc = null;
                                     if (seg_bc_len > 0)
                                     {
-                                        reader.ReadBytes(seg_bc_len);
+                                        seg_bc = reader.ReadBytes(seg_bc_len);
                                     }
                                     superBlockSegments.Add(seg_block_num, new SuperBlockSegment(seg_block_num, seg_bc));
                                 }
