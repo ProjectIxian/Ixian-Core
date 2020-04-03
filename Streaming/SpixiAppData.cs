@@ -23,7 +23,7 @@ namespace IXICore
                 {
                     using (BinaryReader reader = new BinaryReader(m))
                     {
-                        int session_id_length = reader.ReadInt32();
+                        byte session_id_length = reader.ReadByte();
                         if (session_id_length > 0)
                             sessionId = reader.ReadBytes(session_id_length);
 
@@ -48,7 +48,7 @@ namespace IXICore
                     // Write the session ID
                     if (sessionId != null)
                     {
-                        writer.Write(sessionId.Length);
+                        writer.Write((byte)sessionId.Length);
                         writer.Write(sessionId);
                     }
                     else
