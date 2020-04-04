@@ -113,14 +113,7 @@ namespace IXICore
                         if (sig_length > 0)
                             signature = reader.ReadBytes(sig_length);
 
-                        // TODO try/catch wrapper can be removed after the upgrade
-                        try
-                        {
-                            timestamp = reader.ReadInt64();
-                        }catch(Exception)
-                        {
-
-                        }
+                        timestamp = reader.ReadInt64();
                     }
                 }
             }

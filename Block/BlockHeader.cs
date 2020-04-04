@@ -251,14 +251,7 @@ namespace IXICore
                                 }
                             }
 
-                            try
-                            {
-                                timestamp = reader.ReadInt64();
-                            }catch(Exception)
-                            {
-                                // try/catch wrapper can be removed after everyone upgrades
-                            }
-                            
+                            timestamp = reader.ReadInt64();
                         }
                     }
                 }
