@@ -15,7 +15,7 @@ namespace IXICore
         requestFunds,
         keys,
         msgRead,
-        msgReceived, // this code will likely be replaced by payment to S2
+        msgReceived,
         fileData,
         requestFileData,
         fileHeader,
@@ -33,7 +33,11 @@ namespace IXICore
         avatar,
         getAvatar,
         getPubKey,
-        pubKey
+        pubKey,
+        appRequestAccept,
+        appRequestReject,
+        appRequestError,
+        appEndSession
     }
 
     class SpixiMessage
