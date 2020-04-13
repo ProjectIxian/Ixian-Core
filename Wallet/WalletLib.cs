@@ -187,13 +187,6 @@ namespace IXICore
             /// <param name="mainNet">If true, the connection will be established to the main network, otherwise test network.</param>
             void connect(bool mainNet);
             /// <summary>
-            /// Establishes the connection to the alternative blockchain network, but provides some addresses to speed up the bootstrap process.
-            /// Using this function ignores the built-in list of seed nodes.
-            /// </summary>
-            /// <param name="mainNet">If true, the connection will be established to the main network, otherwise test network.</param>
-            /// <param name="seed_nodes">List of addresses for nodes which should be contacted first.</param>
-            void connect(bool mainNet, IEnumerable<string> seed_nodes);
-            /// <summary>
             /// Disconnects the external library from its network.
             /// </summary>
             void disconnect();
