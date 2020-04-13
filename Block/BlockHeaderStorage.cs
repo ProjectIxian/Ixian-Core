@@ -186,16 +186,20 @@ namespace IXICore
                 while (!found)
                 {
                     db_path = db_path_root + file_block_num + ".dat";
-                    if (File.Exists(db_path))
+                    
+                    if (verifyStorageFile(file_block_num, db_path))
                     {
                         file_block_num += CoreConfig.maxBlockHeadersPerDatabase;
                         found_at_least_one = true;
                     }
                     else
                     {
-                        if (file_block_num > 0)
+                        if (file_block_num >= CoreConfig.maxBlockHeadersPerDatabase)
                         {
                             file_block_num -= CoreConfig.maxBlockHeadersPerDatabase;
+                        }else
+                        {
+                            file_block_num = 0;
                         }
                         db_path = db_path_root + file_block_num + ".dat";
                         found = true;
@@ -204,10 +208,11 @@ namespace IXICore
 
                 if (!found_at_least_one)
                 {
+                    deleteCache();
                     return null;
                 }
 
-                FileStream fs = getStorageFile(db_path, true); // File.Open(db_path, FileMode.OpenOrCreate, FileAccess.Read, FileShare.None);
+                FileStream fs = getStorageFile(db_path, true);
 
                 fs.Seek(0, SeekOrigin.Begin);
 
@@ -227,9 +232,16 @@ namespace IXICore
                         byte[] block_num_bytes = new byte[8];
                         fs.Read(block_num_bytes, 0, 8);
 
+                        BlockHeader cur_block_header = new BlockHeader(block_header_bytes);
+
+                        if(block_header != null && cur_block_header.blockNum != block_header.blockNum + 1)
+                        {
+                            removeAllBlocksAfter(block_header.blockNum);
+                            break;
+                        }
+                        block_header = cur_block_header;
                         if (fs.Position == fs.Length)
                         {
-                            block_header = new BlockHeader(block_header_bytes);
                             break;
                         }
                     }
@@ -238,9 +250,58 @@ namespace IXICore
                 {
                     Logging.error("Exception occured while trying to get last block header: {0}", e);
                 }
+                if (block_header != null)
+                {
+                    removeAllBlocksAfter(block_header.blockNum);
+                }
+                else
+                {
+                    deleteCache();
+                }
 
                 return block_header;
             }
+        }
+
+        private static bool verifyStorageFile(ulong file_block_num, string db_path)
+        {
+            if(!File.Exists(db_path))
+            {
+                return false;
+            }
+
+            try
+            {
+
+                FileStream fs = getStorageFile(db_path, true);
+
+                byte[] block_header_len_bytes = new byte[4];
+                fs.Read(block_header_len_bytes, 0, 4);
+
+                byte[] block_header_bytes = new byte[BitConverter.ToInt32(block_header_len_bytes, 0)];
+                fs.Read(block_header_bytes, 0, block_header_bytes.Length);
+
+                byte[] block_num_bytes = new byte[8];
+                fs.Read(block_num_bytes, 0, 8);
+
+                BlockHeader cur_block_header = new BlockHeader(block_header_bytes);
+
+                if (BitConverter.ToUInt64(block_num_bytes, 0) != cur_block_header.blockNum)
+                {
+                    return false;
+                }
+
+                if (file_block_num != cur_block_header.blockNum)
+                {
+                    return false;
+                }
+            }
+            catch (Exception e)
+            {
+                Logging.error("Exception occured while reading from blockheader storage file: " + e);
+                return false;
+            }
+            return true;
         }
 
         public static void removeAllBlocksBefore(ulong block_num)
@@ -387,7 +448,7 @@ namespace IXICore
             }
         }
 
-        private static FileStream getStorageFile(string path, bool cache = false)
+        private static FileStream getStorageFile(string path, bool cache)
         {
             lock (fileCache)
             {

@@ -79,11 +79,8 @@ namespace IXICore
                     {
                         prunePITCache();
                     }
-                    Thread.Sleep(ConsensusConfig.blockGenerationInterval);
-                }else
-                {
-                    Thread.Sleep(10);
                 }
+                Thread.Sleep(ConsensusConfig.blockGenerationInterval);
             }
         }
 
@@ -98,12 +95,12 @@ namespace IXICore
             BlockHeaderStorage.stop();
         }
 
-        private bool updateBlockHeaders()
+        private bool updateBlockHeaders(bool force_update = false)
         {
             long currentTime = Clock.getTimestamp();
 
             // Check if the request expired
-            if (currentTime - lastRequestedBlockTime > ConsensusConfig.blockGenerationInterval)
+            if (force_update || currentTime - lastRequestedBlockTime > ConsensusConfig.blockGenerationInterval)
             {
                 ulong lastRequestedBlockHeight = startingBlockHeight;
                 if (lastBlockHeader != null)
@@ -412,12 +409,14 @@ namespace IXICore
                         }
                         if (processed)
                         {
-                            lastRequestedBlockTime = 0;
+                            updateBlockHeaders(true);
+                            verifyUnprocessedTransactions();
                         }
-                    }catch(Exception)
+                    }
+                    catch(Exception)
                     {
                         // TODO blacklist sender
-                        lastRequestedBlockTime = 0;
+                        updateBlockHeaders(true);
                     }
                 }
             }
