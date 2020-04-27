@@ -8,11 +8,13 @@ namespace IXICore
     {
         public byte[] sessionId = null;
         public byte[] data = null;
+        public string appId = null;
 
-        public SpixiAppData(byte[] session_id, byte[] in_data)
+        public SpixiAppData(byte[] session_id, byte[] in_data, string app_id = null)
         {
             sessionId = session_id;
             data = in_data;
+            appId = app_id;
         }
 
         public SpixiAppData(byte[] bytes)
@@ -30,6 +32,12 @@ namespace IXICore
                         int data_length = reader.ReadInt32();
                         if (data_length > 0)
                             data = reader.ReadBytes(data_length);
+
+                        // Read App ID if available
+                        if(reader.PeekChar() != -1)
+                        {
+                            appId = reader.ReadString();
+                        }
                     }
                 }
             }
@@ -65,6 +73,12 @@ namespace IXICore
                     else
                     {
                         writer.Write(0);
+                    }
+
+                    // Write App ID, should always be written last
+                    if(appId != null)
+                    {
+                        writer.Write(appId);
                     }
                 }
                 return m.ToArray();
