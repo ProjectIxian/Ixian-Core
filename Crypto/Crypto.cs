@@ -9,6 +9,9 @@ namespace IXICore
     /// </summary>
     public class Crypto
     {
+        static SHA256Managed sha256Engine = new SHA256Managed();
+        static SHA512Managed sha512Engine = new SHA512Managed();
+
         /// <summary>
         /// Converts a byte-field into a hexadecimal string representation.
         /// </summary>
@@ -54,14 +57,11 @@ namespace IXICore
         /// <returns>SHA256 hash of the input data.</returns>
         public static byte[] sha256(byte[] data, int offset = 0, int count = 0)
         {
-            using (var sha = new SHA256Managed())
+            if (count == 0)
             {
-                if (count == 0)
-                {
-                    count = data.Length - offset;
-                }
-                return sha.ComputeHash(data, offset, count);
+                count = data.Length - offset;
             }
+            return sha256Engine.ComputeHash(data, offset, count);
         }
 
         /// <summary>
@@ -81,14 +81,11 @@ namespace IXICore
 			sha.DoFinal(rv, 0);
             return rv;
 #else
-            using (var sha = new SHA512Managed())
+            if(count == 0)
             {
-                if(count == 0)
-                {
-                    count = data.Length - offset;
-                }
-                return sha.ComputeHash(data, offset, count);
+                count = data.Length - offset;
             }
+            return sha512Engine.ComputeHash(data, offset, count);
 #endif
         }
 
@@ -114,15 +111,12 @@ namespace IXICore
 			sha.DoFinal(rv, 0);
 			return new uint256(rv);*/
 #else
-            using (var sha = new SHA512Managed())
+            if (count == 0)
             {
-                if (count == 0)
-                {
-                    count = data.Length - offset;
-                }
-                var h = sha.ComputeHash(data, offset, count);
-                return sha.ComputeHash(h, 0, h.Length);
+                count = data.Length - offset;
             }
+            var h = sha512Engine.ComputeHash(data, offset, count);
+            return sha512Engine.ComputeHash(h, 0, h.Length);
 #endif
         }
 
