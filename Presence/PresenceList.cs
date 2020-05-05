@@ -925,11 +925,19 @@ namespace IXICore
             if (address_or_pubkey == null)
                 return null;
 
-            byte[] address = (new Address(address_or_pubkey)).address;
-
-            lock (presences)
+            try
             {
-                return presences.Find(x => x.wallet.SequenceEqual(address));
+                byte[] address = (new Address(address_or_pubkey)).address;
+
+                lock (presences)
+                {
+                    return presences.Find(x => x.wallet.SequenceEqual(address));
+                }
+            }
+            catch(Exception e)
+            {
+                Logging.error("PresenceList: {0}", e.Message);
+                return null;
             }
         }
 
