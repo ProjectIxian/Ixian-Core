@@ -38,19 +38,20 @@ namespace IXICore
         long lastRequestedBlockTime = 0;
         long lastPITPruneTime = 0;
 
-        ulong startingBlockHeight = 1;
-        byte[] startingBlockChecksum = null;
-
         public TransactionInclusion(string block_header_storage_path = "", ulong starting_block_height = 1, byte[] starting_block_checksum = null)
         {
-            startingBlockHeight = starting_block_height;
-            startingBlockChecksum = starting_block_checksum;
-
             BlockHeaderStorage.init(block_header_storage_path);
 
             BlockHeader last_block_header = BlockHeaderStorage.getLastBlockHeader();
-            
-            lastBlockHeader = last_block_header;
+
+            if (last_block_header != null && last_block_header.blockNum > starting_block_height)
+            {
+                lastBlockHeader = last_block_header;
+            }else
+            {
+                BlockHeaderStorage.deleteCache();
+                lastBlockHeader = new BlockHeader() { blockNum = starting_block_height, blockChecksum = starting_block_checksum };
+            }
         }
 
         public void start()
@@ -102,15 +103,10 @@ namespace IXICore
             // Check if the request expired
             if (force_update || currentTime - lastRequestedBlockTime > ConsensusConfig.blockGenerationInterval)
             {
-                ulong lastRequestedBlockHeight = startingBlockHeight;
-                if (lastBlockHeader != null)
-                {
-                    lastRequestedBlockHeight = lastBlockHeader.blockNum + 1;
-                }
                 lastRequestedBlockTime = currentTime;
 
                 // request next blocks
-                requestBlockHeaders(lastRequestedBlockHeight, lastRequestedBlockHeight + 500);
+                requestBlockHeaders(lastBlockHeader.blockNum, lastBlockHeader.blockNum + 500);
 
                 return true;
             }
@@ -290,7 +286,7 @@ namespace IXICore
 
         private bool processBlockHeader(BlockHeader header)
         {
-            if (lastBlockHeader != null && !header.lastBlockChecksum.SequenceEqual(lastBlockHeader.blockChecksum))
+            if (lastBlockHeader != null && lastBlockHeader.blockChecksum != null && !header.lastBlockChecksum.SequenceEqual(lastBlockHeader.blockChecksum))
             {
                 Logging.warn("TIV: Invalid last block checksum");
 
