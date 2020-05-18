@@ -20,6 +20,8 @@ namespace IXICore
 
         private static bool stopped = false;
 
+        private static List<BlockHeader> blockHeaderCache = new List<BlockHeader>();
+
         public static void init(string storage_path = "")
         {
             if (storage_path != "")
@@ -122,6 +124,16 @@ namespace IXICore
             {
                 return null;
             }
+
+            lock(blockHeaderCache)
+            {
+                var tmp_bh = blockHeaderCache.Find(x => x.blockNum == block_num);
+                if (tmp_bh != null)
+                {
+                    return tmp_bh;
+                }
+            }
+
             lock (lockObject)
             {
                 BlockHeader block_header = null;
@@ -161,6 +173,16 @@ namespace IXICore
                             {
                                 block_header = null;
                                 Logging.error("Incorrect block header number #{0} received from storage, expecting #{1}", block_header.blockNum, block_num);
+                            }else
+                            {
+                                lock (blockHeaderCache)
+                                {
+                                    blockHeaderCache.Add(block_header);
+                                    if(blockHeaderCache.Count > 20)
+                                    {
+                                        blockHeaderCache.RemoveAt(0);
+                                    }
+                                }
                             }
                             break;
                         }
@@ -481,6 +503,10 @@ namespace IXICore
                         // End of fix
                     }
                 }
+            }
+            lock (blockHeaderCache)
+            {
+                blockHeaderCache.Clear();
             }
         }
 
