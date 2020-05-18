@@ -2,6 +2,7 @@
 using System;
 using System.Collections.Generic;
 using System.IO;
+using System.Linq;
 
 namespace IXICore
 {
@@ -17,6 +18,8 @@ namespace IXICore
 
         private static Dictionary<string, object[]> fileCache = new Dictionary<string, object[]>();
 
+        private static bool stopped = false;
+
         public static void init(string storage_path = "")
         {
             if (storage_path != "")
@@ -28,10 +31,12 @@ namespace IXICore
             {
                 Directory.CreateDirectory(db_path);
             }
+            stopped = false;
         }
 
         public static void stop()
         {
+            stopped = true;
             cleanupFileCache(true);
         }
 
@@ -42,6 +47,10 @@ namespace IXICore
         /// <exception cref="Exception">Exception occured while saving block header.</exception>
         public static bool saveBlockHeader(BlockHeader block_header)
         {
+            if(stopped)
+            {
+                return false;
+            }
             lock (lockObject)
             {
                 ulong block_num = block_header.blockNum;
@@ -109,20 +118,24 @@ namespace IXICore
         /// <returns>Requested block header or null if block header doesn't exist.</returns>
         public static BlockHeader getBlockHeader(ulong block_num)
         {
+            if (stopped)
+            {
+                return null;
+            }
             lock (lockObject)
             {
-                ulong file_block_num = ((ulong)(block_num / CoreConfig.maxBlockHeadersPerDatabase)) * CoreConfig.maxBlockHeadersPerDatabase;
-
-                string db_path = path + Path.DirectorySeparatorChar + "0000" + Path.DirectorySeparatorChar + file_block_num + ".dat";
-
-                FileStream fs = getStorageFile(db_path, true); //File.Open(db_path, FileMode.OpenOrCreate, FileAccess.Read, FileShare.None);
-
-                fs.Seek(0, SeekOrigin.Begin);
-
                 BlockHeader block_header = null;
 
                 try
                 {
+                    ulong file_block_num = ((ulong)(block_num / CoreConfig.maxBlockHeadersPerDatabase)) * CoreConfig.maxBlockHeadersPerDatabase;
+
+                    string db_path = path + Path.DirectorySeparatorChar + "0000" + Path.DirectorySeparatorChar + file_block_num + ".dat";
+
+                    FileStream fs = getStorageFile(db_path, true); //File.Open(db_path, FileMode.OpenOrCreate, FileAccess.Read, FileShare.None);
+
+                    fs.Seek(0, SeekOrigin.Begin);
+
                     for (ulong i = file_block_num; i <= block_num; i++)
                     {
                         if(fs.Position == fs.Length)
@@ -149,6 +162,7 @@ namespace IXICore
                                 block_header = null;
                                 Logging.error("Incorrect block header number #{0} received from storage, expecting #{1}", block_header.blockNum, block_num);
                             }
+                            break;
                         }
                     }
                 }
@@ -166,31 +180,47 @@ namespace IXICore
         /// </summary>
         public static BlockHeader getLastBlockHeader()
         {
+            if (stopped)
+            {
+                return null;
+            }
             lock (lockObject)
             {
                 ulong file_block_num = 0;
+                ulong file_scan_block_num = 0;
                 bool found = false;
                 bool found_at_least_one = false;
                 string db_path = "";
                 string db_path_root = path + Path.DirectorySeparatorChar + "0000" + Path.DirectorySeparatorChar;
 
-                var files = Directory.EnumerateFiles(db_path_root, "*.dat", SearchOption.TopDirectoryOnly);
+                var files = Directory.GetFiles(db_path_root, "*.dat", SearchOption.TopDirectoryOnly).OrderBy(x => UInt64.Parse(Path.GetFileNameWithoutExtension(x)));
 
-                string file = files.GetEnumerator().Current;
+                string file = null;
+                if (files.Count() > 0)
+                {
+                    file = files.First();
+                }
 
                 if (file != null)
                 {
-                    file_block_num = UInt64.Parse(Path.GetFileNameWithoutExtension(file));
+                    file_scan_block_num = file_block_num = UInt64.Parse(Path.GetFileNameWithoutExtension(file));
                 }
 
                 while (!found)
                 {
-                    db_path = db_path_root + file_block_num + ".dat";
+                    db_path = db_path_root + file_scan_block_num + ".dat";
                     
-                    if (verifyStorageFile(file_block_num, db_path))
+                    if (verifyStorageFile(file_scan_block_num, db_path))
                     {
-                        file_block_num += CoreConfig.maxBlockHeadersPerDatabase;
+                        file_scan_block_num += CoreConfig.maxBlockHeadersPerDatabase;
+                        file_block_num = file_scan_block_num;
                         found_at_least_one = true;
+                    }
+                    else if(File.Exists(db_path) && !found_at_least_one)
+                    {
+                        cleanupFileCache(true);
+                        File.Delete(db_path);
+                        file_scan_block_num += CoreConfig.maxBlockHeadersPerDatabase;
                     }
                     else
                     {
@@ -234,12 +264,18 @@ namespace IXICore
 
                         BlockHeader cur_block_header = new BlockHeader(block_header_bytes);
 
-                        if(block_header != null && cur_block_header.blockNum != block_header.blockNum + 1)
+                        if (BitConverter.ToUInt64(block_num_bytes, 0) != cur_block_header.blockNum)
                         {
-                            removeAllBlocksAfter(block_header.blockNum);
                             break;
                         }
+
+                        if (block_header != null && cur_block_header.blockNum != block_header.blockNum + 1)
+                        {
+                            break;
+                        }
+
                         block_header = cur_block_header;
+                        
                         if (fs.Position == fs.Length)
                         {
                             break;
@@ -450,6 +486,10 @@ namespace IXICore
 
         private static FileStream getStorageFile(string path, bool cache)
         {
+            if (stopped)
+            {
+                return null;
+            }
             lock (fileCache)
             {
                 if (fileCache.ContainsKey(path))
