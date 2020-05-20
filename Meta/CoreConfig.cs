@@ -1,4 +1,4 @@
-﻿namespace IXICore
+namespace IXICore
 {
     /// <summary>
     /// Basic Ixian (compile-time) configuration values.
@@ -8,7 +8,7 @@
         /// <summary>
         /// Current version of IxiCore.
         /// </summary>
-        public static readonly string version = "xcore-0.6.7e";
+        public static readonly string version = "xcore-0.6.7f";
 
         /// <summary>
         /// Current version of the Ixian network protocol.
