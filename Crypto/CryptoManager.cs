@@ -1,28 +1,32 @@
-﻿namespace IXICore
+﻿using System;
+
+namespace IXICore
 {
     public class CryptoManager
     {
-        static public CryptoLib lib;
+        static private CryptoLib _lib;
 
-
-        static CryptoManager()
+        static public CryptoLib lib
         {
+            get
+            {
+                if (_lib == null)
+                {
+                    _lib = new CryptoLib(new BouncyCastle());
+                }
+                return _lib;
+            }
         }
 
-        private CryptoManager()
-        {
-        }
-
+        [Obsolete]
         public static void initLib()
         {
-            lib = new CryptoLib(new BouncyCastle());
         }
 
         // Initialize with a specific crypto library
         public static void initLib(ICryptoLib crypto_lib)
         {
-            lib = new CryptoLib(crypto_lib);
+            _lib = new CryptoLib(crypto_lib);
         }
-
     }
 }

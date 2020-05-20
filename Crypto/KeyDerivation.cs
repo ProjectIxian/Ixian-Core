@@ -176,7 +176,6 @@ namespace IXICore.CryptoKey
             Logging.info("Preparing entropy to benchmark key generation speed...");
             byte[] entropy = getNewRandomSeed(1024 * 1024);
             IXICore.CryptoKey.KeyDerivation kd = new IXICore.CryptoKey.KeyDerivation(entropy);
-            CryptoManager.initLib();
             Logging.info(String.Format("Starting key generation. Iterations: {0}", num_iterations));
             List<TimeSpan> generationTimes = new List<TimeSpan>();
             for (int i = 0; i < num_iterations; i++)
