@@ -454,7 +454,7 @@ namespace IXICore
 
 
 
-        protected bool readWallet_v1(BinaryReader reader, string password)
+        protected bool readWallet_v1(BinaryReader reader, string password, bool verify_only = false)
         {
             // Read the encrypted keys
             int b_privateKeyLength = reader.ReadInt32();
@@ -463,6 +463,7 @@ namespace IXICore
             int b_publicKeyLength = reader.ReadInt32();
             byte[] b_publicKey = reader.ReadBytes(b_publicKeyLength);
 
+            byte[] last_nonce_bytes = null;
             byte[] b_last_nonce = null;
             if (reader.BaseStream.Position < reader.BaseStream.Length)
             {
@@ -470,11 +471,22 @@ namespace IXICore
                 b_last_nonce = reader.ReadBytes(b_last_nonceLength);
             }
 
+
             try
             {
                 // Decrypt
-                privateKey = CryptoManager.lib.decryptWithPassword(b_privateKey, password, false);
-                publicKey = CryptoManager.lib.decryptWithPassword(b_publicKey, password, false);
+                byte[] private_key = CryptoManager.lib.decryptWithPassword(b_privateKey, password, false);
+                byte[] public_key = CryptoManager.lib.decryptWithPassword(b_publicKey, password, false);
+                if (b_last_nonce != null)
+                {
+                    last_nonce_bytes = CryptoManager.lib.decryptWithPassword(b_last_nonce, walletPassword, false);
+                }
+                if (verify_only)
+                {
+                    return true;
+                }
+                privateKey = private_key;
+                publicKey = public_key;
                 walletPassword = password;
             }
             catch (Exception)
@@ -504,9 +516,8 @@ namespace IXICore
                 AddressData ad = new AddressData() { nonce = new byte[1] { 0 }, keyPair = kp };
                 myAddresses.Add(address, ad);
 
-                if (b_last_nonce != null)
+                if (last_nonce_bytes != null)
                 {
-                    byte[] last_nonce_bytes = CryptoManager.lib.decryptWithPassword(b_last_nonce, walletPassword, false);
                     bool last_address_found = false;
                     while (last_address_found == false)
                     {
@@ -524,7 +535,7 @@ namespace IXICore
             return true;
         }
 
-        protected bool readWallet_v3(BinaryReader reader, string password)
+        protected bool readWallet_v3(BinaryReader reader, string password, bool verify_only = false)
         {
             // Read the master seed
             int b_master_seed_length = reader.ReadInt32();
@@ -533,9 +544,14 @@ namespace IXICore
             try
             {
                 // Decrypt
-                masterSeed = CryptoManager.lib.decryptWithPassword(b_master_seed, password, true);
-                seedHash = Crypto.sha512sqTrunc(masterSeed);
-                walletPassword = password;
+                byte[] master_seed = CryptoManager.lib.decryptWithPassword(b_master_seed, password, true);
+                byte[] seed_hash = Crypto.sha512sqTrunc(masterSeed);
+                if (!verify_only)
+                {
+                    masterSeed = master_seed;
+                    seedHash = seed_hash;
+                    walletPassword = password;
+                }
             }
             catch (Exception)
             {
@@ -588,6 +604,11 @@ namespace IXICore
                     kp.lastNonceBytes = CryptoManager.lib.decryptWithPassword(enc_nonce, password, true);
                 }
 
+                if(verify_only)
+                {
+                    continue;
+                }
+
                 if (privateKey == null)
                 {
                     privateKey = dec_private_key;
@@ -608,8 +629,11 @@ namespace IXICore
 
             int seed_len = reader.ReadInt32();
             byte[] enc_derived_seed = reader.ReadBytes(seed_len);
-            derivedMasterSeed = CryptoManager.lib.decryptWithPassword(enc_derived_seed, password, true);
-
+            byte[] derived_master_seed = CryptoManager.lib.decryptWithPassword(enc_derived_seed, password, true);
+            if(!verify_only)
+            {
+                derivedMasterSeed = derived_master_seed;
+            }
             return true;
         }
 
@@ -622,15 +646,66 @@ namespace IXICore
             return false;
         }
 
-        public void convertWalletFromIxiHex()
+        public void convertWalletFromIxiHex(string file_name)
         {
-            string wallet_string = File.ReadAllText(filename);
+            string wallet_string = File.ReadAllText(file_name);
             
             if (wallet_string.Take(6).SequenceEqual("IXIHEX"))
             {
                 Logging.info("Converting wallet from IXIHEX to binary");
-                File.WriteAllBytes(filename, Crypto.stringToHash((new string(wallet_string.Skip(6).ToArray())).Trim()));
+                File.WriteAllBytes(file_name, Crypto.stringToHash((new string(wallet_string.Skip(6).ToArray())).Trim()));
             }
+        }
+
+        public bool verifyWallet(string file_name, string password)
+        {
+            if (File.Exists(file_name) == false)
+            {
+                Logging.log(LogSeverity.error, "Cannot read wallet file.");
+                return false;
+            }
+
+            convertWalletFromIxiHex(file_name);
+
+            BinaryReader reader;
+            try
+            {
+                reader = new BinaryReader(new FileStream(file_name, FileMode.Open));
+            }
+            catch (Exception e)
+            {
+                Logging.log(LogSeverity.error, String.Format("Cannot open wallet file. {0}", e.Message));
+                return false;
+            }
+            bool success = false;
+            try
+            {
+                // Read the wallet version
+                int wallet_version = reader.ReadInt32();
+                if (wallet_version == 1 || wallet_version == 2)
+                {
+                    success = readWallet_v1(reader, password, true);
+                }
+                else if (wallet_version == 3)
+                {
+                    success = readWallet_v3(reader, password, true);
+                }
+                else
+                {
+                    Logging.error("Unknown wallet version {0}", wallet_version);
+                    wallet_version = 0;
+                    return false;
+                }
+            }
+            catch (Exception e)
+            {
+                Logging.error("Cannot read from wallet file. {0}", e.Message);
+                return false;
+            }
+            reader.Close();
+
+            return success;
+
         }
 
         // Try to read wallet information from the file
@@ -648,7 +723,7 @@ namespace IXICore
                 return false;
             }
 
-            convertWalletFromIxiHex();
+            convertWalletFromIxiHex(filename);
 
             Logging.log(LogSeverity.info, "Wallet file found, reading data...");
             Logging.flush();
