@@ -35,6 +35,7 @@ namespace IXICore.Network
 
             running = true;
             networkClients = new List<NetworkClient>();
+            connectingClients = new List<string>();
 
             PeerStorage.readPeersFile();
 

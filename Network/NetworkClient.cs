@@ -148,9 +148,20 @@ namespace IXICore.Network
         // Receive thread
         protected override void recvLoop()
         {
-            CoreProtocolMessage.sendHelloMessage(this, false, null);
+            try
+            {
+                CoreProtocolMessage.sendHelloMessage(this, false, null);
 
-            base.recvLoop();
+                base.recvLoop();
+            }catch(Exception e)
+            {
+                if (running)
+                {
+                    Logging.warn(string.Format("recvRE: Disconnected client {0} with exception {1}", getFullAddress(), e.ToString()));
+                }
+                state = RemoteEndpointState.Closed;
+                running = false;
+            }
         }
 
         /// <summary>
