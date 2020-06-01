@@ -38,8 +38,17 @@ namespace IXICore
         long lastRequestedBlockTime = 0;
         long lastPITPruneTime = 0;
 
-        public TransactionInclusion(string block_header_storage_path = "", ulong starting_block_height = 1, byte[] starting_block_checksum = null)
+        public TransactionInclusion()
         {
+        }
+
+        public void start(string block_header_storage_path = "", ulong starting_block_height = 1, byte[] starting_block_checksum = null)
+        {
+            if (running)
+            {
+                return;
+            }
+
             BlockHeaderStorage.init(block_header_storage_path);
 
             BlockHeader last_block_header = BlockHeaderStorage.getLastBlockHeader();
@@ -47,18 +56,11 @@ namespace IXICore
             if (last_block_header != null && last_block_header.blockNum > starting_block_height)
             {
                 lastBlockHeader = last_block_header;
-            }else
+            }
+            else
             {
                 BlockHeaderStorage.deleteCache();
                 lastBlockHeader = new BlockHeader() { blockNum = starting_block_height, blockChecksum = starting_block_checksum };
-            }
-        }
-
-        public void start()
-        {
-            if (running)
-            {
-                return;
             }
 
             running = true;
@@ -441,7 +443,6 @@ namespace IXICore
         {
             lock (txQueue)
             {
-
                 lock (pitCache)
                 {
                     List<ulong> to_remove = new List<ulong>();
@@ -467,6 +468,19 @@ namespace IXICore
         public BlockHeader getLastBlockHeader()
         {
             return lastBlockHeader;
+        }
+
+        public void clearCache()
+        {
+            lock (txQueue)
+            {
+                txQueue.Clear();
+                lock (pitCache)
+                {
+                    pitCache.Clear();
+                }
+            }
+
         }
     }
 }
