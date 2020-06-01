@@ -86,7 +86,7 @@ namespace IXICore
         /// <summary>
         /// Number of retries when connecting to a neighbor node, before giving up.
         /// </summary>
-        public static readonly int maximumNeighborReconnectCount = 3;
+        public static int maximumNeighborReconnectCount = 3;
         /// <summary>
         ///  Target number of simultaneously connected neighbors.
         /// </summary>
@@ -98,15 +98,15 @@ namespace IXICore
         /// <summary>
         /// Maximum number of events a client can be subscribed to.
         /// </summary>
-        public static readonly int maximumSubscribableEvents = 500;
+        public static int maximumSubscribableEvents = 500;
         /// <summary>
         /// Maximum number of neighbor Master Nodes this server can accept (used in DLT Node executable).
         /// </summary>
-        public static readonly int maximumServerMasterNodes = 200;
+        public static int maximumServerMasterNodes = 200;
         /// <summary>
         /// Maximum number of client connections this server can accept (used in DLT Node executable).
         /// </summary>
-        public static readonly int maximumServerClients = 200;
+        public static int maximumServerClients = 200;
 
         /// <summary>
         ///  If set to true, all threads will report liveness periodically, thus enabling checking for deadlocks.
