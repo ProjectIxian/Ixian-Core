@@ -7,6 +7,31 @@ using System.Text;
 
 namespace IXICore
 {
+    public static class BlockVer
+    {
+        public static int v0 = 0;
+        public static int v1 = 1;
+        public static int v2 = 2;
+        public static int v3 = 3;
+        public static int v4 = 4;
+        public static int v5 = 5;
+        public static int v6 = 6;
+        public static int v7 = 7;
+        public static int v8 = 8;
+    }
+
+    public class SuperBlockSegment
+    {
+        public ulong blockNum = 0;
+        public byte[] blockChecksum = null;
+
+        public SuperBlockSegment(ulong block_num, byte[] block_checksum)
+        {
+            blockNum = block_num;
+            blockChecksum = block_checksum;
+        }
+    }
+    
     /// <summary>
     ///  An Ixian DLT Block Header.
     ///  A block header contains the minimum required data needed for transaction inclusion verification.
@@ -414,6 +439,11 @@ namespace IXICore
             {
                 rawData.AddRange(BitConverter.GetBytes(lastSuperBlockNum));
                 rawData.AddRange(lastSuperBlockChecksum);
+            }
+
+            if (version >= BlockVer.v7)
+            {
+                rawData.AddRange(BitConverter.GetBytes(timestamp));
             }
 
             if (version <= BlockVer.v2)

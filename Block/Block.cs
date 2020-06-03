@@ -4,34 +4,9 @@ using System;
 using System.Collections.Generic;
 using System.IO;
 using System.Linq;
-using System.Text;
 
 namespace IXICore
 {
-    public static class BlockVer
-    {
-        public static int v0 = 0;
-        public static int v1 = 1;
-        public static int v2 = 2;
-        public static int v3 = 3;
-        public static int v4 = 4;
-        public static int v5 = 5;
-        public static int v6 = 6;
-        public static int v7 = 7;
-    }
-
-    public class SuperBlockSegment
-    {
-        public ulong blockNum = 0;
-        public byte[] blockChecksum = null;
-
-        public SuperBlockSegment(ulong block_num, byte[] block_checksum)
-        {
-            blockNum = block_num;
-            blockChecksum = block_checksum;
-        }
-    }
-
     /// <summary>
     ///  An Ixian DLT Block.
     ///  A block contains all the transactions which act on the WalletState and various checksums which validate the actions performed on the blockchain.
@@ -45,7 +20,7 @@ namespace IXICore
         /// <summary>
         /// Latest possible version of the Block structure. New blocks should usually be created with the latest version.
         /// </summary>
-        public static int maxVersion = BlockVer.v6;
+        public static int maxVersion = BlockVer.v7;
 
         /// <summary>
         /// Block height (block number). This is a sequential index in the blockchain which uniquely identifies each block.
@@ -658,63 +633,7 @@ namespace IXICore
                 return null;
             }
 
-            List<byte> merged_segments = new List<byte>();
-            foreach (var entry in superBlockSegments.OrderBy(x => x.Key))
-            {
-                merged_segments.AddRange(BitConverter.GetBytes(entry.Key));
-                merged_segments.AddRange(entry.Value.blockChecksum);
-            }
-
-            List<byte> rawData = new List<byte>();
-            rawData.AddRange(ConsensusConfig.ixianChecksumLock);
-            rawData.AddRange(BitConverter.GetBytes(version));
-            rawData.AddRange(BitConverter.GetBytes(blockNum));
-            if( version < BlockVer.v6)
-            {
-                StringBuilder merged_txids = new StringBuilder();
-                foreach (string txid in transactions)
-                {
-                    merged_txids.Append(txid);
-                }
-
-                rawData.AddRange(Encoding.UTF8.GetBytes(merged_txids.ToString()));
-            } else
-            {
-                // PIT is included in checksum since v6
-                rawData.AddRange(transactionPIT.calculateTreeHash());
-            }
-
-            if (lastBlockChecksum != null)
-            {
-                rawData.AddRange(lastBlockChecksum);
-            }
-
-            if (walletStateChecksum != null)
-            {
-                rawData.AddRange(walletStateChecksum);
-            }
-
-            if (signatureFreezeChecksum != null)
-            {
-                rawData.AddRange(signatureFreezeChecksum);
-            }
-
-            rawData.AddRange(BitConverter.GetBytes(difficulty));
-            rawData.AddRange(merged_segments);
-
-            if (lastSuperBlockChecksum != null)
-            {
-                rawData.AddRange(BitConverter.GetBytes(lastSuperBlockNum));
-                rawData.AddRange(lastSuperBlockChecksum);
-            }
-
-            if (version <= BlockVer.v2)
-            {
-                return Crypto.sha512quTrunc(rawData.ToArray());
-            }else
-            {
-                return Crypto.sha512sqTrunc(rawData.ToArray());
-            }
+            return new BlockHeader(this).calculateChecksum();
         }
 
         /// <summary>
