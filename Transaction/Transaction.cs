@@ -298,33 +298,48 @@ namespace IXICore
         /// <summary>
         ///  Currently latest transaction version.
         /// </summary>
-        public static int maxVersion = 4;
+        public static int maxVersion = 5;
 
         /// <summary>
         ///  Sets the transaction's version appropriately, based on the current block version.
         /// </summary>
         private void setVersion()
         {
-            int lastBlockVersion = IxianHandler.getLastBlockVersion();
-            if (lastBlockVersion == BlockVer.v0)
+            version = getExpectedVersion(IxianHandler.getLastBlockVersion());
+
+        }
+
+        /// <summary>
+        ///  Gets the expected transaction's version, based on the block version.
+        /// </summary>
+        public static int getExpectedVersion(int block_version)
+        {
+            int ver;
+            if (block_version == BlockVer.v0)
             {
-                version = 0;
+                ver = 0;
             }
-            else if (lastBlockVersion == BlockVer.v1)
+            else if (block_version == BlockVer.v1)
             {
-                version = 1;
+                ver = 1;
             }
-            else if (lastBlockVersion == BlockVer.v2)
+            else if (block_version == BlockVer.v2)
             {
-                version = 2;
+                ver = 2;
             }
-            else if (lastBlockVersion < BlockVer.v6)
+            else if (block_version < BlockVer.v6)
             {
-                version = 3;
-            }else
-            {
-                version = maxVersion;
+                ver = 3;
             }
+            else if (block_version < BlockVer.v7)
+            {
+                ver = 4;
+            }
+            else
+            {
+                ver = maxVersion;
+            }
+            return ver;
         }
 
         /// <summary>
@@ -980,50 +995,57 @@ namespace IXICore
 
             txid += blockHeight + "-";
 
-            List<byte> rawData = new List<byte>();
-            rawData.AddRange(BitConverter.GetBytes(type));
-            rawData.AddRange(Encoding.UTF8.GetBytes(amount.ToString()));
-            rawData.AddRange(Encoding.UTF8.GetBytes(fee.ToString()));
-
-            if (toList.Count == 1)
-            {
-                rawData.AddRange(toList.ToArray()[0].Key);
-            }
-            else
-            {
-                foreach (var entry in toList)
-                {
-                    rawData.AddRange(entry.Key);
-                    rawData.AddRange(entry.Value.getAmount().ToByteArray());
-                }
-            }
-
-            if (fromList.Count == 1)
-            {
-                rawData.AddRange(new Address(pubKey).address);
-            }
-            else
-            {
-                foreach (var entry in fromList)
-                {
-                    rawData.AddRange(entry.Key);
-                    rawData.AddRange(entry.Value.getAmount().ToByteArray());
-                }
-                rawData.AddRange(new Address(pubKey).address);
-            }
-
-            rawData.AddRange(BitConverter.GetBytes(blockHeight));
-            rawData.AddRange(BitConverter.GetBytes(nonce));
-            rawData.AddRange(BitConverter.GetBytes((int)0)); // version was replaced with this, as it's tx metadata and shouldn't be part of the ID
             string chk = null;
-            if (version <= 2)
+
+            if (version < 5)
             {
-                chk = Base58Check.Base58CheckEncoding.EncodePlain(Crypto.sha512quTrunc(rawData.ToArray()));
+                List<byte> rawData = new List<byte>();
+                rawData.AddRange(BitConverter.GetBytes(type));
+                rawData.AddRange(Encoding.UTF8.GetBytes(amount.ToString()));
+                rawData.AddRange(Encoding.UTF8.GetBytes(fee.ToString()));
+
+                if (toList.Count == 1)
+                {
+                    rawData.AddRange(toList.ToArray()[0].Key);
+                }
+                else
+                {
+                    foreach (var entry in toList)
+                    {
+                        rawData.AddRange(entry.Key);
+                        rawData.AddRange(entry.Value.getAmount().ToByteArray());
+                    }
+                }
+
+                if (fromList.Count == 1)
+                {
+                    rawData.AddRange(new Address(pubKey).address);
+                }
+                else
+                {
+                    foreach (var entry in fromList)
+                    {
+                        rawData.AddRange(entry.Key);
+                        rawData.AddRange(entry.Value.getAmount().ToByteArray());
+                    }
+                    rawData.AddRange(new Address(pubKey).address);
+                }
+
+                rawData.AddRange(BitConverter.GetBytes(blockHeight));
+                rawData.AddRange(BitConverter.GetBytes(nonce));
+                rawData.AddRange(BitConverter.GetBytes((int)0)); // version was replaced with this, as it's tx metadata and shouldn't be part of the ID
+                if (version <= 2)
+                {
+                    chk = Base58Check.Base58CheckEncoding.EncodePlain(Crypto.sha512quTrunc(rawData.ToArray()));
+                }
+                else
+                {
+                    chk = Base58Check.Base58CheckEncoding.EncodePlain(Crypto.sha512sqTrunc(rawData.ToArray()));
+                }
             }else
             {
-                chk = Base58Check.Base58CheckEncoding.EncodePlain(Crypto.sha512sqTrunc(rawData.ToArray()));
+                chk = Base58Check.Base58CheckEncoding.EncodePlain(calculateChecksum(this));
             }
-
             txid += chk;
 
             return txid;
@@ -1038,7 +1060,10 @@ namespace IXICore
         {
             List<byte> rawData = new List<byte>();
             rawData.AddRange(ConsensusConfig.ixianChecksumLock);
-            rawData.AddRange(Encoding.UTF8.GetBytes(transaction.id));
+            if (transaction.version < 5)
+            {
+                rawData.AddRange(Encoding.UTF8.GetBytes(transaction.id));
+            }
             rawData.AddRange(BitConverter.GetBytes(transaction.type));
             rawData.AddRange(Encoding.UTF8.GetBytes(transaction.amount.ToString()));
             rawData.AddRange(Encoding.UTF8.GetBytes(transaction.fee.ToString()));
@@ -1083,7 +1108,10 @@ namespace IXICore
 
             rawData.AddRange(BitConverter.GetBytes(transaction.blockHeight));
             rawData.AddRange(BitConverter.GetBytes(transaction.nonce));
-            rawData.AddRange(BitConverter.GetBytes(transaction.timeStamp));
+            if (transaction.type != (int)Transaction.Type.StakingReward)
+            {
+                rawData.AddRange(BitConverter.GetBytes(transaction.timeStamp));
+            }
             rawData.AddRange(BitConverter.GetBytes(transaction.version));
             if((transaction.version <= 1 && transaction.pubKey != null && transaction.pubKey.Length > 36)
                 || transaction.version >= 2)
