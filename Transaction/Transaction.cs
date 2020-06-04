@@ -995,7 +995,7 @@ namespace IXICore
 
             txid += blockHeight + "-";
 
-            string chk = null;
+            string chk;
 
             if (version < 5)
             {
@@ -1108,7 +1108,7 @@ namespace IXICore
 
             rawData.AddRange(BitConverter.GetBytes(transaction.blockHeight));
             rawData.AddRange(BitConverter.GetBytes(transaction.nonce));
-            if (transaction.type != (int)Transaction.Type.StakingReward)
+            if (transaction.version < 5 || transaction.type != (int)Transaction.Type.StakingReward)
             {
                 rawData.AddRange(BitConverter.GetBytes(transaction.timeStamp));
             }
