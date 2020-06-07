@@ -479,7 +479,7 @@ namespace IXICore
                 byte[] public_key = CryptoManager.lib.decryptWithPassword(b_publicKey, password, false);
                 if (b_last_nonce != null)
                 {
-                    last_nonce_bytes = CryptoManager.lib.decryptWithPassword(b_last_nonce, walletPassword, false);
+                    last_nonce_bytes = CryptoManager.lib.decryptWithPassword(b_last_nonce, password, false);
                 }
                 if (verify_only)
                 {
