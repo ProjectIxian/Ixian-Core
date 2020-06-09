@@ -243,6 +243,13 @@ namespace IXICore
                         }
                     }
                 }
+                tmp_txQueue = txQueue.Values.Where(x => x.blockHeight + ConsensusConfig.getRedactedWindowSize() < lastBlockHeader.blockNum).ToArray();
+                foreach (var tx in tmp_txQueue)
+                {
+                    txQueue.Remove(tx.id);
+                    // invalid
+                    IxianHandler.receivedTransactionInclusionVerificationResponse(tx.id, false);
+                }
             }
         }
 
@@ -308,6 +315,9 @@ namespace IXICore
             }
 
             lastBlockHeader = header;
+
+            ConsensusConfig.redactedWindowSize = ConsensusConfig.getRedactedWindowSize(lastBlockHeader.version);
+            ConsensusConfig.minRedactedWindowSize = ConsensusConfig.getRedactedWindowSize(lastBlockHeader.version);
 
             if (!BlockHeaderStorage.saveBlockHeader(lastBlockHeader))
             {

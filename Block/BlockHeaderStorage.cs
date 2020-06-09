@@ -71,6 +71,7 @@ namespace IXICore
                     fs.Read(file_block_header_bytes, 0, 8);
                     if (BitConverter.ToUInt64(file_block_header_bytes, 0) + 1 != block_num)
                     {
+                        // TODO should probably delete the file and reset lastBlockHeader
                         return false;
                     }
                 }
@@ -240,8 +241,7 @@ namespace IXICore
                     }
                     else if(File.Exists(db_path) && !found_at_least_one)
                     {
-                        cleanupFileCache(true);
-                        File.Delete(db_path);
+                        deleteStorageFile(db_path);
                         file_scan_block_num += CoreConfig.maxBlockHeadersPerDatabase;
                     }
                     else
@@ -346,20 +346,29 @@ namespace IXICore
 
                 if (BitConverter.ToUInt64(block_num_bytes, 0) != cur_block_header.blockNum)
                 {
+                    deleteStorageFile(db_path);
                     return false;
                 }
 
                 if (file_block_num != cur_block_header.blockNum)
                 {
+                    deleteStorageFile(db_path);
                     return false;
                 }
             }
             catch (Exception e)
             {
                 Logging.error("Exception occured while reading from blockheader storage file: " + e);
+                deleteStorageFile(db_path);
                 return false;
             }
             return true;
+        }
+
+        private static void deleteStorageFile(string path)
+        {
+            cleanupFileCache(true);
+            File.Delete(path);
         }
 
         public static void removeAllBlocksBefore(ulong block_num)
