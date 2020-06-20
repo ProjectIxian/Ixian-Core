@@ -265,10 +265,17 @@ namespace IXICore
             }
             byte[] salt = getSecureRandomBytes(salt_size);
 
+            byte[] bytes = null;
+
             ParametersWithIV withIV = new ParametersWithIV(new KeyParameter(key), salt);
             try
             {
                 outCipher.Init(true, withIV);
+                byte[] encrypted_data = outCipher.DoFinal(input);
+
+                bytes = new byte[salt.Length + encrypted_data.Length];
+                Array.Copy(salt, bytes, salt.Length);
+                Array.Copy(encrypted_data, 0, bytes, salt.Length, encrypted_data.Length);
             }
             catch (Exception e)
             {
@@ -276,17 +283,11 @@ namespace IXICore
                 return null;
             }
 
-            byte[] encrypted_data = outCipher.DoFinal(input);
-
-            byte[] bytes = new byte[salt.Length + encrypted_data.Length];
-            Array.Copy(salt, bytes, salt.Length);
-            Array.Copy(encrypted_data, 0, bytes, salt.Length, encrypted_data.Length);
-
             return bytes;
         }
 
         // Decrypt data using AES
-        public byte[] decryptWithAES(byte[] input, byte [] key, bool use_GCM, int inOffset = 0)
+        public byte[] decryptWithAES(byte[] input, byte[] key, bool use_GCM, int inOffset = 0)
         {
             string algo = AES_algorithm;
             if (use_GCM)
@@ -296,31 +297,53 @@ namespace IXICore
 
             IBufferedCipher inCipher = CipherUtilities.GetCipher(algo);
 
-            int salt_size = inCipher.GetBlockSize();
-            if (use_GCM && input.Length % 16 != 0)
+            int block_size = inCipher.GetBlockSize();
+            int salt_size = block_size;
+            if (use_GCM)
             {
                 // GCM mode requires 12 bytes salt
                 salt_size = 12;
             }
-            byte[] salt = new byte[salt_size];
 
-            for (int i = 0; i < salt_size; i++)
-            {
-                salt[i] = input[inOffset + i];
-            }
-
-            ParametersWithIV withIV = new ParametersWithIV(new KeyParameter(key), salt);
-
+            byte[] bytes = null;
             try
             {
-                inCipher.Init(false, withIV);
+                try
+                {
+                    byte[] salt = new byte[block_size];
+
+                    Array.Copy(input, inOffset, salt, 0, salt.Length);
+
+                    ParametersWithIV withIV = new ParametersWithIV(new KeyParameter(key), salt);
+                    inCipher.Init(false, withIV);
+                    bytes = inCipher.DoFinal(input, inOffset + block_size, input.Length - inOffset - block_size);
+                }
+                catch (Exception)
+                {
+                    // TODO TODO reverse contents in try and catch after next version release
+                    // try again using 12 bytes salt
+                    if (use_GCM)
+                    {
+                        byte[] salt = new byte[salt_size];
+
+                        Array.Copy(input, inOffset, salt, 0, salt.Length);
+
+                        ParametersWithIV withIV = new ParametersWithIV(new KeyParameter(key), salt);
+                        inCipher.Init(false, withIV);
+                        bytes = inCipher.DoFinal(input, inOffset + salt_size, input.Length - inOffset - salt_size);
+                    }
+                    else
+                    {
+                        bytes = null;
+                        throw;
+                    }
+                }
             }
             catch (Exception e)
             {
+                bytes = null;
                 Logging.error(string.Format("Error initializing decryption. {0}", e.ToString()));
             }
-
-            byte[] bytes = inCipher.DoFinal(input, inOffset + salt_size, input.Length - inOffset - salt_size);
 
             return bytes;
         }
