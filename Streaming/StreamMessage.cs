@@ -315,8 +315,12 @@ namespace IXICore
                 if (aes_key != null && chacha_key != null)
                 {
                     byte[] aes_encrypted = CryptoManager.lib.encryptWithAES(data_to_encrypt, aes_key, true);
-                    byte[] chacha_encrypted = CryptoManager.lib.encryptWithChacha(aes_encrypted, chacha_key);
-                    return chacha_encrypted;
+                    if (aes_encrypted != null)
+                    {
+                        byte[] chacha_encrypted = CryptoManager.lib.encryptWithChacha(aes_encrypted, chacha_key);
+                        return chacha_encrypted;
+                    }
+                    return null;
                 }
                 else
                 {
@@ -348,8 +352,12 @@ namespace IXICore
                 if (aes_key != null && chacha_key != null)
                 {
                     byte[] chacha_decrypted = CryptoManager.lib.decryptWithChacha(data_to_decrypt, chacha_key);
-                    byte[] aes_decrypted = CryptoManager.lib.decryptWithAES(chacha_decrypted, aes_key, true);
-                    return aes_decrypted;
+                    if (chacha_decrypted != null)
+                    {
+                        byte[] aes_decrypted = CryptoManager.lib.decryptWithAES(chacha_decrypted, aes_key, true);
+                        return aes_decrypted;
+                    }
+                    return null;
                 }else
                 {
                     Logging.error("Cannot decrypt message, no AES and CHACHA keys were provided.");
