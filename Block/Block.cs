@@ -4,6 +4,7 @@ using System;
 using System.Collections.Generic;
 using System.IO;
 using System.Linq;
+using System.Threading;
 
 namespace IXICore
 {
@@ -921,49 +922,67 @@ namespace IXICore
 
             lock (signatures)
             {
-                List<byte[]> sigAddresses = new List<byte[]>();
-
-                List<byte[][]> safeSigs = new List<byte[][]>(signatures);
-
-                foreach (byte[][] sig in safeSigs)
+                if (signatures.Count == 0)
                 {
-                    byte[] signature = sig[0];
-                    byte[] address = sig[1];
+                    return false;
+                }
+            }
+            List<byte[]> sig_addresses = new List<byte[]>();
+            List<byte[][]> safe_sigs = null;
 
-                    byte[] signer_pub_key = getSignerPubKey(sig[1]);
+            lock (signatures)
+            {
+                safe_sigs = new List<byte[][]>(signatures);
+            }
 
-                    if (signer_pub_key == null)
+            foreach (byte[][] sig in safe_sigs)
+            {
+
+                byte[] signature = sig[0];
+                byte[] address = sig[1];
+
+                byte[] signer_pub_key = getSignerPubKey(sig[1]);
+
+                if (signer_pub_key == null)
+                {
+                    // invalid public key
+                    lock (signatures)
                     {
-                        // invalid public key
                         signatures.Remove(sig);
-                        continue;
                     }
-
-                    if (sigAddresses.Find(x => x.SequenceEqual(signer_pub_key)) == null)
-                    {
-                        sigAddresses.Add(signer_pub_key);
-                    }else
-                    {
-                        signatures.Remove(sig);
-                        continue;
-                    }
-
-                    if (skip_sig_verification == false && verifySignature(signature, signer_pub_key) == false)
-                    {
-                        signatures.Remove(sig);
-                        continue;
-                    }
-
-
+                    continue;
                 }
 
+                if (sig_addresses.Find(x => x.SequenceEqual(signer_pub_key)) == null)
+                {
+                    sig_addresses.Add(signer_pub_key);
+                }else
+                {
+                    lock (signatures)
+                    {
+                        signatures.Remove(sig);
+                    }
+                    continue;
+                }
+
+                if (skip_sig_verification == false && verifySignature(signature, signer_pub_key) == false)
+                {
+                    lock (signatures)
+                    {
+                        signatures.Remove(sig);
+                    }
+                    continue;
+                }
+            }
+
+            lock(signatures)
+            { 
                 if(signatures.Count == 0)
                 {
                     return false;
                 }
-
-                return true;
             }
+            return true;
         }
 
         /// <summary>
