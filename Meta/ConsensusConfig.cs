@@ -9,11 +9,27 @@ namespace IXICore
     {
         /// <summary>
         ///  Target Block generation interval, in seconds.
+        ///  Default value for Ixian DLT is 30.
         /// </summary>
         /// <remarks>
         ///  The DLT will strive to generate new Blocks according to this value.
         /// </remarks>
         public static readonly int blockGenerationInterval = 30;
+
+        /// <summary>
+        ///  Minimum valid time difference between previous and newly generated block, in seconds.
+        ///  Default value for Ixian DLT is 20.
+        /// </summary>
+        public static readonly int minBlockTimeDifference = 20;
+
+        /// <summary>
+        ///  Maximum valid time difference between newly generated block and network time, in seconds.
+        ///  Default value for Ixian DLT is 60.
+        /// </summary>
+        /// <remarks>
+        ///  If block's time is higher than the Clock.getNetworkTimestamp() + maxBlockNetworkTimeDifference, the block will be invalid.
+        /// </remarks>
+        public static readonly int maxBlockNetworkTimeDifference = 60;
 
         /// <summary>
         ///  Number of blocks this particular is required to keep before discarding older blocks. Blocks older than the redaction window can be discarded.
