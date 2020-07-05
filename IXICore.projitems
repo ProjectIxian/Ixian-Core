@@ -72,6 +72,7 @@
   </ItemGroup>
   <ItemGroup>
     <Content Include="$(MSBuildThisFileDirectory)html\css\bootstrap37.css" />
+    <Content Include="$(MSBuildThisFileDirectory)html\css\custom.css" />
     <Content Include="$(MSBuildThisFileDirectory)html\css\normalize.css" />
     <Content Include="$(MSBuildThisFileDirectory)html\css\style.css" />
     <Content Include="$(MSBuildThisFileDirectory)html\img\activity.png" />
@@ -87,5 +88,9 @@
     <Content Include="$(MSBuildThisFileDirectory)html\js\jquery.min.js" />
     <Content Include="$(MSBuildThisFileDirectory)html\js\qrcode.min.js" />
     <Content Include="$(MSBuildThisFileDirectory)html\wallet.html" />
+  </ItemGroup>
+  <ItemGroup>
+    <None Include="$(MSBuildThisFileDirectory)html\js\custom.js" />
+    <None Include="$(MSBuildThisFileDirectory)html\js\ixian.js" />
   </ItemGroup>
 </Project>

@@ -563,6 +563,10 @@ namespace IXICore
                     {
                         context.Response.ContentType = "text/javascript";
                     }
+                    else if (name.EndsWith(".html", StringComparison.OrdinalIgnoreCase))
+                    {
+                        context.Response.ContentType = "text/html";
+                    }
                     else
                     {
                         context.Response.ContentType = "application/octet-stream";
