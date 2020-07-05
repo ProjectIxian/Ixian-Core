@@ -694,13 +694,13 @@ namespace IXICore
                 {
                     Logging.error("Unknown wallet version {0}", wallet_version);
                     wallet_version = 0;
-                    return false;
+                    success = false;
                 }
             }
             catch (Exception e)
             {
                 Logging.error("Cannot read from wallet file. {0}", e.Message);
-                return false;
+                success = false;
             }
             reader.Close();
 
@@ -755,13 +755,13 @@ namespace IXICore
                 {
                     Logging.error("Unknown wallet version {0}", walletVersion);
                     walletVersion = 0;
-                    return false;
+                    success = false;
                 }
             }
             catch (Exception e)
             {
                 Logging.error("Cannot read from wallet file. {0}", e.Message);
-                return false;
+                success = false;
             }
             reader.Close();
             if (success)
