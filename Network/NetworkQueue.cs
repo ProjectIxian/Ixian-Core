@@ -212,7 +212,6 @@ namespace IXICore.Network
         {
             // Prepare an special message object to use while receiving and parsing, without locking up the queue messages
             QueueMessageRecv active_message = new QueueMessageRecv();
-            QueueMessageRecv candidate = new QueueMessageRecv();
 
             while (!shouldStop)
             {
@@ -223,7 +222,7 @@ namespace IXICore.Network
                     if (queueMessages.Count > 0)
                     {
                         // Pick the oldest message
-                        candidate = queueMessages[0];
+                        QueueMessageRecv candidate = queueMessages[0];
                         active_message.code = candidate.code;
                         active_message.data = candidate.data;
                         active_message.checksum = candidate.checksum;
@@ -239,7 +238,7 @@ namespace IXICore.Network
                     lock (queueMessages)
                     {
                         // Remove it from the queue
-                        queueMessages.Remove(candidate);
+                        queueMessages.RemoveAt(0);
                     }
                     // Sleep a bit to allow other threads to do their thing
                     Thread.Yield();
@@ -258,7 +257,6 @@ namespace IXICore.Network
         {
             // Prepare an special message object to use while receiving and parsing, without locking up the queue messages
             QueueMessageRecv active_message = new QueueMessageRecv();
-            QueueMessageRecv candidate = new QueueMessageRecv();
 
             while (!shouldStop)
             {
@@ -269,7 +267,7 @@ namespace IXICore.Network
                     if (txqueueMessages.Count > 0)
                     {
                         // Pick the oldest message
-                        candidate = txqueueMessages[0];
+                        QueueMessageRecv candidate = txqueueMessages[0];
                         active_message.code = candidate.code;
                         active_message.data = candidate.data;
                         active_message.checksum = candidate.checksum;
@@ -285,7 +283,7 @@ namespace IXICore.Network
                     lock (txqueueMessages)
                     {
                         // Remove it from the queue
-                        txqueueMessages.Remove(candidate);
+                        txqueueMessages.RemoveAt(0);
                     }
                     // Sleep a bit to allow other threads to do their thing
                     Thread.Yield();
