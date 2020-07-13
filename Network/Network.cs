@@ -372,7 +372,8 @@ namespace IXICore.Network
                         new string[2] { "seed2.ixian.io:10234", "1NpizdRi5rmw586Aw883CoQ7THUT528CU5JGhGomgaG9hC3EF" },
                         new string[2] { "seed3.ixian.io:10234", "1Dp9bEFkymhN8PcN7QBzKCg2buz4njjp4eJeFngh769H4vUWi" },
                         new string[2] { "seed4.ixian.io:10234", "1SWy7jYky8xkuN5dnr3aVMJiNiQVh4GSLggZ9hBD3q7ALVEYY" },
-                        new string[2] { "seed5.ixian.io:10234", "1R2WxZ7rmQhMTt5mCFTPhPe9Ltw8pTPY6uTsWHCvVd3GvWupC" }
+                        new string[2] { "seed5.ixian.io:10234", "1R2WxZ7rmQhMTt5mCFTPhPe9Ltw8pTPY6uTsWHCvVd3GvWupC" },
+                        new string[2] { "ixian.kiramine.com:10234", "3TWxD1MdTUEV7hcpy6LFE5RU2HGtC2PqjFfmEtjAyBeoC6moS22LtXknxRjMVqSqg" }
                     };
 
         /// <summary>
