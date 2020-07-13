@@ -1156,6 +1156,7 @@ namespace IXICore
             networkArray.Add("Network time difference", Clock.networkTimeDifference);
             networkArray.Add("Real network time difference", Clock.realNetworkTimeDifference);
             networkArray.Add("My External IP", IxianHandler.publicIP);
+            networkArray.Add("My Listening Port", IxianHandler.publicPort);
             //networkArray.Add("Listening interface", context.Request.RemoteEndPoint.Address.ToString());
             networkArray.Add("Queues", "Rcv: " + NetworkQueue.getQueuedMessageCount() + ", RcvTx: " + NetworkQueue.getTxQueuedMessageCount()
                 + ", SendClients: " + NetworkServer.getQueuedMessageCount() + ", SendServers: " + NetworkClientManager.getQueuedMessageCount()
@@ -1176,7 +1177,6 @@ namespace IXICore
             networkArray.Add("Masters", PresenceList.countPresences('M'));
             networkArray.Add("Relays", PresenceList.countPresences('R'));
             networkArray.Add("Clients", PresenceList.countPresences('C'));
-            networkArray.Add("Workers", PresenceList.countPresences('W'));
 
 
             return new JsonResponse { result = networkArray, error = error };
