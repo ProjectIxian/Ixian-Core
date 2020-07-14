@@ -1,20 +1,36 @@
 ﻿using System.Collections.Generic;
 using System.Linq;
+using System.Xml;
 
 namespace IXICore
 {
+    public class PendingTransaction
+    {
+        public Transaction transaction;
+        public long addedTimestamp;
+        public List<byte[]> confirmedNodeList = new List<byte[]>();
+        public byte[] messageId;
+
+        public PendingTransaction(Transaction t, long addedTimestamp, byte[] message_id)
+        {
+            transaction = t;
+            this.addedTimestamp = addedTimestamp;
+            messageId = message_id;
+        }
+    }
+
     // TODO TODO TODO make PendingTransactions persistent
     public class PendingTransactions
     {
-        public static List<object[]> pendingTransactions = new List<object[]>();
+        public static List<PendingTransaction> pendingTransactions = new List<PendingTransaction>();
 
-        public static void addPendingLocalTransaction(Transaction t)
+        public static void addPendingLocalTransaction(Transaction t, byte[] message_id = null)
         {
             lock (pendingTransactions)
             {
-                if (!pendingTransactions.Exists(x => ((Transaction)x[0]).id.SequenceEqual(t.id)))
+                if (pendingTransactions.Find(x => x.transaction.id.SequenceEqual(t.id)) == null)
                 {
-                    pendingTransactions.Add(new object[4] { t, Clock.getTimestamp(), 0, false });
+                    pendingTransactions.Add(new PendingTransaction( t, Clock.getTimestamp(), message_id));
                 }
             }
         }
@@ -34,10 +50,10 @@ namespace IXICore
             IxiNumber amount = 0;
             lock (pendingTransactions)
             {
-                List<object[]> txs = pendingTransactions.FindAll(x => ((Transaction)x[0]).type == (int)Transaction.Type.Normal);
+                List<PendingTransaction> txs = pendingTransactions.FindAll(x => x.transaction.type == (int)Transaction.Type.Normal);
                 foreach (var entry in txs)
                 {
-                    Transaction tx = (Transaction)entry[0];
+                    Transaction tx = entry.transaction;
                     if (primary_address == null || (new Address(tx.pubKey)).address.SequenceEqual(primary_address))
                     {
                         amount += tx.amount + tx.fee;
@@ -51,18 +67,21 @@ namespace IXICore
         {
             lock (pendingTransactions)
             {
-                pendingTransactions.RemoveAll(x => ((Transaction)x[0]).id.SequenceEqual(txid));
+                pendingTransactions.RemoveAll(x => x.transaction.id.SequenceEqual(txid));
             }
         }
 
-        public static void increaseReceivedCount(string txid)
+        public static void increaseReceivedCount(string txid, byte[] address)
         {
             lock (pendingTransactions)
             {
-                object[] pending = pendingTransactions.Find(x => ((Transaction)x[0]).id.SequenceEqual(txid));
+                PendingTransaction pending = pendingTransactions.Find(x => x.transaction.id.SequenceEqual(txid));
                 if (pending != null)
                 {
-                    pending[2] = (int)pending[2] + 1;
+                    if(pending.confirmedNodeList.Find(x => x.SequenceEqual(address)) == null)
+                    {
+                        pending.confirmedNodeList.Add(address);
+                    }
                 }
             }
         }
