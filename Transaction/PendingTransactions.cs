@@ -71,6 +71,14 @@ namespace IXICore
             }
         }
 
+        public static PendingTransaction getPendingTransaction(string txid)
+        {
+            lock (pendingTransactions)
+            {
+                return pendingTransactions.Find(x => x.transaction.id.SequenceEqual(txid));
+            }
+        }
+
         public static void increaseReceivedCount(string txid, byte[] address)
         {
             lock (pendingTransactions)

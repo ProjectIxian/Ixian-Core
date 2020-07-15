@@ -752,7 +752,7 @@ namespace IXICore
             endpoint.sendData(ProtocolMessageCode.attachEvent, event_data);
         }
 
-        public static bool broadcastGetTransaction(string txid, ulong block_num, RemoteEndpoint endpoint = null)
+        public static bool broadcastGetTransaction(string txid, ulong block_num, RemoteEndpoint endpoint = null, bool broadcast_to_single_node = true)
         {
             using (MemoryStream mw = new MemoryStream())
             {
@@ -773,7 +773,13 @@ namespace IXICore
                         }
                     }
                     // TODO TODO TODO TODO TODO determine if historic transaction and send to 'H' instead of 'M'
-                    return broadcastProtocolMessageToSingleRandomNode(new char[] { 'M', 'H' }, ProtocolMessageCode.getTransaction, mw.ToArray(), block_num);
+                    if (broadcast_to_single_node)
+                    {
+                        return broadcastProtocolMessageToSingleRandomNode(new char[] { 'M', 'H' }, ProtocolMessageCode.getTransaction, mw.ToArray(), block_num);
+                    }else
+                    {
+                        return broadcastProtocolMessage(new char[] { 'M', 'H' }, ProtocolMessageCode.getTransaction, mw.ToArray(), null);
+                    }
                 }
             }
         }

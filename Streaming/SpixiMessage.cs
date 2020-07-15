@@ -26,7 +26,7 @@ namespace IXICore
         callData,
         requestFundsResponse,
         acceptAddBot,
-        getMessages,
+        botGetMessages,
         appData,
         appRequest,
         fileFullyReceived,
@@ -37,13 +37,16 @@ namespace IXICore
         appRequestAccept,
         appRequestReject,
         appRequestError,
-        appEndSession
+        appEndSession,
+        botAction,
+        msgDelete
     }
 
     class SpixiMessage
     {
         public SpixiMessageCode type;          // Spixi Message type
         public byte[] data = null;             // Actual message data
+        public int channel = 0;
 
         public SpixiMessage()
         {
@@ -51,10 +54,11 @@ namespace IXICore
             data = null;
         }
 
-        public SpixiMessage(SpixiMessageCode in_type, byte[] in_data)
+        public SpixiMessage(SpixiMessageCode in_type, byte[] in_data, int in_channel = 0)
         {
             type = in_type;
             data = in_data;
+            channel = in_channel;
         }
 
         public SpixiMessage(byte[] bytes)
@@ -71,12 +75,20 @@ namespace IXICore
                         int data_length = reader.ReadInt32();
                         if (data_length > 0)
                             data = reader.ReadBytes(data_length);
+
+                        if(reader.BaseStream.Length - reader.BaseStream.Position > 0)
+                        {
+                            channel = reader.ReadInt32();
+                        }
                     }
                 }
             }
             catch (Exception e)
             {
                 Logging.error("Exception occured while trying to construct SpixiMessage from bytes: " + e);
+                type = 0;
+                data = null;
+                channel = 0;
             }
         }
 
@@ -97,6 +109,11 @@ namespace IXICore
                     }else
                     {
                         writer.Write(0);
+                    }
+
+                    if (channel != 0)
+                    {
+                        writer.Write(channel);
                     }
                 }
                 return m.ToArray();

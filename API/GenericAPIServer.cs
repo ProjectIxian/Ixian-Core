@@ -1413,7 +1413,7 @@ namespace IXICore
             {
                 lock (PendingTransactions.pendingTransactions)
                 {
-                    fromList = IxianHandler.getWalletStorage().generateFromList(primary_address_bytes, to_amount + fee, toList.Keys.ToList(), PendingTransactions.pendingTransactions.Select(x => (Transaction)x[0]).ToList());
+                    fromList = IxianHandler.getWalletStorage().generateFromList(primary_address_bytes, to_amount + fee, toList.Keys.ToList(), PendingTransactions.pendingTransactions.Select(x => x.transaction).ToList());
                 }
                 adjust_amount = true;
             }
@@ -1434,7 +1434,7 @@ namespace IXICore
                     total_tx_fee = transaction.fee;
                     lock (PendingTransactions.pendingTransactions)
                     {
-                        fromList = IxianHandler.getWalletStorage().generateFromList(primary_address_bytes, to_amount + total_tx_fee, toList.Keys.ToList(), PendingTransactions.pendingTransactions.Select(x => (Transaction)x[0]).ToList());
+                        fromList = IxianHandler.getWalletStorage().generateFromList(primary_address_bytes, to_amount + total_tx_fee, toList.Keys.ToList(), PendingTransactions.pendingTransactions.Select(x => x.transaction).ToList());
                     }
                     if (fromList == null || fromList.Count == 0)
                     {
