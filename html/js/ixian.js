@@ -378,6 +378,11 @@ function initTabs()
 $(function () {
     console.log("Wallet loaded");
 
+    $('#sendForm').submit(function () {
+        sendTransaction();
+        return false;
+    });
+
     qrcode = new QRCode(document.getElementById("qrcode"), {
         width: 300,
         height: 300
@@ -390,9 +395,4 @@ $(function () {
     getMyWallet();
     getActivity();
     getStatus();
-});
-
-$('#sendForm').submit(function () {
-    sendTransaction();
-    return false;
 });
