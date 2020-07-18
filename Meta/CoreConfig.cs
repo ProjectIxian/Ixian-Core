@@ -8,7 +8,7 @@ namespace IXICore
         /// <summary>
         /// Current version of IxiCore.
         /// </summary>
-        public static readonly string version = "xcore-0.6.8b";
+        public static readonly string version = "xcore-0.6.8c-dev";
 
         /// <summary>
         /// Current version of the Ixian network protocol.
@@ -125,11 +125,6 @@ namespace IXICore
         /// Testnet designator. If false the node can only connect to mainnet, if true it can only connect to testnet.
         /// </summary>
         public static bool isTestNet = false;
-
-        /// <summary>
-        /// Forces time offset to the specified value.
-        /// </summary>
-        public static int forceTimeOffset = int.MaxValue;
 
         /// <summary>
         /// Unique node identifier

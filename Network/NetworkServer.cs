@@ -185,7 +185,13 @@ namespace IXICore.Network
             while (continueRunning)
             {
                 TLC.Report();
-                handleDisconnectedClients();
+                try
+                {
+                    handleDisconnectedClients();
+                }catch(Exception e)
+                {
+                    Logging.error("Fatal exception occured in NetworkServer.networkOpsLoop: " + e);
+                }
                 // Use a blocking mechanism
                 try
                 {

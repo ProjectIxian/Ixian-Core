@@ -364,12 +364,6 @@ namespace IXICore.Network
         /// </summary>
         public static void recalculateLocalTimeDifference()
         {
-            if(CoreConfig.forceTimeOffset != int.MaxValue)
-            {
-                Clock.networkTimeDifference = CoreConfig.forceTimeOffset;
-                Clock.realNetworkTimeDifference = CoreConfig.forceTimeOffset;
-                return;
-            }
             lock (networkClients)
             {
                 if (networkClients.Count < 3)
@@ -547,33 +541,47 @@ namespace IXICore.Network
             while (autoReconnect)
             {
                 TLC.Report();
-                handleDisconnectedClients();
+                try
+                {
+                    handleDisconnectedClients();
 
-                // Check if we need to connect to more neighbors
-                if (getConnectedClients().Count() < CoreConfig.simultaneousConnectedNeighbors)
-                {
-                    // Scan for and connect to a new neighbor
-                    connectToRandomNeighbor();
-                }
-                else if (getConnectedClients(true).Count() > CoreConfig.simultaneousConnectedNeighbors)
-                {
-                    List<NetworkClient> netClients = null;
-                    lock (networkClients)
+                    if (CoreConfig.simultaneousConnectedNeighbors < 4)
                     {
-                        netClients = new List<NetworkClient>(networkClients);
+                        Logging.error("Setting CoreConfig.simultanousConnectedNeighbors should be at least 4.");
+                        IxianHandler.shutdown();
+                        break;
                     }
-                    CoreProtocolMessage.sendBye(netClients[0], ProtocolByeCode.bye, "Disconnected for shuffling purposes.", "", false);
 
-                    lock (networkClients)
+                    // Check if we need to connect to more neighbors
+                    if (getConnectedClients().Count() < CoreConfig.simultaneousConnectedNeighbors)
                     {
-                        networkClients.Remove(netClients[0]);
+                        // Scan for and connect to a new neighbor
+                        connectToRandomNeighbor();
+                    }
+                    else if (getConnectedClients(true).Count() > CoreConfig.simultaneousConnectedNeighbors)
+                    {
+                        List<NetworkClient> netClients = null;
+                        lock (networkClients)
+                        {
+                            netClients = new List<NetworkClient>(networkClients);
+                        }
+                        CoreProtocolMessage.sendBye(netClients[0], ProtocolByeCode.bye, "Disconnected for shuffling purposes.", "", false);
+
+                        lock (networkClients)
+                        {
+                            networkClients.Remove(netClients[0]);
+                        }
+                    }
+
+                    // Connect randomly to a new node. Currently a 1% chance to reconnect during this iteration
+                    if (rnd.Next(100) == 1)
+                    {
+                        connectToRandomNeighbor();
                     }
                 }
-
-                // Connect randomly to a new node. Currently a 1% chance to reconnect during this iteration
-                if (rnd.Next(100) == 1)
+                catch (Exception e)
                 {
-                    connectToRandomNeighbor();
+                    Logging.error("Fatal exception occured in NetworkClientManager.reconnectClients: " + e);
                 }
 
                 // Wait 5 seconds before rechecking
