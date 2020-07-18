@@ -164,8 +164,16 @@ namespace IXICore.SpixiBot
             }
             lock (groups)
             {
-                var group = groups.First(x => x.Value.index == id);
-                return group.Key;
+                try
+                {
+                    var group = groups.First(x => x.Value.index == id);
+                    return group.Key;
+                }
+                catch (Exception e)
+                {
+                    Logging.error("Error getting group with id {0}: {1}", id, e);
+                }
+                return null;
             }
         }
     }

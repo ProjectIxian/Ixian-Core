@@ -164,8 +164,15 @@ namespace IXICore.SpixiBot
             }
             lock (channels)
             {
-                var channel = channels.First(x => x.Value.index == id);
-                return channel.Key;
+                try
+                {
+                    var channel = channels.First(x => x.Value.index == id);
+                    return channel.Key;
+                }catch(Exception e)
+                {
+                    Logging.error("Error getting channel with id {0}: {1}", id, e);
+                }
+                return null;
             }
         }
     }
