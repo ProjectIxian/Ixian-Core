@@ -653,7 +653,7 @@ namespace IXICore
         }
 
 
-        private JsonResponse onAddTransaction(Dictionary<string, object> parameters)
+        public JsonResponse onAddTransaction(Dictionary<string, object> parameters)
         {
             if (IxianHandler.status != NodeStatus.ready)
             {
