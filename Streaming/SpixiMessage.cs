@@ -39,7 +39,8 @@ namespace IXICore
         appRequestError,
         appEndSession,
         botAction,
-        msgDelete
+        msgDelete,
+        msgReaction
     }
 
     class SpixiMessage
