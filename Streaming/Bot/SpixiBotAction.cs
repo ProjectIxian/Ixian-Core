@@ -15,8 +15,7 @@ namespace IXICore.SpixiBot
         getPayment,
         payment,
         kickUser,
-        banUser,
-        getDeletedMsgIds
+        banUser
     }
 
     class SpixiBotAction
