@@ -55,6 +55,7 @@
     <Compile Include="$(MSBuildThisFileDirectory)Streaming\SpixiAppData.cs" />
     <Compile Include="$(MSBuildThisFileDirectory)Streaming\Bot\SpixiBotAction.cs" />
     <Compile Include="$(MSBuildThisFileDirectory)Streaming\SpixiMessage.cs" />
+    <Compile Include="$(MSBuildThisFileDirectory)Streaming\SpixiMessageReaction.cs" />
     <Compile Include="$(MSBuildThisFileDirectory)Streaming\StreamMessage.cs" />
     <Compile Include="$(MSBuildThisFileDirectory)Streaming\StreamTransaction.cs" />
     <Compile Include="$(MSBuildThisFileDirectory)Streaming\StreamTransactionRequest.cs" />
