@@ -12,6 +12,8 @@ namespace IXICore.SpixiBot
         channel,
         getUsers,
         user,
+        getGroups,
+        group,
         getPayment,
         payment,
         kickUser,
