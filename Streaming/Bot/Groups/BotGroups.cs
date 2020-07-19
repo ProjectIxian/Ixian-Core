@@ -176,5 +176,13 @@ namespace IXICore.SpixiBot
                 return null;
             }
         }
+
+        public void clear()
+        {
+            lock(groups)
+            {
+                groups.Clear();
+            }
+        }
     }
 }
