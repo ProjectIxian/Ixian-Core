@@ -9,15 +9,17 @@ namespace IXICore.SpixiBot
         private string nick = "";
         public byte[] nickData { get; private set; }
         public byte[] publicKey;
-        public string role = "";
+        private string role = "";
         public bool hasAvatar = false;
+        bool sendNotification = true;
 
-        public BotContact(byte[] nick_data, byte[] public_key, int role_index, bool has_avatar)
+        public BotContact(byte[] nick_data, byte[] public_key, int role_index, bool has_avatar, bool send_notification = true)
         {
             setNick(nick_data);
             publicKey = public_key;
             setRole(role_index);
             hasAvatar = has_avatar;
+            sendNotification = send_notification;
         }
 
         public string getNick()
@@ -69,6 +71,7 @@ namespace IXICore.SpixiBot
                     {
                         role = reader.ReadString();
                         hasAvatar = reader.ReadBoolean();
+                        sendNotification = reader.ReadBoolean();
                     }catch(Exception)
                     {
 
@@ -111,6 +114,7 @@ namespace IXICore.SpixiBot
 
                     writer.Write(role);
                     writer.Write(hasAvatar);
+                    writer.Write(sendNotification);
                 }
                 return m.ToArray();
             }
@@ -163,6 +167,15 @@ namespace IXICore.SpixiBot
             }
             role.Replace(index + ";", "");
             return true;
+        }
+
+        public int getPrimaryRole()
+        {
+            if (role == "" || role == null)
+            {
+                return 0;
+            }
+            return Int32.Parse(role.Substring(0, role.IndexOf(';')));
         }
     }
 }

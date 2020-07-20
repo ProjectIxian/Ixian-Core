@@ -7,6 +7,7 @@ namespace IXICore.SpixiBot
     {
         public short version;
         public string serverName;
+        public string serverDescription;
         public IxiNumber cost;
         public long settingsGeneratedTime = 0;
         public bool admin;
@@ -14,10 +15,11 @@ namespace IXICore.SpixiBot
         public int defaultChannel = 0;
 
 
-        public BotInfo(short version, string server_name, IxiNumber cost, long settings_generated_time, bool admin, int default_group, int default_channel)
+        public BotInfo(short version, string server_name, string server_description, IxiNumber cost, long settings_generated_time, bool admin, int default_group, int default_channel)
         {
             this.version = version;
             serverName = server_name;
+            serverDescription = server_description;
             this.cost = cost;
             settingsGeneratedTime = settings_generated_time;
             this.admin = admin;
@@ -33,6 +35,7 @@ namespace IXICore.SpixiBot
                 {
                     version = reader.ReadInt16();
                     serverName = reader.ReadString();
+                    serverDescription = reader.ReadString();
                     cost = new IxiNumber(reader.ReadString());
                     settingsGeneratedTime = reader.ReadInt64();
                     admin = reader.ReadBoolean();
@@ -50,6 +53,7 @@ namespace IXICore.SpixiBot
                 {
                     writer.Write(version);
                     writer.Write(serverName);
+                    writer.Write(serverDescription);
                     writer.Write(cost.ToString());
                     writer.Write(settingsGeneratedTime);
                     writer.Write(admin);
