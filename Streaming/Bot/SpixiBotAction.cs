@@ -18,8 +18,7 @@ namespace IXICore.SpixiBot
         payment,
         kickUser,
         banUser,
-        enableNotifications,
-        disableNotifications
+        enableNotifications
     }
 
     class SpixiBotAction
