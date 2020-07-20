@@ -11,7 +11,7 @@ namespace IXICore.SpixiBot
         public byte[] publicKey;
         private string role = "";
         public bool hasAvatar = false;
-        bool sendNotification = true;
+        public bool sendNotification = true;
 
         public BotContact(byte[] nick_data, byte[] public_key, int role_index, bool has_avatar, bool send_notification = true)
         {
