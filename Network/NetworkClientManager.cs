@@ -366,8 +366,15 @@ namespace IXICore.Network
         {
             lock (networkClients)
             {
-                if (networkClients.Count < 3)
-                    return;
+                if (PresenceList.myPresenceType == 'M' || PresenceList.myPresenceType == 'H')
+                {
+                    if (networkClients.Count < 3)
+                        return;
+                }else
+                {
+                    if(networkClients.Count < 1)
+                        return;
+                }
 
                 long total_time_diff = 0;
 
@@ -383,7 +390,14 @@ namespace IXICore.Network
 
                 time_diffs.Sort();
 
-                var time_diffs_majority = time_diffs.Take((time_diffs.Count * 2 / 3) + 1);
+                int third_time_diff = time_diffs.Count / 3;
+
+                var time_diffs_majority = time_diffs.Skip(third_time_diff).Take(third_time_diff);
+
+                if(time_diffs_majority.Count() < 1)
+                {
+                    return;
+                }
 
                 foreach (long time in time_diffs_majority)
                 {
@@ -394,7 +408,7 @@ namespace IXICore.Network
 
                 Clock.realNetworkTimeDifference = timeDiff;
 
-                if(PresenceList.myPresenceType == 'M' && PresenceList.myPresenceType == 'H')
+                if(PresenceList.myPresenceType == 'M' || PresenceList.myPresenceType == 'H')
                 {
                     // if Master/full History node, do time adjustment within max time difference
                     if (timeDiff > CoreConfig.maxTimeDifferenceAdjustment)
