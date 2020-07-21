@@ -69,9 +69,12 @@ namespace IXICore.SpixiBot
                     // TODO try/catch wrapper can be removed after upgrade
                     try
                     {
-                        role = reader.ReadString();
-                        hasAvatar = reader.ReadBoolean();
-                        sendNotification = reader.ReadBoolean();
+                        if (m.Position < m.Length)
+                        {
+                            role = reader.ReadString();
+                            hasAvatar = reader.ReadBoolean();
+                            sendNotification = reader.ReadBoolean();
+                        }
                     }catch(Exception)
                     {
 
