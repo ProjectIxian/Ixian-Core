@@ -1,6 +1,5 @@
 ﻿using IXICore.Network;
 using System;
-using System.Collections.Generic;
 
 namespace IXICore.Meta
 {
@@ -171,36 +170,5 @@ namespace IXICore.Meta
         {
             return publicIP + ":" + publicPort;
         }
-
-        // Extension methods
-        public static TValue TryGet<TKey, TValue>(this IDictionary<TKey, TValue> dictionary, TKey key)
-        {
-            TValue value;
-            dictionary.TryGetValue(key, out value);
-            return value;
-        }
-
-        public static void AddOrReplace<TKey, TValue>(this IDictionary<TKey, TValue> dico, TKey key, TValue value)
-        {
-            if (dico.ContainsKey(key))
-                dico[key] = value;
-            else
-                dico.Add(key, value);
-        }
     }
-
-    // Extension - lambda comparer for stuff like SortedSet
-    public class LambdaComparer<T> : IComparer<T>
-    {
-        private readonly Comparison<T> comparison;
-        public LambdaComparer(Comparison<T> comparison)
-        {
-            this.comparison = comparison;
-        }
-        public int Compare(T x, T y)
-        {
-            return comparison(x, y);
-        }
-    }
-
 }

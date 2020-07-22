@@ -1,11 +1,12 @@
 ﻿using System;
+using System.Collections.Generic;
 using System.Diagnostics;
 using System.Linq;
 using System.Numerics;
 
 namespace IXICore.Utils
 {
-    static class IxiUtils
+    public static class IxiUtils
     {
         // Calculates the reward amount for a certain block
         public static IxiNumber calculateMiningRewardForBlock(ulong blockNum)
@@ -76,6 +77,37 @@ namespace IXICore.Utils
             {
                 p.WaitForExit();
             }
+        }
+
+        // Extension methods
+        public static TValue TryGet<TKey, TValue>(this IDictionary<TKey, TValue> dictionary, TKey key)
+        {
+            TValue value;
+            dictionary.TryGetValue(key, out value);
+            return value;
+        }
+
+        public static void AddOrReplace<TKey, TValue>(this IDictionary<TKey, TValue> dico, TKey key, TValue value)
+        {
+            if (dico.ContainsKey(key))
+                dico[key] = value;
+            else
+                dico.Add(key, value);
+        }
+    }
+
+
+    // Extension - lambda comparer for stuff like SortedSet
+    public class LambdaComparer<T> : IComparer<T>
+    {
+        private readonly Comparison<T> comparison;
+        public LambdaComparer(Comparison<T> comparison)
+        {
+            this.comparison = comparison;
+        }
+        public int Compare(T x, T y)
+        {
+            return comparison(x, y);
         }
     }
 }
