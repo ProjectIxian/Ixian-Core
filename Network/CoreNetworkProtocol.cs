@@ -491,6 +491,9 @@ namespace IXICore
 
                         writer.Write(challenge_response.Length);
                         writer.Write(challenge_response);
+
+                        writer.Write(endpoint.getFullAddress(true));
+
 #if TRACE_MEMSTREAM_SIZES
                         Logging.info(String.Format("CoreProtocolMessage::sendHelloMessage: {0}", m.Length));
 #endif
@@ -512,6 +515,7 @@ namespace IXICore
 
                         writer.Write(challenge_bytes.Length);
                         writer.Write(challenge_bytes);
+
 #if TRACE_MEMSTREAM_SIZES
                         Logging.info(String.Format("CoreProtocolMessage::sendHelloMessage: {0}", m.Length));
 #endif
