@@ -40,7 +40,8 @@ namespace IXICore
         appEndSession,
         botAction,
         msgDelete,
-        msgReaction
+        msgReaction,
+        msgTyping
     }
 
     class SpixiMessage
