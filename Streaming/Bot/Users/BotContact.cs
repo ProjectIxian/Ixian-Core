@@ -1,4 +1,5 @@
-﻿using System;
+﻿using IXICore.Meta;
+using System;
 using System.IO;
 using System.Text;
 
@@ -38,7 +39,12 @@ namespace IXICore.SpixiBot
             nickData = nick_data;
             if(nickData != null)
             {
-                nick = Encoding.UTF8.GetString(new SpixiMessage(new StreamMessage(nickData).data).data);
+                try
+                {
+                    nick = Encoding.UTF8.GetString(new SpixiMessage(new StreamMessage(nickData).data).data);
+                }catch(Exception)
+                {
+                }
             }
         }
 
