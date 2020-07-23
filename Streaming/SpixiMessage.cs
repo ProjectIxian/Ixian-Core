@@ -41,7 +41,8 @@ namespace IXICore
         botAction,
         msgDelete,
         msgReaction,
-        msgTyping
+        msgTyping,
+        msgError
     }
 
     class SpixiMessage
