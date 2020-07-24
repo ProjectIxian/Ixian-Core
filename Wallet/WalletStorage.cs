@@ -1035,7 +1035,7 @@ namespace IXICore
             return File.ReadAllBytes(filename);
         }
 
-        public bool isLoadded()
+        public bool isLoaded()
         {
             return walletLoaded;
         }
