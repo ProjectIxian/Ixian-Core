@@ -3,15 +3,16 @@ using System;
 
 namespace IXICore.Meta
 {
-    enum NodeStatus
+    public enum NodeStatus
     {
         warmUp = 0, // when the node is warming up
         ready = 1, // when the node is ready to process all data
         stalled = 2, // when the node hasn't received any block updates from the network for over 30 minutes
-        stopping = 3 // when the node is stopping
+        stopping = 3, // when the node is stopping
+        stopped = 4
     }
 
-    abstract class IxianNode
+    public abstract class IxianNode
     {
         // Required
         public abstract ulong getHighestKnownNetworkBlockHeight();
@@ -32,7 +33,7 @@ namespace IXICore.Meta
         public virtual void receivedBlockHeader(BlockHeader block_header, bool verified) { }
     }
 
-    static class IxianHandler
+    public static class IxianHandler
     {
         private static IxianNode handlerClass = null;
 
@@ -136,6 +137,7 @@ namespace IXICore.Meta
 
         public static void shutdown()
         {
+            forceShutdown = true;
             verifyHandler();
             handlerClass.shutdown();
         }
