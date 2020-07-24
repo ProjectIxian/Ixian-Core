@@ -128,7 +128,7 @@ namespace IXICore
 
                                     if (addr.type == 'M' || addr.type == 'H')
                                     {
-                                        PeerStorage.addPeerToPeerList(addr.address, presence.wallet);
+                                        PeerStorage.addPeerToPeerList(addr.address, presence.wallet, Clock.getTimestamp(), 0, 0, 0);
                                     }
 
                                     //Console.WriteLine("[PL] Last time updated for {0}", addr.device);
@@ -142,7 +142,7 @@ namespace IXICore
 
                                 if (local_addr.type == 'M' || local_addr.type == 'H')
                                 {
-                                    PeerStorage.addPeerToPeerList(local_addr.address, presence.wallet);
+                                    PeerStorage.addPeerToPeerList(local_addr.address, presence.wallet, Clock.getTimestamp(), 0, 0, 0);
                                 }
 
                                 lock (presenceCount)
@@ -177,7 +177,7 @@ namespace IXICore
                     {
                         if (pa.type == 'M' || pa.type == 'H')
                         {
-                            PeerStorage.addPeerToPeerList(pa.address, presence.wallet);
+                            PeerStorage.addPeerToPeerList(pa.address, presence.wallet, Clock.getTimestamp(), 0, 0, 0);
                         }
 
                         lock (presenceCount)

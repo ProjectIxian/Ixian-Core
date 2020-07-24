@@ -339,6 +339,8 @@ namespace IXICore
                         sendBye(endpoint, ProtocolByeCode.addressMismatch, "Local address mismatch.", "", true);
                         return false;
                     }
+
+                    PeerStorage.updateLastConnected(endpoint.getFullAddress(true));
                 }
 
 

@@ -1,5 +1,4 @@
 ﻿using IXICore.Meta;
-using IXICore.Utils;
 using System;
 using System.Collections.Generic;
 using System.Linq;
@@ -47,22 +46,18 @@ namespace IXICore.Network
                 {
                     wallet_addr = Base58Check.Base58CheckEncoding.DecodePlain(addr[1]);
                 }
-                PeerStorage.addPeerToPeerList(addr[0], wallet_addr, false);
+                PeerStorage.addPeerToPeerList(addr[0], wallet_addr, Clock.getTimestamp(), 0, 0, 0, false);
+                PeerStorage.updateLastConnected(addr[0]);
             }
 
             // Connect to a random node first
-            bool firstSeedConnected = false;
-            while (firstSeedConnected == false && IxianHandler.forceShutdown == false)
+            while (getConnectedClients(true).Count() < 2 && IxianHandler.forceShutdown == false)
             {
-                Peer p = PeerStorage.getRandomMasterNodeAddress();
-                if (p != null)
-                {
-                    firstSeedConnected = connectTo(p.hostname, p.walletAddress);
-                }
-                if (firstSeedConnected == false)
-                {
-                    Thread.Sleep(1000);
-                }
+                new Thread(() => {
+                    Thread.CurrentThread.IsBackground = true;
+                    connectToRandomNeighbor();
+                }).Start();
+                Thread.Sleep(50);
             }
 
             // Start the reconnect thread
@@ -439,7 +434,13 @@ namespace IXICore.Network
             // Find only masternodes
             while (connectToPeer == null)
             {
+                Thread.Sleep(10);
+
                 bool addr_valid = true;
+                if(getConnectedClients(true).Count() == 0)
+                {
+                    PeerStorage.resetInitialConnectionCount();
+                }
                 Peer p = PeerStorage.getRandomMasterNodeAddress();
 
                 if (p == null)
@@ -598,6 +599,8 @@ namespace IXICore.Network
                     Logging.error("Fatal exception occured in NetworkClientManager.reconnectClients: " + e);
                 }
 
+                Logging.info("Connected to: " + getConnectedClients(true).Count());
+
                 // Wait 5 seconds before rechecking
                 Thread.Sleep(CoreConfig.networkClientReconnectInterval);
             }
@@ -633,6 +636,7 @@ namespace IXICore.Network
                 {
                     // Remove this client so we can search for a new neighbor
                     failed_clients.Add(client);
+                    PeerStorage.decreaseRating(client.getFullAddress(true), 1);
                 }
                 else
                 {

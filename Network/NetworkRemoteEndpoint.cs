@@ -245,6 +245,7 @@ namespace IXICore.Network
         // Receive thread
         protected virtual void recvLoop()
         {
+            Thread.CurrentThread.IsBackground = true;
             socketReadBuffer = new byte[8192];
             lastMessageStatTime = DateTime.UtcNow;
             while (running)

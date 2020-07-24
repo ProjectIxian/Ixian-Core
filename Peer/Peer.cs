@@ -18,18 +18,28 @@ namespace IXICore
         /// <summary>
         /// Timestamp of the last time the peer has been seen on the network.
         /// </summary>
-        public DateTime lastSeen;
+        public long lastSeen;
         /// <summary>
         ///  Unix epoch value of the last time we have attempted to connect to the peer.
         /// </summary>
         public long lastConnectAttempt;
+        /// <summary>
+        ///  Unix epoch value of the last time we have fully connected to the peer.
+        /// </summary>
+        public long lastConnected;
+        /// <summary>
+        ///  Peer rating.
+        /// </summary>
+        public int rating;
 
-        public Peer(string iHostname, byte[] iWalletAddress, DateTime iLastSeen, long iLastConnectAttempt)
+        public Peer(string iHostname, byte[] iWalletAddress, long iLastSeen, long iLastConnectAttempt, long iLastConnected, int iRating)
         {
             hostname = iHostname;
             walletAddress = iWalletAddress;
             lastSeen = iLastSeen;
             lastConnectAttempt = iLastConnectAttempt;
+            lastConnected = iLastConnected;
+            rating = iRating;
         }
     };
 }
