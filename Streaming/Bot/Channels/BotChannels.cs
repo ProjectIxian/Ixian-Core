@@ -134,6 +134,28 @@ namespace IXICore.SpixiBot
             }
         }
 
+        public BotChannel getChannel(int index)
+        {
+            if (index == 0)
+            {
+                return null;
+            }
+            lock (channels)
+            {
+                string str = channelIndexToName(index);
+                if (str == null)
+                {
+                    return null;
+                }
+                if (str == "")
+                {
+                    return null;
+                }
+                return getChannel(str);
+            }
+        }
+
+
         public BotChannel getChannel(string name)
         {
             lock (channels)
