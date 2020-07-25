@@ -37,7 +37,10 @@ namespace IXICore
                 {
                     var tmp_peer = peerList.Find(x => x.hostname == hostname);
                     p.lastConnectAttempt = tmp_peer.lastConnectAttempt;
-                    p.lastConnected = tmp_peer.lastConnected;
+                    if (tmp_peer.lastConnected != 0)
+                    {
+                        p.lastConnected = tmp_peer.lastConnected;
+                    }
                     p.rating = tmp_peer.rating;
                 }
 
@@ -117,7 +120,7 @@ namespace IXICore
             lock (peerList)
             {
                 long curTime = Clock.getTimestamp();
-                if(initialConnectionCount < 4)
+                if(initialConnectionCount < 1)
                 {
                     connectableList = peerList.FindAll(x => curTime - x.lastConnectAttempt > 30 && x.lastConnected != 0);
                 }

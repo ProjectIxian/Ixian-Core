@@ -46,25 +46,32 @@ namespace IXICore.Network
                 {
                     wallet_addr = Base58Check.Base58CheckEncoding.DecodePlain(addr[1]);
                 }
-                PeerStorage.addPeerToPeerList(addr[0], wallet_addr, Clock.getTimestamp(), 0, 0, 0, false);
-                PeerStorage.updateLastConnected(addr[0]);
+                PeerStorage.addPeerToPeerList(addr[0], wallet_addr, Clock.getTimestamp(), 0, Clock.getTimestamp(), 0, false);
             }
 
+            Random rnd = new Random();
             // Connect to a random node first
+            int i = 0;
             while (getConnectedClients(true).Count() < 2 && IxianHandler.forceShutdown == false)
             {
                 new Thread(() => {
-                    Thread.CurrentThread.IsBackground = true;
-                    connectToRandomNeighbor();
+                    reconnectClients(rnd);
                 }).Start();
-                Thread.Sleep(50);
+                Thread.Sleep(100);
+                i++;
+                if(i > 10)
+                {
+                    i = 0;
+                    Thread.Sleep(1000);
+                }
             }
 
             // Start the reconnect thread
             TLC = new ThreadLiveCheck();
-            reconnectThread = new Thread(reconnectClients);
-            reconnectThread.Name = "Network_Client_Manager_Reconnect";
+
             autoReconnect = true;
+            reconnectThread = new Thread(reconnectLoop);
+            reconnectThread.Name = "Network_Client_Manager_Reconnect";
             reconnectThread.Start();
         }
 
@@ -545,64 +552,66 @@ namespace IXICore.Network
             }
         }
 
-        // Checks for missing clients
-        private static void reconnectClients()
+        private static void reconnectLoop()
         {
             Random rnd = new Random();
-
-            // Wait 5 seconds before starting the loop
-            Thread.Sleep(CoreConfig.networkClientReconnectInterval);
 
             while (autoReconnect)
             {
                 TLC.Report();
-                try
-                {
-                    handleDisconnectedClients();
 
-                    if (CoreConfig.simultaneousConnectedNeighbors < 4)
-                    {
-                        Logging.error("Setting CoreConfig.simultanousConnectedNeighbors should be at least 4.");
-                        IxianHandler.shutdown();
-                        break;
-                    }
-
-                    // Check if we need to connect to more neighbors
-                    if (getConnectedClients().Count() < CoreConfig.simultaneousConnectedNeighbors)
-                    {
-                        // Scan for and connect to a new neighbor
-                        connectToRandomNeighbor();
-                    }
-                    else if (getConnectedClients(true).Count() > CoreConfig.simultaneousConnectedNeighbors)
-                    {
-                        List<NetworkClient> netClients = null;
-                        lock (networkClients)
-                        {
-                            netClients = new List<NetworkClient>(networkClients);
-                        }
-                        CoreProtocolMessage.sendBye(netClients[0], ProtocolByeCode.bye, "Disconnected for shuffling purposes.", "", false);
-
-                        lock (networkClients)
-                        {
-                            networkClients.Remove(netClients[0]);
-                        }
-                    }
-
-                    // Connect randomly to a new node. Currently a 1% chance to reconnect during this iteration
-                    if (rnd.Next(100) == 1)
-                    {
-                        connectToRandomNeighbor();
-                    }
-                }
-                catch (Exception e)
-                {
-                    Logging.error("Fatal exception occured in NetworkClientManager.reconnectClients: " + e);
-                }
-
-                Logging.info("Connected to: " + getConnectedClients(true).Count());
+                reconnectClients(rnd);
 
                 // Wait 5 seconds before rechecking
                 Thread.Sleep(CoreConfig.networkClientReconnectInterval);
+            }
+        }
+
+        // Checks for missing clients
+        private static void reconnectClients(Random rnd)
+        {
+            try
+            {
+                handleDisconnectedClients();
+
+                if (CoreConfig.simultaneousConnectedNeighbors < 4)
+                {
+                    Logging.error("Setting CoreConfig.simultanousConnectedNeighbors should be at least 4.");
+                    IxianHandler.shutdown();
+                    throw new Exception("Setting CoreConfig.simultanousConnectedNeighbors should be at least 4.");
+                }
+
+                // Check if we need to connect to more neighbors
+                if (getConnectedClients().Count() < CoreConfig.simultaneousConnectedNeighbors)
+                {
+                    // Scan for and connect to a new neighbor
+                    connectToRandomNeighbor();
+                    return;
+                }
+                else if (getConnectedClients(true).Count() > CoreConfig.simultaneousConnectedNeighbors)
+                {
+                    List<NetworkClient> netClients = null;
+                    lock (networkClients)
+                    {
+                        netClients = new List<NetworkClient>(networkClients);
+                    }
+                    CoreProtocolMessage.sendBye(netClients[0], ProtocolByeCode.bye, "Disconnected for shuffling purposes.", "", false);
+
+                    lock (networkClients)
+                    {
+                        networkClients.Remove(netClients[0]);
+                    }
+                }
+
+                // Connect randomly to a new node. Currently a 1% chance to reconnect during this iteration
+                if (rnd.Next(100) == 1)
+                {
+                    connectToRandomNeighbor();
+                }
+            }
+            catch (Exception e)
+            {
+                Logging.error("Fatal exception occured in NetworkClientManager.reconnectClients: " + e);
             }
         }
 
