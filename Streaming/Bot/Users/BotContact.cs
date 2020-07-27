@@ -5,6 +5,14 @@ using System.Text;
 
 namespace IXICore.SpixiBot
 {
+    public enum BotContactStatus
+    {
+        normal,
+        kicked,
+        banned,
+        left
+    }
+
     public class BotContact
     {
         private string nick = "";
@@ -13,14 +21,16 @@ namespace IXICore.SpixiBot
         private string role = "";
         public bool hasAvatar = false;
         public bool sendNotification = true;
+        public BotContactStatus status = BotContactStatus.normal;
 
-        public BotContact(byte[] nick_data, byte[] public_key, int role_index, bool has_avatar, bool send_notification = true)
+        public BotContact(byte[] nick_data, byte[] public_key, int role_index, bool has_avatar, bool send_notification = true, BotContactStatus status = BotContactStatus.normal)
         {
             setNick(nick_data);
             publicKey = public_key;
             setRole(role_index);
             hasAvatar = has_avatar;
             sendNotification = send_notification;
+            this.status = status;
         }
 
         public string getNick()
@@ -80,6 +90,7 @@ namespace IXICore.SpixiBot
                             role = reader.ReadString();
                             hasAvatar = reader.ReadBoolean();
                             sendNotification = reader.ReadBoolean();
+                            status = (BotContactStatus)reader.ReadInt16();
                         }
                     }catch(Exception)
                     {
@@ -124,6 +135,7 @@ namespace IXICore.SpixiBot
                     writer.Write(role);
                     writer.Write(hasAvatar);
                     writer.Write(sendNotification);
+                    writer.Write((short)status);
                 }
                 return m.ToArray();
             }
