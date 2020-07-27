@@ -13,9 +13,10 @@ namespace IXICore.SpixiBot
         public bool admin;
         public int defaultGroup = 0;
         public int defaultChannel = 0;
+        public bool sendNotification = false;
 
 
-        public BotInfo(short version, string server_name, string server_description, IxiNumber cost, long settings_generated_time, bool admin, int default_group, int default_channel)
+        public BotInfo(short version, string server_name, string server_description, IxiNumber cost, long settings_generated_time, bool admin, int default_group, int default_channel, bool send_notification)
         {
             this.version = version;
             serverName = server_name;
@@ -25,6 +26,7 @@ namespace IXICore.SpixiBot
             this.admin = admin;
             defaultGroup = default_group;
             defaultChannel = default_channel;
+            sendNotification = send_notification;
         }
 
         public BotInfo(byte[] contact_bytes)
@@ -41,6 +43,10 @@ namespace IXICore.SpixiBot
                     admin = reader.ReadBoolean();
                     defaultGroup = reader.ReadInt32();
                     defaultChannel = reader.ReadInt32();
+                    if(m.Position < m.Length)
+                    {
+                        sendNotification = reader.ReadBoolean();
+                    }
                 }
             }
         }
@@ -59,6 +65,7 @@ namespace IXICore.SpixiBot
                     writer.Write(admin);
                     writer.Write(defaultGroup);
                     writer.Write(defaultChannel);
+                    writer.Write(sendNotification);
                 }
                 return m.ToArray();
             }
