@@ -22,6 +22,8 @@ namespace IXICore
 
         private static List<BlockHeader> blockHeaderCache = new List<BlockHeader>();
 
+        public static long lastBlockHeaderTime { get; private set; } = Clock.getTimestamp();
+
         public static void init(string storage_path = "")
         {
             if (storage_path != "")
@@ -103,10 +105,13 @@ namespace IXICore
 
                     byte[] block_num_bytes = BitConverter.GetBytes(block_header.blockNum);
                     fs.Write(block_num_bytes, 0, block_num_bytes.Length);
+
+                    lastBlockHeaderTime = Clock.getTimestamp();
                 }
                 catch (Exception e)
                 {
                     Logging.error("Exception occured while saving block header: {0}", e);
+                    return false;
                 }
 
                 return true;
