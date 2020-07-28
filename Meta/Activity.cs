@@ -237,7 +237,26 @@ namespace IXICore.Meta
                 {
                     sqlConnection.Close();
                     File.Delete(filename);
-                    prepareStorage();
+                    return prepareStorage();
+                }
+            }
+
+            lock (storageLock)
+            {
+                string sql = "select * from `activity` ORDER BY `blockHeight` DESC LIMIT 1;";
+                try
+                {
+                    Activity activity = null;
+                    List<Activity> tmpActivityList = sqlConnection.Query<Activity>(sql);
+                    if (tmpActivityList != null && tmpActivityList.Count > 0)
+                    {
+                        activity = tmpActivityList[0];
+                        executeSQL("DELETE FROM `activity` WHERE `blockHeight` < ?", activity.blockHeight - CoreConfig.minActivityBlockHeight);
+                    }
+                }
+                catch (Exception e)
+                {
+                    Logging.error(String.Format("Exception has been thrown while executing SQL Query {0}. Exception message: {1}", sql, e.Message));
                 }
             }
 
