@@ -176,8 +176,16 @@ namespace IXICore.SpixiBot
                     return false;
                 }
                 string path = Path.Combine(avatarPath, Base58Check.Base58CheckEncoding.EncodePlain(address) + ".raw");
-                File.WriteAllBytes(path, avatar_message);
-                getUser(address).hasAvatar = true;
+                if (avatar_message != null)
+                {
+                    File.WriteAllBytes(path, avatar_message);
+                    getUser(address).hasAvatar = true;
+                }
+                else if (File.Exists(path))
+                {
+                    File.Delete(path);
+                    getUser(address).hasAvatar = false;
+                }
                 writeContactsToFile();
             }
             return true;
