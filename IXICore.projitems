@@ -30,6 +30,7 @@
     <Compile Include="$(MSBuildThisFileDirectory)Meta\Logging.cs" />
     <Compile Include="$(MSBuildThisFileDirectory)Meta\Platform.cs" />
     <Compile Include="$(MSBuildThisFileDirectory)Meta\ThreadLiveCheck.cs" />
+    <Compile Include="$(MSBuildThisFileDirectory)Meta\UpdateVerify.cs" />
     <Compile Include="$(MSBuildThisFileDirectory)Network\CoreNetworkProtocol.cs" />
     <Compile Include="$(MSBuildThisFileDirectory)Network\Network.cs" />
     <Compile Include="$(MSBuildThisFileDirectory)Network\NetworkClient.cs" />

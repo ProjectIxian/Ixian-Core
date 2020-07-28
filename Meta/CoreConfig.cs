@@ -8,7 +8,7 @@ namespace IXICore
         /// <summary>
         /// Current version of IxiCore.
         /// </summary>
-        public static readonly string version = "xcore-0.6.8c-dev";
+        public static readonly string version = "xcore-0.6.9";
 
         /// <summary>
         /// Current version of the Ixian network protocol.
@@ -150,5 +150,10 @@ namespace IXICore
         /// Maximum time difference adjustment in seconds. Clock.networkTime value will not be adjusted to above this number.
         /// </summary>
         public static long maxTimeDifferenceAdjustment = 30;
+
+        /// <summary>
+        /// Minimum blockheight activity to store
+        /// </summary>
+        public static long minActivityBlockHeight = 30000;
     }
 }
