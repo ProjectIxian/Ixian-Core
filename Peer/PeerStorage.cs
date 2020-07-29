@@ -3,6 +3,7 @@ using System;
 using System.Collections.Generic;
 using System.IO;
 using System.Linq;
+using System.Runtime.CompilerServices;
 
 namespace IXICore
 {
@@ -116,22 +117,29 @@ namespace IXICore
 
         public static Peer getRandomMasterNodeAddress()
         {
-            List<Peer> connectableList = null;
             lock (peerList)
             {
                 long curTime = Clock.getTimestamp();
+                Peer p = null;
                 if(initialConnectionCount < 1)
                 {
-                    connectableList = peerList.FindAll(x => curTime - x.lastConnectAttempt > 30 && x.lastConnected != 0);
+                    var connectableList = peerList.FindAll(x => curTime - x.lastConnectAttempt > 30).OrderByDescending(x => x.lastConnected);
+                    if (connectableList.Count() > 0)
+                    {
+                        p = connectableList.First();
+                    }
                 }
                 else
                 {
-                    connectableList = peerList.FindAll(x => curTime - x.lastConnectAttempt > 30);
+                    List<Peer> connectableList = peerList.FindAll(x => curTime - x.lastConnectAttempt > 30);
+                    if (connectableList.Count > 0)
+                    {
+                        Random rnd = new Random();
+                        p = connectableList[rnd.Next(connectableList.Count)];
+                    }
                 }
-                if (connectableList != null && connectableList.Count > 0)
+                if (p != null)
                 {
-                    Random rnd = new Random();
-                    Peer p = connectableList[rnd.Next(connectableList.Count)];
                     p.lastConnectAttempt = curTime;
                     return p;
                 }
