@@ -19,7 +19,7 @@ namespace IXICore.Network
 
         // Starts the Network Client Manager. First it connects to one of the seed nodes in order to fetch the Presence List.
         // Afterwards, it starts the reconnect and keepalive threads
-        public static void start()
+        public static void start(bool wait_for_connection)
         {
             if(running)
             {
@@ -46,23 +46,31 @@ namespace IXICore.Network
                 {
                     wallet_addr = Base58Check.Base58CheckEncoding.DecodePlain(addr[1]);
                 }
-                PeerStorage.addPeerToPeerList(addr[0], wallet_addr, Clock.getTimestamp(), 0, Clock.getTimestamp(), 0, false);
+                PeerStorage.addPeerToPeerList(addr[0], wallet_addr, Clock.getTimestamp(), 0, 0, 0, false);
             }
 
-            Random rnd = new Random();
-            // Connect to a random node first
-            int i = 0;
-            while (getConnectedClients(true).Count() < 2 && IxianHandler.forceShutdown == false)
+            if (wait_for_connection)
             {
-                new Thread(() => {
-                    reconnectClients(rnd);
-                }).Start();
-                Thread.Sleep(100);
-                i++;
-                if(i > 10)
+                Random rnd = new Random();
+                // Connect to a random node first
+                int i = 0;
+                while (getConnectedClients(true).Count() < 2 && IxianHandler.forceShutdown == false)
                 {
-                    i = 0;
-                    Thread.Sleep(1000);
+                    new Thread(() =>
+                    {
+                        reconnectClients(rnd);
+                    }).Start();
+                    Thread.Sleep(100);
+                    i++;
+                    if (i > 10)
+                    {
+                        i = 0;
+                        Thread.Sleep(1000);
+                    }
+                    if (!running)
+                    {
+                        return;
+                    }
                 }
             }
 
@@ -134,9 +142,9 @@ namespace IXICore.Network
         {
             Logging.info("Stopping network clients...");
             stop();
-            Thread.Sleep(100);
+            Thread.Sleep(2000);
             Logging.info("Starting network clients...");
-            start();
+            start(false);
         }
 
         // Connects to a specified node, with the syntax host:port
