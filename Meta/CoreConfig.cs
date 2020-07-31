@@ -61,7 +61,7 @@ namespace IXICore
         /// <summary>
         /// Duration (in milliseconds) between reconnection attempts to remote clients.
         /// </summary>
-        public static readonly int networkClientReconnectInterval = 10 * 1000;
+        public static readonly int networkClientReconnectInterval = 2 * 1000;
         
         /// <summary>
         /// Interval (in seconds) how often to send a 'Keep-Alive' presence packet into the network for server (M, H, R) nodes.
