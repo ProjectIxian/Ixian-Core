@@ -38,7 +38,7 @@ namespace IXICore
                 {
                     var tmp_peer = peerList.Find(x => x.hostname == hostname);
                     p.lastConnectAttempt = tmp_peer.lastConnectAttempt;
-                    if (tmp_peer.lastConnected != 0)
+                    if (tmp_peer.lastConnected > p.lastConnected)
                     {
                         p.lastConnected = tmp_peer.lastConnected;
                     }

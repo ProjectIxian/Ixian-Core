@@ -46,7 +46,7 @@ namespace IXICore.Network
                 {
                     wallet_addr = Base58Check.Base58CheckEncoding.DecodePlain(addr[1]);
                 }
-                PeerStorage.addPeerToPeerList(addr[0], wallet_addr, Clock.getTimestamp(), 0, 0, 0, false);
+                PeerStorage.addPeerToPeerList(addr[0], wallet_addr, Clock.getTimestamp(), 0, 1, 0, false);
             }
 
             if (wait_for_connection)
@@ -60,12 +60,14 @@ namespace IXICore.Network
                     {
                         reconnectClients(rnd);
                     }).Start();
-                    Thread.Sleep(100);
                     i++;
                     if (i > 10)
                     {
                         i = 0;
                         Thread.Sleep(1000);
+                    }else
+                    {
+                        Thread.Sleep(200);
                     }
                     if (!running)
                     {
