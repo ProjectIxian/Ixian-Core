@@ -476,10 +476,22 @@ namespace IXICore
             {
                 // Decrypt
                 byte[] private_key = CryptoManager.lib.decryptWithPassword(b_privateKey, password, false);
+                if(private_key == null)
+                {
+                    return false;
+                }
                 byte[] public_key = CryptoManager.lib.decryptWithPassword(b_publicKey, password, false);
+                if (public_key == null)
+                {
+                    return false;
+                }
                 if (b_last_nonce != null)
                 {
                     last_nonce_bytes = CryptoManager.lib.decryptWithPassword(b_last_nonce, password, false);
+                    if (last_nonce_bytes == null)
+                    {
+                        return false;
+                    }
                 }
                 if (verify_only)
                 {
@@ -545,6 +557,10 @@ namespace IXICore
             {
                 // Decrypt
                 byte[] master_seed = CryptoManager.lib.decryptWithPassword(b_master_seed, password, true);
+                if (master_seed == null)
+                {
+                    return false;
+                }
                 byte[] seed_hash = Crypto.sha512sqTrunc(masterSeed);
                 if (!verify_only)
                 {
@@ -592,7 +608,15 @@ namespace IXICore
                 }
 
                 byte[] dec_private_key = CryptoManager.lib.decryptWithPassword(enc_private_key, password, true);
+                if (dec_private_key == null)
+                {
+                    return false;
+                }
                 byte[] dec_public_key = CryptoManager.lib.decryptWithPassword(enc_public_key, password, true);
+                if (dec_public_key == null)
+                {
+                    return false;
+                }
                 byte[] tmp_address = (new Address(dec_public_key)).address;
 
                 IxianKeyPair kp = new IxianKeyPair();
@@ -602,9 +626,13 @@ namespace IXICore
                 if (enc_nonce != null)
                 {
                     kp.lastNonceBytes = CryptoManager.lib.decryptWithPassword(enc_nonce, password, true);
+                    if (kp.lastNonceBytes == null)
+                    {
+                        return false;
+                    }
                 }
 
-                if(verify_only)
+                if (verify_only)
                 {
                     continue;
                 }
@@ -630,7 +658,11 @@ namespace IXICore
             int seed_len = reader.ReadInt32();
             byte[] enc_derived_seed = reader.ReadBytes(seed_len);
             byte[] derived_master_seed = CryptoManager.lib.decryptWithPassword(enc_derived_seed, password, true);
-            if(!verify_only)
+            if (derived_master_seed == null)
+            {
+                return false;
+            }
+            if (!verify_only)
             {
                 derivedMasterSeed = derived_master_seed;
             }
