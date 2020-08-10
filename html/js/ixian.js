@@ -1,4 +1,6 @@
-﻿var qrcode = null;
+﻿var primaryAddress = null;
+
+var qrcode = null;
 
 var selectedReceiveAddress = null;
 
@@ -52,7 +54,7 @@ function getMyWallet() {
             data = data["result"];
             var keyList = Object.keys(data);
             if (selectedReceiveAddress == null) {
-                selectedReceiveAddress = keyList[keyList.length - 1];
+                primaryAddress = selectedReceiveAddress = keyList[keyList.length - 1];
                 // Create the QR code
                 qrcode.clear();
                 qrcode.makeCode(selectedReceiveAddress);
@@ -66,6 +68,7 @@ function getMyWallet() {
                 for (var i in data) {
                     var primaryDesignator = "";
                     if (first) {
+                        primaryAddress = i;
                         primaryDesignator = " - Primary Address";
                         first = false;
                     }
