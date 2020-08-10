@@ -181,7 +181,11 @@ namespace IXICore.SpixiBot
                 }
                 else
                 {
-                    channels.AddOrReplace(name, channel);
+                    if (hasChannel(name))
+                    {
+                        channels.Remove(name);
+                    }
+                    channels.AddOrReplace(channel.channelName, channel);
                 }
                 writeChannelsToFile();
             }

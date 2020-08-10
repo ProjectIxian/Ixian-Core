@@ -138,7 +138,11 @@ namespace IXICore.SpixiBot
                 }
                 else
                 {
-                    groups.AddOrReplace(name, group);
+                    if (hasGroup(name))
+                    {
+                        groups.Remove(name);
+                    }
+                    groups.AddOrReplace(group.groupName, group);
                 }
                 writeGroupsToFile();
             }
