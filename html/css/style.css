@@ -449,7 +449,6 @@ body, html {
     color: white;
 }
 
-
 @media all and (max-width: 800px) {
     .pamount
     {
@@ -485,7 +484,7 @@ body, html {
     }
 
     #bottomNav a {
-        font-size: 4vw;
+        font-size: 3vw;
         height: 105px;
         display: table-cell;
         vertical-align: middle;
