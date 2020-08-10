@@ -20,6 +20,8 @@ namespace IXICore.Network
 
         private object reconnectLock = new object();
 
+        public string myAddress = ""; // My address as reported by the node
+
         public NetworkClient()
         {
             prepareClient();
