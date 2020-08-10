@@ -198,6 +198,8 @@ namespace IXICore.Meta
         // Creates the storage file if not found
         public static bool prepareStorage()
         {
+            Logging.info("Preparing Activity storage");
+
             // Bind the connection
             sqlConnection = new SQLiteConnection(filename);
 
@@ -241,6 +243,7 @@ namespace IXICore.Meta
                 }
             }
 
+            Console.WriteLine("Clearing old Activity entries, please wait...");
             lock (storageLock)
             {
                 string sql = "select * from `activity` ORDER BY `blockHeight` DESC LIMIT 1;";
@@ -259,6 +262,7 @@ namespace IXICore.Meta
                     Logging.error(String.Format("Exception has been thrown while executing SQL Query {0}. Exception message: {1}", sql, e.Message));
                 }
             }
+            Logging.info("Prepared Activity storage");
 
             return true;
         }
