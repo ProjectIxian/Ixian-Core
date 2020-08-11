@@ -246,7 +246,7 @@ function getStatus() {
     var dltAPI = "status";
     $.getJSON(dltAPI, { format: "json" })
         .done(function (data) {
-            document.getElementById("version").innerHTML = data["result"]["Node Version"] + " (" + data["result"]["Core Version"] + ")";
+            document.getElementById("version").innerHTML = data["result"]["Node Version"] + " (" + data["result"]["Core Version"] + ") BETA";
 
             sync_status = data["result"]["DLT Status"];
 
