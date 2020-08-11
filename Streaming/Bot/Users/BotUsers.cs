@@ -32,11 +32,13 @@ namespace IXICore.SpixiBot
         {
             lock (contacts)
             {
+                FileStream fs;
                 BinaryWriter writer;
                 try
                 {
                     // Prepare the file for writing
-                    writer = new BinaryWriter(new FileStream(contactsPath, FileMode.Create));
+                    fs = new FileStream(contactsPath, FileMode.Create);
+                    writer = new BinaryWriter(fs);
                 }
                 catch (Exception e)
                 {
@@ -63,7 +65,13 @@ namespace IXICore.SpixiBot
                 {
                     Logging.error("Cannot write to {0} file: {1}", contactsPath, e.Message);
                 }
+                writer.Flush();
                 writer.Close();
+                writer.Dispose();
+
+                fs.Flush();
+                fs.Close();
+                fs.Dispose();
             }
         }
 
