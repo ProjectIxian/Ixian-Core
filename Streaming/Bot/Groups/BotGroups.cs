@@ -59,7 +59,6 @@ namespace IXICore.SpixiBot
                 writer.Close();
                 writer.Dispose();
 
-                fs.Flush();
                 fs.Close();
                 fs.Dispose();
             }
