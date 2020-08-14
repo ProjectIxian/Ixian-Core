@@ -450,23 +450,30 @@ namespace IXICore
                     return;
                 }
 
-                if(context != null)
+                try
                 {
-                    if(allowedIPs != null && allowedIPs.Count() > 0 && !allowedIPs.Contains(context.Request.RemoteEndPoint.Address.ToString()))
+                    if (context != null)
                     {
+                        if (allowedIPs != null && allowedIPs.Count() > 0 && !allowedIPs.Contains(context.Request.RemoteEndPoint.Address.ToString()))
+                        {
+                            context.Response.Close();
+                            Thread.Yield();
+                            continue;
+                        }
+                        if (isAuthorized(context))
+                        {
+                            onUpdate(context);
+                        }
+                        else
+                        {
+                            context.Response.StatusCode = 401;
+                            context.Response.StatusDescription = "401 Unauthorized";
+                        }
                         context.Response.Close();
-                        Thread.Yield();
-                        continue;
                     }
-                    if(isAuthorized(context))
-                    {
-                        onUpdate(context);
-                    }else
-                    {
-                        context.Response.StatusCode = 401;
-                        context.Response.StatusDescription = "401 Unauthorized";
-                    }
-                    context.Response.Close();
+                }catch(Exception e)
+                {
+                    Logging.error("Error processing api request in GenericAPIServer.apiLoop: " + e);
                 }
                 TLC.Report();
                 Thread.Yield();
