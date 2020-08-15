@@ -231,6 +231,14 @@ namespace IXICore.SpixiBot
             }
         }
 
+        public int count()
+        {
+            lock (channels)
+            {
+                return channels.Count;
+            }
+        }
+
         public void clear()
         {
             lock (channels)

@@ -253,5 +253,13 @@ namespace IXICore.SpixiBot
             }
             return path;
         }
+
+        public int count()
+        {
+            lock (contacts)
+            {
+                return contacts.Count;
+            }
+        }
     }
 }
