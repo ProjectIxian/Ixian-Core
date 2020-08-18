@@ -120,6 +120,28 @@ namespace IXICore.SpixiBot
             return false;
         }
 
+
+        public bool hasGroup(int index)
+        {
+            if (index == 0)
+            {
+                return true;
+            }
+            lock (groups)
+            {
+                string str = groupIndexToName(index);
+                if (str == null)
+                {
+                    return false;
+                }
+                if (str == "")
+                {
+                    return true;
+                }
+                return hasGroup(str);
+            }
+        }
+
         public BotGroup getGroup(string name)
         {
             lock (groups)
@@ -148,6 +170,10 @@ namespace IXICore.SpixiBot
                     if (hasGroup(name))
                     {
                         groups.Remove(name);
+                    }
+                    if (hasGroup(group.index))
+                    {
+                        groups.Remove(groupIndexToName(group.index));
                     }
                     groups.AddOrReplace(group.groupName, group);
                 }
