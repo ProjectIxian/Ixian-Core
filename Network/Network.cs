@@ -13,17 +13,9 @@ namespace IXICore.Network
     public enum ProtocolByeCode
     {
         /// <summary>
-        ///  A `Block` was sent with an incorrect checksum.
+        ///  An invalid `Block` was sent.
         /// </summary>
-        blockInvalidChecksum = 100,
-        /// <summary>
-        ///  A `Block` which was sent is suspected to be from a forked chain.
-        /// </summary>
-        blockInvalidForked = 101,
-        /// <summary>
-        /// A `Block` was sent without sufficient consensus signatures.
-        /// </summary>
-        blockInvalidNoConsensus = 102,
+        blockInvalid = 100,
         /// <summary>
         ///  Unspecified disconnection reason.
         /// </summary>
@@ -32,10 +24,6 @@ namespace IXICore.Network
         ///  A Master Node was expected.
         /// </summary>
         expectingMaster = 400,
-        /// <summary>
-        ///  The sending node suspects it is on a forked network.
-        /// </summary>
-        forked = 500,
         /// <summary>
         ///  A deprecated protocol was used which is not supported.
         /// </summary>
