@@ -17,9 +17,10 @@ namespace IXICore.Network
         private static bool running = false;
         private static ThreadLiveCheck TLC;
 
-        // Starts the Network Client Manager. First it connects to one of the seed nodes in order to fetch the Presence List.
+        // Starts the Network Client Manager.
+        // If connections_to_wait_for parameter is bigger than 0, it waits until it connects to the specified number of nodes.
         // Afterwards, it starts the reconnect and keepalive threads
-        public static void start(bool wait_for_connection)
+        public static void start(int connections_to_wait_for = 0)
         {
             if(running)
             {
@@ -49,12 +50,12 @@ namespace IXICore.Network
                 PeerStorage.addPeerToPeerList(addr[0], wallet_addr, Clock.getTimestamp(), 0, 1, 0, false);
             }
 
-            if (wait_for_connection)
+            if (connections_to_wait_for > 0)
             {
                 Random rnd = new Random();
                 // Connect to a random node first
                 int i = 0;
-                while (getConnectedClients(true).Count() < 2 && IxianHandler.forceShutdown == false)
+                while (getConnectedClients(true).Count() < connections_to_wait_for && IxianHandler.forceShutdown == false)
                 {
                     new Thread(() =>
                     {
@@ -146,7 +147,7 @@ namespace IXICore.Network
             stop();
             Thread.Sleep(2000);
             Logging.info("Starting network clients...");
-            start(false);
+            start();
         }
 
         // Connects to a specified node, with the syntax host:port
