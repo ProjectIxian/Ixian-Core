@@ -43,6 +43,7 @@ namespace IXICore
                         p.lastConnected = tmp_peer.lastConnected;
                     }
                     p.rating = tmp_peer.rating;
+                    p.blacklisted = tmp_peer.blacklisted;
                 }
 
                 peerList.RemoveAll(x => x.hostname == hostname);
@@ -123,7 +124,7 @@ namespace IXICore
                 Peer p = null;
                 if(initialConnectionCount < 1)
                 {
-                    var connectableList = peerList.FindAll(x => curTime - x.lastConnectAttempt > 30).OrderByDescending(x => x.lastConnected);
+                    var connectableList = peerList.FindAll(x => x.blacklisted == 0 && curTime - x.lastConnectAttempt > 30).OrderByDescending(x => x.lastConnected);
                     if (connectableList.Count() > 0)
                     {
                         p = connectableList.First();
@@ -131,7 +132,7 @@ namespace IXICore
                 }
                 else
                 {
-                    List<Peer> connectableList = peerList.FindAll(x => curTime - x.lastConnectAttempt > 30);
+                    List<Peer> connectableList = peerList.FindAll(x => x.blacklisted == 0 && curTime - x.lastConnectAttempt > 30);
                     if (connectableList.Count > 0)
                     {
                         Random rnd = new Random();
@@ -257,6 +258,103 @@ namespace IXICore
         public static void resetInitialConnectionCount()
         {
             initialConnectionCount = 0;
+        }
+
+        public static void blacklist(string host_name)
+        {
+            lock (peerList)
+            {
+                Peer p = peerList.Find(x => x.hostname == host_name);
+                if (p == null)
+                {
+                    return;
+                }
+                p.blacklisted = Clock.getTimestamp();
+            }
+        }
+
+        public static void blacklist(byte[] wallet)
+        {
+            lock (peerList)
+            {
+                Peer p = peerList.Find(x => x.walletAddress != null && x.walletAddress.SequenceEqual(wallet));
+                if (p == null)
+                {
+                    return;
+                }
+                p.blacklisted = Clock.getTimestamp();
+            }
+        }
+
+        public static bool isBlacklisted(string host_name)
+        {
+            if (peerList.Find(x => x.blacklisted != 0 && x.hostname == host_name) != null)
+            {
+                return true;
+            }
+            return false;
+        }
+
+        public static bool isBlacklisted(byte[] wallet_address)
+        {
+            if (peerList.Find(x => x.blacklisted != 0 && x.walletAddress != null && x.walletAddress.SequenceEqual(wallet_address)) != null)
+            {
+                return true;
+            }
+            return false;
+        }
+
+        public static bool removeFromBlacklist(string host_name)
+        {
+            lock (peerList)
+            {
+                Peer p = peerList.Find(x => x.blacklisted != 0 && x.hostname == host_name);
+                if (p != null)
+                {
+                    p.blacklisted = 0;
+                    return true;
+                }
+                return false;
+            }
+        }
+
+        public static bool removeFromBlacklist(byte[] wallet_address)
+        {
+            lock (peerList)
+            {
+                Peer p = peerList.Find(x => x.blacklisted != 0 && x.walletAddress != null && x.walletAddress.SequenceEqual(wallet_address));
+                if (p != null)
+                {
+                    p.blacklisted = 0;
+                    return true;
+                }
+                return false;
+            }
+        }
+
+        public static void updateBlacklist()
+        {
+            lock (peerList)
+            {
+                long bl_window = Clock.getTimestamp() - CoreConfig.NodeBlacklistExpiration;
+                var peers = peerList.FindAll(x => x.blacklisted != 0 && x.blacklisted < bl_window);
+                foreach(var peer in peers)
+                {
+                    peer.blacklisted = 0;
+                }
+            }
+        }
+
+        public static void clearBlacklist()
+        {
+            lock (peerList)
+            {
+                var peers = peerList.FindAll(x => x.blacklisted != 0);
+                foreach (var peer in peers)
+                {
+                    peer.blacklisted = 0;
+                }
+            }
         }
     }
 }

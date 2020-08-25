@@ -341,6 +341,16 @@ namespace IXICore
                 response = onValidateAddress(parameters);
             }
 
+            if (methodName.Equals("blacklistpeer", StringComparison.OrdinalIgnoreCase))
+            {
+                response = onBlacklistPeer(parameters);
+            }
+
+            if (methodName.Equals("clearpeerblacklist", StringComparison.OrdinalIgnoreCase))
+            {
+                response = onClearPeerBlacklist();
+            }
+
             bool resources = false;
 
             if (methodName.Equals("resources", StringComparison.OrdinalIgnoreCase))
@@ -1304,6 +1314,27 @@ namespace IXICore
                 return new JsonResponse { result = null, error = new JsonError() { code = (int)RPCErrorCode.RPC_INVALID_ADDRESS_OR_KEY, message = "Invalid address was specified" } };
             }
 
+            return new JsonResponse { result = "OK", error = null };
+        }
+
+        private JsonResponse onBlacklistPeer(Dictionary<string, object> parameters)
+        {
+            if (parameters.ContainsKey("host"))
+            {
+                string host = (string)parameters["host"];
+                PeerStorage.blacklist(host);
+            }
+            if (parameters.ContainsKey("wallet"))
+            {
+                byte[] address = Base58Check.Base58CheckEncoding.DecodePlain((string)parameters["wallet"]);
+                PeerStorage.blacklist(address);
+            }
+            return new JsonResponse { result = "OK", error = null };
+        }
+
+        private JsonResponse onClearPeerBlacklist()
+        {
+            PeerStorage.clearBlacklist();
             return new JsonResponse { result = "OK", error = null };
         }
 

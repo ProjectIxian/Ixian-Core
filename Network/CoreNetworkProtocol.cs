@@ -267,6 +267,7 @@ namespace IXICore
                 endpoint.serverPubKey = pubkey;
 
                 int port = reader.ReadInt32();
+
                 long timestamp = reader.ReadInt64();
 
                 int sigLen = reader.ReadInt32();
@@ -289,6 +290,13 @@ namespace IXICore
                 }
 
                 endpoint.incomingPort = port;
+
+                if (PeerStorage.isBlacklisted(addr) || PeerStorage.isBlacklisted(endpoint.getFullAddress(true)))
+                {
+                    Logging.warn(String.Format("Hello: Connected node is blacklisted ({0} - {1}).", endpoint.getFullAddress(true), Base58Check.Base58CheckEncoding.EncodePlain(addr)));
+                    sendBye(endpoint, ProtocolByeCode.bye, "Blacklisted", "", true);
+                    return false;
+                }
 
                 // Verify the signature
                 if (node_type == 'C')

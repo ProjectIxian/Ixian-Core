@@ -32,6 +32,11 @@ namespace IXICore
         /// </summary>
         public int rating;
 
+        /// <summary>
+        ///  Unix epoch value of when the peer was blacklisted.
+        /// </summary>
+        public long blacklisted;
+
         public Peer(string iHostname, byte[] iWalletAddress, long iLastSeen, long iLastConnectAttempt, long iLastConnected, int iRating)
         {
             hostname = iHostname;
@@ -40,6 +45,7 @@ namespace IXICore
             lastConnectAttempt = iLastConnectAttempt;
             lastConnected = iLastConnected;
             rating = iRating;
+            blacklisted = 0;
         }
     };
 }

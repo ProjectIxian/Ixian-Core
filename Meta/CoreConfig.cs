@@ -155,5 +155,10 @@ namespace IXICore
         /// Minimum blockheight activity to store
         /// </summary>
         public static long minActivityBlockHeight = 30000;
+
+        /// <summary>
+        /// Time in seconds of how long the node will remain on the blacklist, once blacklisted
+        /// </summary>
+        public static long NodeBlacklistExpiration = 43200;
     }
 }
