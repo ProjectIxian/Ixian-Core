@@ -66,6 +66,7 @@ namespace IXICore
         public static readonly int defaultRsaKeySize = 4096;
         /// <summary>
         ///  How often a special kind of block, called a 'superblock' is generated on the Ixian blockchain.
+        ///  Default value for Ixian DLT network is 1000.
         /// </summary>
         /// <remarks>
         ///  Superblocks condense the information of the previous blocks (from the previous superblock to the current one), so that much of the superfluous blockchain data
