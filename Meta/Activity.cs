@@ -198,7 +198,7 @@ namespace IXICore.Meta
         // Creates the storage file if not found
         public static bool prepareStorage()
         {
-            Logging.info("Preparing Activity storage");
+            Logging.info("Preparing Activity storage, please wait...");
 
             // Bind the connection
             sqlConnection = new SQLiteConnection(filename);
