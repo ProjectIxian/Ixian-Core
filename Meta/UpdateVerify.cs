@@ -14,9 +14,9 @@ namespace IXICore.Meta
         private static int checkInterval = 6 * 60 * 60;
 
         // artificially set last check so far into the past that next check will happen in ~2 min, no matter what the interval is
-        private static DateTime lastVersionCheck = DateTime.Now.AddSeconds(checkInterval + 10);
+        private static DateTime lastVersionCheck = DateTime.Now.AddSeconds(-(checkInterval + 10));
 
-        public static readonly string IXIANSignPubKey = "<RSAKeyValue><Modulus>uoqtGaAoQBTkZUuxuBsusUsHYb5sy0iYJPuE+zhM9ZMySCQK3PevZvhqj9bdEv82A/cl0lYWTWk9ZU2sLAm1n6DLFwCwC8AWShv3Il8y8L4oCbDMfyBWMY9yPq5XSQnplrfR5rER/MWt+XQX/cJeEOd0prNgIYSPluo7u+h+fM2CzMfv5vFtN/E1HSxKUVhP8wkGmOoxXo1EfIqzEHlg4BO0z+hNEIdiXopvwOVkDbetWnOXnwOkOC+bcvPWFP3RYfFiez7GStJFVJhs1lc7wM3PmotzoO7/4NyuxVueydRBERhGbq+KV0FfggPshMh/+srpbu6etiLyW7KtZX8ARgxasZVHNggIRygM4LYLk/ppcvHCohEfmYsrTo1Bk0CQe1JFIbFIWXLK+5VDhpVc0w1HpeyjuB/fL8vEHBhOfuNL8frhfpFWTzzPF2IBd59E6T8TQCM/K2DBuxWAEws8nqcNpYsjocuRw2OZmbjzPcerCo2haVaezT3YbNZHAflzSxI+VmURyuXBw+76IV63gJTwGWpZ4A+/D6ubOuqrssfTBRYdjJLTecb3D7aBd2JpKVPVfSN61zSrkt++eEgkikkFVSqQ2ILGB7azzaGPCm4RL0ZMa47BSfMcPSMM4oN91mbVWSWaspCQe0TjbeIR9jl18Y1jcvHloiX8rVC5YKWPPYG8YuGcKq8U0Hp2lkeCnXqKfvUGoH/e6ufkwBCqJZle2S+wmRHKFlEuMHxs1sUEgleZcnQQ6lXYuwpoIXKB6NxMrSTPWM+QHWVnU0tL0X3MYIvCxT6olYV1H9Rfrm3p9lP1vJME7H0sudypXlsUzddMQtqLAjpS7Sgl1RJ7CwnYQa/nfrMYokaWhXdHeT0XpdANyiRdlklrHE19Jlb4Z/wpK+P4zYfrx/8Mj6J+ktxJuyHQVj1wVwH9qmsWfVvwJ4xPKBQcfS4aJ6iUnGwY1HuywETGgx4eAp4vsVjaR7VCE/JPA4kwLCKAcXAT2BwNMC3rCG+4XouyZuZjYLGGTuRkqpXQ1mTBKXSg6t9iUsc25V9k4jS1d+y7qumDT6jqsLavvvwkBKpu1ONgew9Pqbc9GLXBmXSHIhUdFiFF9d3cvWv5m3QhRKdCW0jQ8xUAlxgZW27a+09YppVwvex6/8fmhx9nldpC1I24EyyrBXWgIABAvxv0gAo0CzPTLIOh1c8oOapMaie2aAR3Epfna+q/Z/h5ofrx9HmP+xAxhKHOHrRWo+EybceoWh/mmMRjnqmm1G4DrHsW90Z56qZWdX4QGMXpP9ZhVvxqFj1IxWkzOHk5XAOq44UQq2hFT46bAbe+s5JSOGfvMzzagFC5LuuAeelFTUfRR7wFClM5kQ==</Modulus><Exponent>AQAB</Exponent></RSAKeyValue>";
+        public static string signPubKey = "<RSAKeyValue><Modulus>uoqtGaAoQBTkZUuxuBsusUsHYb5sy0iYJPuE+zhM9ZMySCQK3PevZvhqj9bdEv82A/cl0lYWTWk9ZU2sLAm1n6DLFwCwC8AWShv3Il8y8L4oCbDMfyBWMY9yPq5XSQnplrfR5rER/MWt+XQX/cJeEOd0prNgIYSPluo7u+h+fM2CzMfv5vFtN/E1HSxKUVhP8wkGmOoxXo1EfIqzEHlg4BO0z+hNEIdiXopvwOVkDbetWnOXnwOkOC+bcvPWFP3RYfFiez7GStJFVJhs1lc7wM3PmotzoO7/4NyuxVueydRBERhGbq+KV0FfggPshMh/+srpbu6etiLyW7KtZX8ARgxasZVHNggIRygM4LYLk/ppcvHCohEfmYsrTo1Bk0CQe1JFIbFIWXLK+5VDhpVc0w1HpeyjuB/fL8vEHBhOfuNL8frhfpFWTzzPF2IBd59E6T8TQCM/K2DBuxWAEws8nqcNpYsjocuRw2OZmbjzPcerCo2haVaezT3YbNZHAflzSxI+VmURyuXBw+76IV63gJTwGWpZ4A+/D6ubOuqrssfTBRYdjJLTecb3D7aBd2JpKVPVfSN61zSrkt++eEgkikkFVSqQ2ILGB7azzaGPCm4RL0ZMa47BSfMcPSMM4oN91mbVWSWaspCQe0TjbeIR9jl18Y1jcvHloiX8rVC5YKWPPYG8YuGcKq8U0Hp2lkeCnXqKfvUGoH/e6ufkwBCqJZle2S+wmRHKFlEuMHxs1sUEgleZcnQQ6lXYuwpoIXKB6NxMrSTPWM+QHWVnU0tL0X3MYIvCxT6olYV1H9Rfrm3p9lP1vJME7H0sudypXlsUzddMQtqLAjpS7Sgl1RJ7CwnYQa/nfrMYokaWhXdHeT0XpdANyiRdlklrHE19Jlb4Z/wpK+P4zYfrx/8Mj6J+ktxJuyHQVj1wVwH9qmsWfVvwJ4xPKBQcfS4aJ6iUnGwY1HuywETGgx4eAp4vsVjaR7VCE/JPA4kwLCKAcXAT2BwNMC3rCG+4XouyZuZjYLGGTuRkqpXQ1mTBKXSg6t9iUsc25V9k4jS1d+y7qumDT6jqsLavvvwkBKpu1ONgew9Pqbc9GLXBmXSHIhUdFiFF9d3cvWv5m3QhRKdCW0jQ8xUAlxgZW27a+09YppVwvex6/8fmhx9nldpC1I24EyyrBXWgIABAvxv0gAo0CzPTLIOh1c8oOapMaie2aAR3Epfna+q/Z/h5ofrx9HmP+xAxhKHOHrRWo+EybceoWh/mmMRjnqmm1G4DrHsW90Z56qZWdX4QGMXpP9ZhVvxqFj1IxWkzOHk5XAOq44UQq2hFT46bAbe+s5JSOGfvMzzagFC5LuuAeelFTUfRR7wFClM5kQ==</Modulus><Exponent>AQAB</Exponent></RSAKeyValue>";
 
         public static string updateUrl = null;
 
@@ -40,11 +40,15 @@ namespace IXICore.Meta
         /// <summary>
         ///  Init updater
         /// </summary>
-        public static void init(string url, int check_interval)
+        public static void init(string url, int check_interval, string sign_pub_key = null)
         {
             updateUrl = url;
             checkInterval = check_interval;
-            lastVersionCheck = DateTime.Now.AddSeconds(checkInterval + 10);
+            lastVersionCheck = DateTime.Now.AddSeconds(-(checkInterval + 10));
+            if(sign_pub_key != null)
+            {
+                signPubKey = sign_pub_key;
+            }
         }
 
         /// <summary>
@@ -108,7 +112,7 @@ namespace IXICore.Meta
             byte[] signature_bytes = Convert.FromBase64String(base64Sig);
             byte[] version_bytes = ASCIIEncoding.ASCII.GetBytes(version);
             RSACryptoServiceProvider r = new RSACryptoServiceProvider();
-            r.FromXmlString(IXIANSignPubKey);
+            r.FromXmlString(signPubKey);
             return r.VerifyData(version_bytes, signature_bytes, HashAlgorithmName.SHA512, RSASignaturePadding.Pkcs1);
         }
     }
