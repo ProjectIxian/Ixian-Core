@@ -254,7 +254,11 @@ namespace IXICore.Meta
                     if (tmpActivityList != null && tmpActivityList.Count > 0)
                     {
                         activity = tmpActivityList[0];
-                        executeSQL("DELETE FROM `activity` WHERE `blockHeight` < ?", activity.blockHeight - CoreConfig.minActivityBlockHeight);
+                        if(activity.blockHeight > CoreConfig.minActivityBlockHeight)
+                        {
+                            executeSQL("DELETE FROM `activity` WHERE `blockHeight` < ?", activity.blockHeight - CoreConfig.minActivityBlockHeight);
+                            executeSQL("VACUUM;");
+                        }
                     }
                 }
                 catch (Exception e)
