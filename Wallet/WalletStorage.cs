@@ -475,14 +475,21 @@ namespace IXICore
             try
             {
                 // Decrypt
+                // Suppress decryption errors in console output
+                bool console_output = Logging.consoleOutput;
+                Logging.consoleOutput = false;
                 byte[] private_key = CryptoManager.lib.decryptWithPassword(b_privateKey, password, false);
-                if(private_key == null)
+                Logging.flush();
+                Logging.consoleOutput = console_output;
+                if (private_key == null)
                 {
+                    Logging.error("Unable to decrypt wallet, an incorrect password was used.");
                     return false;
                 }
                 byte[] public_key = CryptoManager.lib.decryptWithPassword(b_publicKey, password, false);
                 if (public_key == null)
                 {
+                    Logging.error("Unable to decrypt wallet, file is probably corrupted.");
                     return false;
                 }
                 if (b_last_nonce != null)
@@ -490,6 +497,7 @@ namespace IXICore
                     last_nonce_bytes = CryptoManager.lib.decryptWithPassword(b_last_nonce, password, false);
                     if (last_nonce_bytes == null)
                     {
+                        Logging.error("Unable to decrypt wallet, file is probably corrupted.");
                         return false;
                     }
                 }
@@ -504,7 +512,6 @@ namespace IXICore
             catch (Exception)
             {
                 Logging.error(string.Format("Unable to decrypt wallet, an incorrect password was used."));
-                Logging.flush();
                 return false;
             }
 
@@ -556,9 +563,15 @@ namespace IXICore
             try
             {
                 // Decrypt
+                // Suppress decryption errors in console output
+                bool console_output = Logging.consoleOutput;
+                Logging.consoleOutput = false;
                 byte[] master_seed = CryptoManager.lib.decryptWithPassword(b_master_seed, password, true);
+                Logging.flush();
+                Logging.consoleOutput = console_output;
                 if (master_seed == null)
                 {
+                    Logging.error(string.Format("Unable to decrypt wallet, an incorrect password was used."));
                     return false;
                 }
                 byte[] seed_hash = Crypto.sha512sqTrunc(masterSeed);
@@ -572,7 +585,6 @@ namespace IXICore
             catch (Exception)
             {
                 Logging.error(string.Format("Unable to decrypt wallet, an incorrect password was used."));
-                Logging.flush();
                 return false;
             }
 
