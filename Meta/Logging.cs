@@ -80,13 +80,13 @@ namespace IXICore.Meta
         /// <summary>
         /// Initialize and start the logging thread.
         /// </summary>
-        public static void start(string path)
+        public static bool start(string path)
         {
             if (running)
             {
                 if (consoleOutput)
                     Console.WriteLine("Logging already started.");
-                return;
+                return false;
             }
             try
             {
@@ -114,7 +114,9 @@ namespace IXICore.Meta
             {
                 // Ignore all exception and start anyway with console only logging.
                 Console.WriteLine(String.Format("Unable to open log file. Error was: {0}. Logging to console only.", e.Message));
+                return false;
             }
+            return true;
         }
 
         /// <summary>
