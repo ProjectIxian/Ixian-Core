@@ -221,12 +221,18 @@ namespace IXICore
 
                 RSACryptoServiceProvider rsa = rsaKeyFromBytes(publicKey);
 
+                if(rsa == null)
+                {
+                    Logging.warn("Error occured while verifying signature {0}, invalid public key {1}", Crypto.hashToString(signature), Crypto.hashToString(publicKey));
+                    return false;
+                }
+
                 byte[] signature_bytes = signature;
                 return rsa.VerifyData(input_data, CryptoConfig.MapNameToOID("SHA512"), signature_bytes);
             }
             catch (Exception e)
             {
-                Logging.warn(string.Format("Invalid public key {0}:{1}", publicKey, e.Message));
+                Logging.warn("Error occured while verifying signature {0} with public key {1}: {2}", Crypto.hashToString(signature), Crypto.hashToString(publicKey), e.Message);
             }
             return false;
         }
