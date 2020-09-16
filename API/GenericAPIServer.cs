@@ -441,6 +441,7 @@ namespace IXICore
             catch (Exception ex)
             {
                 Logging.error("Cannot initialize API server! The error was: " + ex.Message);
+                IxianHandler.forceShutdown = true;
                 return;
             }
 
