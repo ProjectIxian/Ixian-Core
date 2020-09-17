@@ -243,7 +243,8 @@ namespace IXICore.Meta
                 }
             }
 
-            Console.WriteLine("Clearing old Activity entries, please wait...");
+            Logging.info("Clearing old Activity entries, please wait...");
+            Logging.flush();
             lock (storageLock)
             {
                 string sql = "select * from `activity` ORDER BY `blockHeight` DESC LIMIT 1;";
