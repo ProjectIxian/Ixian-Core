@@ -180,6 +180,8 @@ namespace IXICore
             public byte[] signerNonce;
         }
 
+        private static Random random = new Random();
+
         /// <summary>
         ///  Transaction version.
         /// </summary>
@@ -357,8 +359,7 @@ namespace IXICore
             fee = new IxiNumber("0");
             blockHeight = 0;
 
-            Random r = new Random();
-            nonce = (int)((DateTimeOffset.Now.ToUnixTimeMilliseconds() - (DateTimeOffset.Now.ToUnixTimeSeconds() * 1000)) * 100) + r.Next(100);
+            nonce = getRandomNonce();
 
             applied = 0;
 
@@ -399,9 +400,9 @@ namespace IXICore
 
             if (tx_nonce == -1)
             {
-                Random r = new Random();
-                nonce = (int)((DateTimeOffset.Now.ToUnixTimeMilliseconds() - (DateTimeOffset.Now.ToUnixTimeSeconds() * 1000)) * 100) + r.Next(100);
-            }else
+                nonce = getRandomNonce();
+            }
+            else
             {
                 nonce = tx_nonce;
             }
@@ -471,8 +472,7 @@ namespace IXICore
 
             if (tx_nonce == -1)
             {
-                Random r = new Random();
-                nonce = (int)((DateTimeOffset.Now.ToUnixTimeMilliseconds() - (DateTimeOffset.Now.ToUnixTimeSeconds() * 1000)) * 100) + r.Next(100);
+                nonce = getRandomNonce();
             }
             else
             {
@@ -547,8 +547,7 @@ namespace IXICore
 
             if (tx_nonce == -1)
             {
-                Random r = new Random();
-                nonce = (int)((DateTimeOffset.Now.ToUnixTimeMilliseconds() - (DateTimeOffset.Now.ToUnixTimeSeconds() * 1000)) * 100) + r.Next(100);
+                nonce = getRandomNonce();
             }
             else
             {
@@ -1867,6 +1866,11 @@ namespace IXICore
             tDic.Add("totalAmount", (amount + fee).ToString());
 
             return tDic;
+        }
+
+        private int getRandomNonce()
+        {
+            return (int)((DateTimeOffset.Now.ToUnixTimeMilliseconds() - (DateTimeOffset.Now.ToUnixTimeSeconds() * 10)) * 100) + random.Next(1000);
         }
     }
 }
