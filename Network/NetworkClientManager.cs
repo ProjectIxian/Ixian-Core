@@ -95,6 +95,7 @@ namespace IXICore.Network
             }
             running = true;
             networkClients = new List<NetworkClient>();
+            connectingClients = new List<string>();
 
             bool result = connectTo(address, null);
             if(!result)
@@ -137,6 +138,10 @@ namespace IXICore.Network
 
                 // Empty the client list
                 networkClients.Clear();
+            }
+            lock(connectingClients)
+            {
+                connectingClients.Clear();
             }
         }
 
