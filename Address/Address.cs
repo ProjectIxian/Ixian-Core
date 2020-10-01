@@ -122,10 +122,11 @@ namespace IXICore
                 byte[] raw_address = new byte[36];
                 raw_address[0] = 0; // version
 
-                List<byte> tmp_address = base_address.ToList();
-                tmp_address.AddRange(nonce);
+                byte[] tmp_address = new byte[base_address.Length + nonce.Length];
+                Array.Copy(base_address, tmp_address, base_address.Length);
+                Array.Copy(nonce, 0, tmp_address, base_address.Length, nonce.Length);
 
-                byte[] hashed_pub_key = Crypto.sha512quTrunc(tmp_address.ToArray(), 0, tmp_address.Count, 32);
+                byte[] hashed_pub_key = Crypto.sha512quTrunc(tmp_address, 0, tmp_address.Length, 32);
                 Array.Copy(hashed_pub_key, 0, raw_address, 1, hashed_pub_key.Length);
 
                 byte[] checksum = Crypto.sha512sqTrunc(raw_address, 0, 33, 3);
@@ -168,10 +169,11 @@ namespace IXICore
                 byte[] raw_address = new byte[48];
                 raw_address[0] = 1; // version
 
-                List<byte> tmp_address = base_address.ToList();
-                tmp_address.AddRange(nonce);
+                byte[] tmp_address = new byte[base_address.Length + nonce.Length];
+                Array.Copy(base_address, tmp_address, base_address.Length);
+                Array.Copy(nonce, 0, tmp_address, base_address.Length, nonce.Length);
 
-                byte[] hashed_pub_key = Crypto.sha512sqTrunc(tmp_address.ToArray(), 5, 0, 44);
+                byte[] hashed_pub_key = Crypto.sha512sqTrunc(tmp_address, 5, 0, 44); // TODO TODO offset 5 is likely incorrect, we'll need v2 address with this fixed
                 Array.Copy(hashed_pub_key, 0, raw_address, 1, hashed_pub_key.Length);
 
                 byte[] checksum = Crypto.sha512sqTrunc(raw_address, 0, 45, 3);
