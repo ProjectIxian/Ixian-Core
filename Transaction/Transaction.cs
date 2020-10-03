@@ -276,6 +276,10 @@ namespace IXICore
         /// </summary>
         public byte[] pubKey;
         /// <summary>
+        ///  Block height at which the transaction is about to be applied. Temporary variable, only used during applying block's transactions
+        /// </summary>
+        public ulong readyToApply;
+        /// <summary>
         ///  Block height at which the transaction was applied.
         /// </summary>
         public ulong applied;
@@ -362,6 +366,7 @@ namespace IXICore
             nonce = getRandomNonce();
 
             applied = 0;
+            readyToApply = 0;
 
             dataChecksum = tx_data_checksum;
             _data = tx_data;
@@ -643,6 +648,8 @@ namespace IXICore
                 pubKey = new byte[tx_transaction.pubKey.Length];
                 Array.Copy(tx_transaction.pubKey, pubKey, pubKey.Length);
             }
+
+            readyToApply = tx_transaction.readyToApply;
 
             applied = tx_transaction.applied;
 
