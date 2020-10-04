@@ -188,7 +188,7 @@ namespace IXICore
                     context.Response.ContentType = "application/json";
                     JsonError error = new JsonError { code = (int)RPCErrorCode.RPC_INTERNAL_ERROR, message = "Unknown error occured, see log for details." };
                     sendResponse(context.Response, new JsonResponse { error = error });
-                    Logging.error(string.Format("Exception occured in API server while processing '{0}'. {1}", method_name, e));
+                    Logging.error("Exception occured in API server while processing '{0}'. {1}", method_name, e);
                 }
             }
             catch (Exception e)
@@ -196,7 +196,7 @@ namespace IXICore
                 context.Response.ContentType = "application/json";
                 JsonError error = new JsonError { code = (int)RPCErrorCode.RPC_INTERNAL_ERROR, message = "Unknown error occured, see log for details." };
                 sendResponse(context.Response, new JsonResponse { error = error });
-                Logging.error(string.Format("Exception occured in API server. {0}", e));
+                Logging.error("Exception occured in API server. {0}", e);
             }
         }
 
@@ -512,7 +512,7 @@ namespace IXICore
             {
                 if (continueRunning)
                 {
-                    Logging.error(String.Format("APIServer: {0}", e));
+                    Logging.error("APIServer: {0}", e);
                 }
             }
         }
@@ -521,7 +521,13 @@ namespace IXICore
         {
             string responseString = JsonConvert.SerializeObject(response);
 
-            Logging.info("Processed request, sending response: " + responseString);
+            string responseError = "null";
+            if (response.error != null)
+            {
+                responseError = response.error.ToString();
+            }
+
+            Logging.info("Processed request, sending response with error code: {0}", responseError);
 
             byte[] buffer = Encoding.UTF8.GetBytes(responseString);
 
@@ -536,7 +542,7 @@ namespace IXICore
             {
                 if (continueRunning)
                 {
-                    Logging.error(String.Format("APIServer: {0}", e));
+                    Logging.error("APIServer: {0}", e);
                 }
             }
         }
@@ -554,7 +560,7 @@ namespace IXICore
             {
                 if (continueRunning)
                 {
-                    Logging.error(String.Format("APIServer: {0}", e));
+                    Logging.error("APIServer: {0}", e);
                 }
             }
         }
