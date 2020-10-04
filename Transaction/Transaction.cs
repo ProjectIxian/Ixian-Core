@@ -1877,7 +1877,8 @@ namespace IXICore
 
         private int getRandomNonce()
         {
-            return (int)((DateTimeOffset.Now.ToUnixTimeMilliseconds() - (DateTimeOffset.Now.ToUnixTimeSeconds() * 10)) * 100) + random.Next(1000);
+            int milliseconds = (int)(DateTimeOffset.Now.ToUnixTimeMilliseconds() - (DateTimeOffset.Now.ToUnixTimeSeconds() * 1000));
+            return (milliseconds * 1000) + random.Next(1000);
         }
     }
 }
