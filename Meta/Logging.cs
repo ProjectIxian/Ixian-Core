@@ -210,10 +210,12 @@ namespace IXICore.Meta
                     {
                         if (severity == LogSeverity.error)
                             Console.ForegroundColor = ConsoleColor.Red;
+                        else if(severity == LogSeverity.warn)
+                            Console.ForegroundColor = ConsoleColor.Yellow;
 
                         Console.WriteLine(formattedMessage);
 
-                        if (severity == LogSeverity.error)
+                        if (severity == LogSeverity.error || severity == LogSeverity.warn)
                             Console.ResetColor();
                     }
 
