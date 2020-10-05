@@ -328,12 +328,6 @@ namespace IXICore.Meta
         public static void stopStorage()
         {
             running = false;
-            if (sqlConnection != null)
-            {
-                sqlConnection.Close();
-                sqlConnection = null;
-            }
-            Logging.info("Activity Storage stopped.");
         }
 
         public static List<Activity> getActivitiesByAddress(string address, int fromIndex, int count, bool descending)
@@ -741,14 +735,26 @@ namespace IXICore.Meta
                                 queueStatements.Remove(active_message);
                             }
                             Logging.error("Too many retries, aborting...");
-                            stopStorage();
+                            shutdown();
                             throw new Exception("Too many Activity storage retries. Aborting storage thread.");
                         }
                     }
                 }
                 Thread.Yield();
             }
-            stopStorage();
+            shutdown();
+        }
+
+        private static void shutdown()
+        {
+            running = false;
+            if (sqlConnection != null)
+            {
+                sqlConnection.Close();
+                sqlConnection = null;
+            }
+            thread = null;
+            Logging.info("Activity Storage stopped.");
         }
     }
 }
