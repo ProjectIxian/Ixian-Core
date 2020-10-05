@@ -123,6 +123,11 @@ namespace IXICore
         /// </summary>
         public static readonly string ixianChecksumLockString = "Ixian";
 
+        /// <summary>
+        /// Block height after which mining/PoW transactions are not accepted anymore.
+        /// </summary>
+        public static readonly ulong miningExpirationBlockHeight = 5256000;
+
 
         /// <summary>
         ///  Retrieves the lenght of the redacted window based on the block version in use.
