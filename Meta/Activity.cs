@@ -233,13 +233,14 @@ namespace IXICore.Meta
         
         public static bool prepareStorage()
         {
+            running = true;
             if (!prepareStorageInternal())
             {
+                running = false;
                 return false;
             }
             // Start thread
             TLC = new ThreadLiveCheck();
-            running = true;
             thread = new Thread(new ThreadStart(threadLoop));
             thread.Name = "Activity_Storage_Thread";
             thread.Start();
