@@ -106,9 +106,10 @@ namespace IXICore
         /// </summary>
         public static readonly IxiNumber relayPriceInitial = new IxiNumber("0.0002");
         /// <summary>
-        /// Maximum number of transactions in each block. (Used in DLT Node executable.)
+        /// Maximum number of transactions in each block that the node will accept. (Used in DLT Node executable.)
         /// </summary>
-        public static readonly ulong maximumTransactionsPerBlock = 2000;
+        public static readonly ulong maximumTransactionsPerBlock = 70200;
+
         /// <summary>
         /// Maximum number of transactions sent in each chunk when a fresh DLT Node is synchronizing. (Used in DLT Node executable.)
         /// </summary>
