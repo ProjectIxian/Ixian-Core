@@ -8,6 +8,7 @@ using System.IO;
 using System.Linq;
 using System.Numerics;
 using System.Text;
+using System.Threading;
 
 namespace IXICore.Meta
 {
@@ -195,8 +196,60 @@ namespace IXICore.Meta
         private static SQLiteConnection sqlConnection = null;
         private static readonly object storageLock = new object(); // This should always be placed when performing direct sql operations
 
-        // Creates the storage file if not found
+        // Threading
+        private static Thread thread = null;
+        private static bool running = false;
+        private static ThreadLiveCheck TLC;
+
+        private enum QueueStorageCode
+        {
+            insertActivity,
+            updateStatus,
+            updateValue
+
+        }
+        private struct QueueStorageMessage
+        {
+            public QueueStorageCode code;
+            public int retryCount;
+            public object data;
+        }
+
+        private struct MessageDataStatus
+        {
+            public byte[] data;
+            public ActivityStatus status;
+            public ulong blockHeight;
+        }
+
+        private struct MessageDataValue
+        {
+            public byte[] data;
+            public IxiNumber value;
+        }
+
+        // Maintain a queue of sql statements
+        private static readonly List<QueueStorageMessage> queueStatements = new List<QueueStorageMessage>();
+        
         public static bool prepareStorage()
+        {
+            if (!prepareStorageInternal())
+            {
+                return false;
+            }
+            // Start thread
+            TLC = new ThreadLiveCheck();
+            running = true;
+            thread = new Thread(new ThreadStart(threadLoop));
+            thread.Name = "Activity_Storage_Thread";
+            thread.Start();
+
+            return true;
+        }
+
+
+        // Creates the storage file if not found
+        private static bool prepareStorageInternal()
         {
             Logging.info("Preparing Activity storage, please wait...");
 
@@ -274,6 +327,7 @@ namespace IXICore.Meta
 
         public static void stopStorage()
         {
+            running = false;
             if (sqlConnection != null)
             {
                 sqlConnection.Close();
@@ -463,7 +517,23 @@ namespace IXICore.Meta
             return activity;
         }
 
-        public static bool insertActivity(Activity activity)
+        public static void insertActivity(Activity activity)
+        {
+            // Make a copy of the block for the queue storage message processing
+            QueueStorageMessage message = new QueueStorageMessage
+            {
+                code = QueueStorageCode.insertActivity,
+                retryCount = 0,
+                data = activity
+            };
+
+            lock (queueStatements)
+            {
+                queueStatements.Add(message);
+            }
+        }
+
+        private static bool insertActivityInternal(Activity activity)
         {
             if(activity.id == null || activity.id.Length < 1)
             {
@@ -501,7 +571,24 @@ namespace IXICore.Meta
             return result;
         }
 
-        public static bool updateStatus(byte[] data, ActivityStatus status, ulong block_height)
+        public static void updateStatus(byte[] data, ActivityStatus status, ulong block_height)
+        {
+            // Make a copy of the block for the queue storage message processing
+            QueueStorageMessage message = new QueueStorageMessage
+            {
+                code = QueueStorageCode.updateStatus,
+                retryCount = 0,
+                data = new MessageDataStatus { data = data, status = status, blockHeight = block_height }
+            };
+
+            lock (queueStatements)
+            {
+                queueStatements.Add(message);
+            }
+        }
+
+
+        private static bool updateStatusInternal(byte[] data, ActivityStatus status, ulong block_height)
         {
             bool result = false;
 
@@ -528,7 +615,23 @@ namespace IXICore.Meta
             return result;
         }
 
-        public static bool updateValue(byte[] data, IxiNumber value)
+        public static void updateValue(byte[] data, IxiNumber value)
+        {
+            // Make a copy of the block for the queue storage message processing
+            QueueStorageMessage message = new QueueStorageMessage
+            {
+                code = QueueStorageCode.updateValue,
+                retryCount = 0,
+                data = new MessageDataValue { data = data, value = value }
+            };
+
+            lock (queueStatements)
+            {
+                queueStatements.Add(message);
+            }
+        }
+
+        private static bool updateValueInternal(byte[] data, IxiNumber value)
         {
             bool result = false;
 
@@ -568,6 +671,84 @@ namespace IXICore.Meta
             {
                 File.Delete(filename);
             }
+        }
+
+        public static void threadLoop()
+        {
+            QueueStorageMessage active_message = new QueueStorageMessage();
+
+            bool pending_statements = false;
+
+            while (running || pending_statements == true)
+            {
+                bool message_found = false;
+                pending_statements = false;
+                TLC.Report();
+                try
+                {
+                    lock (queueStatements)
+                    {
+                        int statements_count = queueStatements.Count();
+                        if (statements_count > 0)
+                        {
+                            if (statements_count > 1)
+                            {
+                                pending_statements = true;
+                            }
+                            QueueStorageMessage candidate = queueStatements[0];
+                            active_message = candidate;
+                            message_found = true;
+                        }
+                    }
+
+                    if (message_found)
+                    {
+                        if (active_message.code == QueueStorageCode.insertActivity)
+                        {
+                            insertActivityInternal((Activity)active_message.data);
+                        }
+                        else if (active_message.code == QueueStorageCode.updateStatus)
+                        {
+                            MessageDataStatus mds = (MessageDataStatus)active_message.data;
+                            updateStatusInternal(mds.data, mds.status, mds.blockHeight);
+                        }
+                        else if (active_message.code == QueueStorageCode.updateValue)
+                        {
+                            MessageDataValue mdv = (MessageDataValue)active_message.data;
+                            updateValueInternal(mdv.data, mdv.value);
+                        }
+                        lock (queueStatements)
+                        {
+                            queueStatements.Remove(active_message);
+                        }
+                    }
+                    else
+                    {
+                        // Sleep for 10ms to yield CPU schedule slot
+                        Thread.Sleep(10);
+                    }
+                }
+                catch (Exception e)
+                {
+                    Logging.error("Exception occured in Activity storage thread loop: " + e);
+                    if (message_found)
+                    {
+                        active_message.retryCount += 1;
+                        if (active_message.retryCount > 10)
+                        {
+                            lock (queueStatements)
+                            {
+                                queueStatements.Remove(active_message);
+                            }
+                            Logging.error("Too many retries, aborting...");
+                            stopStorage();
+                            throw new Exception("Too many Activity storage retries. Aborting storage thread.");
+                        }
+                    }
+                }
+                Thread.Yield();
+            }
+            stopStorage();
         }
     }
 }
