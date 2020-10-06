@@ -143,7 +143,7 @@ function getActivity() {
                     htmlEl.className += " received";
                     htmlEl.getElementsByClassName("pamount")[0].innerHTML = data["result"][i]["value"];
                     htmlEl.getElementsByClassName("pdesc")[0].innerHTML = data["result"][i]["wallet"];
-                    htmlEl.getElementsByClassName("pdesc")[0].innerHTML += "<br/>Staking Reward";
+                    htmlEl.getElementsByClassName("pdesc")[0].innerHTML += "<br/>Signing Reward";
                 } else if (type == 202) {
                     htmlEl.className += " received";
                     htmlEl.getElementsByClassName("pamount")[0].innerHTML = data["result"][i]["value"];
