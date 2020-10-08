@@ -191,9 +191,59 @@ namespace IXICore
             return new IxiNumber(new BigInteger(pow_reward)); // Generate the corresponding IxiNumber, including decimals
         }
 
-        public static IxiNumber calculateSigningRewardForBlock()
+        /// <summary>
+        ///  Calculates the signing reward amount for a certain block
+        /// </summary>
+        /// <param name="target_block_num">Block number for which you'd like to calculate the mining signing amount.</param>
+        /// <param name="current_supply">Current circulating supply of IXI.</param>
+        /// <returns>Mining reward amount for the specified block.</returns>
+        public static IxiNumber calculateSigningRewardForBlock(ulong target_block_num, IxiNumber current_supply)
         {
+            IxiNumber inflationPA = new IxiNumber("0.1"); // 0.1% inflation per year for the first month
 
+            if (target_block_num > 86400) // increase inflation to 5% after 1 month
+            {
+                inflationPA = new IxiNumber("5");
+            }
+
+            IxiNumber reward = 0;
+            if (!CoreConfig.isTestNet)
+            {
+                if (current_supply > new IxiNumber("100000000000"))
+                {
+                    reward = 1000;
+                }
+                else if (current_supply > new IxiNumber("50000000000"))
+                {
+                    // Set the annual inflation to 1% after 50bn IXIs in circulation 
+                    inflationPA = new IxiNumber("1");
+                    reward = current_supply * inflationPA / new IxiNumber("100000000"); // approximation of 2*60*24*365*100
+                }
+                else
+                {
+                    // Calculate the amount of new IXIs to be minted
+                    reward = current_supply * inflationPA / new IxiNumber("100000000"); // approximation of 2*60*24*365*100
+                }
+            }
+            else
+            {
+                if (current_supply > new IxiNumber("200000000000"))
+                {
+                    reward = 1000;
+                }
+                else if (current_supply > new IxiNumber("50000000000"))
+                {
+                    // Set the annual inflation to 1% after 50bn IXIs in circulation
+                    inflationPA = new IxiNumber("1");
+                    reward = current_supply * inflationPA / new IxiNumber("100000000"); // approximation of 2*60*24*365*100
+                }
+                else
+                {
+                    // Calculate the amount of new IXIs to be minted
+                    reward = current_supply * inflationPA / new IxiNumber("100000000"); // approximation of 2*60*24*365*100
+                }
+            }
+            return reward;
         }
     }
 }
