@@ -18,7 +18,7 @@ namespace IXICore
     {
         protected string filename;
 
-        protected int walletVersion = 0;
+        public int walletVersion { get; protected set; } = 0;
         protected string walletPassword = ""; // TODO TODO TODO TODO wallet password, seed and keys should be encrypted in memory
 
         protected byte[] seedHash = null;
