@@ -1,11 +1,14 @@
 ﻿using System;
+using System.IO;
 
 namespace IXICore.Utils
 {
-	// VarInt class extends ulong and byte[] with GetVarIntBytes and GetVarInt/GetVarUInt respectively.
-	// VarInt functions convert long/ulong to var int bytes and vice-versa and was designed to save space.
+	// VarInt functions convert long/ulong to variable length bytes and vice-versa and was designed to save space.
 	// Our variation of VarInt supports signed and unsigned integers.
-	// byte codes for larger than value 247 are:
+	// Negative integers or integers bigger than 0xf7 (247) have an additional byte at the beginning of the byte
+	// sequence, which specifies length and type of the number represented.
+	//
+	// Codes for the initial byte are:
 	// 0xf8 - negative short (2 bytes)
 	// 0xf9 - negative int (4 bytes)
 	// 0xfa - negative long (8 bytes)
@@ -14,8 +17,15 @@ namespace IXICore.Utils
 	// 0xfd - int (4 bytes)
 	// 0xfe - long (8 bytes)
 	// 0xff - reserved for potential future use (x bytes)
+	//
+	// VarInt class extends:
+	// - ulong with GetVarIntBytes
+	// - byte[] with GetVarInt/GetVarUint
+	// - BinaryWriter with WriteVarInt
+	// - BinaryReader with ReadVarInt/ReadVarUInt
 	public static class VarInt
     {
+		// long extension
 		public static byte[] GetVarIntBytes(this long value)
 		{
 			bool negative = false;
@@ -25,7 +35,7 @@ namespace IXICore.Utils
 				value = -value;
 			}
 
-			if (value < 0xf8)
+			if (!negative && value < 0xf8)
 			{
 				return new byte[1] { (byte)value };
 			}
@@ -73,6 +83,7 @@ namespace IXICore.Utils
 			}
 		}
 
+		// ulong extension
 		public static byte[] GetVarIntBytes(this ulong value)
 		{
 			if (value < 0xf8)
@@ -102,6 +113,7 @@ namespace IXICore.Utils
 			}
 		}
 
+		// byte[] extensions
 		public static long GetVarInt(this byte[] data, int offset)
 		{
 			byte type = data[offset];
@@ -157,6 +169,154 @@ namespace IXICore.Utils
 			}else if(type < 0xfc)
             {
 				throw new Exception("Cannot decode VarInt from bytes, signed type was used " + type.ToString());
+			}
+			throw new Exception("Cannot decode VarInt from bytes, unknown type " + type.ToString());
+		}
+
+		// BinaryWriter extensions
+		public static void WriteVarInt(this BinaryWriter writer, long value)
+		{
+			bool negative = false;
+			if (value < 0)
+			{
+				negative = true;
+				value = -value;
+			}
+
+			if (!negative && value < 0xf8)
+			{
+				writer.Write(new byte[1] { (byte)value });
+			}
+			else if (value <= 0xffff)
+			{
+				byte[] bytes = new byte[3];
+				if (negative)
+				{
+					bytes[0] = 0xf8;
+				}
+				else
+				{
+					bytes[0] = 0xfc;
+				}
+				Array.Copy(BitConverter.GetBytes((ushort)value), 0, bytes, 1, 2);
+				writer.Write(bytes);
+			}
+			else if (value <= 0xffffffff)
+			{
+				byte[] bytes = new byte[5];
+				if (negative)
+				{
+					bytes[0] = 0xf9;
+				}
+				else
+				{
+					bytes[0] = 0xfd;
+				}
+				Array.Copy(BitConverter.GetBytes((uint)value), 0, bytes, 1, 4);
+				writer.Write(bytes);
+			}
+			else
+			{
+				byte[] bytes = new byte[9];
+				if (negative)
+				{
+					bytes[0] = 0xfa;
+				}
+				else
+				{
+					bytes[0] = 0xfe;
+				}
+				Array.Copy(BitConverter.GetBytes(value), 0, bytes, 1, 8);
+				writer.Write(bytes);
+			}
+		}
+
+		public static void WriteVarInt(this BinaryWriter writer, ulong value)
+		{
+			if (value < 0xf8)
+			{
+				writer.Write(new byte[1] { (byte)value });
+			}
+			else if (value <= 0xffff)
+			{
+				byte[] bytes = new byte[3];
+				bytes[0] = 0xfc;
+				Array.Copy(BitConverter.GetBytes((ushort)value), 0, bytes, 1, 2);
+				writer.Write(bytes);
+			}
+			else if (value <= 0xffffffff)
+			{
+				byte[] bytes = new byte[5];
+				bytes[0] = 0xfd;
+				Array.Copy(BitConverter.GetBytes((uint)value), 0, bytes, 1, 4);
+				writer.Write(bytes);
+			}
+			else
+			{
+				byte[] bytes = new byte[9];
+				bytes[0] = 0xfe;
+				Array.Copy(BitConverter.GetBytes(value), 0, bytes, 1, 8);
+				writer.Write(bytes);
+			}
+		}
+
+		// BinaryReader extensions
+		public static ulong ReadVarUInt(this BinaryReader reader)
+		{
+			byte type = reader.ReadByte();
+			if (type < 0xf8)
+			{
+				return type;
+			}
+			else if (type == 0xfc)
+			{
+				return reader.ReadUInt16();
+			}
+			else if (type == 0xfd)
+			{
+				return reader.ReadUInt32();
+			}
+			else if (type == 0xfe)
+			{
+				return reader.ReadUInt64();
+			}
+			else if (type < 0xfc)
+			{
+				throw new Exception("Cannot decode VarInt from bytes, signed type was used " + type.ToString());
+			}
+			throw new Exception("Cannot decode VarInt from bytes, unknown type " + type.ToString());
+		}
+
+		public static long ReadVarInt(this BinaryReader reader)
+		{
+			byte type = reader.ReadByte();
+			if (type < 0xf8)
+			{
+				return type;
+			}
+			else if (type == 0xf8)
+			{
+				return -reader.ReadUInt16();
+			}
+			else if (type == 0xf9)
+			{
+				return -reader.ReadUInt32();
+			}
+			else if (type == 0xfa)
+			{
+				return -reader.ReadInt64();
+			}
+			else if (type == 0xfc)
+			{
+				return reader.ReadUInt16();
+			}
+			else if (type == 0xfd)
+			{
+				return reader.ReadUInt32();
+			}
+			else if (type == 0xfe)
+			{
+				return reader.ReadInt64();
 			}
 			throw new Exception("Cannot decode VarInt from bytes, unknown type " + type.ToString());
 		}
