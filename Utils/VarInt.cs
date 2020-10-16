@@ -19,7 +19,7 @@ namespace IXICore.Utils
 	// 0xff - reserved for potential future use (x bytes)
 	//
 	// VarInt class extends:
-	// - ulong with GetVarIntBytes
+	// - ulong/long with GetVarIntBytes
 	// - byte[] with GetVarInt/GetVarUint
 	// - BinaryWriter with WriteVarInt
 	// - BinaryReader with ReadVarInt/ReadVarUInt
@@ -78,7 +78,7 @@ namespace IXICore.Utils
 				{
 					bytes[0] = 0xfe;
 				}
-				Array.Copy(BitConverter.GetBytes(value), 0, bytes, 1, 8);
+				Array.Copy(BitConverter.GetBytes((ulong)value), 0, bytes, 1, 8);
 				return bytes;
 			}
 		}
@@ -131,7 +131,7 @@ namespace IXICore.Utils
 			}
 			else if (type == 0xfa)
 			{
-				return -BitConverter.ToInt64(data, offset + 1);
+				return -(long)BitConverter.ToUInt64(data, offset + 1);
 			}
 			else if (type == 0xfc)
 			{
@@ -143,7 +143,7 @@ namespace IXICore.Utils
 			}
 			else if (type == 0xfe)
 			{
-				return BitConverter.ToInt64(data, offset + 1);
+				return -(long)BitConverter.ToUInt64(data, offset + 1);
 			}
 			throw new Exception("Cannot decode VarInt from bytes, unknown type " + type.ToString());
 		}
@@ -176,88 +176,13 @@ namespace IXICore.Utils
 		// BinaryWriter extensions
 		public static void WriteVarInt(this BinaryWriter writer, long value)
 		{
-			bool negative = false;
-			if (value < 0)
-			{
-				negative = true;
-				value = -value;
-			}
+			writer.Write(GetVarIntBytes(value));
 
-			if (!negative && value < 0xf8)
-			{
-				writer.Write(new byte[1] { (byte)value });
-			}
-			else if (value <= 0xffff)
-			{
-				byte[] bytes = new byte[3];
-				if (negative)
-				{
-					bytes[0] = 0xf8;
-				}
-				else
-				{
-					bytes[0] = 0xfc;
-				}
-				Array.Copy(BitConverter.GetBytes((ushort)value), 0, bytes, 1, 2);
-				writer.Write(bytes);
-			}
-			else if (value <= 0xffffffff)
-			{
-				byte[] bytes = new byte[5];
-				if (negative)
-				{
-					bytes[0] = 0xf9;
-				}
-				else
-				{
-					bytes[0] = 0xfd;
-				}
-				Array.Copy(BitConverter.GetBytes((uint)value), 0, bytes, 1, 4);
-				writer.Write(bytes);
-			}
-			else
-			{
-				byte[] bytes = new byte[9];
-				if (negative)
-				{
-					bytes[0] = 0xfa;
-				}
-				else
-				{
-					bytes[0] = 0xfe;
-				}
-				Array.Copy(BitConverter.GetBytes(value), 0, bytes, 1, 8);
-				writer.Write(bytes);
-			}
 		}
 
 		public static void WriteVarInt(this BinaryWriter writer, ulong value)
 		{
-			if (value < 0xf8)
-			{
-				writer.Write(new byte[1] { (byte)value });
-			}
-			else if (value <= 0xffff)
-			{
-				byte[] bytes = new byte[3];
-				bytes[0] = 0xfc;
-				Array.Copy(BitConverter.GetBytes((ushort)value), 0, bytes, 1, 2);
-				writer.Write(bytes);
-			}
-			else if (value <= 0xffffffff)
-			{
-				byte[] bytes = new byte[5];
-				bytes[0] = 0xfd;
-				Array.Copy(BitConverter.GetBytes((uint)value), 0, bytes, 1, 4);
-				writer.Write(bytes);
-			}
-			else
-			{
-				byte[] bytes = new byte[9];
-				bytes[0] = 0xfe;
-				Array.Copy(BitConverter.GetBytes(value), 0, bytes, 1, 8);
-				writer.Write(bytes);
-			}
+			writer.Write(GetVarIntBytes(value));
 		}
 
 		// BinaryReader extensions
@@ -304,7 +229,7 @@ namespace IXICore.Utils
 			}
 			else if (type == 0xfa)
 			{
-				return -reader.ReadInt64();
+				return -(long)reader.ReadUInt64();
 			}
 			else if (type == 0xfc)
 			{
@@ -316,7 +241,7 @@ namespace IXICore.Utils
 			}
 			else if (type == 0xfe)
 			{
-				return reader.ReadInt64();
+				return (long)reader.ReadUInt64();
 			}
 			throw new Exception("Cannot decode VarInt from bytes, unknown type " + type.ToString());
 		}
