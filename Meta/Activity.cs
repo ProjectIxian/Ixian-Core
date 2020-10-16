@@ -757,6 +757,14 @@ namespace IXICore.Meta
             thread = null;
             Logging.info("Activity Storage stopped.");
         }
+
+        public static int getQueuedQueryCount()
+        {
+            lock (queueStatements)
+            {
+                return queueStatements.Count;
+            }
+        }
     }
 }
 
