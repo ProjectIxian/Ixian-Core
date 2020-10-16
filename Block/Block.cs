@@ -991,25 +991,37 @@ namespace IXICore
         /// </summary>
         /// <param name="public_key">The public key to check.</param>
         /// <returns>True, if the public key has already signed the block.</returns>
-        public bool hasNodeSignature(byte[] public_key = null)
+        public bool hasNodeSignature(byte[] public_key)
+        {
+            if(getNodeSignature(public_key) != null)
+            {
+                return true;
+            }
+
+            return false;
+        }
+
+        /// <summary>
+        ///  Checks the signatures on the block and returns true, if the block has already been signed by the given public key.
+        /// </summary>
+        /// <param name="public_key">The public key to check.</param>
+        /// <returns>True, if the public key has already signed the block.</returns>
+        public byte[] getNodeSignature(byte[] public_key)
         {
             if (compacted)
             {
                 Logging.error("Trying to execute hasNodeSignature on a compacted block {0}", blockNum);
-                return false;
+                return null;
             }
 
-            byte[] node_address = IxianHandler.getWalletStorage().getPrimaryAddress();
-            if (public_key == null)
+            if(public_key == null)
             {
-                public_key = IxianHandler.getWalletStorage().getPrimaryPublicKey();
+                return null;
             }
-            else
-            {
-                // Generate an address
-                Address p_address = new Address(public_key, null, false);
-                node_address = p_address.address;
-            }
+
+            // Generate an address
+            Address p_address = new Address(public_key, null, false);
+            byte[] node_address = p_address.address;
 
             lock (signatures)
             {
@@ -1032,22 +1044,11 @@ namespace IXICore
                     // Check if it matches
                     if (condition)
                     {
-                        // Check if signature is actually valid
-                        if (CryptoManager.lib.verifySignature(blockChecksum, public_key, merged_signature[0]))
-                        {
-                            return true;
-                        }
-                        else
-                        {
-                            // Somebody tampered this block. Show a warning and do not broadcast it further
-                            // TODO: Possibly denounce the tampered block's origin node
-                            Logging.warn(string.Format("Possible tampering on received block: {0}", blockNum));
-                            return false;
-                        }
+                        return merged_signature[0];
                     }
                 }
             }
-            return false;
+            return null;
         }
 
         /// <summary>
