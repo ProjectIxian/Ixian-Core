@@ -84,8 +84,8 @@ namespace IXICore.Network
         syncWalletState = 13,
         walletState = 14,
         /*newWallet = 15,*/
-        newTransaction = 16,
-        newBlock = 17,
+        newTransaction = 16, // deprecated
+        newBlock = 17, // deprecated
         /*getNeighbors = 18,
         neighborData = 19,*/
         getWalletStateChunk = 20,
@@ -98,8 +98,8 @@ namespace IXICore.Network
         s2failed = 27,
         s2signature = 28,
         /*s2keys = 29,*/
-        /*ping = 30,
-        pong = 31,*/
+        inventory = 30,
+        //pong = 31,
         getBalance = 32,
         balance = 33,
         keepAlivePresence = 34,
@@ -110,7 +110,7 @@ namespace IXICore.Network
         extend = 39,
         attachEvent = 40,
         detachEvent = 41,
-        newBlockSignature = 42,
+        blockSignature = 42,
         getBlockSignatures = 43,
         blockSignatures = 44,
         getNextSuperBlock = 45,
@@ -118,7 +118,9 @@ namespace IXICore.Network
         blockHeaders = 47,
         getRandomPresences = 48,
         getPIT = 49,
-        pitData = 50
+        pitData = 50,
+        getKeepAlive = 51,
+        getBlockSignature = 52
     }
 
     /// <summary>

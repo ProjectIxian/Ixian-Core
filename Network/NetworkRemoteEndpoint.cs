@@ -1,4 +1,5 @@
-﻿using IXICore.Meta;
+﻿using IXICore.Inventory;
+using IXICore.Meta;
 using IXICore.Utils;
 using System;
 using System.Collections.Generic;
@@ -73,10 +74,15 @@ namespace IXICore.Network
 
         private ThreadLiveCheck TLC;
 
+        private List<InventoryItem> inventory = new List<InventoryItem>();
+        private long inventoryLastSent = 0;
+
         public byte[] serverWalletAddress = null;
         public byte[] serverPubKey = null;
 
         public byte[] challenge = null;
+
+        public int version = 0;
 
         protected void prepareSocket(Socket socket)
         {
@@ -336,7 +342,7 @@ namespace IXICore.Network
         {
             // send 5 messages with current network timestamp
             List<byte> time_sync_data = new List<byte>();
-            for (int i = 0; i < 5; i++)
+            for (int i = 0; i < 5 && isConnected(); i++)
             {
                 time_sync_data.Clear();
                 time_sync_data.Add(2);
@@ -466,6 +472,7 @@ namespace IXICore.Network
                     }
                 }
 
+                bool sleep = true;
                 if (message_found)
                 {
                     messageCount++;
@@ -477,13 +484,56 @@ namespace IXICore.Network
                         running = false;
                         fullyStopped = true;
                     }
+                    sleep = false;
                     Thread.Sleep(1);
                 }
-                else
+                sendInventory();
+                if(sleep)
                 {
                     // Sleep for 10ms to prevent cpu waste
                     Thread.Sleep(10);
                 }
+            }
+        }
+
+        public void addInventoryItem(InventoryItem item)
+        {
+            lock(inventory)
+            {
+                inventory.Add(item);
+            }
+        }
+
+        protected void sendInventory()
+        {
+            IEnumerable<InventoryItem> items_to_send = null;
+            lock (inventory)
+            {
+                if (inventory.Count() == 0)
+                {
+                    return;
+                }
+                if (inventoryLastSent > Clock.getTimestamp() - CoreConfig.inventoryInterval)
+                {
+                    return;
+                }
+                inventoryLastSent = Clock.getTimestamp();
+                items_to_send = inventory.Take(CoreConfig.maxInventoryItems);
+                inventory = inventory.Skip(CoreConfig.maxInventoryItems).ToList();
+            }
+            using (MemoryStream m = new MemoryStream())
+            {
+                using (BinaryWriter writer = new BinaryWriter(m))
+                {
+                    writer.WriteVarInt(items_to_send.Count());
+                    foreach (var item in items_to_send)
+                    {
+                        byte[] item_bytes = item.getBytes();
+                        writer.WriteVarInt(item_bytes.Length);
+                        writer.Write(item_bytes);
+                    }
+                }
+                sendDataInternal(ProtocolMessageCode.inventory, m.ToArray(), null);
             }
         }
 

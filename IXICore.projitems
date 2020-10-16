@@ -23,6 +23,11 @@
     <Compile Include="$(MSBuildThisFileDirectory)Crypto\CryptoLibs\BouncyCastle.cs" />
     <Compile Include="$(MSBuildThisFileDirectory)Crypto\CryptoManager.cs" />
     <Compile Include="$(MSBuildThisFileDirectory)Crypto\KeyDerivation.cs" />
+    <Compile Include="$(MSBuildThisFileDirectory)Inventory\InventoryCache.cs" />
+    <Compile Include="$(MSBuildThisFileDirectory)Inventory\InventoryItem.cs" />
+    <Compile Include="$(MSBuildThisFileDirectory)Inventory\InventoryItemBlock.cs" />
+    <Compile Include="$(MSBuildThisFileDirectory)Inventory\InventoryItemKeepAlive.cs" />
+    <Compile Include="$(MSBuildThisFileDirectory)Inventory\InventoryItemSignature.cs" />
     <Compile Include="$(MSBuildThisFileDirectory)Meta\Activity.cs" />
     <Compile Include="$(MSBuildThisFileDirectory)Meta\ConsensusConfig.cs" />
     <Compile Include="$(MSBuildThisFileDirectory)Meta\CoreConfig.cs" />

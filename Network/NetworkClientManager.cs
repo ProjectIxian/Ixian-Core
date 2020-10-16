@@ -1,4 +1,5 @@
-﻿using IXICore.Meta;
+﻿using IXICore.Inventory;
+using IXICore.Meta;
 using System;
 using System.Collections.Generic;
 using System.Linq;
@@ -763,6 +764,44 @@ namespace IXICore.Network
                 }
                 return null;
             }
+        }
+
+        public static bool addToInventory(char[] types, InventoryItem item, RemoteEndpoint skip_endpoint, ProtocolMessageCode code, byte[] data, byte[] helper)
+        {
+            lock (networkClients)
+            {
+                foreach (var client in networkClients)
+                {
+                    try
+                    {
+                        if (!client.isConnected() || !client.helloReceived)
+                        {
+                            continue;
+                        }
+                        if (client == skip_endpoint)
+                        {
+                            continue;
+                        }
+                        if (!types.Contains(client.presenceAddress.type))
+                        {
+                            continue;
+                        }
+                        if (client.version > 5)
+                        {
+                            client.addInventoryItem(item);
+                        }
+                        else
+                        {
+                            // TODO legacy, can be removed after network upgrades
+                            client.sendData(code, data, helper);
+                        }
+                    }catch (Exception e)
+                    {
+                        Logging.error("Exception occured in NetworkClientManager.addToInventory: " + e);
+                    }
+                }
+            }
+            return true;
         }
     }
 }

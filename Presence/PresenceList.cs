@@ -112,7 +112,7 @@ namespace IXICore
                             }
 
 
-                            PresenceAddress addr = pr.addresses.Find(x => x.device == local_addr.device);
+                            PresenceAddress addr = pr.addresses.Find(x => x.device.SequenceEqual(local_addr.device));
                             if (addr != null)
                             {
                                 if (addr.lastSeenTime < local_addr.lastSeenTime)
@@ -560,9 +560,11 @@ namespace IXICore
                     ka_bytes = keepAlive_v1();
 
                     byte[] address = null;
+                    long last_seen = 0;
+                    byte[] device_id = null;
 
                     // Update self presence
-                    PresenceList.receiveKeepAlive(ka_bytes, out address, null);
+                    PresenceList.receiveKeepAlive(ka_bytes, out address, out last_seen, out device_id, null);
 
                     // Send this keepalive to all connected non-clients
                     CoreProtocolMessage.broadcastProtocolMessage(new char[] { 'M', 'H', 'W' }, ProtocolMessageCode.keepAlivePresence, ka_bytes, address);
@@ -590,7 +592,7 @@ namespace IXICore
                     writer.Write(wallet.Length);
                     writer.Write(wallet);
 
-                    writer.Write(CoreConfig.device_id);
+                    writer.Write(new System.Guid(CoreConfig.device_id).ToString());
 
                     // Add the unix timestamp
                     long timestamp = Clock.getNetworkTimestamp();
@@ -618,12 +620,56 @@ namespace IXICore
             }
         }
 
+        private static byte[] keepAlive_v2()
+        {
+            // Prepare the keepalive message
+            using (MemoryStream m = new MemoryStream(640))
+            {
+                using (BinaryWriter writer = new BinaryWriter(m))
+                {
+                    writer.WriteVarInt(2); // version
+
+                    byte[] wallet = IxianHandler.getWalletStorage().getPrimaryAddress();
+                    writer.WriteVarInt(wallet.Length);
+                    writer.Write(wallet);
+
+                    writer.WriteVarInt(CoreConfig.device_id.Length);
+                    writer.Write(CoreConfig.device_id);
+
+                    // Add the unix timestamp
+                    long timestamp = Clock.getNetworkTimestamp();
+                    writer.WriteVarInt(timestamp);
+
+                    string hostname = curNodePresenceAddress.address;
+                    writer.Write(hostname);
+                    writer.Write(PresenceList.curNodePresenceAddress.type);
+
+                    // Add a verifiable signature
+                    byte[] private_key = IxianHandler.getWalletStorage().getPrimaryPrivateKey();
+                    byte[] signature = CryptoManager.lib.getSignature(m.ToArray(), private_key);
+                    writer.WriteVarInt(signature.Length);
+                    writer.Write(signature);
+
+                    PresenceList.curNodePresenceAddress.lastSeenTime = timestamp;
+                    PresenceList.curNodePresenceAddress.signature = signature;
+
+#if TRACE_MEMSTREAM_SIZES
+                    Logging.info(String.Format("PresenceList::keepAlive_v1: {0}", m.Length));
+#endif
+                }
+
+                return m.ToArray();
+            }
+        }
+
         // Called when receiving a keepalive network message. The PresenceList will update the appropriate entry based on the timestamp.
         // Returns TRUE if it updated an entry in the PL
         // Sets the out address parameter to be the KA wallet's address or null if an error occured
-        public static bool receiveKeepAlive(byte[] bytes, out byte[] address, RemoteEndpoint endpoint)
+        public static bool receiveKeepAlive(byte[] bytes, out byte[] address, out long last_seen, out byte[] device_id, RemoteEndpoint endpoint)
         {
             address = null;
+            last_seen = 0;
+            device_id = null;
 
             // Get the current timestamp
             long currentTime = Clock.getNetworkTimestamp();
@@ -634,22 +680,66 @@ namespace IXICore
                 {
                     using (BinaryReader reader = new BinaryReader(m))
                     {
-                        int keepAliveVersion = reader.ReadInt32();
-                        int walletLen = reader.ReadInt32();
-                        byte[] wallet = reader.ReadBytes(walletLen);
-                        
-                        // Assign the out address parameter
-                        address = wallet;
+                        int keepAliveVersion = 0;
+                        if (bytes[0] == 1)
+                        {
+                            // TODO temporary, remove after network upgrade
+                            keepAliveVersion = reader.ReadInt32();
+                        }else
+                        {
+                            keepAliveVersion = (int)reader.ReadVarInt();
+                        }
 
-                        string deviceid = reader.ReadString();
-                        long timestamp = reader.ReadInt64();
-                        string hostname = reader.ReadString();
+                        byte[] wallet;
+                        byte[] deviceid;
+                        long timestamp;
+                        string hostname;
                         char node_type = '0';
+                        int sigLen;
+                        byte[] signature;
 
-                        node_type = reader.ReadChar();
+                        long checksum_data_len = 0;
 
-                        int sigLen = reader.ReadInt32();
-                        byte[] signature = reader.ReadBytes(sigLen);
+                        if (keepAliveVersion == 1)
+                        {
+                            // TODO temporary, remove after network upgrade
+                            int walletLen = reader.ReadInt32();
+                            wallet = reader.ReadBytes(walletLen);
+
+                            // Assign the out address parameter
+                            address = wallet;
+
+                            string device_id_str = reader.ReadString();
+                            device_id = deviceid = System.Guid.Parse(device_id_str).ToByteArray();
+                            last_seen = timestamp = reader.ReadInt64();
+                            hostname = reader.ReadString();
+
+                            node_type = reader.ReadChar();
+
+                            checksum_data_len = m.Position;
+
+                            sigLen = reader.ReadInt32();
+                            signature = reader.ReadBytes(sigLen);
+                        }else
+                        {
+                            int walletLen = (int)reader.ReadVarInt();
+                            wallet = reader.ReadBytes(walletLen);
+
+                            // Assign the out address parameter
+                            address = wallet;
+
+                            int deviceid_len = (int)reader.ReadVarInt();
+                            device_id = deviceid = reader.ReadBytes(deviceid_len);
+                            last_seen = timestamp = reader.ReadVarInt();
+                            hostname = reader.ReadString();
+
+                            node_type = reader.ReadChar();
+
+                            checksum_data_len = m.Position;
+
+                            sigLen = (int)reader.ReadVarInt();
+                            signature = reader.ReadBytes(sigLen);
+                        }
                         //Logging.info(String.Format("[PL] KEEPALIVE request from {0}", hostname));
 
                         if (node_type == 'C' || node_type == 'R')
@@ -710,13 +800,13 @@ namespace IXICore
                             }
 
                             // Verify the signature
-                            if (CryptoManager.lib.verifySignature(bytes.Take(bytes.Length - sigLen - 4).ToArray(), listEntry.pubkey, signature) == false)
+                            if (CryptoManager.lib.verifySignature(bytes.Take((int)checksum_data_len).ToArray(), listEntry.pubkey, signature) == false)
                             {
                                 Logging.warn(string.Format("[PL] KEEPALIVE tampering for {0} {1}, incorrect Sig.", Base58Check.Base58CheckEncoding.EncodePlain(listEntry.wallet), hostname));
                                 return false;
                             }
 
-                            PresenceAddress pa = listEntry.addresses.Find(x => x.address == hostname && x.device == deviceid);
+                            PresenceAddress pa = listEntry.addresses.Find(x => x.address == hostname && x.device.SequenceEqual(deviceid));
 
                             if(pa != null)
                             {
@@ -767,7 +857,6 @@ namespace IXICore
                                         }
                                     }
                                     pa.type = node_type;
-
                                     //Console.WriteLine("[PL] LASTSEEN for {0} - {1} set to {2}", hostname, deviceid, pa.lastSeenTime);
                                     return true;
                                 }
@@ -941,16 +1030,16 @@ namespace IXICore
             }
         }
 
-        public static Presence getPresenceByDeviceId(string device_id)
+        public static Presence getPresenceByDeviceId(byte[] device_id)
         {
-            if(String.IsNullOrWhiteSpace(device_id))
+            if(device_id == null)
             {
-                throw new Exception("Device id is empty while getting presences by device id");
+                throw new Exception("Device id is null while getting presences by device id");
             }
 
             lock (presences)
             {
-                return presences.Find(x => x.addresses.Find(y => y.device == device_id) != null);
+                return presences.Find(x => x.addresses.Find(y => y.device.SequenceEqual(device_id)) != null);
             }
         }
 

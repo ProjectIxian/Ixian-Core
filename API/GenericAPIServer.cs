@@ -707,7 +707,7 @@ namespace IXICore
                     }
                 };
             }
-            if (IxianHandler.addTransaction(transaction))
+            if (IxianHandler.addTransaction(transaction, true))
             {
                 PendingTransactions.addPendingLocalTransaction(transaction);
                 return new JsonResponse { result = transaction.toDictionary(), error = null };
@@ -825,7 +825,7 @@ namespace IXICore
 
             Transaction raw_transaction = new Transaction(Crypto.stringToHash(raw_transaction_hex));
 
-            if (IxianHandler.addTransaction(raw_transaction))
+            if (IxianHandler.addTransaction(raw_transaction, true))
             {
                 PendingTransactions.addPendingLocalTransaction(raw_transaction);
                 return new JsonResponse { result = raw_transaction.toDictionary(), error = null };
@@ -893,7 +893,7 @@ namespace IXICore
             IxiNumber fee = ConsensusConfig.transactionPrice;
 
             Transaction transaction = Transaction.multisigAddTxSignature(orig_txid, fee, destWallet, IxianHandler.getHighestKnownNetworkBlockHeight());
-            if (IxianHandler.addTransaction(transaction))
+            if (IxianHandler.addTransaction(transaction, true))
             {
                 PendingTransactions.addPendingLocalTransaction(transaction);
                 res = transaction.toDictionary();
@@ -987,7 +987,7 @@ namespace IXICore
                 }
                 else
                 {
-                    if (IxianHandler.addTransaction(transaction))
+                    if (IxianHandler.addTransaction(transaction, true))
                     {
                         PendingTransactions.addPendingLocalTransaction(transaction);
                         res = transaction.toDictionary();
@@ -1027,7 +1027,7 @@ namespace IXICore
             IxiNumber fee = ConsensusConfig.transactionPrice;
 
             Transaction transaction = Transaction.multisigAddKeyTransaction(signer_address, fee, destWallet, IxianHandler.getHighestKnownNetworkBlockHeight());
-            if (IxianHandler.addTransaction(transaction))
+            if (IxianHandler.addTransaction(transaction, true))
             {
                 PendingTransactions.addPendingLocalTransaction(transaction);
                 return new JsonResponse { result = transaction.toDictionary(), error = null };
@@ -1062,7 +1062,7 @@ namespace IXICore
             IxiNumber fee = ConsensusConfig.transactionPrice;
 
             Transaction transaction = Transaction.multisigDelKeyTransaction(signer_address, fee, destWallet, IxianHandler.getHighestKnownNetworkBlockHeight());
-            if (IxianHandler.addTransaction(transaction))
+            if (IxianHandler.addTransaction(transaction, true))
             {
                 PendingTransactions.addPendingLocalTransaction(transaction);
                 return new JsonResponse { result = transaction.toDictionary(), error = null };
@@ -1097,7 +1097,7 @@ namespace IXICore
             {
 
                 Transaction transaction = Transaction.multisigChangeReqSigs(reqSigs, fee, destWallet, IxianHandler.getHighestKnownNetworkBlockHeight());
-                if (IxianHandler.addTransaction(transaction))
+                if (IxianHandler.addTransaction(transaction, true))
                 {
                     PendingTransactions.addPendingLocalTransaction(transaction);
                     return new JsonResponse { result = transaction.toDictionary(), error = null };

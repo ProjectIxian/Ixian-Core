@@ -1,4 +1,5 @@
-﻿using IXICore.Meta;
+﻿using IXICore.Inventory;
+using IXICore.Meta;
 using IXICore.Network;
 using IXICore.Utils;
 using System;
@@ -239,10 +240,11 @@ namespace IXICore
             try
             {
                 int protocol_version = reader.ReadInt32();
+                endpoint.version = protocol_version;
 
                 Logging.info(string.Format("Received Hello: Node version {0}", protocol_version));
                 // Check for incompatible nodes
-                if (protocol_version < CoreConfig.protocolVersion)
+                if (protocol_version < 5)
                 {
                     Logging.warn(String.Format("Hello: Connected node version ({0}) is too old! Upgrade the node.", protocol_version));
                     sendBye(endpoint, ProtocolByeCode.deprecated, string.Format("Your node version is too old. Should be at least {0} is {1}", CoreConfig.protocolVersion, protocol_version), CoreConfig.protocolVersion.ToString(), true);
@@ -255,7 +257,7 @@ namespace IXICore
                 bool test_net = reader.ReadBoolean();
                 char node_type = reader.ReadChar();
                 string node_version = reader.ReadString();
-                string device_id = reader.ReadString();
+                string device_id = reader.ReadString(); // TODO update hello, change this to binary, remove unnecessary data
 
                 int pkLen = reader.ReadInt32();
                 byte[] pubkey = null;
@@ -311,10 +313,11 @@ namespace IXICore
                     }*/
                     // TODO store the full address if connectable
                     // Store the presence address for this remote endpoint
-                    endpoint.presenceAddress = new PresenceAddress(device_id, "", node_type, node_version, Clock.getNetworkTimestamp() - CoreConfig.clientKeepAliveInterval, null);
+                    endpoint.presenceAddress = new PresenceAddress(System.Guid.Parse(device_id).ToByteArray(), "", node_type, node_version, Clock.getNetworkTimestamp() - CoreConfig.clientKeepAliveInterval, null);
                 }
                 else
                 {
+                    // TODO update verify signature with binary structure
                     if (!CryptoManager.lib.verifySignature(Encoding.UTF8.GetBytes(ConsensusConfig.ixianChecksumLockString + "-" + device_id + "-" + timestamp + "-" + endpoint.getFullAddress(true)), pubkey, signature))
                     {
                         CoreProtocolMessage.sendBye(endpoint, ProtocolByeCode.incorrectIp, "Verify signature failed in hello message, likely an incorrect IP was specified. Detected IP:", endpoint.address);
@@ -323,7 +326,7 @@ namespace IXICore
                     }
 
                     // Store the presence address for this remote endpoint
-                    endpoint.presenceAddress = new PresenceAddress(device_id, endpoint.getFullAddress(true), node_type, node_version, Clock.getNetworkTimestamp() - CoreConfig.serverKeepAliveInterval, null);
+                    endpoint.presenceAddress = new PresenceAddress(System.Guid.Parse(device_id).ToByteArray(), endpoint.getFullAddress(true), node_type, node_version, Clock.getNetworkTimestamp() - CoreConfig.serverKeepAliveInterval, null);
                 }
 
                 // if we're a client update the network time difference
@@ -452,8 +455,10 @@ namespace IXICore
                     // Send the version
                     writer.Write(CoreConfig.productVersion);
 
+                    string device_id_str = new System.Guid(CoreConfig.device_id).ToString();
+
                     // Send the node device id
-                    writer.Write(CoreConfig.device_id);
+                    writer.Write(device_id_str);
 
                     // Send the wallet public key
                     writer.Write(IxianHandler.getWalletStorage().getPrimaryPublicKey().Length);
@@ -467,7 +472,7 @@ namespace IXICore
                     writer.Write(timestamp);
 
                     // send signature
-                    byte[] signature = CryptoManager.lib.getSignature(Encoding.UTF8.GetBytes(ConsensusConfig.ixianChecksumLockString + "-" + CoreConfig.device_id + "-" + timestamp + "-" + publicHostname), IxianHandler.getWalletStorage().getPrimaryPrivateKey());
+                    byte[] signature = CryptoManager.lib.getSignature(Encoding.UTF8.GetBytes(ConsensusConfig.ixianChecksumLockString + "-" + device_id_str + "-" + timestamp + "-" + publicHostname), IxianHandler.getWalletStorage().getPrimaryPrivateKey());
                     writer.Write(signature.Length);
                     writer.Write(signature);
 
@@ -796,6 +801,13 @@ namespace IXICore
                     }
                 }
             }
+        }
+
+        public static bool addToInventory(char[] types, InventoryItem item, RemoteEndpoint skip_endpoint, ProtocolMessageCode code, byte[] data, byte[] helper)
+        {
+            bool c_result = NetworkClientManager.addToInventory(types, item, skip_endpoint, code, data, helper);
+            bool s_result = NetworkServer.addToInventory(types, item, skip_endpoint, code, data, helper);
+            return c_result || s_result;
         }
     }
 }

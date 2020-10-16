@@ -19,7 +19,7 @@ namespace IXICore.Meta
         public abstract Block getLastBlock();
         public abstract ulong getLastBlockHeight();
         public abstract int getLastBlockVersion();
-        public abstract bool addTransaction(Transaction tx);
+        public abstract bool addTransaction(Transaction tx, bool force_broadcast);
         public abstract bool isAcceptingConnections();
         public abstract Wallet getWallet(byte[] id);
         public abstract IxiNumber getWalletBalance(byte[] id);
@@ -81,10 +81,10 @@ namespace IXICore.Meta
             return handlerClass.getLastBlockVersion();
         }
 
-        public static bool addTransaction(Transaction tx)
+        public static bool addTransaction(Transaction tx, bool force_broadcast)
         {
             verifyHandler();
-            return handlerClass.addTransaction(tx);
+            return handlerClass.addTransaction(tx, force_broadcast);
         }
 
         public static bool isAcceptingConnections()

@@ -1,4 +1,5 @@
 ﻿using IXICore.Meta;
+using IXICore.Utils;
 using System;
 using System.Collections.Generic;
 using System.IO;
@@ -11,17 +12,16 @@ namespace IXICore
     // An object class that describes how to contact the specific node/client
     public class PresenceAddress
     {
-        public int version;
-        public string device; // Device id
+        public int version = 1;
+        public byte[] device; // Device id
         public string address; // IP and port
         public char type;   // M for MasterNode, R for RelayNode, D for Direct ip client, C for normal client
         public string nodeVersion; // Version
         public long lastSeenTime;
         public byte[] signature;
 
-        public PresenceAddress(string node_device, string node_address, char node_type, string node_version, long node_lastSeenTime, byte[] node_signature)
+        public PresenceAddress(byte[] node_device, string node_address, char node_type, string node_version, long node_lastSeenTime, byte[] node_signature)
         {
-            version = 1;
             device = node_device;
             address = node_address;
             type = node_type;
@@ -42,16 +42,40 @@ namespace IXICore
                 {
                     using (BinaryReader reader = new BinaryReader(m))
                     {
-                        version = reader.ReadInt32();
-                        device = reader.ReadString();
-                        address = reader.ReadString();
-                        type = reader.ReadChar();
-                        nodeVersion = reader.ReadString();
-                        lastSeenTime = reader.ReadInt64();
-                        int sigLen = reader.ReadInt32();
-                        if (sigLen > 0)
+                        if(bytes[0] == 1)
                         {
-                            signature = reader.ReadBytes(sigLen);
+                            version = reader.ReadInt32();
+                        }else
+                        {
+                            version = (int)reader.ReadVarInt();
+                        }
+                        if(version == 1)
+                        {
+                            // TODO remove this after upgrade
+                            device = System.Guid.Parse(reader.ReadString()).ToByteArray();
+                            address = reader.ReadString();
+                            type = reader.ReadChar();
+                            nodeVersion = reader.ReadString();
+                            lastSeenTime = reader.ReadInt64();
+                            int sigLen = reader.ReadInt32();
+                            if (sigLen > 0)
+                            {
+                                signature = reader.ReadBytes(sigLen);
+                            }
+                        }
+                        else
+                        {
+                            int device_len = (int)reader.ReadVarInt();
+                            device = reader.ReadBytes(device_len);
+                            address = reader.ReadString();
+                            type = reader.ReadChar();
+                            nodeVersion = reader.ReadString();
+                            lastSeenTime = reader.ReadVarInt();
+                            int sigLen = (int)reader.ReadVarInt();
+                            if (sigLen > 0)
+                            {
+                                signature = reader.ReadBytes(sigLen);
+                            }
                         }
                     }
                 }
@@ -69,19 +93,44 @@ namespace IXICore
             {
                 using (BinaryWriter writer = new BinaryWriter(m))
                 {
-                    writer.Write(version);
-                    writer.Write(device);
-                    writer.Write(address);
-                    writer.Write(type);
-                    writer.Write(nodeVersion);
-                    writer.Write(lastSeenTime);
-                    if (signature != null)
+                    if(version == 1)
                     {
-                        writer.Write(signature.Length);
-                        writer.Write(signature);
-                    }else
+                        // TODO remove this after upgrade
+                        writer.Write(version);
+                        writer.Write(new System.Guid(device).ToString());
+                        writer.Write(address);
+                        writer.Write(type);
+                        writer.Write(nodeVersion);
+                        writer.Write(lastSeenTime);
+                        if (signature != null)
+                        {
+                            writer.Write(signature.Length);
+                            writer.Write(signature);
+                        }
+                        else
+                        {
+                            writer.Write(0);
+                        }
+                    }
+                    else
                     {
-                        writer.Write(0);
+                        writer.WriteVarInt(version);
+                        writer.WriteVarInt(device.Length);
+                        writer.Write(device);
+
+                        writer.Write(address);
+                        writer.Write(type);
+                        writer.Write(nodeVersion);
+                        writer.WriteVarInt(lastSeenTime);
+                        if (signature != null)
+                        {
+                            writer.WriteVarInt(signature.Length);
+                            writer.Write(signature);
+                        }
+                        else
+                        {
+                            writer.Write(0);
+                        }
                     }
 #if TRACE_MEMSTREAM_SIZES
                     Logging.info(String.Format("PresenceAddress::getBytes: {0}", m.Length));
@@ -91,21 +140,101 @@ namespace IXICore
             }
         }
 
-        public bool verifySignature(byte[] wallet, byte[] pub_key)
+        public byte[] getKeepAliveBytes(byte[] wallet_address)
         {
-            using (MemoryStream m = new MemoryStream())
+            if(version == 1)
             {
-                if (signature != null)
+                // TODO remove this section after upgrade to Presence v1
+                using (MemoryStream m = new MemoryStream(640))
                 {
                     using (BinaryWriter writer = new BinaryWriter(m))
                     {
-                        writer.Write(1); // TODO TODO TODO version has been force to 1 here, it should be properly implemented to read from this.version
-                        writer.Write(wallet.Length);
-                        writer.Write(wallet);
-                        writer.Write(device);
+                        writer.Write(version); // version
+
+                        writer.Write(wallet_address.Length);
+                        writer.Write(wallet_address);
+
+                        writer.Write(new System.Guid(device).ToString());
+
                         writer.Write(lastSeenTime);
+
                         writer.Write(address);
                         writer.Write(type);
+
+                        writer.Write(signature.Length);
+                        writer.Write(signature);
+
+#if TRACE_MEMSTREAM_SIZES
+                    Logging.info(String.Format("PresenceAddress::getKeepAliveBytes: {0}", m.Length));
+#endif
+                    }
+                    return m.ToArray();
+                }
+            }else
+            {
+                return getKeepAliveBytes_v2(wallet_address);
+            }
+        }
+        public byte[] getKeepAliveBytes_v2(byte[] wallet_address)
+        {
+            using (MemoryStream m = new MemoryStream(640))
+            {
+                using (BinaryWriter writer = new BinaryWriter(m))
+                {
+                    writer.WriteVarInt(2); // version
+
+                    writer.WriteVarInt(wallet_address.Length);
+                    writer.Write(wallet_address);
+
+                    writer.WriteVarInt(device.Length);
+                    writer.Write(device);
+
+                    writer.WriteVarInt(lastSeenTime);
+
+                    writer.Write(address);
+                    writer.Write(type);
+
+                    writer.WriteVarInt(signature.Length);
+                    writer.Write(signature);
+
+#if TRACE_MEMSTREAM_SIZES
+                    Logging.info(String.Format("PresenceAddress::getKeepAliveBytes: {0}", m.Length));
+#endif
+                }
+                return m.ToArray();
+            }
+        }
+
+        public bool verifySignature(byte[] wallet, byte[] pub_key)
+        {
+            if (signature != null)
+            {
+                using (MemoryStream m = new MemoryStream())
+                {
+                    using (BinaryWriter writer = new BinaryWriter(m))
+                    {
+                        if(version == 1)
+                        {
+                            // TODO remove this section after upgrade to Presence v1
+                            writer.Write(version);
+                            writer.Write(wallet.Length);
+                            writer.Write(wallet);
+                            writer.Write(new System.Guid(device).ToString());
+                            writer.Write(lastSeenTime);
+                            writer.Write(address);
+                            writer.Write(type);
+                        }
+                        else
+                        {
+                            writer.WriteVarInt(version);
+                            writer.WriteVarInt(wallet.Length);
+                            writer.Write(wallet);
+                            writer.WriteVarInt(device.Length);
+                            writer.Write(device);
+                            writer.WriteVarInt(lastSeenTime);
+                            writer.Write(address);
+                            writer.Write(type);
+                        }
                     }
 
                     byte[] bytes = m.ToArray();
@@ -135,7 +264,7 @@ namespace IXICore
                 return false;
             }
 
-            if (item.device.Equals(device, StringComparison.Ordinal) == false)
+            if (item.device.SequenceEqual(device) == false)
             {
                 return false;
             }
@@ -164,7 +293,7 @@ namespace IXICore
     // The actual presence object, which can contain multiple PresenceAddress objects
     public class Presence
     {
-        public int version;
+        public int version = 0;
         public byte[] wallet;
         public byte[] pubkey;
         public byte[] metadata; 
@@ -172,7 +301,6 @@ namespace IXICore
 
         public Presence()
         {
-            version = 0;
             wallet = null;
             pubkey = null;
             metadata = null;
@@ -181,7 +309,6 @@ namespace IXICore
 
         public Presence(byte[] wallet_address, byte[] node_pubkey, byte[] node_meta, PresenceAddress node_address)
         {
-            version = 0;
             wallet = wallet_address;
             pubkey = node_pubkey;
             metadata = node_meta;
@@ -210,37 +337,76 @@ namespace IXICore
                 {
                     using (BinaryReader reader = new BinaryReader(m))
                     {
-                        version = reader.ReadInt32();
-
-                        int walletLen = reader.ReadInt32();
-                        if (walletLen > 0)
+                        if(bytes[0] == 0)
                         {
-                            wallet = reader.ReadBytes(walletLen);
-                        }
-                        int pubkeyLen = reader.ReadInt32();
-                        if (pubkeyLen > 0)
-                        {
-                            pubkey = reader.ReadBytes(pubkeyLen);
-                        }
-                        int mdLen = reader.ReadInt32();
-                        if (mdLen > 0)
-                        {
-                            metadata = reader.ReadBytes(mdLen);
-                        }
+                            // TODO remove this section after upgrade to Presence v1
+                            version = reader.ReadInt32();
 
-
-                        // Read number of addresses
-                        UInt16 number_of_addresses = reader.ReadUInt16();
-
-                        // Read addresses
-                        for(UInt16 i = 0; i < number_of_addresses; i++)
-                        {
-                            int byte_count = reader.ReadInt32();
-                            if (byte_count > 0)
+                            int walletLen = reader.ReadInt32();
+                            if (walletLen > 0)
                             {
-                                byte[] address_bytes = reader.ReadBytes(byte_count);
+                                wallet = reader.ReadBytes(walletLen);
+                            }
+                            int pubkeyLen = reader.ReadInt32();
+                            if (pubkeyLen > 0)
+                            {
+                                pubkey = reader.ReadBytes(pubkeyLen);
+                            }
+                            int mdLen = reader.ReadInt32();
+                            if (mdLen > 0)
+                            {
+                                metadata = reader.ReadBytes(mdLen);
+                            }
 
-                                addresses.Add(new PresenceAddress(address_bytes));
+
+                            // Read number of addresses
+                            UInt16 number_of_addresses = reader.ReadUInt16();
+
+                            // Read addresses
+                            for (UInt16 i = 0; i < number_of_addresses; i++)
+                            {
+                                int byte_count = reader.ReadInt32();
+                                if (byte_count > 0)
+                                {
+                                    byte[] address_bytes = reader.ReadBytes(byte_count);
+
+                                    addresses.Add(new PresenceAddress(address_bytes));
+                                }
+                            }
+                        }else
+                        {
+                            version = (int)reader.ReadVarInt();
+
+                            int walletLen = (int)reader.ReadVarInt();
+                            if (walletLen > 0)
+                            {
+                                wallet = reader.ReadBytes(walletLen);
+                            }
+                            int pubkeyLen = (int)reader.ReadVarInt();
+                            if (pubkeyLen > 0)
+                            {
+                                pubkey = reader.ReadBytes(pubkeyLen);
+                            }
+                            int mdLen = (int)reader.ReadVarInt();
+                            if (mdLen > 0)
+                            {
+                                metadata = reader.ReadBytes(mdLen);
+                            }
+
+
+                            // Read number of addresses
+                            int number_of_addresses = (int)reader.ReadVarInt();
+
+                            // Read addresses
+                            for (int i = 0; i < number_of_addresses; i++)
+                            {
+                                int byte_count = (int)reader.ReadVarInt();
+                                if (byte_count > 0)
+                                {
+                                    byte[] address_bytes = reader.ReadBytes(byte_count);
+
+                                    addresses.Add(new PresenceAddress(address_bytes));
+                                }
                             }
                         }
                     }
@@ -259,63 +425,135 @@ namespace IXICore
             {
                 using (BinaryWriter writer = new BinaryWriter(m))
                 {
-                    writer.Write(version);
+                    if(version == 0)
+                    {
+                        // TODO remove this section after upgrade to Presence v1
+                        writer.Write(version);
 
-                    if (wallet != null)
-                    {
-                        writer.Write(wallet.Length);
-                        writer.Write(wallet);
-                    }else
-                    {
-                        writer.Write(0);
-                    }
-
-                    if (pubkey != null)
-                    {
-                        writer.Write(pubkey.Length);
-                        writer.Write(pubkey);
-                    }else
-                    {
-                        writer.Write(0);
-                    }
-
-                    if (metadata != null)
-                    {
-                        writer.Write(metadata.Length);
-                        writer.Write(metadata);
-                    }else
-                    {
-                        writer.Write(0);
-                    }
-
-                    // Write the number of ips
-                    UInt16 number_of_addresses = (ushort) ((UInt16) addresses.Count - from_index);
-
-                    if(count > 0 && number_of_addresses > count)
-                    {
-                        number_of_addresses = count;
-                    }
-
-                    writer.Write(number_of_addresses);
-
-                    // Write all ips
-                    for (UInt16 i = from_index; i < number_of_addresses; i++)
-                    {
-                        if (addresses[i] == null)
+                        if (wallet != null)
                         {
-                            writer.Write(0);
-                            continue;
+                            writer.Write(wallet.Length);
+                            writer.Write(wallet);
                         }
-                        byte[] address_data = addresses[i].getBytes();
-                        if(address_data != null)
-                        {
-                            writer.Write(address_data.Length);
-                            writer.Write(address_data);
-                        }else
+                        else
                         {
                             writer.Write(0);
                         }
+
+                        if (pubkey != null)
+                        {
+                            writer.Write(pubkey.Length);
+                            writer.Write(pubkey);
+                        }
+                        else
+                        {
+                            writer.Write(0);
+                        }
+
+                        if (metadata != null)
+                        {
+                            writer.Write(metadata.Length);
+                            writer.Write(metadata);
+                        }
+                        else
+                        {
+                            writer.Write(0);
+                        }
+
+                        // Write the number of ips
+                        UInt16 number_of_addresses = (ushort)((UInt16)addresses.Count - from_index);
+
+                        if (count > 0 && number_of_addresses > count)
+                        {
+                            number_of_addresses = count;
+                        }
+
+                        writer.Write(number_of_addresses);
+
+                        // Write all ips
+                        for (UInt16 i = from_index; i < number_of_addresses; i++)
+                        {
+                            if (addresses[i] == null)
+                            {
+                                writer.Write(0);
+                                continue;
+                            }
+                            byte[] address_data = addresses[i].getBytes();
+                            if (address_data != null)
+                            {
+                                writer.Write(address_data.Length);
+                                writer.Write(address_data);
+                            }
+                            else
+                            {
+                                writer.Write(0);
+                            }
+                        }
+                    }else
+                    {
+                        writer.WriteVarInt(version);
+
+                        if (wallet != null)
+                        {
+                            writer.WriteVarInt(wallet.Length);
+                            writer.Write(wallet);
+                        }
+                        else
+                        {
+                            writer.WriteVarInt(0);
+                        }
+
+                        if (pubkey != null)
+                        {
+                            writer.WriteVarInt(pubkey.Length);
+                            writer.Write(pubkey);
+                        }
+                        else
+                        {
+                            writer.WriteVarInt(0);
+                        }
+
+                        if (metadata != null)
+                        {
+                            writer.WriteVarInt(metadata.Length);
+                            writer.Write(metadata);
+                        }
+                        else
+                        {
+                            writer.WriteVarInt(0);
+                        }
+
+                        // Write the number of ips
+                        int number_of_addresses = addresses.Count - from_index;
+
+                        if (count > 0 && number_of_addresses > count)
+                        {
+                            number_of_addresses = count;
+                        }
+
+                        writer.WriteVarInt(number_of_addresses);
+
+                        // Write all ips
+                        for (int i = from_index; i < number_of_addresses; i++)
+                        {
+                            if (addresses[i] == null)
+                            {
+                                writer.WriteVarInt(0);
+                                continue;
+                            }
+                            byte[] address_data = addresses[i].getBytes();
+                            if (address_data != null)
+                            {
+                                writer.WriteVarInt(address_data.Length);
+                                writer.Write(address_data);
+                            }
+                            else
+                            {
+                                writer.WriteVarInt(0);
+                            }
+                        }
                     }
+
 #if TRACE_MEMSTREAM_SIZES
                     Logging.info(String.Format("Presence::getBytes: {0}", m.Length));
 #endif

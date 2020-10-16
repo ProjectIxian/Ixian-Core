@@ -13,7 +13,7 @@ namespace IXICore
         /// <summary>
         /// Current version of the Ixian network protocol.
         /// </summary>
-        public static readonly int protocolVersion = 5;
+        public static readonly int protocolVersion = 6;
 
         /// <summary>
         /// Number of wallets to send in each chunk of data when synchronizing new Master Nodes.
@@ -129,7 +129,7 @@ namespace IXICore
         /// <summary>
         /// Unique node identifier
         /// </summary>
-        public static string device_id = System.Guid.NewGuid().ToString();
+        public static byte[] device_id = System.Guid.NewGuid().ToByteArray();
 
         /// <summary>
         /// Product version.
@@ -160,5 +160,15 @@ namespace IXICore
         /// Time in seconds of how long the node will remain on the blacklist, once blacklisted
         /// </summary>
         public static long NodeBlacklistExpiration = 43200;
+
+        /// <summary>
+        /// Maximum number of items to be read from inventory.
+        /// </summary>
+        public static int maxInventoryItems = 500;
+
+        /// <summary>
+        /// Interval at which to send inventory packets in seconds.
+        /// </summary>
+        public static int inventoryInterval = 1;
     }
 }
