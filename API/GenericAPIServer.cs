@@ -1182,9 +1182,6 @@ namespace IXICore
             networkArray.Add("My External IP", IxianHandler.publicIP);
             networkArray.Add("My Listening Port", IxianHandler.publicPort);
             //networkArray.Add("Listening interface", context.Request.RemoteEndPoint.Address.ToString());
-            networkArray.Add("Queues", "Rcv: " + NetworkQueue.getQueuedMessageCount() + ", RcvTx: " + NetworkQueue.getTxQueuedMessageCount()
-                + ", SendClients: " + NetworkServer.getQueuedMessageCount() + ", SendServers: " + NetworkClientManager.getQueuedMessageCount()
-                + ", Logging: " + Logging.getRemainingStatementsCount() + ", Pending Transactions: " + PendingTransactions.pendingTransactionCount());
 
             networkArray.Add("Core Status", IxianHandler.status);
 
@@ -1194,14 +1191,21 @@ namespace IXICore
             networkArray.Add("Node Type", PresenceList.myPresenceType);
             networkArray.Add("Connectable", NetworkServer.isConnectable());
 
+            if (parameters.ContainsKey("verbose"))
+            {
+                networkArray.Add("Queues", "Rcv: " + NetworkQueue.getQueuedMessageCount() + ", RcvTx: " + NetworkQueue.getTxQueuedMessageCount()
+                    + ", SendClients: " + NetworkServer.getQueuedMessageCount() + ", SendServers: " + NetworkClientManager.getQueuedMessageCount()
+                    + ", Logging: " + Logging.getRemainingStatementsCount() + ", Pending Transactions: " + PendingTransactions.pendingTransactionCount());
+
+                networkArray.Add("Presences", PresenceList.getTotalPresences());
+
+                networkArray.Add("Masters", PresenceList.countPresences('M'));
+                networkArray.Add("Relays", PresenceList.countPresences('R'));
+                networkArray.Add("Clients", PresenceList.countPresences('C'));
+            }
+
             networkArray.Add("Network Clients", NetworkServer.getConnectedClients());
             networkArray.Add("Network Servers", NetworkClientManager.getConnectedClients(true));
-
-            networkArray.Add("Presences", PresenceList.getTotalPresences());
-            networkArray.Add("Masters", PresenceList.countPresences('M'));
-            networkArray.Add("Relays", PresenceList.countPresences('R'));
-            networkArray.Add("Clients", PresenceList.countPresences('C'));
-
 
             return new JsonResponse { result = networkArray, error = error };
         }
