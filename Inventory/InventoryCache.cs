@@ -190,5 +190,18 @@ namespace IXICore.Inventory
         }
 
         abstract protected bool sendInventoryRequest(InventoryItem item, RemoteEndpoint endpoint);
+
+        public long getItemCount()
+        {
+            long count = 0;
+            lock(inventory)
+            {
+                foreach (var type in inventory)
+                {
+                    count += type.Value.Count();
+                }
+            }
+            return count;
+        }
     }
 }
