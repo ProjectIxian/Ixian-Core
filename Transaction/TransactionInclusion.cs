@@ -26,8 +26,6 @@ namespace IXICore
         private Thread tiv_thread = null;
         private bool running = false;
 
-        private readonly int candidateThreshold = 3;    // Minimum number of same exact block candidates
-
         Dictionary<string, Transaction> txQueue = new Dictionary<string, Transaction>(); // List of all transactions that should be verified
         SortedList<ulong, PITCacheItem> pitCache = new SortedList<ulong, PITCacheItem>();
         long pitRequestTimeout = 5; // timeout (seconds) before PIT for a specific block is re-requested
