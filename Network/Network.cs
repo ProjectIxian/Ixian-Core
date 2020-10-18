@@ -548,7 +548,7 @@ namespace IXICore.Network
             bool connected = false;
             try
             {
-                Logging.info(String.Format("Testing client connectivity for {0}.", full_hostname));
+                Logging.info("Testing client connectivity for {0}.", full_hostname);
                 if (!temp.ConnectAsync(hostname, port).Wait(1000))
                 {
                     return false;
@@ -558,7 +558,7 @@ namespace IXICore.Network
                 temp.Client.Blocking = false;
                 temp.Client.Send(new byte[1], 0, 0);
                 connected = temp.Client.Connected;
-                temp.Client.Send(CoreProtocolMessage.prepareProtocolMessage(ProtocolMessageCode.bye, new byte[1]));
+                temp.Client.Send(RemoteEndpoint.prepareProtocolMessage(ProtocolMessageCode.bye, new byte[1], CoreConfig.protocolVersion, 0));
                 temp.Client.Shutdown(SocketShutdown.Both);
                 temp.Close();
             }

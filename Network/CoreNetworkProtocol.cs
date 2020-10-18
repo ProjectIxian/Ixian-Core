@@ -1,4 +1,5 @@
-﻿using IXICore.Inventory;
+﻿using Force.Crc32;
+using IXICore.Inventory;
 using IXICore.Meta;
 using IXICore.Network;
 using IXICore.Utils;
@@ -15,86 +16,6 @@ namespace IXICore
     /// </summary>
     public class CoreProtocolMessage
     {
-        /// <summary>
-        ///  Calculates a single-byte checksum from the given header.
-        /// </summary>
-        /// <remarks>
-        ///  A single byte of checksum is not extremely robust, but it is simple and fast.
-        /// </remarks>
-        /// <param name="header">Message header.</param>
-        /// <returns>Checksum byte.</returns>
-        public static byte getHeaderChecksum(byte[] header)
-        {
-            byte sum = 0x7F;
-            for (int i = 0; i < header.Length; i++)
-            {
-                sum ^= header[i];
-            }
-            return sum;
-        }
-
-        /// <summary>
-        ///  Prepares (serializes) a protocol message from the given Ixian message code and appropriate data. Checksum can be supplied, but 
-        ///  if it isn't, this function will calculate it using the default method.
-        /// </summary>
-        /// <remarks>
-        ///  This function can be used from the server and client side.
-        ///  Please note: This function does not validate that the payload `data` conforms to the expected message for `code`. It is the 
-        ///  caller's job to ensure that.
-        /// </remarks>
-        /// <param name="code">Message code.</param>
-        /// <param name="data">Payload for the message.</param>
-        /// <param name="checksum">Optional checksum. If not supplied, or if null, this function will calculate it with the default method.</param>
-        /// <returns>Serialized message as a byte-field</returns>
-        public static byte[] prepareProtocolMessage(ProtocolMessageCode code, byte[] data, byte[] checksum = null)
-        {
-            byte[] result = null;
-
-            // Prepare the protocol sections
-            int data_length = data.Length;
-
-            if (data_length > CoreConfig.maxMessageSize)
-            {
-                Logging.error(String.Format("Tried to send data bigger than max allowed message size - {0} with code {1}.", data_length, code));
-                return null;
-            }
-
-            byte[] data_checksum = checksum;
-
-            if (checksum == null)
-            {
-                data_checksum = Crypto.sha512sqTrunc(data, 0, 0, 32);
-            }
-
-            using (MemoryStream m = new MemoryStream(4096))
-            {
-                using (BinaryWriter writer = new BinaryWriter(m))
-                {
-                    // Protocol sections are code, length, checksum, data
-                    // Write each section in binary, in that specific order
-                    writer.Write((byte)'X');
-                    writer.Write((int)code);
-                    writer.Write(data_length);
-                    writer.Write(data_checksum);
-
-                    writer.Flush();
-                    m.Flush();
-
-                    byte header_checksum = getHeaderChecksum(m.ToArray());
-                    writer.Write(header_checksum);
-
-                    writer.Write((byte)'I');
-                    writer.Write(data);
-#if TRACE_MEMSTREAM_SIZES
-                    Logging.info(String.Format("CoreProtocolMessage::prepareProtocolMessage: {0}", m.Length));
-#endif
-                }
-                result = m.ToArray();
-            }
-
-            return result;
-        }
-
         /// <summary>
         /// Prepares and sends the disconnect message to the specified remote endpoint.
         /// </summary>
@@ -130,7 +51,6 @@ namespace IXICore
             }
         }
 
-
         /// <summary>
         ///  Reads a protocol message from the specified byte-field and calls appropriate methods to process this message.
         /// </summary>
@@ -140,7 +60,7 @@ namespace IXICore
         /// </remarks>
         /// <param name="recv_buffer">Byte-field with an Ixian protocol message.</param>
         /// <param name="endpoint">Remote endpoint from where the message was received.</param>
-        public static void readProtocolMessage(byte[] recv_buffer, RemoteEndpoint endpoint)
+        public static void readProtocolMessage(QueueMessageRaw raw_message, RemoteEndpoint endpoint)
         {
             if (endpoint == null)
             {
@@ -148,74 +68,54 @@ namespace IXICore
                 return;
             }
 
-            ProtocolMessageCode code = ProtocolMessageCode.hello;
-            byte[] data = null;
+            ProtocolMessageCode code = raw_message.code;
 
-            using (MemoryStream m = new MemoryStream(recv_buffer))
+            // If this is a connected client, filter messages
+            if (endpoint.GetType() == typeof(RemoteEndpoint))
             {
-                using (BinaryReader reader = new BinaryReader(m))
+                if (endpoint.presence == null)
                 {
-                    // Check for multi-message packets. One packet can contain multiple network messages.
-                    while (reader.BaseStream.Position < reader.BaseStream.Length)
+                    // Check for presence and only accept hello and syncPL messages if there is no presence.
+                    if (code == ProtocolMessageCode.hello || code == ProtocolMessageCode.getPresenceList || code == ProtocolMessageCode.getBalance || code == ProtocolMessageCode.newTransaction)
                     {
-                        byte[] data_checksum;
-                        try
-                        {
-                            byte startByte = reader.ReadByte();
 
-                            int message_code = reader.ReadInt32();
-                            code = (ProtocolMessageCode)message_code;
-
-                            int data_length = reader.ReadInt32();
-
-                            // If this is a connected client, filter messages
-                            if (endpoint.GetType() == typeof(RemoteEndpoint))
-                            {
-                                if (endpoint.presence == null)
-                                {
-                                    // Check for presence and only accept hello and syncPL messages if there is no presence.
-                                    if (code == ProtocolMessageCode.hello || code == ProtocolMessageCode.getPresenceList || code == ProtocolMessageCode.getBalance || code == ProtocolMessageCode.newTransaction)
-                                    {
-
-                                    }
-                                    else
-                                    {
-                                        // Ignore anything else
-                                        return;
-                                    }
-                                }
-                            }
-
-
-
-
-                            data_checksum = reader.ReadBytes(32); // sha512qu, 32 bytes
-                            byte header_checksum = reader.ReadByte();
-                            byte endByte = reader.ReadByte();
-                            data = reader.ReadBytes(data_length);
-                        }
-                        catch (Exception e)
-                        {
-                            Logging.error(String.Format("NET: dropped packet. {0}", e));
-                            return;
-                        }
-                        // Compute checksum of received data
-                        byte[] local_checksum = Crypto.sha512sqTrunc(data, 0, 0, 32);
-
-                        // Verify the checksum before proceeding
-                        if (local_checksum.SequenceEqual(data_checksum) == false)
-                        {
-                            Logging.error("Dropped message (invalid checksum)");
-                            continue;
-                        }
-
-                        // Can proceed to parse the data parameter based on the protocol message code.
-                        // Data can contain multiple elements.
-                        //parseProtocolMessage(code, data, socket, endpoint);
-                        NetworkQueue.receiveProtocolMessage(code, data, data_checksum, endpoint);
+                    }
+                    else
+                    {
+                        // Ignore anything else
+                        return;
                     }
                 }
             }
+            if(raw_message.legacyChecksum != null)
+            {
+                // Compute checksum of received data
+                byte[] local_checksum = Crypto.sha512sqTrunc(raw_message.data, 0, 0, 32);
+
+                // Verify the checksum before proceeding
+                if (local_checksum.SequenceEqual(raw_message.legacyChecksum) == false)
+                {
+                    Logging.error("Dropped message (invalid legacy checksum)");
+                    return;
+                }
+            }else
+            {
+                // Compute checksum of received data
+                uint local_checksum = Crc32CAlgorithm.Compute(raw_message.data);
+
+                // Verify the checksum before proceeding
+                if (local_checksum != raw_message.checksum)
+                {
+                    Logging.error("Dropped message (invalid checksum)");
+                    return;
+                }
+            }
+
+
+            // Can proceed to parse the data parameter based on the protocol message code.
+            // Data can contain multiple elements.
+            //parseProtocolMessage(code, data, socket, endpoint);
+            NetworkQueue.receiveProtocolMessage(code, raw_message.data, Crc32CAlgorithm.Compute(raw_message.data), endpoint);
         }
 
         /// <summary>

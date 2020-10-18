@@ -484,7 +484,7 @@ namespace IXICore.Network
             if (!IxianHandler.isAcceptingConnections())
             {
                 Thread.Sleep(100); // wait a bit for check connectivity purposes
-                clientSocket.Send(CoreProtocolMessage.prepareProtocolMessage(ProtocolMessageCode.bye, new byte[1]));
+                clientSocket.Send(RemoteEndpoint.prepareProtocolMessage(ProtocolMessageCode.bye, new byte[1], CoreConfig.protocolVersion, 0));
                 clientSocket.Shutdown(SocketShutdown.Both);
                 clientSocket.Disconnect(true);
                 return;
@@ -500,9 +500,9 @@ namespace IXICore.Network
             {
                 if (connectedClients.Count + 1 > CoreConfig.maximumServerMasterNodes)
                 {
-                    Logging.warn(string.Format("Maximum number of connected clients reached. Disconnecting client: {0}:{1}",
-                        clientEndpoint.Address.ToString(), clientEndpoint.Port));
-                    clientSocket.Send(CoreProtocolMessage.prepareProtocolMessage(ProtocolMessageCode.bye, new byte[1]));
+                    Logging.warn("Maximum number of connected clients reached. Disconnecting client: {0}:{1}",
+                        clientEndpoint.Address.ToString(), clientEndpoint.Port);
+                    clientSocket.Send(RemoteEndpoint.prepareProtocolMessage(ProtocolMessageCode.bye, new byte[1], CoreConfig.protocolVersion, 0));
                     clientSocket.Shutdown(SocketShutdown.Both);
                     clientSocket.Disconnect(true);
                     return;
@@ -511,9 +511,9 @@ namespace IXICore.Network
                 var existing_clients = connectedClients.Where(re => re.remoteIP.Address == clientEndpoint.Address);
                 if (existing_clients.Count() > 0)
                 {
-                    Logging.warn(String.Format("Client {0}:{1} already connected as {2}.",
-                        clientEndpoint.Address.ToString(), clientEndpoint.Port, existing_clients.First().ToString()));
-                    clientSocket.Send(CoreProtocolMessage.prepareProtocolMessage(ProtocolMessageCode.bye, new byte[1]));
+                    Logging.warn("Client {0}:{1} already connected as {2}.",
+                        clientEndpoint.Address.ToString(), clientEndpoint.Port, existing_clients.First().ToString());
+                    clientSocket.Send(RemoteEndpoint.prepareProtocolMessage(ProtocolMessageCode.bye, new byte[1], CoreConfig.protocolVersion, 0));
                     clientSocket.Shutdown(SocketShutdown.Both);
                     clientSocket.Disconnect(true);
                     return;
@@ -521,7 +521,7 @@ namespace IXICore.Network
 
                 connectedClients.Add(remoteEndpoint);
 
-                Logging.info(String.Format("Client connection accepted: {0} | #{1}/{2}", clientEndpoint.ToString(), connectedClients.Count + 1, CoreConfig.maximumServerMasterNodes));
+                Logging.info("Client connection accepted: {0} | #{1}/{2}", clientEndpoint.ToString(), connectedClients.Count + 1, CoreConfig.maximumServerMasterNodes);
 
                 remoteEndpoint.start(clientSocket);
             }

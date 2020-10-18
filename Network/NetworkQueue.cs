@@ -9,14 +9,17 @@ namespace IXICore.Network
     {
         public ProtocolMessageCode code;
         public byte[] data;
-        public byte[] checksum;
+        public uint checksum;
         public RemoteEndpoint skipEndpoint;
         public byte[] helperData;
     }
 
-    struct QueueMessageRaw
+    public struct QueueMessageRaw
     {
+        public ProtocolMessageCode code;
         public byte[] data;
+        public byte[] legacyChecksum;
+        public uint checksum;
         public RemoteEndpoint endpoint;
     }
 
@@ -33,7 +36,7 @@ namespace IXICore.Network
             public ProtocolMessageCode code;
             public byte[] data;
             public int length;
-            public byte[] checksum;
+            public uint checksum;
             public RemoteEndpoint endpoint;
             public byte[] helperData;
         }
@@ -68,7 +71,7 @@ namespace IXICore.Network
             return null;
         }
 
-        public static void receiveProtocolMessage(ProtocolMessageCode code, byte[] data, byte[] checksum, RemoteEndpoint endpoint)
+        public static void receiveProtocolMessage(ProtocolMessageCode code, byte[] data, uint checksum, RemoteEndpoint endpoint)
         {
             QueueMessageRecv message = new QueueMessageRecv
             {
@@ -105,7 +108,7 @@ namespace IXICore.Network
                         }
                     }
 
-                    if (txqueueMessages.Exists(x => x.code == message.code && x.checksum.SequenceEqual(message.checksum)))
+                    if (txqueueMessages.Exists(x => x.code == message.code && x.checksum == message.checksum))
                     {
                         //Logging.warn(string.Format("Attempting to add a duplicate message (code: {0}) to the network queue", code));
                         return;
@@ -135,7 +138,7 @@ namespace IXICore.Network
             lock (queueMessages)
             {
                 // ignore duplicates
-                if (queueMessages.Exists(x => x.code == message.code && x.checksum.SequenceEqual(message.checksum) && x.endpoint == message.endpoint))
+                if (queueMessages.Exists(x => x.code == message.code && x.checksum == message.checksum && x.endpoint == message.endpoint))
                 {
                     //Logging.warn(string.Format("Attempting to add a duplicate message (code: {0}) to the network queue", code));
                     return;
@@ -231,11 +234,7 @@ namespace IXICore.Network
                     if (queueMessages.Count > 0)
                     {
                         // Pick the oldest message
-                        QueueMessageRecv candidate = queueMessages[0];
-                        active_message.code = candidate.code;
-                        active_message.data = candidate.data;
-                        active_message.checksum = candidate.checksum;
-                        active_message.endpoint = candidate.endpoint;
+                        active_message = queueMessages[0];
                         message_found = true;
                     }
                 }
@@ -277,11 +276,7 @@ namespace IXICore.Network
                     if (txqueueMessages.Count > 0)
                     {
                         // Pick the oldest message
-                        QueueMessageRecv candidate = txqueueMessages[0];
-                        active_message.code = candidate.code;
-                        active_message.data = candidate.data;
-                        active_message.checksum = candidate.checksum;
-                        active_message.endpoint = candidate.endpoint;
+                        active_message = txqueueMessages[0];
                         message_found = true;
                     }
                 }
