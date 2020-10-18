@@ -943,7 +943,12 @@ namespace IXICore.Network
                                 expected_data_len = (int)last_message_header.dataLen;
                                 data = new byte[expected_data_len];
                                 bytes_to_read = expected_data_len;
-                            }else
+                                if (bytes_to_read > 8000)
+                                {
+                                    bytes_to_read = 8000;
+                                }
+                            }
+                            else
                             {
                                 cur_header_len = 0;
                                 expected_data_len = 0;
