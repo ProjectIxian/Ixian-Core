@@ -22,6 +22,10 @@
     <Compile Include="$(MSBuildThisFileDirectory)Crypto\CryptoLib.cs" />
     <Compile Include="$(MSBuildThisFileDirectory)Crypto\CryptoLibs\BouncyCastle.cs" />
     <Compile Include="$(MSBuildThisFileDirectory)Crypto\CryptoManager.cs" />
+    <Compile Include="$(MSBuildThisFileDirectory)Crypto\ForceCRC32\Crc32Algorithm.cs" />
+    <Compile Include="$(MSBuildThisFileDirectory)Crypto\ForceCRC32\Crc32CAlgorithm.cs" />
+    <Compile Include="$(MSBuildThisFileDirectory)Crypto\ForceCRC32\SafeProxy.cs" />
+    <Compile Include="$(MSBuildThisFileDirectory)Crypto\ForceCRC32\SafeProxyC.cs" />
     <Compile Include="$(MSBuildThisFileDirectory)Crypto\KeyDerivation.cs" />
     <Compile Include="$(MSBuildThisFileDirectory)Inventory\InventoryCache.cs" />
     <Compile Include="$(MSBuildThisFileDirectory)Inventory\InventoryItem.cs" />
