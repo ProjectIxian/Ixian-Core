@@ -1002,10 +1002,10 @@ namespace IXICore
         }
 
         /// <summary>
-        ///  Checks the signatures on the block and returns true, if the block has already been signed by the given public key.
+        ///  Finds the signatures on the block and returns it, if the block has already been signed by the given public key.
         /// </summary>
         /// <param name="public_key">The public key to check.</param>
-        /// <returns>True, if the public key has already signed the block.</returns>
+        /// <returns>signature, if the public key has already signed the block.</returns>
         public byte[] getNodeSignature(byte[] public_key)
         {
             if (compacted)
