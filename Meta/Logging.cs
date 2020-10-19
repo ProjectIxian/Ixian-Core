@@ -72,7 +72,7 @@ namespace IXICore.Meta
             public LogSeverity severity;
             public string message;
             public int threadId;
-            public string time;
+            public DateTime time;
         }
 
         private static List<LogStatement> statements = new List<LogStatement>();
@@ -168,13 +168,12 @@ namespace IXICore.Meta
 
             if (running == false)
             {
-                String formattedMessage = String.Format("!!! {0}|{1}|({2}): {3}",
-                        DateTime.Now.ToString("MM-dd HH:mm:ss.ffff"),
-                        log_severity.ToString(),
-                        Thread.CurrentThread.ManagedThreadId,
-                        log_message);
-                if (consoleOutput)
+                if(consoleOutput)
+                {
+                    string formattedMessage = "!!! " + DateTime.Now.ToString("MM-dd HH:mm:ss.ffff") + "|" + log_severity + "|" + Thread.CurrentThread.ManagedThreadId + ": " + log_message;
                     Console.WriteLine(formattedMessage);
+                }
+
                 return;
             }
 
@@ -183,7 +182,7 @@ namespace IXICore.Meta
                 threadId = Thread.CurrentThread.ManagedThreadId,
                 severity = log_severity,
                 message = log_message,
-                time = DateTime.Now.ToString("MM-dd HH:mm:ss.ffff")
+                time = DateTime.Now
             };
 
             lock (statements)
@@ -200,11 +199,7 @@ namespace IXICore.Meta
             {
                 if (severity >= currentSeverity)
                 {
-                    String formattedMessage = String.Format("{0}|{1}|({2}): {3}",
-                        time,
-                        severity.ToString(),
-                        threadId,
-                        message);
+                    string formattedMessage = time + "|" + severity + "|" + threadId + ": " + message;
 
                     if (consoleOutput)
                     {
@@ -226,7 +221,6 @@ namespace IXICore.Meta
                         Logging.roll();
                         byte[] logMessage = Encoding.UTF8.GetBytes(formattedMessage + Environment.NewLine);
                         logFileStream.Write(logMessage, 0, logMessage.Length);
-                        logFileStream.Flush();
                         currentLogSize += logMessage.Length;
                     }
 
@@ -245,6 +239,8 @@ namespace IXICore.Meta
             LogStatement statement = new LogStatement();
             bool message_found = false;
 
+            long last_flush = Clock.getTimestamp();
+
             while (running)
             {
                 TLC.Report();
@@ -254,21 +250,25 @@ namespace IXICore.Meta
                 {
                     if (statements.Count() > 0)
                     {
-                        LogStatement candidate = statements[0];
-                        statement = candidate;
-                        statements.Remove(candidate);
+                        statement = statements[0];
+                        statements.Remove(statement);
                         message_found = true;
                     }
                 }
 
                 if (message_found)
                 {
-                    log_internal(statement.severity, statement.message, statement.threadId, statement.time);
+                    log_internal(statement.severity, statement.message, statement.threadId, statement.time.ToString("MM-dd HH:mm:ss.ffff"));
                 }
                 else
                 {
                     // Sleep for 25ms to prevent cpu waste
                     Thread.Sleep(25);
+                }
+                if(Clock.getTimestamp() - last_flush > 1)
+                {
+                    last_flush = Clock.getTimestamp();
+                    logFileStream.Flush();
                 }
                 Thread.Yield();
             }
@@ -414,6 +414,7 @@ namespace IXICore.Meta
         {
             while (getRemainingStatementsCount() > 0)
             {
+                logFileStream.Flush();
                 Thread.Sleep(100);
             }
         }
