@@ -266,6 +266,7 @@ namespace IXICore.Network
             while (running)
             {
                 TLC.Report();
+                bool message_received = false;
                 // Let the protocol handler receive and handle messages
                 try
                 {
@@ -274,6 +275,7 @@ namespace IXICore.Network
                     {
                         parseDataInternal((QueueMessageRaw)raw_msg);
                         messagesPerSecond++;
+                        message_received = true;
                     }
                 }
                 catch (Exception e)
@@ -317,7 +319,7 @@ namespace IXICore.Network
                 {
                     Thread.Sleep(500);
                 }
-                else
+                else if(!message_received)
                 {
                     Thread.Sleep(1);
                 }
@@ -474,7 +476,6 @@ namespace IXICore.Network
                         fullyStopped = true;
                     }
                     sleep = false;
-                    Thread.Sleep(1);
                 }
                 sendInventory();
                 if(sleep)
@@ -666,21 +667,22 @@ namespace IXICore.Network
                 return;
             }
 
-            QueueMessage message = new QueueMessage();
-            message.code = code;
-            message.data = data;
-            message.checksum = Crc32CAlgorithm.Compute(data);
-            message.skipEndpoint = null;
-            message.helperData = helper_data;
+            QueueMessage message = getQueueMessage(code, data, helper_data);
+            sendData(message);
+        }
 
-            if(code == ProtocolMessageCode.bye || code == ProtocolMessageCode.keepAlivePresence 
+        public void sendData(QueueMessage message)
+        {
+            ProtocolMessageCode code = message.code;
+            if (code == ProtocolMessageCode.bye || code == ProtocolMessageCode.keepAlivePresence
                 || code == ProtocolMessageCode.getPresence || code == ProtocolMessageCode.updatePresence)
             {
                 lock (sendQueueMessagesHighPriority)
                 {
                     addMessageToSendQueue(sendQueueMessagesHighPriority, message);
                 }
-            }else if(code != ProtocolMessageCode.transactionData && code != ProtocolMessageCode.newTransaction)
+            }
+            else if (code != ProtocolMessageCode.transactionData && code != ProtocolMessageCode.newTransaction)
             {
                 lock (sendQueueMessagesNormalPriority)
                 {
@@ -694,6 +696,18 @@ namespace IXICore.Network
                     addMessageToSendQueue(sendQueueMessagesLowPriority, message);
                 }
             }
+        }
+
+        static public QueueMessage getQueueMessage(ProtocolMessageCode code, byte[] data, byte[] helper_data)
+        {
+            QueueMessage message = new QueueMessage();
+            message.code = code;
+            message.data = data;
+            message.checksum = Crc32CAlgorithm.Compute(data);
+            message.skipEndpoint = null;
+            message.helperData = helper_data;
+
+            return message;
         }
 
         public int getQueuedMessageCount()

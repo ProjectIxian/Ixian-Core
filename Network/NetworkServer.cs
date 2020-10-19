@@ -235,6 +235,7 @@ namespace IXICore.Network
             bool result = false;
             lock (connectedClients)
             {
+                QueueMessage queue_message = RemoteEndpoint.getQueueMessage(code, data, helper_data);
                 foreach (RemoteEndpoint endpoint in connectedClients)
                 {
                     if (skipEndpoint != null)
@@ -261,7 +262,7 @@ namespace IXICore.Network
                         }
                     }
 
-                    endpoint.sendData(code, data, helper_data);
+                    endpoint.sendData(queue_message);
                     result = true;
                 }
             }
@@ -286,6 +287,7 @@ namespace IXICore.Network
             {
                 lock (connectedClients)
                 {
+                    QueueMessage queue_message = RemoteEndpoint.getQueueMessage(code, data, helper_data);
                     foreach (RemoteEndpoint endpoint in connectedClients)
                     {
                         if (skipEndpoint != null)
@@ -312,7 +314,7 @@ namespace IXICore.Network
                         // Finally, check if the endpoint is subscribed to this event and address
                         if (endpoint.isSubscribedToAddress(type, address))
                         {
-                            endpoint.sendData(code, data, helper_data);
+                            endpoint.sendData(queue_message);
                             result = true;
                         }
                     }
@@ -346,6 +348,7 @@ namespace IXICore.Network
 
             lock (connectedClients)
             {
+                QueueMessage queue_message = RemoteEndpoint.getQueueMessage(code, message, null);
                 foreach (RemoteEndpoint endpoint in connectedClients)
                 {
                     // Skip connections without presence information
@@ -361,7 +364,7 @@ namespace IXICore.Network
                     if (client_wallet != null && address.SequenceEqual(client_wallet))
                     {
                         Logging.info(">>>> Forwarding message");
-                        endpoint.sendData(code, message);
+                        endpoint.sendData(queue_message);
                         return true;
                     }
 
@@ -385,6 +388,7 @@ namespace IXICore.Network
 
             lock (connectedClients)
             {
+                QueueMessage queue_message = RemoteEndpoint.getQueueMessage(code, message, null);
                 foreach (RemoteEndpoint endpoint in connectedClients)
                 {
                     // Skip connections without presence information
@@ -400,7 +404,7 @@ namespace IXICore.Network
                             continue;
                         }
                         Logging.info(">>>> Forwarding message");
-                        endpoint.sendData(code, message);
+                        endpoint.sendData(queue_message);
 
                     }
 
@@ -654,6 +658,7 @@ namespace IXICore.Network
         {
             lock (connectedClients)
             {
+                QueueMessage queue_message = RemoteEndpoint.getQueueMessage(code, data, helper);
                 foreach (var client in connectedClients)
                 {
                     try
@@ -677,7 +682,7 @@ namespace IXICore.Network
                         else
                         {
                             // TODO legacy, can be removed after network upgrades
-                            client.sendData(code, data, helper);
+                            client.sendData(queue_message);
                         }
                     }catch (Exception e)
                     {

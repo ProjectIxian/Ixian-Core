@@ -284,6 +284,7 @@ namespace IXICore.Network
             bool result = false;
             lock (networkClients)
             {
+                QueueMessage queue_message = RemoteEndpoint.getQueueMessage(code, data, helper_data);
                 foreach (NetworkClient client in networkClients)
                 {
                     if (skipEndpoint != null)
@@ -311,7 +312,7 @@ namespace IXICore.Network
                     }
 
 
-                    client.sendData(code, data, helper_data);
+                    client.sendData(queue_message);
                     result = true;
                 }
             }
@@ -770,6 +771,7 @@ namespace IXICore.Network
         {
             lock (networkClients)
             {
+                QueueMessage queue_message = RemoteEndpoint.getQueueMessage(code, data, helper);
                 foreach (var client in networkClients)
                 {
                     try
@@ -793,7 +795,7 @@ namespace IXICore.Network
                         else
                         {
                             // TODO legacy, can be removed after network upgrades
-                            client.sendData(code, data, helper);
+                            client.sendData(queue_message);
                         }
                     }catch (Exception e)
                     {

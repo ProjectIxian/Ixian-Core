@@ -5,7 +5,7 @@ using System.Threading;
 
 namespace IXICore.Network
 {
-    struct QueueMessage
+    public struct QueueMessage
     {
         public ProtocolMessageCode code;
         public byte[] data;
