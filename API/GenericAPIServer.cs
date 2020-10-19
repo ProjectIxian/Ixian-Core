@@ -1193,9 +1193,15 @@ namespace IXICore
 
             if (parameters.ContainsKey("verbose"))
             {
-                networkArray.Add("Queues", "Rcv: " + NetworkQueue.getQueuedMessageCount() + ", RcvTx: " + NetworkQueue.getTxQueuedMessageCount()
-                    + ", SendClients: " + NetworkServer.getQueuedMessageCount() + ", SendServers: " + NetworkClientManager.getQueuedMessageCount()
-                    + ", Logging: " + Logging.getRemainingStatementsCount() + ", Pending Transactions: " + PendingTransactions.pendingTransactionCount());
+                Dictionary<string, object> queues = new Dictionary<string, object>();
+                queues.Add("Rcv", NetworkQueue.getQueuedMessageCount());
+                queues.Add("RcvTx", NetworkQueue.getTxQueuedMessageCount());
+                queues.Add("SendClients", NetworkServer.getQueuedMessageCount());
+                queues.Add("SendServers", NetworkClientManager.getQueuedMessageCount());
+                queues.Add("Logging", Logging.getRemainingStatementsCount());
+                queues.Add("Pending Transactions", PendingTransactions.pendingTransactionCount());
+
+                networkArray.Add("Queues", queues);
 
                 networkArray.Add("Presences", PresenceList.getTotalPresences());
 
