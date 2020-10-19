@@ -266,7 +266,6 @@ namespace IXICore.Network
             while (running)
             {
                 TLC.Report();
-                bool message_received = false;
                 // Let the protocol handler receive and handle messages
                 try
                 {
@@ -275,7 +274,6 @@ namespace IXICore.Network
                     {
                         parseDataInternal((QueueMessageRaw)raw_msg);
                         messagesPerSecond++;
-                        message_received = true;
                     }
                 }
                 catch (Exception e)
@@ -319,8 +317,9 @@ namespace IXICore.Network
                 {
                     Thread.Sleep(500);
                 }
-                else if(!message_received)
+                else
                 {
+                    // sleep for 1ms to throttle the client to 1000 messages/second
                     Thread.Sleep(1);
                 }
             }
@@ -463,7 +462,6 @@ namespace IXICore.Network
                     }
                 }
 
-                bool sleep = true;
                 if (message_found)
                 {
                     messageCount++;
@@ -475,14 +473,10 @@ namespace IXICore.Network
                         running = false;
                         fullyStopped = true;
                     }
-                    sleep = false;
                 }
                 sendInventory();
-                if(sleep)
-                {
-                    // Sleep for 10ms to prevent cpu waste
-                    Thread.Sleep(10);
-                }
+                // sleep for 1ms to throttle sending to 1000 messages/second
+                Thread.Sleep(1);
             }
         }
 
@@ -558,7 +552,7 @@ namespace IXICore.Network
                     }
                     else
                     {
-                        Thread.Sleep(10);
+                        Thread.Sleep(1);
                     }
 
                 }
@@ -566,10 +560,7 @@ namespace IXICore.Network
                 {
                     Logging.error(String.Format("Exception occured for client {0} in parseLoopRE: {1} ", getFullAddress(), e));
                 }
-                // Sleep a bit to prevent cpu waste
-                Thread.Yield();
             }
-
         }
 
         protected void parseDataInternal(QueueMessageRaw message)
@@ -603,7 +594,10 @@ namespace IXICore.Network
 
 
                     // Sleep a bit to allow other threads to do their thing
-                    Thread.Yield();
+                    if(curSentBytes < bytesToSendCount)
+                    {
+                        Thread.Sleep(1);
+                    }
 
                     sentBytes += curSentBytes;
                     // TODO TODO TODO timeout
@@ -845,7 +839,7 @@ namespace IXICore.Network
             for (int i = 0; i < rcv_count && socket.Connected;)
             {
                 i += socket.Receive(socketReadBuffer, i, rcv_count - i, SocketFlags.None);
-                Thread.Yield();
+                Thread.Sleep(1);
             }
             lock (timeSyncs)
             {

@@ -282,9 +282,9 @@ namespace IXICore.Network
         public static bool broadcastData(char[] types, ProtocolMessageCode code, byte[] data, byte[] helper_data, RemoteEndpoint skipEndpoint = null)
         {
             bool result = false;
+            QueueMessage queue_message = RemoteEndpoint.getQueueMessage(code, data, helper_data);
             lock (networkClients)
             {
-                QueueMessage queue_message = RemoteEndpoint.getQueueMessage(code, data, helper_data);
                 foreach (NetworkClient client in networkClients)
                 {
                     if (skipEndpoint != null)
@@ -769,9 +769,9 @@ namespace IXICore.Network
 
         public static bool addToInventory(char[] types, InventoryItem item, RemoteEndpoint skip_endpoint, ProtocolMessageCode code, byte[] data, byte[] helper)
         {
+            QueueMessage queue_message = RemoteEndpoint.getQueueMessage(code, data, helper);
             lock (networkClients)
             {
-                QueueMessage queue_message = RemoteEndpoint.getQueueMessage(code, data, helper);
                 foreach (var client in networkClients)
                 {
                     try

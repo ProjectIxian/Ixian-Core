@@ -249,13 +249,11 @@ namespace IXICore.Network
                         // Remove it from the queue
                         queueMessages.RemoveAt(0);
                     }
-                    // Sleep a bit to allow other threads to do their thing
-                    Thread.Yield();
                 }
                 else
                 {
-                    // Sleep for 10ms to prevent cpu waste
-                    Thread.Sleep(10);
+                    // Sleep for 1ms to prevent cpu waste
+                    Thread.Sleep(1);
                 }
             }
             Logging.info("Network queue thread stopped.");
@@ -291,8 +289,6 @@ namespace IXICore.Network
                         // Remove it from the queue
                         txqueueMessages.RemoveAt(0);
                     }
-                    // Sleep a bit to allow other threads to do their thing
-                    Thread.Yield();
                 }
                 else
                 {

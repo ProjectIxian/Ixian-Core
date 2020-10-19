@@ -233,9 +233,9 @@ namespace IXICore.Network
         public static bool broadcastData(char[] types, ProtocolMessageCode code, byte[] data, byte[] helper_data, RemoteEndpoint skipEndpoint = null)
         {
             bool result = false;
+            QueueMessage queue_message = RemoteEndpoint.getQueueMessage(code, data, helper_data);
             lock (connectedClients)
             {
-                QueueMessage queue_message = RemoteEndpoint.getQueueMessage(code, data, helper_data);
                 foreach (RemoteEndpoint endpoint in connectedClients)
                 {
                     if (skipEndpoint != null)
@@ -285,9 +285,9 @@ namespace IXICore.Network
             bool result = false;
             try
             {
+                QueueMessage queue_message = RemoteEndpoint.getQueueMessage(code, data, helper_data);
                 lock (connectedClients)
                 {
-                    QueueMessage queue_message = RemoteEndpoint.getQueueMessage(code, data, helper_data);
                     foreach (RemoteEndpoint endpoint in connectedClients)
                     {
                         if (skipEndpoint != null)
@@ -346,9 +346,9 @@ namespace IXICore.Network
             Logging.info(String.Format(">>>> Preparing to forward to {0}",
                 Base58Check.Base58CheckEncoding.EncodePlain(address)));
 
+            QueueMessage queue_message = RemoteEndpoint.getQueueMessage(code, message, null);
             lock (connectedClients)
             {
-                QueueMessage queue_message = RemoteEndpoint.getQueueMessage(code, message, null);
                 foreach (RemoteEndpoint endpoint in connectedClients)
                 {
                     // Skip connections without presence information
@@ -386,9 +386,9 @@ namespace IXICore.Network
         {
             Logging.info(String.Format(">>>> Preparing to forward to everyone"));
 
+            QueueMessage queue_message = RemoteEndpoint.getQueueMessage(code, message, null);
             lock (connectedClients)
             {
-                QueueMessage queue_message = RemoteEndpoint.getQueueMessage(code, message, null);
                 foreach (RemoteEndpoint endpoint in connectedClients)
                 {
                     // Skip connections without presence information
@@ -656,9 +656,9 @@ namespace IXICore.Network
 
         public static bool addToInventory(char[] types, InventoryItem item, RemoteEndpoint skip_endpoint, ProtocolMessageCode code, byte[] data, byte[] helper)
         {
+            QueueMessage queue_message = RemoteEndpoint.getQueueMessage(code, data, helper);
             lock (connectedClients)
             {
-                QueueMessage queue_message = RemoteEndpoint.getQueueMessage(code, data, helper);
                 foreach (var client in connectedClients)
                 {
                     try
