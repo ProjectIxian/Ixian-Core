@@ -279,7 +279,7 @@ namespace IXICore
                         w.Write(filter_bytes.Length);
                         w.Write(filter_bytes);
                     }
-                    CoreProtocolMessage.broadcastProtocolMessageToSingleRandomNode(new char[] { 'M' }, ProtocolMessageCode.getPIT, m.ToArray(), 0);
+                    CoreProtocolMessage.broadcastProtocolMessageToSingleRandomNode(new char[] { 'M', 'H' }, ProtocolMessageCode.getPIT, m.ToArray(), 0);
                     PITCacheItem ci = new PITCacheItem()
                     {
                         pit = null,
@@ -443,7 +443,7 @@ namespace IXICore
                 //NetworkClientManager.broadcastData(new char[] { 'M', 'H' }, ProtocolMessageCode.getBlockHeaders, mOut.ToArray(), null);
 
                 // Request from a single random node
-                CoreProtocolMessage.broadcastProtocolMessageToSingleRandomNode(new char[] { 'M' }, ProtocolMessageCode.getBlockHeaders, mOut.ToArray(), 0);
+                CoreProtocolMessage.broadcastProtocolMessageToSingleRandomNode(new char[] { 'M', 'H' }, ProtocolMessageCode.getBlockHeaders, mOut.ToArray(), 0);
             }
         }
 
