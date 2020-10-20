@@ -709,5 +709,79 @@ namespace IXICore
             bool s_result = NetworkServer.addToInventory(types, item, skip_endpoint, code, data, helper);
             return c_result || s_result;
         }
+
+        public static void processBye(byte[] data, RemoteEndpoint endpoint)
+        {
+            using (MemoryStream m = new MemoryStream(data))
+            {
+                using (BinaryReader reader = new BinaryReader(m))
+                {
+                    endpoint.stop();
+
+                    bool byeV1 = false;
+                    try
+                    {
+                        ProtocolByeCode byeCode = (ProtocolByeCode)reader.ReadInt32();
+                        string byeMessage = reader.ReadString();
+                        string byeData = reader.ReadString();
+
+                        byeV1 = true;
+
+                        switch (byeCode)
+                        {
+                            case ProtocolByeCode.bye: // all good
+                                break;
+
+                            case ProtocolByeCode.deprecated: // deprecated node disconnected
+                                Logging.info(string.Format("Disconnected with message: {0} {1}", byeMessage, byeData));
+                                break;
+
+                            case ProtocolByeCode.incorrectIp: // incorrect IP
+                                if (IxiUtils.validateIPv4(byeData))
+                                {
+                                    if (NetworkClientManager.getConnectedClients(true).Length < 2)
+                                    {
+                                        IxianHandler.publicIP = byeData;
+                                        Logging.info("Changed internal IP Address to " + byeData + ", reconnecting");
+                                    }
+                                }
+                                break;
+
+                            case ProtocolByeCode.notConnectable: // not connectable from the internet
+                                Logging.error("This node must be connectable from the internet, to connect to the network.");
+                                Logging.error("Please setup uPNP and/or port forwarding on your router for port " + IxianHandler.publicPort + ".");
+                                NetworkServer.connectable = false;
+                                break;
+
+                            case ProtocolByeCode.insufficientFunds:
+                                Logging.info("Insufficient funds to connect as master node.");
+                                break;
+
+                            default:
+                                Logging.warn(string.Format("Disconnected with message: {0} {1}", byeMessage, byeData));
+                                break;
+                        }
+                    }
+                    catch (Exception)
+                    {
+
+                    }
+                    if (byeV1)
+                    {
+                        return;
+                    }
+
+                    reader.BaseStream.Seek(0, SeekOrigin.Begin);
+
+                    // Retrieve the message
+                    string message = reader.ReadString();
+
+                    if (message.Length > 0)
+                        Logging.info(string.Format("Disconnected with message: {0}", message));
+                    else
+                        Logging.info("Disconnected");
+                }
+            }
+        }
     }
 }
