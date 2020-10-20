@@ -509,11 +509,11 @@ namespace IXICore.Network
             {
                 using (BinaryWriter writer = new BinaryWriter(m))
                 {
-                    writer.WriteVarInt(items_to_send.Count());
+                    writer.WriteIxiVarInt(items_to_send.Count());
                     foreach (var item in items_to_send)
                     {
                         byte[] item_bytes = item.getBytes();
-                        writer.WriteVarInt(item_bytes.Length);
+                        writer.WriteIxiVarInt(item_bytes.Length);
                         writer.Write(item_bytes);
                     }
                 }

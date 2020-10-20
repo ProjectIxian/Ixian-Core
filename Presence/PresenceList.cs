@@ -627,18 +627,18 @@ namespace IXICore
             {
                 using (BinaryWriter writer = new BinaryWriter(m))
                 {
-                    writer.WriteVarInt(2); // version
+                    writer.WriteIxiVarInt(2); // version
 
                     byte[] wallet = IxianHandler.getWalletStorage().getPrimaryAddress();
-                    writer.WriteVarInt(wallet.Length);
+                    writer.WriteIxiVarInt(wallet.Length);
                     writer.Write(wallet);
 
-                    writer.WriteVarInt(CoreConfig.device_id.Length);
+                    writer.WriteIxiVarInt(CoreConfig.device_id.Length);
                     writer.Write(CoreConfig.device_id);
 
                     // Add the unix timestamp
                     long timestamp = Clock.getNetworkTimestamp();
-                    writer.WriteVarInt(timestamp);
+                    writer.WriteIxiVarInt(timestamp);
 
                     string hostname = curNodePresenceAddress.address;
                     writer.Write(hostname);
@@ -647,7 +647,7 @@ namespace IXICore
                     // Add a verifiable signature
                     byte[] private_key = IxianHandler.getWalletStorage().getPrimaryPrivateKey();
                     byte[] signature = CryptoManager.lib.getSignature(m.ToArray(), private_key);
-                    writer.WriteVarInt(signature.Length);
+                    writer.WriteIxiVarInt(signature.Length);
                     writer.Write(signature);
 
                     PresenceList.curNodePresenceAddress.lastSeenTime = timestamp;
@@ -687,7 +687,7 @@ namespace IXICore
                             keepAliveVersion = reader.ReadInt32();
                         }else
                         {
-                            keepAliveVersion = (int)reader.ReadVarInt();
+                            keepAliveVersion = (int)reader.ReadIxiVarInt();
                         }
 
                         byte[] wallet;
@@ -722,22 +722,22 @@ namespace IXICore
                             signature = reader.ReadBytes(sigLen);
                         }else
                         {
-                            int walletLen = (int)reader.ReadVarInt();
+                            int walletLen = (int)reader.ReadIxiVarUInt();
                             wallet = reader.ReadBytes(walletLen);
 
                             // Assign the out address parameter
                             address = wallet;
 
-                            int deviceid_len = (int)reader.ReadVarInt();
+                            int deviceid_len = (int)reader.ReadIxiVarUInt();
                             device_id = deviceid = reader.ReadBytes(deviceid_len);
-                            last_seen = timestamp = reader.ReadVarInt();
+                            last_seen = timestamp = reader.ReadIxiVarInt();
                             hostname = reader.ReadString();
 
                             node_type = reader.ReadChar();
 
                             checksum_data_len = m.Position;
 
-                            sigLen = (int)reader.ReadVarInt();
+                            sigLen = (int)reader.ReadIxiVarUInt();
                             signature = reader.ReadBytes(sigLen);
                         }
                         //Logging.info(String.Format("[PL] KEEPALIVE request from {0}", hostname));

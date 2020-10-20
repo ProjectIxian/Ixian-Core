@@ -26,14 +26,14 @@ namespace IXICore.Inventory
             {
                 using (BinaryReader reader = new BinaryReader(m))
                 {
-                    type = (InventoryItemTypes)reader.ReadVarInt();
+                    type = (InventoryItemTypes)reader.ReadIxiVarInt();
 
-                    int address_len = (int)reader.ReadVarInt();
+                    int address_len = (int)reader.ReadIxiVarUInt();
                     address = reader.ReadBytes(address_len);
 
-                    blockNum = reader.ReadVarUInt();
+                    blockNum = reader.ReadIxiVarUInt();
 
-                    int block_hash_len = (int)reader.ReadVarInt();
+                    int block_hash_len = (int)reader.ReadIxiVarUInt();
                     blockHash = reader.ReadBytes(block_hash_len);
 
                     byte[] address_block_hash = new byte[address_len + block_hash_len];
@@ -50,14 +50,14 @@ namespace IXICore.Inventory
             {
                 using (BinaryWriter writer = new BinaryWriter(m))
                 {
-                    writer.WriteVarInt((int)type);
+                    writer.WriteIxiVarInt((int)type);
 
-                    writer.WriteVarInt(address.Length);
+                    writer.WriteIxiVarInt(address.Length);
                     writer.Write(address);
 
-                    writer.WriteVarInt(blockNum);
+                    writer.WriteIxiVarInt(blockNum);
 
-                    writer.WriteVarInt(blockHash.Length);
+                    writer.WriteIxiVarInt(blockHash.Length);
                     writer.Write(blockHash);
                 }
                 return m.ToArray();

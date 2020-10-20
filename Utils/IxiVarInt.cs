@@ -23,10 +23,10 @@ namespace IXICore.Utils
 	// - byte[] with GetVarInt/GetVarUint
 	// - BinaryWriter with WriteVarInt
 	// - BinaryReader with ReadVarInt/ReadVarUInt
-	public static class VarInt
+	public static class IxiVarInt
     {
 		// long extension
-		public static byte[] GetVarIntBytes(this long value)
+		public static byte[] GetIxiVarIntBytes(this long value)
 		{
 			bool negative = false;
 			if (value < 0)
@@ -84,7 +84,7 @@ namespace IXICore.Utils
 		}
 
 		// ulong extension
-		public static byte[] GetVarIntBytes(this ulong value)
+		public static byte[] GetIxiVarIntBytes(this ulong value)
 		{
 			if (value < 0xf8)
 			{
@@ -114,7 +114,7 @@ namespace IXICore.Utils
 		}
 
 		// byte[] extensions
-		public static long GetVarInt(this byte[] data, int offset)
+		public static long GetIxiVarInt(this byte[] data, int offset)
 		{
 			byte type = data[offset];
 			if (type < 0xf8)
@@ -148,7 +148,7 @@ namespace IXICore.Utils
 			throw new Exception("Cannot decode VarInt from bytes, unknown type " + type.ToString());
 		}
 
-		public static ulong GetVarUInt(this byte[] data, int offset)
+		public static ulong GetIxiVarUInt(this byte[] data, int offset)
 		{
 			byte type = data[offset];
 			if (type < 0xf8)
@@ -174,19 +174,19 @@ namespace IXICore.Utils
 		}
 
 		// BinaryWriter extensions
-		public static void WriteVarInt(this BinaryWriter writer, long value)
+		public static void WriteIxiVarInt(this BinaryWriter writer, long value)
 		{
-			writer.Write(GetVarIntBytes(value));
+			writer.Write(GetIxiVarIntBytes(value));
 
 		}
 
-		public static void WriteVarInt(this BinaryWriter writer, ulong value)
+		public static void WriteIxiVarInt(this BinaryWriter writer, ulong value)
 		{
-			writer.Write(GetVarIntBytes(value));
+			writer.Write(GetIxiVarIntBytes(value));
 		}
 
 		// BinaryReader extensions
-		public static ulong ReadVarUInt(this BinaryReader reader)
+		public static ulong ReadIxiVarUInt(this BinaryReader reader)
 		{
 			byte type = reader.ReadByte();
 			if (type < 0xf8)
@@ -212,7 +212,7 @@ namespace IXICore.Utils
 			throw new Exception("Cannot decode VarInt from bytes, unknown type " + type.ToString());
 		}
 
-		public static long ReadVarInt(this BinaryReader reader)
+		public static long ReadIxiVarInt(this BinaryReader reader)
 		{
 			byte type = reader.ReadByte();
 			if (type < 0xf8)

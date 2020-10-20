@@ -33,9 +33,9 @@ namespace IXICore.Inventory
             {
                 using (BinaryReader reader = new BinaryReader(m))
                 {
-                    type = (InventoryItemTypes)reader.ReadVarInt();
+                    type = (InventoryItemTypes)reader.ReadIxiVarInt();
 
-                    int hash_len = (int)reader.ReadVarUInt();
+                    int hash_len = (int)reader.ReadIxiVarUInt();
                     hash = reader.ReadBytes(hash_len);
                 }
             }
@@ -47,9 +47,9 @@ namespace IXICore.Inventory
             {
                 using (BinaryWriter writer = new BinaryWriter(m))
                 {
-                    writer.WriteVarInt((int)type);
+                    writer.WriteIxiVarInt((int)type);
 
-                    writer.WriteVarInt(hash.Length);
+                    writer.WriteIxiVarInt(hash.Length);
                     writer.Write(hash);
                 }
                 return m.ToArray();

@@ -47,7 +47,7 @@ namespace IXICore
                             version = reader.ReadInt32();
                         }else
                         {
-                            version = (int)reader.ReadVarInt();
+                            version = (int)reader.ReadIxiVarInt();
                         }
                         if(version == 1)
                         {
@@ -65,13 +65,13 @@ namespace IXICore
                         }
                         else
                         {
-                            int device_len = (int)reader.ReadVarInt();
+                            int device_len = (int)reader.ReadIxiVarUInt();
                             device = reader.ReadBytes(device_len);
                             address = reader.ReadString();
                             type = reader.ReadChar();
                             nodeVersion = reader.ReadString();
-                            lastSeenTime = reader.ReadVarInt();
-                            int sigLen = (int)reader.ReadVarInt();
+                            lastSeenTime = reader.ReadIxiVarInt();
+                            int sigLen = (int)reader.ReadIxiVarUInt();
                             if (sigLen > 0)
                             {
                                 signature = reader.ReadBytes(sigLen);
@@ -114,17 +114,17 @@ namespace IXICore
                     }
                     else
                     {
-                        writer.WriteVarInt(version);
-                        writer.WriteVarInt(device.Length);
+                        writer.WriteIxiVarInt(version);
+                        writer.WriteIxiVarInt(device.Length);
                         writer.Write(device);
 
                         writer.Write(address);
                         writer.Write(type);
                         writer.Write(nodeVersion);
-                        writer.WriteVarInt(lastSeenTime);
+                        writer.WriteIxiVarInt(lastSeenTime);
                         if (signature != null)
                         {
-                            writer.WriteVarInt(signature.Length);
+                            writer.WriteIxiVarInt(signature.Length);
                             writer.Write(signature);
                         }
                         else
@@ -181,20 +181,20 @@ namespace IXICore
             {
                 using (BinaryWriter writer = new BinaryWriter(m))
                 {
-                    writer.WriteVarInt(2); // version
+                    writer.WriteIxiVarInt(2); // version
 
-                    writer.WriteVarInt(wallet_address.Length);
+                    writer.WriteIxiVarInt(wallet_address.Length);
                     writer.Write(wallet_address);
 
-                    writer.WriteVarInt(device.Length);
+                    writer.WriteIxiVarInt(device.Length);
                     writer.Write(device);
 
-                    writer.WriteVarInt(lastSeenTime);
+                    writer.WriteIxiVarInt(lastSeenTime);
 
                     writer.Write(address);
                     writer.Write(type);
 
-                    writer.WriteVarInt(signature.Length);
+                    writer.WriteIxiVarInt(signature.Length);
                     writer.Write(signature);
 
 #if TRACE_MEMSTREAM_SIZES
@@ -226,12 +226,12 @@ namespace IXICore
                         }
                         else
                         {
-                            writer.WriteVarInt(version);
-                            writer.WriteVarInt(wallet.Length);
+                            writer.WriteIxiVarInt(version);
+                            writer.WriteIxiVarInt(wallet.Length);
                             writer.Write(wallet);
-                            writer.WriteVarInt(device.Length);
+                            writer.WriteIxiVarInt(device.Length);
                             writer.Write(device);
-                            writer.WriteVarInt(lastSeenTime);
+                            writer.WriteIxiVarInt(lastSeenTime);
                             writer.Write(address);
                             writer.Write(type);
                         }
@@ -375,19 +375,19 @@ namespace IXICore
                             }
                         }else
                         {
-                            version = (int)reader.ReadVarInt();
+                            version = (int)reader.ReadIxiVarInt();
 
-                            int walletLen = (int)reader.ReadVarInt();
+                            int walletLen = (int)reader.ReadIxiVarUInt();
                             if (walletLen > 0)
                             {
                                 wallet = reader.ReadBytes(walletLen);
                             }
-                            int pubkeyLen = (int)reader.ReadVarInt();
+                            int pubkeyLen = (int)reader.ReadIxiVarUInt();
                             if (pubkeyLen > 0)
                             {
                                 pubkey = reader.ReadBytes(pubkeyLen);
                             }
-                            int mdLen = (int)reader.ReadVarInt();
+                            int mdLen = (int)reader.ReadIxiVarUInt();
                             if (mdLen > 0)
                             {
                                 metadata = reader.ReadBytes(mdLen);
@@ -395,12 +395,12 @@ namespace IXICore
 
 
                             // Read number of addresses
-                            int number_of_addresses = (int)reader.ReadVarInt();
+                            int number_of_addresses = (int)reader.ReadIxiVarUInt();
 
                             // Read addresses
                             for (int i = 0; i < number_of_addresses; i++)
                             {
-                                int byte_count = (int)reader.ReadVarInt();
+                                int byte_count = (int)reader.ReadIxiVarUInt();
                                 if (byte_count > 0)
                                 {
                                     byte[] address_bytes = reader.ReadBytes(byte_count);
@@ -491,36 +491,36 @@ namespace IXICore
                         }
                     }else
                     {
-                        writer.WriteVarInt(version);
+                        writer.WriteIxiVarInt(version);
 
                         if (wallet != null)
                         {
-                            writer.WriteVarInt(wallet.Length);
+                            writer.WriteIxiVarInt(wallet.Length);
                             writer.Write(wallet);
                         }
                         else
                         {
-                            writer.WriteVarInt(0);
+                            writer.WriteIxiVarInt(0);
                         }
 
                         if (pubkey != null)
                         {
-                            writer.WriteVarInt(pubkey.Length);
+                            writer.WriteIxiVarInt(pubkey.Length);
                             writer.Write(pubkey);
                         }
                         else
                         {
-                            writer.WriteVarInt(0);
+                            writer.WriteIxiVarInt(0);
                         }
 
                         if (metadata != null)
                         {
-                            writer.WriteVarInt(metadata.Length);
+                            writer.WriteIxiVarInt(metadata.Length);
                             writer.Write(metadata);
                         }
                         else
                         {
-                            writer.WriteVarInt(0);
+                            writer.WriteIxiVarInt(0);
                         }
 
                         // Write the number of ips
@@ -531,25 +531,25 @@ namespace IXICore
                             number_of_addresses = count;
                         }
 
-                        writer.WriteVarInt(number_of_addresses);
+                        writer.WriteIxiVarInt(number_of_addresses);
 
                         // Write all ips
                         for (int i = from_index; i < number_of_addresses; i++)
                         {
                             if (addresses[i] == null)
                             {
-                                writer.WriteVarInt(0);
+                                writer.WriteIxiVarInt(0);
                                 continue;
                             }
                             byte[] address_data = addresses[i].getBytes();
                             if (address_data != null)
                             {
-                                writer.WriteVarInt(address_data.Length);
+                                writer.WriteIxiVarInt(address_data.Length);
                                 writer.Write(address_data);
                             }
                             else
                             {
-                                writer.WriteVarInt(0);
+                                writer.WriteIxiVarInt(0);
                             }
                         }
                     }

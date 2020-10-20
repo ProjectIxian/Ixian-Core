@@ -80,7 +80,7 @@
     <Compile Include="$(MSBuildThisFileDirectory)Utils\ByteArrayComparer.cs" />
     <Compile Include="$(MSBuildThisFileDirectory)Utils\ConsoleHelpers.cs" />
     <Compile Include="$(MSBuildThisFileDirectory)Utils\Cuckoo.cs" />
-    <Compile Include="$(MSBuildThisFileDirectory)Utils\VarInt.cs" />
+    <Compile Include="$(MSBuildThisFileDirectory)Utils\IxiVarInt.cs" />
     <Compile Include="$(MSBuildThisFileDirectory)Utils\IxiNumber.cs" />
     <Compile Include="$(MSBuildThisFileDirectory)Utils\IxiUtils.cs" />
     <Compile Include="$(MSBuildThisFileDirectory)Utils\KDTable.cs" />

@@ -25,17 +25,17 @@ namespace IXICore.Inventory
             {
                 using (BinaryReader reader = new BinaryReader(m))
                 {
-                    type = (InventoryItemTypes)reader.ReadVarInt();
+                    type = (InventoryItemTypes)reader.ReadIxiVarInt();
 
-                    int hash_len = (int)reader.ReadVarUInt();
+                    int hash_len = (int)reader.ReadIxiVarUInt();
                     hash = reader.ReadBytes(hash_len);
 
-                    lastSeen = reader.ReadVarInt();
+                    lastSeen = reader.ReadIxiVarInt();
 
-                    int address_len = (int)reader.ReadVarUInt();
+                    int address_len = (int)reader.ReadIxiVarUInt();
                     address = reader.ReadBytes(address_len);
 
-                    int device_id_len = (int)reader.ReadVarUInt();
+                    int device_id_len = (int)reader.ReadIxiVarUInt();
                     deviceId = reader.ReadBytes(device_id_len);
                 }
             }
@@ -47,17 +47,17 @@ namespace IXICore.Inventory
             {
                 using (BinaryWriter writer = new BinaryWriter(m))
                 {
-                    writer.WriteVarInt((int)type);
+                    writer.WriteIxiVarInt((int)type);
 
-                    writer.WriteVarInt(hash.Length);
+                    writer.WriteIxiVarInt(hash.Length);
                     writer.Write(hash);
 
-                    writer.WriteVarInt(lastSeen);
+                    writer.WriteIxiVarInt(lastSeen);
 
-                    writer.WriteVarInt(address.Length);
+                    writer.WriteIxiVarInt(address.Length);
                     writer.Write(address);
 
-                    writer.WriteVarInt(deviceId.Length);
+                    writer.WriteIxiVarInt(deviceId.Length);
                     writer.Write(deviceId);
                 }
                 return m.ToArray();
