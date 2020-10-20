@@ -882,11 +882,6 @@ namespace IXICore.Network
                 int bytes_to_read = 1;
                 while (socket.Connected && running)
                 {
-                    //int pos = bytesToRead > NetworkProtocol.recvByteHist.Length ? NetworkProtocol.recvByteHist.Length - 1 : bytesToRead;
-                    /*lock (NetworkProtocol.recvByteHist)
-                    {
-                        NetworkProtocol.recvByteHist[pos]++;
-                    }*/
                     int bytes_received = socket.Receive(socketReadBuffer, bytes_to_read, SocketFlags.None);
                     NetDump.Instance.appendReceived(socket, socketReadBuffer, bytes_received);
                     if (bytes_received <= 0)
