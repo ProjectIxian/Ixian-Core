@@ -88,9 +88,11 @@ namespace IXICore.Network
             {
                 // Move block related messages to txqueue
                 if (code == ProtocolMessageCode.newTransaction || code == ProtocolMessageCode.transactionData
-                    || code == ProtocolMessageCode.transactionsChunk || code == ProtocolMessageCode.getBlockTransactions
+                    || code == ProtocolMessageCode.blockTransactionsChunk || code == ProtocolMessageCode.getBlockTransactions
+                    || code == ProtocolMessageCode.transactionsChunk || code == ProtocolMessageCode.getTransactions
                     || code == ProtocolMessageCode.newBlock || code == ProtocolMessageCode.blockData
                     || code == ProtocolMessageCode.blockSignature || code == ProtocolMessageCode.blockSignatures
+                    || code == ProtocolMessageCode.getSignatures || code == ProtocolMessageCode.signaturesChunk
                     || code == ProtocolMessageCode.getBlockSignatures || code == ProtocolMessageCode.getNextSuperBlock
                     || code == ProtocolMessageCode.getBlockHeaders || code == ProtocolMessageCode.blockHeaders
                     || code == ProtocolMessageCode.inventory)
@@ -116,6 +118,7 @@ namespace IXICore.Network
 
                     if (txqueueMessages.Count > 20 &&
                         (code == ProtocolMessageCode.transactionsChunk
+                        || code == ProtocolMessageCode.blockTransactionsChunk
                         || code == ProtocolMessageCode.getBlockTransactions
                         || code == ProtocolMessageCode.newBlock
                         || code == ProtocolMessageCode.blockData

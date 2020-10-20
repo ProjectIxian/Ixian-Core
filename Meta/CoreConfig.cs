@@ -164,11 +164,21 @@ namespace IXICore
         /// <summary>
         /// Maximum number of items to be read from inventory.
         /// </summary>
-        public static int maxInventoryItems = 500;
+        public static int maxInventoryItems = 2000;
 
         /// <summary>
         /// Interval at which to send inventory packets in seconds.
         /// </summary>
         public static int inventoryInterval = 1;
+
+        /// <summary>
+        /// Maximum number of keep alives to be included in the keep alive chunk.
+        /// </summary>
+        public static int maximumKeepAlivesPerChunk = 1000;
+
+        /// <summary>
+        /// Maximum number of transactions to be included in the tx chunk.
+        /// </summary>
+        public static int maximumTransactionsPerChunk = 2000;
     }
 }
