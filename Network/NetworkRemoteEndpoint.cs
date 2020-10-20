@@ -432,7 +432,7 @@ namespace IXICore.Network
                                     // Pick the oldest message
                                     active_message = sendQueueMessagesLowPriority[0];
                                     // Remove it from the queue
-                                    sendQueueMessagesLowPriority.Remove(active_message);
+                                    sendQueueMessagesLowPriority.RemoveAt(0);
                                     message_found = true;
                                 }
                             }
@@ -446,7 +446,7 @@ namespace IXICore.Network
                                 // Pick the oldest message
                                 active_message = sendQueueMessagesNormalPriority[0];
                                 // Remove it from the queue
-                                sendQueueMessagesNormalPriority.Remove(active_message);
+                                sendQueueMessagesNormalPriority.RemoveAt(0);
                                 message_found = true;
                             }
                         }
@@ -456,7 +456,7 @@ namespace IXICore.Network
                             // Pick the oldest message
                             active_message = sendQueueMessagesHighPriority[0];
                             // Remove it from the queue
-                            sendQueueMessagesHighPriority.Remove(active_message);
+                            sendQueueMessagesHighPriority.RemoveAt(0);
                             message_found = true;
                         }
                     }
@@ -540,7 +540,7 @@ namespace IXICore.Network
                             // Pick the oldest message
                             active_message = recvRawQueueMessages[0];
                             // Remove it from the queue
-                            recvRawQueueMessages.Remove(active_message);
+                            recvRawQueueMessages.RemoveAt(0);
                             message_found = true;
                         }
                     }
@@ -778,12 +778,6 @@ namespace IXICore.Network
                             Logging.warn("Data length was {0}, code {1}", data_length, code);
                             return null;
                         }
-
-                        if (data_length > CoreConfig.maxMessageSize)
-                        {
-                            Logging.warn("Received data length was bigger than max allowed message size - {0}, code {1}.", data_length, code);
-                            return null;
-                        }
                     }
                     else // 'X'
                     {
@@ -811,12 +805,6 @@ namespace IXICore.Network
                         if (data_length <= 0)
                         {
                             Logging.warn("Data length was {0}, code {1}", data_length, code);
-                            return null;
-                        }
-
-                        if (data_length > CoreConfig.maxMessageSize)
-                        {
-                            Logging.warn("Received data length was bigger than max allowed message size - {0}, code {1}.", data_length, code);
                             return null;
                         }
                     }
@@ -904,7 +892,7 @@ namespace IXICore.Network
                     if (bytes_received <= 0)
                     {
                         // sleep a litte while waiting for bytes
-                        Thread.Sleep(10);
+                        Thread.Sleep(1);
                         // TODO should return null if a timeout occurs
                         continue;
                     }
@@ -949,6 +937,11 @@ namespace IXICore.Network
                             {
                                 cur_data_len = 0;
                                 expected_data_len = (int)last_message_header.dataLen;
+                                if(expected_data_len > CoreConfig.maxMessageSize)
+                                {
+                                    running = false;
+                                    throw new Exception(string.Format("Message size ({0}B) received from the client is higher than the maximum message size allowed ({1}B) - protocol code: {2}.", expected_data_len, CoreConfig.maxMessageSize, last_message_header.code));
+                                }
                                 data = new byte[expected_data_len];
                                 bytes_to_read = expected_data_len;
                                 if (bytes_to_read > 8000)

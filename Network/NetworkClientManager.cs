@@ -608,17 +608,13 @@ namespace IXICore.Network
                 }
                 else if (getConnectedClients(true).Count() > CoreConfig.simultaneousConnectedNeighbors)
                 {
-                    List<NetworkClient> netClients = null;
+                    NetworkClient client;
                     lock (networkClients)
                     {
-                        netClients = new List<NetworkClient>(networkClients);
+                        client = networkClients[0];
+                        networkClients.RemoveAt(0);
                     }
-                    CoreProtocolMessage.sendBye(netClients[0], ProtocolByeCode.bye, "Disconnected for shuffling purposes.", "", false);
-
-                    lock (networkClients)
-                    {
-                        networkClients.Remove(netClients[0]);
-                    }
+                    CoreProtocolMessage.sendBye(client, ProtocolByeCode.bye, "Disconnected for shuffling purposes.", "", false);
                 }
 
                 // Connect randomly to a new node. Currently a 1% chance to reconnect during this iteration

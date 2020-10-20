@@ -19,7 +19,7 @@ namespace IXICore.Inventory
             this.item = item;
             processed = false;
             retryCount = 0;
-            lastRequested = Clock.getTimestamp();
+            lastRequested = 0;
             endpoints = new List<RemoteEndpoint>();
         }
     }

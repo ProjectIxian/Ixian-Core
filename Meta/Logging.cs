@@ -251,7 +251,7 @@ namespace IXICore.Meta
                     if (statements.Count() > 0)
                     {
                         statement = statements[0];
-                        statements.Remove(statement);
+                        statements.RemoveAt(0);
                         message_found = true;
                     }
                 }
