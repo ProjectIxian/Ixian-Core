@@ -78,7 +78,7 @@ namespace IXICore
                     && code != ProtocolMessageCode.helloData
                     && code != ProtocolMessageCode.bye)
                 {
-                    //return;
+                    return;
                 }
             }
             if(raw_message.legacyChecksum != null)
@@ -214,7 +214,7 @@ namespace IXICore
                     // TODO update verify signature with binary structure
                     if (!CryptoManager.lib.verifySignature(Encoding.UTF8.GetBytes(ConsensusConfig.ixianChecksumLockString + "-" + device_id + "-" + timestamp + "-" + endpoint.getFullAddress(true)), pubkey, signature))
                     {
-                        CoreProtocolMessage.sendBye(endpoint, ProtocolByeCode.incorrectIp, "Verify signature failed in hello message, likely an incorrect IP was specified. Detected IP:", endpoint.address);
+                        sendBye(endpoint, ProtocolByeCode.incorrectIp, "Verify signature failed in hello message, likely an incorrect IP was specified. Detected IP:", endpoint.address);
                         Logging.warn("Connected node used an incorrect signature in hello message, likely an incorrect IP was specified. Detected IP: {0}", endpoint.address);
                         return false;
                     }
@@ -295,8 +295,10 @@ namespace IXICore
                     int challenge_len = reader.ReadInt32();
                     byte[] challenge = reader.ReadBytes(challenge_len);
 
-                    if (challenge_len > 60)
+                    if (challenge_len < 20 || challenge_len > 60)
                     {
+                        Logging.warn("Invalid challenge requested {0}", challenge_len);
+                        sendBye(endpoint, ProtocolByeCode.authFailed, "Invalid challenge requested.", "");
                         return false;
                     }
 

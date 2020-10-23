@@ -360,10 +360,9 @@ namespace IXICore.Network
                         sent += clientSocket.Send(time_sync_data.ToArray(), sent, time_sync_data_len, SocketFlags.None);
                     }
                 }
-                catch (Exception ex)
+                catch (Exception)
                 {
-                    // this may sometimes happen if clients/servers drop the connection from their side
-                    Logging.warn(String.Format("Exception while attempting to send time sync: {0}.", ex.Message));
+                    running = false;
                 }
             }
         }
@@ -565,11 +564,6 @@ namespace IXICore.Network
 
         protected void parseDataInternal(QueueMessageRaw message)
         {
-            if (message.code == ProtocolMessageCode.bye)
-            {
-                running = false;
-                fullyStopped = true;
-            }
             lock (recvRawQueueMessages)
             {
                 recvRawQueueMessages.Add(message);
@@ -580,10 +574,10 @@ namespace IXICore.Network
         // Internal function that sends data through the socket
         protected void sendDataInternal(ProtocolMessageCode code, byte[] data, uint checksum)
         {
-            byte[] ba = prepareProtocolMessage(code, data, version, checksum);
-            NetDump.Instance.appendSent(clientSocket, ba, ba.Length);
             try
             {
+                byte[] ba = prepareProtocolMessage(code, data, version, checksum);
+                NetDump.Instance.appendSent(clientSocket, ba, ba.Length);
                 for (int sentBytes = 0; sentBytes < ba.Length && running;)
                 {
                     int bytesToSendCount = ba.Length - sentBytes;
@@ -916,7 +910,7 @@ namespace IXICore.Network
                             expected_header_len = new_header_len;
                             version = 6;
                         }
-                        else if (helloReceived == false)
+                        else if (timeSyncComplete == false)
                         {
                             if (socketReadBuffer[0] == 2)
                             {

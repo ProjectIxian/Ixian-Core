@@ -13,7 +13,7 @@ namespace IXICore
         /// <summary>
         /// Current version of the Ixian network protocol.
         /// </summary>
-        public static readonly int protocolVersion = 6;
+        public static readonly int protocolVersion = 5;
 
         /// <summary>
         /// Number of wallets to send in each chunk of data when synchronizing new Master Nodes.
