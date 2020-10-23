@@ -73,52 +73,71 @@ namespace IXICore.Network
         bye = 2,
         getBlock = 3,
         blockData = 4,
+        [Obsolete("Use inventory instead")]
         blockHeight = 5,
         getKeepAlives = 6,
         keepAlivesChunk = 7,
         getTransactions = 8,
+        [Obsolete("Use getTransaction2 instead")]
         getTransaction = 9,
         transactionData = 10,
         getSignatures = 11,
         signaturesChunk = 12,
-        syncWalletState = 13,
-        walletState = 14,
+        blockSignature2 = 13,
+        getBlockSignatures2 = 14,
         transactionsChunk = 15,
+        [Obsolete("Use transactionData instead")]
         newTransaction = 16, // deprecated
+        [Obsolete("Use blockData instead")]
         newBlock = 17, // deprecated
-        /*getNeighbors = 18,
-        neighborData = 19,*/
-        getWalletStateChunk = 20,
-        walletStateChunk = 21,
-        getPresences = 22,
-        presencesChunk = 23,
+        getBlock2 = 18,
+        getBlockHeaders2 = 19,
+        blockHeaders2 = 20,
+        getPIT2 = 21,
+        pitData2 = 22,
+        getTransaction2 = 23,
         updatePresence = 24,
-        /*removePresence = 25,*/
+        //removePresence = 25,
         s2data = 26,
         s2failed = 27,
         s2signature = 28,
-        /*s2keys = 29,*/
-        inventory = 30,
-        //pong = 31,
+        inventory = 29,
+        getBalance2 = 30,
+        balance2 = 31,
+        [Obsolete("Use getBalance2 instead")]
         getBalance = 32,
+        [Obsolete("Use balance2 instead")]
         balance = 33,
         keepAlivePresence = 34,
+        [Obsolete("Use getPresence2 instead")]
         getPresence = 35,
-        getBlockTransactions = 36,
-        blockTransactionsChunk = 37, // will be deprecated
+        getPresence2 = 36,
+        [Obsolete("Use transactionsChunk instead")]
+        blockTransactionsChunk = 37, // deprecated
         getUnappliedTransactions = 38,
         extend = 39,
         attachEvent = 40,
         detachEvent = 41,
+        [Obsolete("Use blockSignature2 instead")]
         blockSignature = 42,
+        [Obsolete("Use getBlockSignatures2 instead")]
         getBlockSignatures = 43,
-        blockSignatures = 44, // will be deprecated
+        [Obsolete("Use signaturesChunk instead")]
+        blockSignatures = 44, // deprecated
         getNextSuperBlock = 45,
-        getBlockHeaders = 46,
-        blockHeaders = 47,
+        [Obsolete("Use getBlockHeaders2 instead")]
+        getBlockHeaders = 46, // deprecated
+        [Obsolete("Use blockHeaders2 instead")]
+        blockHeaders = 47, // deprecated
         getRandomPresences = 48,
-        getPIT = 49,
-        pitData = 50
+        [Obsolete("Use getPIT2 instead")]
+        getPIT = 49, // deprecated
+        [Obsolete("Use pitData2 instead")]
+        pitData = 50, // deprecated
+        getWalletStateChunk = 51,
+        walletStateChunk = 52,
+        syncWalletState = 53,
+        walletState = 54,
     }
 
     /// <summary>

@@ -8,7 +8,7 @@ namespace IXICore
         /// <summary>
         /// Current version of IxiCore.
         /// </summary>
-        public static readonly string version = "xcore-0.7.1-dev";
+        public static readonly string version = "xcore-0.7.5-dev";
 
         /// <summary>
         /// Current version of the Ixian network protocol.
@@ -180,5 +180,10 @@ namespace IXICore
         /// Maximum number of transactions to be included in the tx chunk.
         /// </summary>
         public static int maximumTransactionsPerChunk = 2000;
+
+        /// <summary>
+        /// Maximum number of transactions to be included in the tx chunk.
+        /// </summary>
+        public static int maximumBlockHeadersPerChunk = 1000;
     }
 }

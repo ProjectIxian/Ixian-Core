@@ -345,7 +345,7 @@ namespace IXICore
             {
                 ulong block_num = r.ReadUInt64();
                 int len = r.ReadInt32();
-                if(len > 0)
+                if (len > 0)
                 {
                     byte[] pit_data = r.ReadBytes(len);
                     PrefixInclusionTree pit = new PrefixInclusionTree(44, 3);
@@ -353,24 +353,73 @@ namespace IXICore
                     {
                         pit.reconstructMinimumTree(pit_data);
                         BlockHeader h = BlockHeaderStorage.getBlockHeader(block_num);
-                        if(h == null)
+                        if (h == null)
                         {
                             Logging.warn("TIV: Received PIT information for block {0}, but we do not have that block header in storage!", block_num);
                             return;
                         }
-                        if(!h.pitHash.SequenceEqual(pit.calculateTreeHash()))
+                        if (!h.pitHash.SequenceEqual(pit.calculateTreeHash()))
                         {
                             Logging.error("TIV: Received PIT information for block {0}, but the PIT checksum does not match the one in the block header!", block_num);
                             // TODO: more drastic action? Maybe blacklist or something.
                             return;
                         }
-                        lock (pitCache) {
+                        lock (pitCache)
+                        {
                             if (pitCache.ContainsKey(block_num))
                             {
                                 Logging.info("TIV: Received valid PIT information for block {0}", block_num);
                                 pitCache[block_num].pit = pit;
                             }
-                         }
+                        }
+                    }
+                    catch (Exception)
+                    {
+                        Logging.warn("TIV: Invalid or corrupt data received for block {0}.", block_num);
+                    }
+                }
+            }
+        }
+
+        /// <summary>
+        /// When a response to a PIT request is received, this function validates and caches it so transactions may be verified in a separate thread.
+        /// </summary>
+        /// <param name="data">PIT response bytes.</param>
+        /// <param name="endpoint">Neighbor, who sent this data.</param>
+        public void receivedPIT2(byte[] data, RemoteEndpoint endpoint)
+        {
+            MemoryStream m = new MemoryStream(data);
+            using (BinaryReader r = new BinaryReader(m))
+            {
+                ulong block_num = r.ReadIxiVarUInt();
+                int len = (int)r.ReadIxiVarUInt();
+                if (len > 0)
+                {
+                    byte[] pit_data = r.ReadBytes(len);
+                    PrefixInclusionTree pit = new PrefixInclusionTree(44, 3);
+                    try
+                    {
+                        pit.reconstructMinimumTree(pit_data);
+                        BlockHeader h = BlockHeaderStorage.getBlockHeader(block_num);
+                        if (h == null)
+                        {
+                            Logging.warn("TIV: Received PIT information for block {0}, but we do not have that block header in storage!", block_num);
+                            return;
+                        }
+                        if (!h.pitHash.SequenceEqual(pit.calculateTreeHash()))
+                        {
+                            Logging.error("TIV: Received PIT information for block {0}, but the PIT checksum does not match the one in the block header!", block_num);
+                            // TODO: more drastic action? Maybe blacklist or something.
+                            return;
+                        }
+                        lock (pitCache)
+                        {
+                            if (pitCache.ContainsKey(block_num))
+                            {
+                                Logging.info("TIV: Received valid PIT information for block {0}", block_num);
+                                pitCache[block_num].pit = pit;
+                            }
+                        }
                     }
                     catch (Exception)
                     {
@@ -419,7 +468,7 @@ namespace IXICore
                             verifyUnprocessedTransactions();
                         }
                     }
-                    catch(Exception)
+                    catch (Exception)
                     {
                         // TODO blacklist sender
                         updateBlockHeaders(true);
@@ -427,7 +476,55 @@ namespace IXICore
                 }
             }
         }
-        
+
+        /// <summary>
+        ///  Called when receiving multiple block headers at once from a remote endpoint
+        /// </summary>
+        /// <param name="data">byte array of received data</param>
+        /// <param name="endpoint">corresponding remote endpoint</param>
+        public void receivedBlockHeaders2(byte[] data, RemoteEndpoint endpoint)
+        {
+            using (MemoryStream m = new MemoryStream(data))
+            {
+                using (BinaryReader reader = new BinaryReader(m))
+                {
+                    bool processed = false;
+                    try
+                    {
+
+                        while (m.Position < m.Length)
+                        {
+                            int header_len = (int)reader.ReadIxiVarUInt();
+                            byte[] header_bytes = reader.ReadBytes(header_len);
+
+                            // Create the blockheader from the data and process it
+                            BlockHeader header = new BlockHeader(header_bytes);
+                            if (lastBlockHeader != null && header.blockNum <= lastBlockHeader.blockNum)
+                            {
+                                continue;
+                            }
+                            if (!processBlockHeader(header))
+                            {
+                                break;
+                            }
+                            processed = true;
+                            Thread.Yield();
+                        }
+                        if (processed)
+                        {
+                            updateBlockHeaders(true);
+                            verifyUnprocessedTransactions();
+                        }
+                    }
+                    catch (Exception)
+                    {
+                        // TODO blacklist sender
+                        updateBlockHeaders(true);
+                    }
+                }
+            }
+        }
+
         private void requestBlockHeaders(ulong from, ulong to)
         {
             Logging.info("Requesting block headers from {0} to {1}", from, to);
@@ -444,6 +541,25 @@ namespace IXICore
 
                 // Request from a single random node
                 CoreProtocolMessage.broadcastProtocolMessageToSingleRandomNode(new char[] { 'M', 'H' }, ProtocolMessageCode.getBlockHeaders, mOut.ToArray(), 0);
+            }
+        }
+
+        private void requestBlockHeaders2(ulong from, ulong to)
+        {
+            Logging.info("Requesting block headers from {0} to {1}", from, to);
+            using (MemoryStream mOut = new MemoryStream())
+            {
+                using (BinaryWriter writer = new BinaryWriter(mOut))
+                {
+                    writer.WriteIxiVarInt(from);
+                    writer.WriteIxiVarInt(to);
+                }
+
+                // Request from all nodes
+                //NetworkClientManager.broadcastData(new char[] { 'M', 'H' }, ProtocolMessageCode.getBlockHeaders, mOut.ToArray(), null);
+
+                // Request from a single random node
+                CoreProtocolMessage.broadcastProtocolMessageToSingleRandomNode(new char[] { 'M', 'H' }, ProtocolMessageCode.getBlockHeaders2, mOut.ToArray(), 0);
             }
         }
 

@@ -347,7 +347,7 @@ namespace IXICore.Network
         {
             // send 5 messages with current network timestamp
             List<byte> time_sync_data = new List<byte>();
-            for (int i = 0; i < 5 && isConnected(); i++)
+            for (int i = 0; i < 5 && running; i++)
             {
                 time_sync_data.Clear();
                 time_sync_data.Add(2);
@@ -355,7 +355,7 @@ namespace IXICore.Network
                 try
                 {
                     int time_sync_data_len = time_sync_data.ToArray().Length;
-                    for (int sent = 0; sent < time_sync_data_len;)
+                    for (int sent = 0; sent < time_sync_data_len && running;)
                     {
                         sent += clientSocket.Send(time_sync_data.ToArray(), sent, time_sync_data_len, SocketFlags.None);
                     }
@@ -565,6 +565,11 @@ namespace IXICore.Network
 
         protected void parseDataInternal(QueueMessageRaw message)
         {
+            if (message.code == ProtocolMessageCode.bye)
+            {
+                running = false;
+                fullyStopped = true;
+            }
             lock (recvRawQueueMessages)
             {
                 recvRawQueueMessages.Add(message);
@@ -669,14 +674,14 @@ namespace IXICore.Network
         {
             ProtocolMessageCode code = message.code;
             if (code == ProtocolMessageCode.bye || code == ProtocolMessageCode.keepAlivePresence
-                || code == ProtocolMessageCode.getPresence || code == ProtocolMessageCode.updatePresence)
+                || code == ProtocolMessageCode.getPresence2 || code == ProtocolMessageCode.updatePresence)
             {
                 lock (sendQueueMessagesHighPriority)
                 {
                     addMessageToSendQueue(sendQueueMessagesHighPriority, message);
                 }
             }
-            else if (code != ProtocolMessageCode.transactionData && code != ProtocolMessageCode.newTransaction)
+            else if (code != ProtocolMessageCode.transactionData)
             {
                 lock (sendQueueMessagesNormalPriority)
                 {
@@ -824,7 +829,7 @@ namespace IXICore.Network
             Socket socket = clientSocket;
 
             int rcv_count = 8;
-            for (int i = 0; i < rcv_count && socket.Connected;)
+            for (int i = 0; i < rcv_count && running;)
             {
                 i += socket.Receive(socketReadBuffer, i, rcv_count - i, SocketFlags.None);
                 Thread.Sleep(1);
@@ -1010,8 +1015,7 @@ namespace IXICore.Network
             {
                 if (running)
                 {
-                    Logging.error("NET: endpoint {0} disconnected {1}", getFullAddress(), e);
-                    throw;
+                    throw new Exception(string.Format("NET: endpoint {0} disconnected {1}", getFullAddress(), e));
                 }
             }
             return null;

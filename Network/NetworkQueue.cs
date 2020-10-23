@@ -87,15 +87,19 @@ namespace IXICore.Network
             lock (txqueueMessages)
             {
                 // Move block related messages to txqueue
+#pragma warning disable CS0618 // Type or member is obsolete
                 if (code == ProtocolMessageCode.newTransaction || code == ProtocolMessageCode.transactionData
-                    || code == ProtocolMessageCode.blockTransactionsChunk || code == ProtocolMessageCode.getBlockTransactions
+                    || code == ProtocolMessageCode.blockTransactionsChunk
                     || code == ProtocolMessageCode.transactionsChunk || code == ProtocolMessageCode.getTransactions
                     || code == ProtocolMessageCode.newBlock || code == ProtocolMessageCode.blockData
                     || code == ProtocolMessageCode.blockSignature || code == ProtocolMessageCode.blockSignatures
+                    || code == ProtocolMessageCode.blockSignature2 || code == ProtocolMessageCode.getBlockSignatures2
                     || code == ProtocolMessageCode.getSignatures || code == ProtocolMessageCode.signaturesChunk
                     || code == ProtocolMessageCode.getBlockSignatures || code == ProtocolMessageCode.getNextSuperBlock
                     || code == ProtocolMessageCode.getBlockHeaders || code == ProtocolMessageCode.blockHeaders
+                    || code == ProtocolMessageCode.getBlockHeaders2 || code == ProtocolMessageCode.blockHeaders2
                     || code == ProtocolMessageCode.inventory)
+#pragma warning restore CS0618 // Type or member is obsolete
                 {
                     if (message.helperData != null)
                     {
@@ -119,7 +123,6 @@ namespace IXICore.Network
                     if (txqueueMessages.Count > 20 &&
                         (code == ProtocolMessageCode.transactionsChunk
                         || code == ProtocolMessageCode.blockTransactionsChunk
-                        || code == ProtocolMessageCode.getBlockTransactions
                         || code == ProtocolMessageCode.newBlock
                         || code == ProtocolMessageCode.blockData
                         || code == ProtocolMessageCode.blockSignature

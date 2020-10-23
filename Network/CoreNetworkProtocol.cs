@@ -70,21 +70,15 @@ namespace IXICore
 
             ProtocolMessageCode code = raw_message.code;
 
-            // If this is a connected client, filter messages
-            if (endpoint.GetType() == typeof(RemoteEndpoint))
+            // Filter messages
+            if (endpoint.presence == null)
             {
-                if (endpoint.presence == null)
+                // Check for presence and only accept hello and bye messages if there is no presence.
+                if (code != ProtocolMessageCode.hello 
+                    && code != ProtocolMessageCode.helloData
+                    && code != ProtocolMessageCode.bye)
                 {
-                    // Check for presence and only accept hello and syncPL messages if there is no presence.
-                    if (code == ProtocolMessageCode.hello || code == ProtocolMessageCode.getBalance || code == ProtocolMessageCode.newTransaction)
-                    {
-
-                    }
-                    else
-                    {
-                        // Ignore anything else
-                        return;
-                    }
+                    //return;
                 }
             }
             if(raw_message.legacyChecksum != null)
@@ -127,7 +121,7 @@ namespace IXICore
         /// <param name="endpoint">Remote endpoint from which the message was received.</param>
         /// <param name="reader">Reader object placed at the beginning of the hello message data.</param>
         /// <returns>True if the message was formatted properly and accepted.</returns>
-        public static bool processHelloMessage(RemoteEndpoint endpoint, BinaryReader reader)
+        public static bool processHelloMessageV5(RemoteEndpoint endpoint, BinaryReader reader)
         {
             // Node already has a presence
             if (endpoint.presence != null)
@@ -142,11 +136,11 @@ namespace IXICore
                 int protocol_version = reader.ReadInt32();
                 endpoint.version = protocol_version;
 
-                Logging.info(string.Format("Received Hello: Node version {0}", protocol_version));
+                Logging.info("Received Hello: Node version {0}", protocol_version);
                 // Check for incompatible nodes
                 if (protocol_version < 5)
                 {
-                    Logging.warn(String.Format("Hello: Connected node version ({0}) is too old! Upgrade the node.", protocol_version));
+                    Logging.warn("Hello: Connected node version ({0}) is too old! Upgrade the node.", protocol_version);
                     sendBye(endpoint, ProtocolByeCode.deprecated, string.Format("Your node version is too old. Should be at least {0} is {1}", CoreConfig.protocolVersion, protocol_version), CoreConfig.protocolVersion.ToString(), true);
                     return false;
                 }
@@ -157,7 +151,7 @@ namespace IXICore
                 bool test_net = reader.ReadBoolean();
                 char node_type = reader.ReadChar();
                 string node_version = reader.ReadString();
-                string device_id = reader.ReadString(); // TODO update hello, change this to binary, remove unnecessary data
+                string device_id = reader.ReadString();
 
                 int pkLen = reader.ReadInt32();
                 byte[] pubkey = null;
@@ -178,7 +172,7 @@ namespace IXICore
                 // Check the testnet designator and disconnect on mismatch
                 if (test_net != CoreConfig.isTestNet)
                 {
-                    Logging.warn(string.Format("Rejected node {0} due to incorrect testnet designator: {1}", endpoint.fullAddress, test_net));
+                    Logging.warn("Rejected node {0} due to incorrect testnet designator: {1}", endpoint.fullAddress, test_net);
                     sendBye(endpoint, ProtocolByeCode.incorrectNetworkType, string.Format("Incorrect testnet designator: {0}. Should be {1}", test_net, CoreConfig.isTestNet), test_net.ToString(), true);
                     return false;
                 }
@@ -186,7 +180,7 @@ namespace IXICore
                 // Check the address and pubkey and disconnect on mismatch
                 if (!addr.SequenceEqual((new Address(pubkey)).address))
                 {
-                    Logging.warn(string.Format("Pubkey and address do not match."));
+                    Logging.warn("Pubkey and address do not match.");
                     sendBye(endpoint, ProtocolByeCode.authFailed, "Pubkey and address do not match.", "", true);
                     return false;
                 }
@@ -195,7 +189,7 @@ namespace IXICore
 
                 if (PeerStorage.isBlacklisted(addr) || PeerStorage.isBlacklisted(endpoint.getFullAddress(true)))
                 {
-                    Logging.warn(String.Format("Hello: Connected node is blacklisted ({0} - {1}).", endpoint.getFullAddress(true), Base58Check.Base58CheckEncoding.EncodePlain(addr)));
+                    Logging.warn("Hello: Connected node is blacklisted ({0} - {1}).", endpoint.getFullAddress(true), Base58Check.Base58CheckEncoding.EncodePlain(addr));
                     sendBye(endpoint, ProtocolByeCode.bye, "Blacklisted", "", true);
                     return false;
                 }
@@ -221,7 +215,7 @@ namespace IXICore
                     if (!CryptoManager.lib.verifySignature(Encoding.UTF8.GetBytes(ConsensusConfig.ixianChecksumLockString + "-" + device_id + "-" + timestamp + "-" + endpoint.getFullAddress(true)), pubkey, signature))
                     {
                         CoreProtocolMessage.sendBye(endpoint, ProtocolByeCode.incorrectIp, "Verify signature failed in hello message, likely an incorrect IP was specified. Detected IP:", endpoint.address);
-                        Logging.warn(string.Format("Connected node used an incorrect signature in hello message, likely an incorrect IP was specified. Detected IP: {0}", endpoint.address));
+                        Logging.warn("Connected node used an incorrect signature in hello message, likely an incorrect IP was specified. Detected IP: {0}", endpoint.address);
                         return false;
                     }
 
@@ -246,7 +240,7 @@ namespace IXICore
                     // Check the address and local address and disconnect on mismatch
                     if (endpoint.serverWalletAddress != null && !addr.SequenceEqual(endpoint.serverWalletAddress))
                     {
-                        Logging.warn(string.Format("Local address mismatch, possible Man-in-the-middle attack."));
+                        Logging.warn("Local address mismatch, possible Man-in-the-middle attack.");
                         sendBye(endpoint, ProtocolByeCode.addressMismatch, "Local address mismatch.", "", true);
                         return false;
                     }
@@ -270,7 +264,7 @@ namespace IXICore
                             IxiNumber balance = IxianHandler.getWalletBalance(addr);
                             if (balance < ConsensusConfig.minimumMasterNodeFunds)
                             {
-                                Logging.warn(string.Format("Rejected master node {0} due to insufficient funds: {1}", endpoint.getFullAddress(), balance.ToString()));
+                                Logging.warn("Rejected master node {0} due to insufficient funds: {1}", endpoint.getFullAddress(), balance.ToString());
                                 sendBye(endpoint, ProtocolByeCode.insufficientFunds, string.Format("Insufficient funds. Minimum is {0}", ConsensusConfig.minimumMasterNodeFunds), balance.ToString(), true);
                                 return false;
                             }
@@ -297,6 +291,19 @@ namespace IXICore
                             return false;
                         }
                     }
+
+                    int challenge_len = reader.ReadInt32();
+                    byte[] challenge = reader.ReadBytes(challenge_len);
+
+                    if (challenge_len > 60)
+                    {
+                        return false;
+                    }
+
+                    byte[] challenge_response = CryptoManager.lib.getSignature(challenge, IxianHandler.getWalletStorage().getPrimaryPrivateKey());
+
+                    sendHelloMessageV5(endpoint, true, challenge_response);
+                    endpoint.helloReceived = true;
                 }
 
 
@@ -307,12 +314,244 @@ namespace IXICore
             catch (Exception e)
             {
                 // Disconnect the node in case of any reading errors
-                Logging.warn(string.Format("Exception occured in Hello Message {0}", e.ToString()));
+                Logging.warn("Exception occured in Hello Message {0}", e.ToString());
                 sendBye(endpoint, ProtocolByeCode.deprecated, "Something went wrong during hello, make sure you're running the latest version of Ixian DLT.", "");
                 return false;
             }
 
-            if(NetworkClientManager.getConnectedClients().Count() == 1)
+            if (NetworkClientManager.getConnectedClients().Count() == 1)
+            {
+                PresenceList.forceSendKeepAlive = true;
+            }
+
+
+
+            return true;
+        }
+
+        /// <summary>
+        ///  Processes a Hello Ixian protocol message and updates the `PresenceList` as appropriate.
+        /// </summary>
+        /// <remarks>
+        ///  This function should normally be called from `NetworkProtocol.parseProtocolMessage()`
+        /// </remarks>
+        /// <param name="endpoint">Remote endpoint from which the message was received.</param>
+        /// <param name="reader">Reader object placed at the beginning of the hello message data.</param>
+        /// <returns>True if the message was formatted properly and accepted.</returns>
+        public static bool processHelloMessageV6(RemoteEndpoint endpoint, BinaryReader reader)
+        {
+            // Node already has a presence
+            if (endpoint.presence != null)
+            {
+                // Ignore the hello message in this case
+                return false;
+            }
+
+            // Another layer to catch any incompatible node exceptions for the hello message
+            try
+            {
+                int protocol_version = (int)reader.ReadIxiVarUInt();
+                endpoint.version = protocol_version;
+
+                Logging.info("Received Hello: Node version {0}", protocol_version);
+                // Check for incompatible nodes
+                if (protocol_version < 6)
+                {
+                    Logging.warn("Hello: Connected node version ({0}) is too old! Upgrade the node.", protocol_version);
+                    sendBye(endpoint, ProtocolByeCode.deprecated, string.Format("Your node version is too old. Should be at least {0} is {1}", CoreConfig.protocolVersion, protocol_version), CoreConfig.protocolVersion.ToString(), true);
+                    return false;
+                }
+
+                int addrLen = (int)reader.ReadIxiVarUInt();
+                byte[] addr = reader.ReadBytes(addrLen);
+
+                bool test_net = reader.ReadBoolean();
+                char node_type = reader.ReadChar();
+                string node_version = reader.ReadString();
+                int device_id_len = (int)reader.ReadIxiVarUInt();
+                byte[] device_id = reader.ReadBytes(device_id_len);
+
+                int pkLen = (int)reader.ReadIxiVarUInt();
+                byte[] pubkey = null;
+                if (pkLen > 0)
+                {
+                    pubkey = reader.ReadBytes(pkLen);
+                }
+
+                endpoint.serverPubKey = pubkey;
+
+                int port = (int)reader.ReadIxiVarInt();
+
+                long timestamp = reader.ReadIxiVarInt();
+
+                int sigLen = (int)reader.ReadIxiVarUInt();
+                byte[] signature = reader.ReadBytes(sigLen);
+
+                int challenge = 0;
+                bool in_hello = false;
+                if (endpoint.GetType() != typeof(NetworkClient))
+                {
+                    challenge = (int)reader.ReadIxiVarUInt();
+                    in_hello = true;
+                }
+
+                // Check the testnet designator and disconnect on mismatch
+                if (test_net != CoreConfig.isTestNet)
+                {
+                    Logging.warn("Rejected node {0} due to incorrect testnet designator: {1}", endpoint.fullAddress, test_net);
+                    sendBye(endpoint, ProtocolByeCode.incorrectNetworkType, string.Format("Incorrect testnet designator: {0}. Should be {1}", test_net, CoreConfig.isTestNet), test_net.ToString(), true);
+                    return false;
+                }
+
+                // Check the address and pubkey and disconnect on mismatch
+                if (!addr.SequenceEqual((new Address(pubkey)).address))
+                {
+                    Logging.warn("Pubkey and address do not match.");
+                    sendBye(endpoint, ProtocolByeCode.authFailed, "Pubkey and address do not match.", "", true);
+                    return false;
+                }
+
+                endpoint.incomingPort = port;
+
+                if (PeerStorage.isBlacklisted(addr) || PeerStorage.isBlacklisted(endpoint.getFullAddress(true)))
+                {
+                    Logging.warn("Hello: Connected node is blacklisted ({0} - {1}).", endpoint.getFullAddress(true), Base58Check.Base58CheckEncoding.EncodePlain(addr));
+                    sendBye(endpoint, ProtocolByeCode.bye, "Blacklisted", "", true);
+                    return false;
+                }
+
+                // Verify the signature
+                if (node_type == 'C')
+                {
+                    // TODO: verify if the client is connectable, then if connectable, check if signature verifies
+
+                    /*if (CryptoManager.lib.verifySignature(Encoding.UTF8.GetBytes(ConsensusConfig.ixianChecksumLockString + "-" + device_id + "-" + timestamp + "-" + endpoint.getFullAddress(true)), pubkey, signature) == false)
+                    {
+                        CoreProtocolMessage.sendBye(endpoint, ProtocolByeCode.incorrectIp, "Verify signature failed in hello message, likely an incorrect IP was specified. Detected IP:", endpoint.address);
+                        Logging.warn(string.Format("Connected node used an incorrect signature in hello message, likely an incorrect IP was specified. Detected IP: {0}", endpoint.address));
+                        return false;
+                    }*/
+                    // TODO store the full address if connectable
+                    // Store the presence address for this remote endpoint
+                    endpoint.presenceAddress = new PresenceAddress(device_id, "", node_type, node_version, Clock.getNetworkTimestamp() - CoreConfig.clientKeepAliveInterval, null);
+                }
+                else
+                {
+                    using (MemoryStream mSig = new MemoryStream(1024))
+                    {
+                        using (BinaryWriter sigWriter = new BinaryWriter(mSig))
+                        {
+                            sigWriter.Write(ConsensusConfig.ixianChecksumLock);
+                            sigWriter.Write(device_id);
+                            sigWriter.Write(timestamp);
+                            sigWriter.Write(endpoint.getFullAddress(true));
+                            if(in_hello)
+                            {
+                                sigWriter.Write(challenge);
+                            }else
+                            {
+                                sigWriter.Write(endpoint.challenge);
+                            }
+                        }
+                        if (!CryptoManager.lib.verifySignature(mSig.ToArray(), pubkey, signature))
+                        {
+                            sendBye(endpoint, ProtocolByeCode.incorrectIp, "Verify signature failed in hello message, likely an incorrect IP was specified. Detected IP:", endpoint.address);
+                            Logging.warn("Connected node used an incorrect signature in hello message, likely an incorrect IP was specified. Detected IP: {0}", endpoint.address);
+                            return false;
+                        }
+                    }
+
+                    // Store the presence address for this remote endpoint
+                    endpoint.presenceAddress = new PresenceAddress(device_id, endpoint.getFullAddress(true), node_type, node_version, Clock.getNetworkTimestamp() - CoreConfig.serverKeepAliveInterval, null);
+                }
+
+                // if we're a client update the network time difference
+                if (endpoint.GetType() == typeof(NetworkClient))
+                {
+                    long timeDiff = endpoint.calculateTimeDifference();
+
+                    // amortize +- 2 seconds
+                    if (timeDiff >= -2 && timeDiff <= 2)
+                    {
+                        timeDiff = 0;
+                    }
+
+                    ((NetworkClient)endpoint).timeDifference = timeDiff;
+
+
+                    // Check the address and local address and disconnect on mismatch
+                    if (endpoint.serverWalletAddress != null && !addr.SequenceEqual(endpoint.serverWalletAddress))
+                    {
+                        Logging.warn("Local address mismatch, possible Man-in-the-middle attack.");
+                        sendBye(endpoint, ProtocolByeCode.addressMismatch, "Local address mismatch.", "", true);
+                        return false;
+                    }
+
+                    PeerStorage.updateLastConnected(endpoint.getFullAddress(true));
+                }
+
+
+                // Create a temporary presence with the client's address and device id
+                Presence presence = new Presence(addr, pubkey, null, endpoint.presenceAddress);
+
+                if (endpoint.GetType() != typeof(NetworkClient))
+                {
+                    // we're the server
+
+                    if (node_type == 'M' || node_type == 'H' || node_type == 'R')
+                    {
+                        if (node_type != 'R')
+                        {
+                            // Check the wallet balance for the minimum amount of coins
+                            IxiNumber balance = IxianHandler.getWalletBalance(addr);
+                            if (balance < ConsensusConfig.minimumMasterNodeFunds)
+                            {
+                                Logging.warn("Rejected master node {0} due to insufficient funds: {1}", endpoint.getFullAddress(), balance.ToString());
+                                sendBye(endpoint, ProtocolByeCode.insufficientFunds, string.Format("Insufficient funds. Minimum is {0}", ConsensusConfig.minimumMasterNodeFunds), balance.ToString(), true);
+                                return false;
+                            }
+                        }
+                        // Limit to one IP per masternode
+                        // TODO TODO TODO - think about this and do it properly
+                        /*string[] hostname_split = hostname.Split(':');
+                        if (PresenceList.containsIP(hostname_split[0], 'M'))
+                        {
+                            using (MemoryStream m2 = new MemoryStream())
+                            {
+                                using (BinaryWriter writer = new BinaryWriter(m2))
+                                {
+                                    writer.Write(string.Format("This IP address ( {0} ) already has a masternode connected.", hostname_split[0]));
+                                    Logging.info(string.Format("Rejected master node {0} due to duplicate IP address", hostname));
+                                    socket.Send(prepareProtocolMessage(ProtocolMessageCode.bye, m2.ToArray()), SocketFlags.None);
+                                    socket.Disconnect(true);
+                                    return;
+                                }
+                            }
+                        }*/
+                        if (!checkNodeConnectivity(endpoint))
+                        {
+                            return false;
+                        }
+                    }
+
+                    sendHelloMessageV6(endpoint, true, challenge);
+                    endpoint.helloReceived = true;
+                }
+
+
+                // Retrieve the final presence entry from the list (or create a fresh one)
+                endpoint.presence = PresenceList.updateEntry(presence);
+
+            }
+            catch (Exception e)
+            {
+                // Disconnect the node in case of any reading errors
+                Logging.warn("Exception occured in Hello Message {0}", e.ToString());
+                sendBye(endpoint, ProtocolByeCode.deprecated, "Something went wrong during hello, make sure you're running the latest version of Ixian DLT.", "");
+                return false;
+            }
+
+            if (NetworkClientManager.getConnectedClients().Count() == 1)
             {
                 PresenceList.forceSendKeepAlive = true;
             }
@@ -330,7 +569,7 @@ namespace IXICore
         /// <param name="endpoint">Remote endpoint to send the message to.</param>
         /// <param name="sendHelloData">True if the message is the first hello sent to the remote node, false if it is a reply to the challenge.</param>
         /// <param name="challenge_response">Response byte-field to the other node's hello challenge</param>
-        public static void sendHelloMessage(RemoteEndpoint endpoint, bool sendHelloData, byte[] challenge_response)
+        public static void sendHelloMessageV5(RemoteEndpoint endpoint, bool sendHelloData, byte[] challenge_response)
         {
             using (MemoryStream m = new MemoryStream(1856))
             {
@@ -339,7 +578,7 @@ namespace IXICore
                     string publicHostname = IxianHandler.getFullPublicAddress();
 
                     // Send the node version
-                    writer.Write(CoreConfig.protocolVersion);
+                    writer.Write(5);
 
                     // Send the public node address
                     byte[] address = IxianHandler.getWalletStorage().getPrimaryAddress();
@@ -383,7 +622,7 @@ namespace IXICore
                         if (block == null)
                         {
                             Logging.warn("Clients are connecting, but we have no blocks yet to send them!");
-                            CoreProtocolMessage.sendBye(endpoint, ProtocolByeCode.notReady, string.Format("The node isn't ready yet, please try again later."), "", true);
+                            sendBye(endpoint, ProtocolByeCode.notReady, string.Format("The node isn't ready yet, please try again later."), "", true);
                             return;
                         }
 
@@ -429,6 +668,115 @@ namespace IXICore
                         endpoint.challenge = challenge_bytes;
 
                         writer.Write(challenge_bytes.Length);
+                        writer.Write(challenge_bytes);
+
+#if TRACE_MEMSTREAM_SIZES
+                        Logging.info(String.Format("CoreProtocolMessage::sendHelloMessage: {0}", m.Length));
+#endif
+
+                        endpoint.sendData(ProtocolMessageCode.hello, m.ToArray());
+                    }
+                }
+            }
+        }
+
+        /// <summary>
+        ///  Prepares and sends an Ixian protocol 'Hello' message to the specified remote endpoint.
+        /// </summary>
+        /// <remarks>
+        ///  A valid Ixian 'Hello' message includes certain Node data, verified by a public-key signature, which this function prepares using
+        ///  the primary wallet's keypair. If this message is a reply to the other endpoint's hello message, then
+        /// </remarks>
+        /// <param name="endpoint">Remote endpoint to send the message to.</param>
+        /// <param name="sendHelloData">True if the message is the first hello sent to the remote node, false if it is a reply to the challenge.</param>
+        /// <param name="challenge_response">Response byte-field to the other node's hello challenge</param>
+        public static void sendHelloMessageV6(RemoteEndpoint endpoint, bool sendHelloData, int challenge)
+        {
+            using (MemoryStream m = new MemoryStream(1856))
+            {
+                using (BinaryWriter writer = new BinaryWriter(m))
+                {
+                    string publicHostname = IxianHandler.getFullPublicAddress();
+
+                    // Send the node version
+                    writer.WriteIxiVarInt(6);
+
+                    // Send the public node address
+                    byte[] address = IxianHandler.getWalletStorage().getPrimaryAddress();
+                    writer.WriteIxiVarInt(address.Length);
+                    writer.Write(address);
+
+                    // Send the testnet designator
+                    writer.Write(CoreConfig.isTestNet);
+
+                    char node_type = PresenceList.myPresenceType;
+                    writer.Write(node_type);
+
+                    // Send the version
+                    writer.Write(CoreConfig.productVersion);
+
+                    // Send the node device id
+                    writer.WriteIxiVarInt(CoreConfig.device_id.Length);
+                    writer.Write(CoreConfig.device_id);
+
+                    // Send the wallet public key
+                    writer.WriteIxiVarInt(IxianHandler.getWalletStorage().getPrimaryPublicKey().Length);
+                    writer.Write(IxianHandler.getWalletStorage().getPrimaryPublicKey());
+
+                    // Send listening port
+                    writer.WriteIxiVarInt(IxianHandler.publicPort);
+
+                    // Send timestamp
+                    long timestamp = Clock.getTimestamp() + endpoint.calculateTimeDifference();
+                    writer.WriteIxiVarInt(timestamp);
+
+                    // generate signature
+                    using (MemoryStream mSig = new MemoryStream(1024))
+                    {
+                        using (BinaryWriter sigWriter = new BinaryWriter(mSig))
+                        {
+                            sigWriter.Write(ConsensusConfig.ixianChecksumLock);
+                            sigWriter.Write(CoreConfig.device_id);
+                            sigWriter.Write(timestamp);
+                            sigWriter.Write(publicHostname);
+                            sigWriter.Write(challenge);
+                        }
+                        byte[] signature = CryptoManager.lib.getSignature(mSig.ToArray(), IxianHandler.getWalletStorage().getPrimaryPrivateKey());
+                        writer.WriteIxiVarInt(signature.Length);
+                        writer.Write(signature);
+                    }
+
+                    if (sendHelloData)
+                    {
+                        Block block = IxianHandler.getLastBlock();
+                        if (block == null)
+                        {
+                            Logging.warn("Clients are connecting, but we have no blocks yet to send them!");
+                            sendBye(endpoint, ProtocolByeCode.notReady, string.Format("The node isn't ready yet, please try again later."), "", true);
+                            return;
+                        }
+
+
+                        writer.WriteIxiVarInt(block.blockNum);
+
+                        writer.WriteIxiVarInt(block.blockChecksum.Length);
+                        writer.Write(block.blockChecksum);
+
+                        writer.WriteIxiVarInt(block.version);
+
+                        writer.Write(endpoint.getFullAddress(true));
+
+#if TRACE_MEMSTREAM_SIZES
+                        Logging.info(String.Format("CoreProtocolMessage::sendHelloMessage: {0}", m.Length));
+#endif
+
+                        endpoint.sendData(ProtocolMessageCode.helloData, m.ToArray());
+
+                    }
+                    else
+                    {
+                        byte[] challenge_bytes = IxiVarInt.GetIxiVarIntBytes(challenge);
+                        endpoint.challenge = BitConverter.GetBytes(challenge);
                         writer.Write(challenge_bytes);
 
 #if TRACE_MEMSTREAM_SIZES
