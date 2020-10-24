@@ -557,14 +557,20 @@ namespace IXICore
                 try
                 {
                     byte[] ka_bytes = null;
-                    ka_bytes = keepAlive_v1();
+                    if(CoreConfig.protocolVersion == 5)
+                    {
+                        ka_bytes = keepAlive_v1();
+                    }else
+                    {
+                        ka_bytes = keepAlive_v2();
+                    }
 
                     byte[] address = null;
                     long last_seen = 0;
                     byte[] device_id = null;
 
                     // Update self presence
-                    PresenceList.receiveKeepAlive(ka_bytes, out address, out last_seen, out device_id, null);
+                    receiveKeepAlive(ka_bytes, out address, out last_seen, out device_id, null);
 
                     // Send this keepalive to all connected non-clients
                     CoreProtocolMessage.broadcastProtocolMessage(new char[] { 'M', 'H', 'W' }, ProtocolMessageCode.keepAlivePresence, ka_bytes, address);
