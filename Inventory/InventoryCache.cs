@@ -113,11 +113,8 @@ namespace IXICore.Inventory
 
         public bool processInventoryItem(InventoryItemTypes type, byte[] hash)
         {
-            lock(inventory)
-            {
-                var pii = get(type, hash);
-                return processInventoryItem(pii);
-            }
+            var pii = get(type, hash);
+            return processInventoryItem(pii);
         }
 
         public bool processInventoryItem(PendingInventoryItem pii)
@@ -194,12 +191,9 @@ namespace IXICore.Inventory
         public long getItemCount()
         {
             long count = 0;
-            lock(inventory)
+            foreach (var type in inventory)
             {
-                foreach (var type in inventory)
-                {
-                    count += type.Value.Count();
-                }
+                count += type.Value.Count();
             }
             return count;
         }
