@@ -276,11 +276,22 @@ namespace IXICore.Network
                         messagesPerSecond++;
                     }
                 }
+                catch(SocketException se)
+                {
+                    if (running)
+                    {
+                        if(se.SocketErrorCode != SocketError.ConnectionAborted)
+                        {
+                            Logging.warn("recvRE: Disconnected client {0} with socket exception {1} {2} {3}", getFullAddress(), se.SocketErrorCode, se.ErrorCode, se);
+                        }
+                    }
+                    state = RemoteEndpointState.Closed;
+                }
                 catch (Exception e)
                 {
                     if(running)
                     {
-                        Logging.warn(string.Format("recvRE: Disconnected client {0} with exception {1}", getFullAddress(), e.ToString()));
+                        Logging.warn("recvRE: Disconnected client {0} with exception {1}", getFullAddress(), e);
                     }
                     state = RemoteEndpointState.Closed;
                 }
@@ -855,7 +866,7 @@ namespace IXICore.Network
             // Check for socket availability
             if (socket.Connected == false)
             {
-                throw new Exception("Socket already disconnected at other end");
+                throw new SocketException((int)SocketError.NotConnected);
             }
 
             if (socket.Available < 1)
@@ -933,7 +944,6 @@ namespace IXICore.Network
                                 expected_data_len = (int)last_message_header.dataLen;
                                 if(expected_data_len > CoreConfig.maxMessageSize)
                                 {
-                                    running = false;
                                     throw new Exception(string.Format("Message size ({0}B) received from the client is higher than the maximum message size allowed ({1}B) - protocol code: {2}.", expected_data_len, CoreConfig.maxMessageSize, last_message_header.code));
                                 }
                                 data = new byte[expected_data_len];
@@ -994,8 +1004,7 @@ namespace IXICore.Network
                         }
                         else if (cur_data_len > expected_data_len)
                         {
-                            Logging.error("Unhandled edge case occured in RemoteEndPoint:readSocketData for node {0}", getFullAddress());
-                            return null;
+                            throw new Exception(string.Format("Unhandled edge case occured in RemoteEndPoint:readSocketData for node {0}", getFullAddress()));
                         }
                         bytes_to_read = expected_data_len - cur_data_len;
                         if (bytes_to_read > 8000)
@@ -1005,11 +1014,18 @@ namespace IXICore.Network
                     }
                 }
             }
-            catch (Exception e)
+            catch (SocketException)
             {
                 if (running)
                 {
-                    throw new Exception(string.Format("NET: endpoint {0} disconnected {1}", getFullAddress(), e));
+                    throw;
+                }
+            }
+            catch (Exception)
+            {
+                if (running)
+                {
+                    throw;
                 }
             }
             return null;
