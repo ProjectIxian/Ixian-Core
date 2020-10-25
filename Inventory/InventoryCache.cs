@@ -31,6 +31,8 @@ namespace IXICore.Inventory
         protected int pendingTimeOut = 5;
         protected Dictionary<InventoryItemTypes, Dictionary<byte[], PendingInventoryItem>> inventory = null;
 
+        Random rnd = new Random();
+
         public InventoryCache()
         {
             inventory = new Dictionary<InventoryItemTypes, Dictionary<byte[], PendingInventoryItem>>();
@@ -119,7 +121,10 @@ namespace IXICore.Inventory
 
         public bool processInventoryItem(PendingInventoryItem pii)
         {
-            Random rnd = new Random();
+            if(pii.processed)
+            {
+                return false;
+            }
             var endpoints = pii.endpoints.OrderBy(x => rnd.Next());
             foreach (var endpoint in endpoints)
             {
@@ -146,6 +151,7 @@ namespace IXICore.Inventory
 
         public void processCache()
         {
+            List<PendingInventoryItem> items_to_process = new List<PendingInventoryItem>();
             lock(inventory)
             {
                 long expiration_time = Clock.getTimestamp() - pendingTimeOut;
@@ -161,9 +167,13 @@ namespace IXICore.Inventory
                         {
                             continue;
                         }
-                        processInventoryItem(item.Value);
+                        items_to_process.Add(item.Value);
                     }
                 }
+            }
+            foreach(var item in items_to_process)
+            {
+                processInventoryItem(item);
             }
         }
 
