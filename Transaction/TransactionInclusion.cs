@@ -125,7 +125,7 @@ namespace IXICore
             }
             catch (Exception e)
             {
-                Logging.error("TIV exception: {0}", e.Message);
+                Logging.error("TIV exception: {0}", e);
                 return 0;
             }
             return txbnum;

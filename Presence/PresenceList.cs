@@ -952,12 +952,12 @@ namespace IXICore
                                 // Check if timestamp is older than 300 seconds
                                 if ((currentTime - pa.lastSeenTime) > expiration_time)
                                 {
-                                    Logging.info(string.Format("Expired lastseen for {0} / {1}", pa.address, pa.device));
+                                    Logging.info(string.Format("Expired lastseen for {0} / {1}", pa.address, Crypto.hashToString(pa.device)));
                                     removeAddressEntry(pr.wallet, pa);
                                 }
                                 else if ((currentTime - pa.lastSeenTime) < -30) // future time + 30 seconds amortization
                                 {
-                                    Logging.info(string.Format("Expired future lastseen for {0} / {1}", pa.address, pa.device));
+                                    Logging.info(string.Format("Expired future lastseen for {0} / {1}", pa.address, Crypto.hashToString(pa.device)));
                                     removeAddressEntry(pr.wallet, pa);
                                 }
                             }
@@ -1031,7 +1031,7 @@ namespace IXICore
             }
             catch(Exception e)
             {
-                Logging.error("PresenceList: {0}", e.Message);
+                Logging.error("Exception occured in getPresenceByAddress: {0}", e);
                 return null;
             }
         }
