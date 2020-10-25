@@ -128,6 +128,10 @@ namespace IXICore.Network
                         || code == ProtocolMessageCode.blockSignature
                         || code == ProtocolMessageCode.blockSignatures
                         || code == ProtocolMessageCode.getBlockSignatures
+                        || code == ProtocolMessageCode.blockSignature2
+                        || code == ProtocolMessageCode.signaturesChunk
+                        || code == ProtocolMessageCode.getBlockSignatures2
+                        || code == ProtocolMessageCode.transactionsChunk
                         || code == ProtocolMessageCode.inventory))
                     {
                         txqueueMessages.Insert(5, message);
@@ -156,7 +160,7 @@ namespace IXICore.Network
                     queueMessages.Insert(0, message);
                     return;
                 }
-                else if (code == ProtocolMessageCode.keepAlivePresence || code == ProtocolMessageCode.getPresence
+                else if (code == ProtocolMessageCode.keepAlivePresence || code == ProtocolMessageCode.getPresence || code == ProtocolMessageCode.getPresence2
                    || code == ProtocolMessageCode.updatePresence)
                 {
                     // Prioritize if queue is large

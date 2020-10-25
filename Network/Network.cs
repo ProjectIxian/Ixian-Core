@@ -137,7 +137,7 @@ namespace IXICore.Network
         getWalletStateChunk = 51,
         walletStateChunk = 52,
         syncWalletState = 53,
-        walletState = 54,
+        walletState = 54
     }
 
     /// <summary>

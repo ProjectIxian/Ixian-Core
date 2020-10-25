@@ -196,7 +196,7 @@ namespace IXICore.Network
             }
             catch (Exception e)
             {
-                Logging.error("Exception start remote endpoint: {0}", e.Message);
+                Logging.error("Error starting remote endpoint: {0}", e.Message);
             }
         }
 
@@ -280,11 +280,17 @@ namespace IXICore.Network
                 {
                     if (running)
                     {
-                        if(se.SocketErrorCode != SocketError.ConnectionAborted)
+                        if(se.SocketErrorCode != SocketError.ConnectionAborted
+                            && se.SocketErrorCode != SocketError.NotConnected
+                            && se.SocketErrorCode != SocketError.ConnectionReset
+                            && se.SocketErrorCode != SocketError.Interrupted)
                         {
                             Logging.warn("recvRE: Disconnected client {0} with socket exception {1} {2} {3}", getFullAddress(), se.SocketErrorCode, se.ErrorCode, se);
                         }
                     }
+                    state = RemoteEndpointState.Closed;
+                }catch(ThreadAbortException)
+                {
                     state = RemoteEndpointState.Closed;
                 }
                 catch (Exception e)
@@ -621,11 +627,29 @@ namespace IXICore.Network
                     state = RemoteEndpointState.Closed;
                 }
             }
+            catch (SocketException se)
+            {
+                if (running)
+                {
+                    if (se.SocketErrorCode != SocketError.ConnectionAborted
+                        && se.SocketErrorCode != SocketError.NotConnected
+                        && se.SocketErrorCode != SocketError.ConnectionReset
+                        && se.SocketErrorCode != SocketError.Interrupted)
+                    {
+                        Logging.warn("sendRE: Disconnected client {0} with socket exception {1} {2} {3}", getFullAddress(), se.SocketErrorCode, se.ErrorCode, se);
+                    }
+                }
+                state = RemoteEndpointState.Closed;
+            }
+            catch (ThreadAbortException)
+            {
+                state = RemoteEndpointState.Closed;
+            }
             catch (Exception e)
             {
                 if (running)
                 {
-                    Logging.warn(String.Format("sendRE: Socket exception for {0}, closing. {1}", getFullAddress(), e));
+                    Logging.warn("sendRE: Socket exception for {0}, closing. {1}", getFullAddress(), e);
                 }
                 state = RemoteEndpointState.Closed;
 

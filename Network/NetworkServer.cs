@@ -487,7 +487,6 @@ namespace IXICore.Network
 
             if (!IxianHandler.isAcceptingConnections())
             {
-                Thread.Sleep(100); // wait a bit for check connectivity purposes
                 clientSocket.Send(RemoteEndpoint.prepareProtocolMessage(ProtocolMessageCode.bye, new byte[1], CoreConfig.protocolVersion, 0));
                 clientSocket.Shutdown(SocketShutdown.Both);
                 clientSocket.Disconnect(true);
