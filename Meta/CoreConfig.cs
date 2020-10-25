@@ -177,7 +177,7 @@ namespace IXICore
         public static int maximumKeepAlivesPerChunk = 1000;
 
         /// <summary>
-        /// Maximum number of transactions to be included in the tx chunk.
+        /// Maximum number of transactions sent in each chunk when a fresh DLT Node is synchronizing. (Used in DLT Node executable.)
         /// </summary>
         public static int maximumTransactionsPerChunk = 2000;
 

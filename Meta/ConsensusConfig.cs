@@ -112,11 +112,6 @@ namespace IXICore
         public static readonly ulong maximumTransactionsPerBlock = 70200;
 
         /// <summary>
-        /// Maximum number of transactions sent in each chunk when a fresh DLT Node is synchronizing. (Used in DLT Node executable.)
-        /// </summary>
-        public static readonly int maximumTransactionsPerChunk = 500;
-
-        /// <summary>
         /// Initial value for seeding the Transaction SHA512 checksum generator.
         /// </summary>
         public static readonly byte[] ixianChecksumLock = Encoding.UTF8.GetBytes("Ixian");
