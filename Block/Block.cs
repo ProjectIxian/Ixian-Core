@@ -4,7 +4,6 @@ using System;
 using System.Collections.Generic;
 using System.IO;
 using System.Linq;
-using System.Threading;
 
 namespace IXICore
 {
@@ -1025,29 +1024,57 @@ namespace IXICore
 
             lock (signatures)
             {
-                foreach (byte[][] merged_signature in signatures)
+                if(signatures != null)
                 {
-                    bool condition = false;
+                    foreach (byte[][] merged_signature in signatures)
+                    {
+                        bool condition = false;
 
-                    // Check if we have an address instead of a public key
-                    if (merged_signature[1].Length < 70)
-                    {
-                        // Compare wallet address
-                        condition = node_address.SequenceEqual(merged_signature[1]);
-                    }
-                    else
-                    {
-                        // Legacy, compare public key
-                        condition = public_key.SequenceEqual(merged_signature[1]);
-                    }
+                        // Check if we have an address instead of a public key
+                        if (merged_signature[1].Length < 70)
+                        {
+                            // Compare wallet address
+                            condition = node_address.SequenceEqual(merged_signature[1]);
+                        }
+                        else
+                        {
+                            // Legacy, compare public key
+                            condition = public_key.SequenceEqual(merged_signature[1]);
+                        }
 
-                    // Check if it matches
-                    if (condition)
+                        // Check if it matches
+                        if (condition)
+                        {
+                            return merged_signature[0];
+                        }
+                    }
+                }else if(frozenSignatures != null)
+                {
+                    foreach (byte[][] merged_signature in frozenSignatures)
                     {
-                        return merged_signature[0];
+                        bool condition = false;
+
+                        // Check if we have an address instead of a public key
+                        if (merged_signature[1].Length < 70)
+                        {
+                            // Compare wallet address
+                            condition = node_address.SequenceEqual(merged_signature[1]);
+                        }
+                        else
+                        {
+                            // Legacy, compare public key
+                            condition = public_key.SequenceEqual(merged_signature[1]);
+                        }
+
+                        // Check if it matches
+                        if (condition)
+                        {
+                            return merged_signature[0];
+                        }
                     }
                 }
             }
+
             return null;
         }
 
