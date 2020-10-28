@@ -1,4 +1,5 @@
-﻿using IXICore.Network;
+﻿using IXICore.Meta;
+using IXICore.Network;
 using IXICore.Utils;
 using System;
 using System.Collections.Generic;
@@ -27,8 +28,8 @@ namespace IXICore.Inventory
     abstract class InventoryCache
     {
         protected int maxInventoryItems = 600000;
-        protected int maxRetryCount = 10;
-        protected int pendingTimeOut = 5;
+        protected int maxRetryCount = 5;
+        protected int pendingTimeOut = 200;
         protected Dictionary<InventoryItemTypes, Dictionary<byte[], PendingInventoryItem>> inventory = null;
 
         Random rnd = new Random();
@@ -74,6 +75,7 @@ namespace IXICore.Inventory
                 else
                 {
                     PendingInventoryItem pii = inventory_types[item.hash];
+                    pii.item = item;
                     if (!pii.endpoints.Contains(endpoint))
                     {
                         pii.endpoints.Add(endpoint);
@@ -144,6 +146,9 @@ namespace IXICore.Inventory
                         pii.processed = true;
                     }
                     return false;
+                }else
+                {
+                    pii.endpoints.Remove(endpoint);
                 }
             }
             return false;
@@ -167,6 +172,7 @@ namespace IXICore.Inventory
                         {
                             continue;
                         }
+                        Logging.info("Processing " + types.Key + ": " + item.Value.lastRequested);
                         items_to_process.Add(item.Value);
                     }
                 }

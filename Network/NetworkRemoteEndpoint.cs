@@ -77,10 +77,6 @@ namespace IXICore.Network
 
         protected bool enableSendTimeSyncMessages = true;
 
-        private int messagesPerSecond = 0;
-        private int lastMessagesPerSecond = 0;
-        private DateTime lastMessageStatTime;
-
         private ThreadLiveCheck TLC;
 
         private List<InventoryItem> inventory = new List<InventoryItem>();
@@ -262,18 +258,21 @@ namespace IXICore.Network
         {
             Thread.CurrentThread.IsBackground = true;
             socketReadBuffer = new byte[8192];
-            lastMessageStatTime = DateTime.UtcNow;
+            long lastReceivedMessageStatTime = Clock.getTimestampMillis();
+            int messageCount = 0;
             while (running)
             {
                 TLC.Report();
                 // Let the protocol handler receive and handle messages
+                bool message_received = false;
                 try
                 {
                     QueueMessageRaw? raw_msg = readSocketData();
                     if (raw_msg != null)
                     {
+                        message_received = true;
                         parseDataInternal((QueueMessageRaw)raw_msg);
-                        messagesPerSecond++;
+                        messageCount++;
                     }
                 }
                 catch(SocketException se)
@@ -308,19 +307,6 @@ namespace IXICore.Network
                     running = false;
                     break;
                 }
-
-                TimeSpan timeSinceLastStat = DateTime.UtcNow - lastMessageStatTime;
-                if (timeSinceLastStat.TotalSeconds < 0 || timeSinceLastStat.TotalSeconds > 2)
-                {
-                    lastMessageStatTime = DateTime.UtcNow;
-                    lastMessagesPerSecond = (int)(messagesPerSecond / timeSinceLastStat.TotalSeconds);
-                    messagesPerSecond = 0;
-                }
-
-                if (lastMessagesPerSecond < 1)
-                {
-                    lastMessagesPerSecond = 1;
-                }
                     
                 // Sleep a while to throttle the client
                 // Check if there are too many messages
@@ -334,9 +320,21 @@ namespace IXICore.Network
                 {
                     Thread.Sleep(500);
                 }
-                else
+                else if(messageCount > 100)
                 {
-                    // sleep for 1ms to throttle the client to 1000 messages/second
+                    long cur_time = Clock.getTimestampMillis();
+                    long time_diff = cur_time - lastReceivedMessageStatTime;
+                    if (time_diff < 100)
+                    {
+                        // sleep to throttle the client to 1000 messages/second
+                        Thread.Sleep(100 - (int)time_diff);
+                        cur_time = Clock.getTimestampMillis();
+                    }
+                    lastReceivedMessageStatTime = cur_time;
+                    messageCount = 0;
+                }
+                else if(!message_received)
+                {
                     Thread.Sleep(1);
                 }
             }
@@ -396,6 +394,8 @@ namespace IXICore.Network
                 sendTimeSyncMessages();
             }
 
+            long lastSentMessageStatTime = Clock.getTimestampMillis();
+
             int messageCount = 0;
 
             while (running)
@@ -405,7 +405,7 @@ namespace IXICore.Network
                 if(helloReceived == false && curTime - connectionStartTime > 10)
                 {
                     // haven't received hello message for 10 seconds, stop running
-                    Logging.warn("Node {0} hasn't received hello data from remote endpoint for over 10 seconds, disconnecting.", getFullAddress());
+                    Logging.info("Node {0} hasn't received hello data from remote endpoint for over 10 seconds, disconnecting.", getFullAddress());
                     state = RemoteEndpointState.Closed;
                     running = false;
                     break;
@@ -452,7 +452,6 @@ namespace IXICore.Network
                                     message_found = true;
                                 }
                             }
-                            messageCount = 0;
                         }
 
                         if (message_found == false && ((messageCount > 0 && messageCount % 3 == 0) || sendQueueMessagesHighPriority.Count == 0))
@@ -491,8 +490,24 @@ namespace IXICore.Network
                     }
                 }
                 sendInventory();
-                // sleep for 1ms to throttle sending to 1000 messages/second
-                Thread.Sleep(1);
+
+                if (messageCount > 100)
+                {
+                    long cur_time = Clock.getTimestampMillis();
+                    long time_diff = cur_time - lastSentMessageStatTime;
+                    if (time_diff < 100)
+                    {
+                        // sleep to throttle the client to 1000 messages/second
+                        Thread.Sleep(100 - (int)time_diff);
+                        cur_time = Clock.getTimestampMillis();
+                    }
+                    lastSentMessageStatTime = cur_time;
+                    messageCount = 0;
+                }
+                else if (!message_found)
+                {
+                    Thread.Sleep(1);
+                }
             }
         }
 
@@ -513,7 +528,7 @@ namespace IXICore.Network
                 {
                     return;
                 }
-                if (inventoryLastSent > Clock.getTimestamp() - CoreConfig.inventoryInterval)
+                if (inventory.Count() < CoreConfig.maxInventoryItems && inventoryLastSent > Clock.getTimestamp() - CoreConfig.inventoryInterval)
                 {
                     return;
                 }
@@ -572,9 +587,14 @@ namespace IXICore.Network
                     }
 
                 }
+                catch (ThreadAbortException)
+                {
+                    state = RemoteEndpointState.Closed;
+                }
                 catch (Exception e)
                 {
-                    Logging.error(String.Format("Exception occured for client {0} in parseLoopRE: {1} ", getFullAddress(), e));
+                    state = RemoteEndpointState.Closed;
+                    Logging.error("Exception occured for client {0} in parseLoopRE: {1} ", getFullAddress(), e);
                 }
             }
         }
@@ -702,27 +722,37 @@ namespace IXICore.Network
         public void sendData(QueueMessage message)
         {
             ProtocolMessageCode code = message.code;
-            if (code == ProtocolMessageCode.bye || code == ProtocolMessageCode.keepAlivePresence
-                || code == ProtocolMessageCode.getPresence2 || code == ProtocolMessageCode.updatePresence)
+            switch (code)
             {
-                lock (sendQueueMessagesHighPriority)
-                {
-                    addMessageToSendQueue(sendQueueMessagesHighPriority, message);
-                }
-            }
-            else if (code != ProtocolMessageCode.transactionData)
-            {
-                lock (sendQueueMessagesNormalPriority)
-                {
-                    addMessageToSendQueue(sendQueueMessagesNormalPriority, message);
-                }
-            }
-            else
-            {
-                lock (sendQueueMessagesLowPriority)
-                {
-                    addMessageToSendQueue(sendQueueMessagesLowPriority, message);
-                }
+                case ProtocolMessageCode.bye:
+                case ProtocolMessageCode.keepAlivePresence:
+                case ProtocolMessageCode.getPresence2:
+                case ProtocolMessageCode.updatePresence:
+                case ProtocolMessageCode.keepAlivesChunk:
+                case ProtocolMessageCode.getKeepAlives:
+                    lock (sendQueueMessagesHighPriority)
+                    {
+                        addMessageToSendQueue(sendQueueMessagesHighPriority, message);
+                    }
+
+                    break;
+
+                case ProtocolMessageCode.transactionsChunk:
+                case ProtocolMessageCode.blockTransactionsChunk:
+                case ProtocolMessageCode.transactionData:
+                case ProtocolMessageCode.newTransaction:
+                    lock (sendQueueMessagesLowPriority)
+                    {
+                        addMessageToSendQueue(sendQueueMessagesLowPriority, message);
+                    }
+                    break;
+
+                default:
+                    lock (sendQueueMessagesNormalPriority)
+                    {
+                        addMessageToSendQueue(sendQueueMessagesNormalPriority, message);
+                    }
+                    break;
             }
         }
 

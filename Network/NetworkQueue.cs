@@ -87,61 +87,101 @@ namespace IXICore.Network
             lock (txqueueMessages)
             {
                 // Move block related messages to txqueue
-#pragma warning disable CS0618 // Type or member is obsolete
-                if (code == ProtocolMessageCode.newTransaction || code == ProtocolMessageCode.transactionData
-                    || code == ProtocolMessageCode.blockTransactionsChunk
-                    || code == ProtocolMessageCode.transactionsChunk || code == ProtocolMessageCode.getTransactions
-                    || code == ProtocolMessageCode.newBlock || code == ProtocolMessageCode.blockData
-                    || code == ProtocolMessageCode.blockSignature || code == ProtocolMessageCode.blockSignatures
-                    || code == ProtocolMessageCode.blockSignature2 || code == ProtocolMessageCode.getBlockSignatures2
-                    || code == ProtocolMessageCode.getSignatures || code == ProtocolMessageCode.signaturesChunk
-                    || code == ProtocolMessageCode.getBlockSignatures || code == ProtocolMessageCode.getNextSuperBlock
-                    || code == ProtocolMessageCode.getBlockHeaders || code == ProtocolMessageCode.blockHeaders
-                    || code == ProtocolMessageCode.getBlockHeaders2 || code == ProtocolMessageCode.blockHeaders2
-                    || code == ProtocolMessageCode.inventory)
-#pragma warning restore CS0618 // Type or member is obsolete
+                switch (code)
                 {
-                    if (message.helperData != null)
-                    {
-                        if (txqueueMessages.Exists(x => x.code == message.code && x.helperData.SequenceEqual(message.helperData)))
+#pragma warning disable CS0618 // Type or member is obsolete
+                    case ProtocolMessageCode.getTransaction:
+                    case ProtocolMessageCode.getTransaction2:
+                    case ProtocolMessageCode.getTransactions:
+                    case ProtocolMessageCode.transactionsChunk:
+                    case ProtocolMessageCode.newTransaction:
+                    case ProtocolMessageCode.transactionData:
+                    case ProtocolMessageCode.blockTransactionsChunk:
+                    case ProtocolMessageCode.getBlock:
+                    case ProtocolMessageCode.getBlock2:
+                    case ProtocolMessageCode.getBlockHeaders:
+                    case ProtocolMessageCode.getBlockHeaders2:
+                    case ProtocolMessageCode.blockHeaders:
+                    case ProtocolMessageCode.blockHeaders2:
+                    case ProtocolMessageCode.newBlock:
+                    case ProtocolMessageCode.blockData:
+                    case ProtocolMessageCode.blockSignature:
+                    case ProtocolMessageCode.blockSignatures:
+                    case ProtocolMessageCode.blockSignature2:
+                    case ProtocolMessageCode.getSignatures:
+                    case ProtocolMessageCode.getBlockSignatures2:
+                    case ProtocolMessageCode.signaturesChunk:
+                    case ProtocolMessageCode.getPIT:
+                    case ProtocolMessageCode.getPIT2:
+                    case ProtocolMessageCode.pitData:
+                    case ProtocolMessageCode.pitData2:
+                    case ProtocolMessageCode.inventory:
+#pragma warning restore CS0618 // Type or member is obsolete
                         {
-                            int msg_index = txqueueMessages.FindIndex(x => x.code == message.code && message.helperData.SequenceEqual(x.helperData));
-                            if (txqueueMessages[msg_index].length < message.length)
+                            if (message.helperData != null)
                             {
-                                txqueueMessages[msg_index] = message;
+                                if (txqueueMessages.Exists(x => x.code == message.code && x.helperData.SequenceEqual(message.helperData)))
+                                {
+                                    int msg_index = txqueueMessages.FindIndex(x => x.code == message.code && message.helperData.SequenceEqual(x.helperData));
+                                    if (txqueueMessages[msg_index].length < message.length)
+                                    {
+                                        txqueueMessages[msg_index] = message;
+                                    }
+                                    return;
+                                }
+                            }
+
+                            if (txqueueMessages.Exists(x => x.code == message.code && x.checksum == message.checksum))
+                            {
+                                //Logging.warn(string.Format("Attempting to add a duplicate message (code: {0}) to the network queue", code));
+                                return;
+                            }
+
+                            bool add = true;
+                            if (txqueueMessages.Count > 20)
+                            {
+                                switch (code)
+                                {
+#pragma warning disable CS0618 // Type or member is obsolete
+                                    case ProtocolMessageCode.getTransaction:
+                                    case ProtocolMessageCode.getTransaction2:
+                                    case ProtocolMessageCode.getTransactions:
+                                    case ProtocolMessageCode.transactionsChunk:
+                                    case ProtocolMessageCode.blockTransactionsChunk:
+                                    case ProtocolMessageCode.getBlock:
+                                    case ProtocolMessageCode.getBlock2:
+                                    case ProtocolMessageCode.getBlockHeaders:
+                                    case ProtocolMessageCode.getBlockHeaders2:
+                                    case ProtocolMessageCode.blockHeaders:
+                                    case ProtocolMessageCode.blockHeaders2:
+                                    case ProtocolMessageCode.newBlock:
+                                    case ProtocolMessageCode.blockData:
+                                    case ProtocolMessageCode.blockSignature:
+                                    case ProtocolMessageCode.blockSignatures:
+                                    case ProtocolMessageCode.blockSignature2:
+                                    case ProtocolMessageCode.getSignatures:
+                                    case ProtocolMessageCode.getBlockSignatures2:
+                                    case ProtocolMessageCode.signaturesChunk:
+                                    case ProtocolMessageCode.getPIT:
+                                    case ProtocolMessageCode.getPIT2:
+                                    case ProtocolMessageCode.pitData:
+                                    case ProtocolMessageCode.pitData2:
+                                    case ProtocolMessageCode.inventory:
+#pragma warning restore CS0618 // Type or member is obsolete
+                                        {
+                                            txqueueMessages.Insert(5, message);
+                                            add = false;
+                                            break;
+                                        }
+                                }
+                            }
+                            if(add)
+                            {
+                                // Add it to the tx queue
+                                txqueueMessages.Add(message);
                             }
                             return;
                         }
-                    }
-
-                    if (txqueueMessages.Exists(x => x.code == message.code && x.checksum == message.checksum))
-                    {
-                        //Logging.warn(string.Format("Attempting to add a duplicate message (code: {0}) to the network queue", code));
-                        return;
-                    }
-
-                    if (txqueueMessages.Count > 20 &&
-                        (code == ProtocolMessageCode.transactionsChunk
-                        || code == ProtocolMessageCode.blockTransactionsChunk
-                        || code == ProtocolMessageCode.newBlock
-                        || code == ProtocolMessageCode.blockData
-                        || code == ProtocolMessageCode.blockSignature
-                        || code == ProtocolMessageCode.blockSignatures
-                        || code == ProtocolMessageCode.getBlockSignatures
-                        || code == ProtocolMessageCode.blockSignature2
-                        || code == ProtocolMessageCode.signaturesChunk
-                        || code == ProtocolMessageCode.getBlockSignatures2
-                        || code == ProtocolMessageCode.transactionsChunk
-                        || code == ProtocolMessageCode.inventory))
-                    {
-                        txqueueMessages.Insert(5, message);
-                    }
-                    else
-                    {
-                        // Add it to the tx queue
-                        txqueueMessages.Add(message);
-                    }
-                    return;
                 }
             }
 
@@ -155,20 +195,26 @@ namespace IXICore.Network
                 }
 
                 // Handle normal messages, but prioritize block-related messages
-                if (code == ProtocolMessageCode.bye || code == ProtocolMessageCode.hello || code == ProtocolMessageCode.helloData)
+                switch (code)
                 {
-                    queueMessages.Insert(0, message);
-                    return;
-                }
-                else if (code == ProtocolMessageCode.keepAlivePresence || code == ProtocolMessageCode.getPresence || code == ProtocolMessageCode.getPresence2
-                   || code == ProtocolMessageCode.updatePresence)
-                {
-                    // Prioritize if queue is large
-                    if (queueMessages.Count > 10)
-                    {
-                        queueMessages.Insert(5, message);
+                    case ProtocolMessageCode.bye:
+                    case ProtocolMessageCode.hello:
+                    case ProtocolMessageCode.helloData:
+                        queueMessages.Insert(0, message);
                         return;
-                    }
+
+                    case ProtocolMessageCode.keepAlivePresence:
+                    case ProtocolMessageCode.getPresence:
+                    case ProtocolMessageCode.getPresence2:
+                    case ProtocolMessageCode.updatePresence:
+                        // Prioritize if queue is large
+                        if (queueMessages.Count > 10)
+                        {
+                            queueMessages.Insert(5, message);
+                            return;
+                        }
+
+                        break;
                 }
 
                 // Add it to the normal queue
@@ -251,7 +297,7 @@ namespace IXICore.Network
 
                 if (message_found)
                 {
-                    Logging.info("Received {0} - {1}...", active_message.code, Crypto.hashToString(active_message.data.Take(20).ToArray()));
+                    Logging.info("Received {0} ({1}B) - {2}...", active_message.code, active_message.data.Length, Crypto.hashToString(active_message.data.Take(60).ToArray()));
                     // Active message set, attempt to parse it
                     IxianHandler.parseProtocolMessage(active_message.code, active_message.data, active_message.endpoint);
                     lock (queueMessages)
@@ -291,7 +337,7 @@ namespace IXICore.Network
 
                 if (message_found)
                 {
-                    Logging.info("Received {0} - {1}...", active_message.code, Crypto.hashToString(active_message.data.Take(20).ToArray()));
+                    Logging.info("Received {0} ({1}B) - {2}...", active_message.code, active_message.data.Length, Crypto.hashToString(active_message.data.Take(60).ToArray()));
                     // Active message set, attempt to parse it
                     IxianHandler.parseProtocolMessage(active_message.code, active_message.data, active_message.endpoint);
                     lock (txqueueMessages)

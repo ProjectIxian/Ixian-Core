@@ -77,7 +77,7 @@ namespace IXICore.Network
                 totalReconnects++;
                 if (!tcpClient.ConnectAsync(hostname, port).Wait(5000))
                 {
-                    Logging.warn(string.Format("Network client connection to {0}:{1} has failed.", hostname, port));
+                    Logging.info("Network client connection to {0}:{1} has failed.", hostname, port);
 
                     disconnect();
 
@@ -112,12 +112,12 @@ namespace IXICore.Network
             }
             catch (Exception)
             {
-                Logging.warn(string.Format("Network client connection to {0}:{1} has failed.", hostname, port));
+                Logging.info("Network client connection to {0}:{1} has failed.", hostname, port);
                 running = false;
                 return false;
             }
 
-            Logging.info(string.Format("Network client connected to {0}:{1}", hostname, port));
+            Logging.info("Network client connected to {0}:{1}", hostname, port);
 
             start(tcpClient.Client);
             return true;

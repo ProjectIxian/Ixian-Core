@@ -164,7 +164,7 @@ namespace IXICore
         /// <summary>
         /// Maximum number of items to be read from inventory.
         /// </summary>
-        public static int maxInventoryItems = 2000;
+        public static int maxInventoryItems = 500;
 
         /// <summary>
         /// Interval at which to send inventory packets in seconds.
@@ -174,12 +174,12 @@ namespace IXICore
         /// <summary>
         /// Maximum number of keep alives to be included in the keep alive chunk.
         /// </summary>
-        public static int maximumKeepAlivesPerChunk = 1000;
+        public static int maximumKeepAlivesPerChunk = 500;
 
         /// <summary>
         /// Maximum number of transactions sent in each chunk when a fresh DLT Node is synchronizing. (Used in DLT Node executable.)
         /// </summary>
-        public static int maximumTransactionsPerChunk = 2000;
+        public static int maximumTransactionsPerChunk = 500;
 
         /// <summary>
         /// Maximum number of transactions to be included in the tx chunk.
