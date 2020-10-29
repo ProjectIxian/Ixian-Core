@@ -172,7 +172,7 @@ namespace IXICore.Inventory
                         {
                             continue;
                         }
-                        Logging.info("Processing " + types.Key + ": " + item.Value.lastRequested);
+                        Logging.trace("Processing inventory cache " + types.Key + ": " + item.Value.lastRequested);
                         items_to_process.Add(item.Value);
                     }
                 }

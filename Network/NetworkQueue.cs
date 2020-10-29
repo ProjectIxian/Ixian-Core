@@ -299,7 +299,7 @@ namespace IXICore.Network
 
                 if (message_found)
                 {
-                    //Logging.info("Received {0} ({1}B) - {2}...", active_message.code, active_message.data.Length, Crypto.hashToString(active_message.data.Take(60).ToArray()));
+                    Logging.trace("Received {0} ({1}B) - {2}...", active_message.code, active_message.data.Length, Crypto.hashToString(active_message.data.Take(60).ToArray()));
                     // Active message set, attempt to parse it
                     IxianHandler.parseProtocolMessage(active_message.code, active_message.data, active_message.endpoint);
                 }
@@ -336,7 +336,7 @@ namespace IXICore.Network
 
                 if (message_found)
                 {
-                    //Logging.info("Received {0} ({1}B) - {2}...", active_message.code, active_message.data.Length, Crypto.hashToString(active_message.data.Take(60).ToArray()));
+                    Logging.trace("Received {0} ({1}B) - {2}...", active_message.code, active_message.data.Length, Crypto.hashToString(active_message.data.Take(60).ToArray()));
                     // Active message set, attempt to parse it
                     IxianHandler.parseProtocolMessage(active_message.code, active_message.data, active_message.endpoint);
                 }

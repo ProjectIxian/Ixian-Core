@@ -16,19 +16,19 @@ namespace IXICore.Meta
         /// <summary>
         /// Trace messages - not required during normal operation.
         /// </summary>
-        trace = 0,
+        trace = 1,
         /// <summary>
         /// Informative messages - normal operation.
         /// </summary>
-        info = 1,
+        info = 2,
         /// <summary>
         /// Warning messages.
         /// </summary>
-        warn = 2,
+        warn = 4,
         /// <summary>
         /// Serious errors.
         /// </summary>
-        error = 3
+        error = 8
     }
 
     /// <summary>
@@ -67,6 +67,8 @@ namespace IXICore.Meta
         private static long currentLogSize = 0;
         private static ThreadLiveCheck TLC;
 
+        public static int verbosity = (int)LogSeverity.info + (int)LogSeverity.warn + (int)LogSeverity.error;
+
         private struct LogStatement
         {
             public LogSeverity severity;
@@ -80,7 +82,7 @@ namespace IXICore.Meta
         /// <summary>
         /// Initialize and start the logging thread.
         /// </summary>
-        public static bool start(string path)
+        public static bool start(string path, int verbosity)
         {
             if (running)
             {
@@ -90,6 +92,8 @@ namespace IXICore.Meta
             }
             try
             {
+                Logging.verbosity = verbosity;
+
                 // Obtain paths and cache them
                 folderpath = path;
                 logfilepath = Path.Combine(folderpath, logfilename);
@@ -165,6 +169,10 @@ namespace IXICore.Meta
         /// <param name="log_message">Text to write into the log.</param>
         public static void log(LogSeverity log_severity, string log_message)
         {
+            if((verbosity & (int)log_severity) != (int)log_severity)
+            {
+                return;
+            }
 
             if (running == false)
             {
