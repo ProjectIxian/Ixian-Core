@@ -170,10 +170,10 @@ namespace IXICore
                 byte[] signature = reader.ReadBytes(sigLen);
 
                 // Check the testnet designator and disconnect on mismatch
-                if (test_net != CoreConfig.isTestNet)
+                if (test_net != IxianHandler.isTestNet)
                 {
                     Logging.warn("Rejected node {0} due to incorrect testnet designator: {1}", endpoint.fullAddress, test_net);
-                    sendBye(endpoint, ProtocolByeCode.incorrectNetworkType, string.Format("Incorrect testnet designator: {0}. Should be {1}", test_net, CoreConfig.isTestNet), test_net.ToString(), true);
+                    sendBye(endpoint, ProtocolByeCode.incorrectNetworkType, string.Format("Incorrect testnet designator: {0}. Should be {1}", test_net, IxianHandler.isTestNet), test_net.ToString(), true);
                     return false;
                 }
 
@@ -398,10 +398,10 @@ namespace IXICore
                 }
 
                 // Check the testnet designator and disconnect on mismatch
-                if (test_net != CoreConfig.isTestNet)
+                if (test_net != IxianHandler.isTestNet)
                 {
                     Logging.warn("Rejected node {0} due to incorrect testnet designator: {1}", endpoint.fullAddress, test_net);
-                    sendBye(endpoint, ProtocolByeCode.incorrectNetworkType, string.Format("Incorrect testnet designator: {0}. Should be {1}", test_net, CoreConfig.isTestNet), test_net.ToString(), true);
+                    sendBye(endpoint, ProtocolByeCode.incorrectNetworkType, string.Format("Incorrect testnet designator: {0}. Should be {1}", test_net, IxianHandler.isTestNet), test_net.ToString(), true);
                     return false;
                 }
 
@@ -588,7 +588,7 @@ namespace IXICore
                     writer.Write(address);
 
                     // Send the testnet designator
-                    writer.Write(CoreConfig.isTestNet);
+                    writer.Write(IxianHandler.isTestNet);
 
                     char node_type = PresenceList.myPresenceType;
                     writer.Write(node_type);
@@ -709,7 +709,7 @@ namespace IXICore
                     writer.Write(address);
 
                     // Send the testnet designator
-                    writer.Write(CoreConfig.isTestNet);
+                    writer.Write(IxianHandler.isTestNet);
 
                     char node_type = PresenceList.myPresenceType;
                     writer.Write(node_type);

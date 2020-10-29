@@ -8,7 +8,7 @@ namespace IXICore
         /// <summary>
         /// Current version of IxiCore.
         /// </summary>
-        public static readonly string version = "xcore-0.7.5-dev";
+        public static readonly string version = "xcore-0.7.5-rc2";
 
         /// <summary>
         /// Current version of the Ixian network protocol.
@@ -120,11 +120,6 @@ namespace IXICore
         /// Command to execute when a new transaction is received for this wallet.
         /// </summary>
         public static string walletNotifyCommand = "";
-
-        /// <summary>
-        /// Testnet designator. If false the node can only connect to mainnet, if true it can only connect to testnet.
-        /// </summary>
-        public static bool isTestNet = false;
 
         /// <summary>
         /// Unique node identifier

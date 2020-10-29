@@ -396,15 +396,19 @@ namespace IXICore.Network
         /// <summary>
         ///  Helper function which returns a list of seed addresses based on the testnet parameter.
         /// </summary>
-        /// <param name="isTestNet">Indicator whether TestNet seed nodes should be returned (true), or MainNet (false).</param>
+        /// <param name="type">Type of the network for which to return list of hardcoded seed nodes.</param>
         /// <returns>List of connectable seed addresses.</returns>
-        public static List<string[]> getSeedNodes(bool isTestNet)
+        public static List<string[]> getSeedNodes(NetworkType type)
         {
-            if (isTestNet)
+            switch(type)
             {
-                return seedTestNetNodes;
+                case NetworkType.main:
+                    return seedNodes;
+
+                case NetworkType.test:
+                    return seedTestNetNodes;
             }
-            return seedNodes;
+            return new List<string[]>();
         }
 
         /// <summary>

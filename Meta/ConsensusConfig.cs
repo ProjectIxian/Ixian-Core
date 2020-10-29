@@ -214,41 +214,20 @@ namespace IXICore
             }
 
             IxiNumber reward = 0;
-            if (!CoreConfig.isTestNet)
+            if (current_supply > new IxiNumber("100000000000"))
             {
-                if (current_supply > new IxiNumber("100000000000"))
-                {
-                    reward = 1000;
-                }
-                else if (current_supply > new IxiNumber("50000000000"))
-                {
-                    // Set the annual inflation to 1% after 50bn IXIs in circulation 
-                    inflationPA = new IxiNumber("1");
-                    reward = current_supply * inflationPA / new IxiNumber("100000000"); // approximation of 2*60*24*365*100
-                }
-                else
-                {
-                    // Calculate the amount of new IXIs to be minted
-                    reward = current_supply * inflationPA / new IxiNumber("100000000"); // approximation of 2*60*24*365*100
-                }
+                reward = 1000;
+            }
+            else if (current_supply > new IxiNumber("50000000000"))
+            {
+                // Set the annual inflation to 1% after 50bn IXIs in circulation 
+                inflationPA = new IxiNumber("1");
+                reward = current_supply * inflationPA / new IxiNumber("100000000"); // approximation of 2*60*24*365*100
             }
             else
             {
-                if (current_supply > new IxiNumber("200000000000"))
-                {
-                    reward = 1000;
-                }
-                else if (current_supply > new IxiNumber("50000000000"))
-                {
-                    // Set the annual inflation to 1% after 50bn IXIs in circulation
-                    inflationPA = new IxiNumber("1");
-                    reward = current_supply * inflationPA / new IxiNumber("100000000"); // approximation of 2*60*24*365*100
-                }
-                else
-                {
-                    // Calculate the amount of new IXIs to be minted
-                    reward = current_supply * inflationPA / new IxiNumber("100000000"); // approximation of 2*60*24*365*100
-                }
+                // Calculate the amount of new IXIs to be minted
+                reward = current_supply * inflationPA / new IxiNumber("100000000"); // approximation of 2*60*24*365*100
             }
             return reward;
         }

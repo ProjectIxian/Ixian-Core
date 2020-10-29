@@ -1170,12 +1170,7 @@ namespace IXICore
 
             networkArray.Add("Core Version", CoreConfig.version);
             networkArray.Add("Node Version", CoreConfig.productVersion);
-            string netType = "mainnet";
-            if (CoreConfig.isTestNet)
-            {
-                netType = "testnet";
-            }
-            networkArray.Add("Network type", netType);
+            networkArray.Add("Network type", IxianHandler.networkType);
             networkArray.Add("My time", Clock.getTimestamp());
             networkArray.Add("Network time difference", Clock.networkTimeDifference);
             networkArray.Add("Real network time difference", Clock.realNetworkTimeDifference);

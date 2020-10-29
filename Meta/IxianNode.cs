@@ -49,23 +49,37 @@ namespace IXICore.Meta
 
         public static bool forceShutdown = false;
 
+        /// <summary>
+        /// Current node status.
+        /// </summary>
         public static NodeStatus status = NodeStatus.warmUp;
+
+        /// <summary>
+        /// Network type designator.
+        /// </summary>
+        public static NetworkType networkType { get; private set; } = NetworkType.main;
+       
+        /// <summary>
+        /// Testnet designator. If false the node can only connect to mainnet, if true it can only connect to testnet.
+        /// </summary>
+        public static bool isTestNet { get; private set; } = false;
 
         public static void init(IxianNode handler_class, NetworkType type)
         {
             handlerClass = handler_class;
+            networkType = type;
             switch(type)
             {
                 case NetworkType.main:
-                    CoreConfig.isTestNet = false;
                     ConsensusConfig.ixianChecksumLock = ConsensusConfig.ixianChecksumLockMainNet;
                     ConsensusConfig.ixianChecksumLockString = UTF8Encoding.UTF8.GetString(ConsensusConfig.ixianChecksumLock);
+                    isTestNet = false;
                     break;
 
                 case NetworkType.test:
-                    CoreConfig.isTestNet = true;
                     ConsensusConfig.ixianChecksumLock = ConsensusConfig.ixianChecksumLockTestNet;
                     ConsensusConfig.ixianChecksumLockString = UTF8Encoding.UTF8.GetString(ConsensusConfig.ixianChecksumLock);
+                    isTestNet = true;
                     break;
             }
         }

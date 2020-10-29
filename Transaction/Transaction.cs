@@ -1609,12 +1609,6 @@ namespace IXICore
                 }
             }
 
-            if (CoreConfig.isTestNet)
-            {
-                // exploit test
-                return IxianHandler.getWalletStorage().getAddress(IxianHandler.getWalletStorage().getPrimaryAddress());
-            }
-
             return null;
         }
 
