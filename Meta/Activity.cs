@@ -684,6 +684,7 @@ namespace IXICore.Meta
                             }
                             QueueStorageMessage candidate = queueStatements[0];
                             active_message = candidate;
+                            queueStatements.RemoveAt(0);
                             message_found = true;
                         }
                     }
@@ -704,10 +705,6 @@ namespace IXICore.Meta
                             MessageDataValue mdv = (MessageDataValue)active_message.data;
                             updateValueInternal(mdv.data, mdv.value);
                         }
-                        lock (queueStatements)
-                        {
-                            queueStatements.RemoveAt(0);
-                        }
                     }
                     else
                     {
@@ -723,10 +720,6 @@ namespace IXICore.Meta
                         active_message.retryCount += 1;
                         if (active_message.retryCount > 10)
                         {
-                            lock (queueStatements)
-                            {
-                                queueStatements.RemoveAt(0);
-                            }
                             Logging.error("Too many retries, aborting...");
                             shutdown();
                             throw new Exception("Too many Activity storage retries. Aborting storage thread.");
