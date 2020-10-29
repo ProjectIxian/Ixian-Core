@@ -1,8 +1,15 @@
 ﻿using IXICore.Network;
 using System;
+using System.Text;
 
 namespace IXICore.Meta
 {
+    public enum NetworkType
+    {
+        main = 0,
+        test = 1
+    }
+
     public enum NodeStatus
     {
         warmUp = 0, // when the node is warming up
@@ -44,9 +51,23 @@ namespace IXICore.Meta
 
         public static NodeStatus status = NodeStatus.warmUp;
 
-        public static void setHandler(IxianNode handler_class)
+        public static void init(IxianNode handler_class, NetworkType type)
         {
             handlerClass = handler_class;
+            switch(type)
+            {
+                case NetworkType.main:
+                    CoreConfig.isTestNet = false;
+                    ConsensusConfig.ixianChecksumLock = ConsensusConfig.ixianChecksumLockMainNet;
+                    ConsensusConfig.ixianChecksumLockString = UTF8Encoding.UTF8.GetString(ConsensusConfig.ixianChecksumLock);
+                    break;
+
+                case NetworkType.test:
+                    CoreConfig.isTestNet = true;
+                    ConsensusConfig.ixianChecksumLock = ConsensusConfig.ixianChecksumLockTestNet;
+                    ConsensusConfig.ixianChecksumLockString = UTF8Encoding.UTF8.GetString(ConsensusConfig.ixianChecksumLock);
+                    break;
+            }
         }
 
         private static void verifyHandler()

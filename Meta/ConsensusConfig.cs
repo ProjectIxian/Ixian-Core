@@ -114,11 +114,23 @@ namespace IXICore
         /// <summary>
         /// Initial value for seeding the Transaction SHA512 checksum generator.
         /// </summary>
-        public static readonly byte[] ixianChecksumLock = Encoding.UTF8.GetBytes("Ixian");
+        public static readonly byte[] ixianChecksumLockMainNet = Encoding.UTF8.GetBytes("Ixian");
+
+        /// <summary>
+        /// Initial value for seeding the Transaction SHA512 checksum generator for TestNet.
+        /// </summary>
+        public static readonly byte[] ixianChecksumLockTestNet = Encoding.UTF8.GetBytes("IxiTest");
+
+        /// <summary>
+        /// Initial value for seeding the Transaction SHA512 checksum generator.
+        /// </summary>
+        public static byte[] ixianChecksumLock = Encoding.UTF8.GetBytes("Ixian");
+
         /// <summary>
         /// Initial value for seeding various SHA512 checksums throughout Ixian.
         /// </summary>
-        public static readonly string ixianChecksumLockString = "Ixian";
+        public static string ixianChecksumLockString = "Ixian";
+
 
         /// <summary>
         /// Block height after which mining/PoW transactions are not accepted anymore.

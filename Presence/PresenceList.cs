@@ -652,7 +652,12 @@ namespace IXICore
 
                     // Add a verifiable signature
                     byte[] private_key = IxianHandler.getWalletStorage().getPrimaryPrivateKey();
-                    byte[] signature = CryptoManager.lib.getSignature(m.ToArray(), private_key);
+                    
+                    byte[] checksum = Crypto.sha512sq(m.ToArray());
+                    byte[] checksum_with_lock = new byte[ConsensusConfig.ixianChecksumLock.Length + checksum.Length];
+                    Array.Copy(ConsensusConfig.ixianChecksumLock, checksum_with_lock, ConsensusConfig.ixianChecksumLock.Length);
+                    Array.Copy(checksum, 0, checksum_with_lock, ConsensusConfig.ixianChecksumLock.Length, checksum.Length);
+                    byte[] signature = CryptoManager.lib.getSignature(checksum_with_lock, private_key);
                     writer.WriteIxiVarInt(signature.Length);
                     writer.Write(signature);
 
@@ -706,6 +711,8 @@ namespace IXICore
 
                         long checksum_data_len = 0;
 
+                        byte[] data_to_verify;
+
                         if (keepAliveVersion == 1)
                         {
                             // TODO temporary, remove after network upgrade
@@ -726,7 +733,10 @@ namespace IXICore
 
                             sigLen = reader.ReadInt32();
                             signature = reader.ReadBytes(sigLen);
-                        }else
+
+                            data_to_verify = bytes.Take((int)checksum_data_len).ToArray();
+                        }
+                        else
                         {
                             int walletLen = (int)reader.ReadIxiVarUInt();
                             wallet = reader.ReadBytes(walletLen);
@@ -745,6 +755,11 @@ namespace IXICore
 
                             sigLen = (int)reader.ReadIxiVarUInt();
                             signature = reader.ReadBytes(sigLen);
+
+                            byte[] checksum = Crypto.sha512sq(bytes.Take((int)checksum_data_len).ToArray());
+                            data_to_verify = new byte[ConsensusConfig.ixianChecksumLock.Length + checksum.Length];
+                            Array.Copy(ConsensusConfig.ixianChecksumLock, data_to_verify, ConsensusConfig.ixianChecksumLock.Length);
+                            Array.Copy(checksum, 0, data_to_verify, ConsensusConfig.ixianChecksumLock.Length, checksum.Length);
                         }
                         //Logging.info(String.Format("[PL] KEEPALIVE request from {0}", hostname));
 
@@ -806,7 +821,7 @@ namespace IXICore
                             }
 
                             // Verify the signature
-                            if (CryptoManager.lib.verifySignature(bytes.Take((int)checksum_data_len).ToArray(), listEntry.pubkey, signature) == false)
+                            if (CryptoManager.lib.verifySignature(data_to_verify, listEntry.pubkey, signature) == false)
                             {
                                 Logging.warn(string.Format("[PL] KEEPALIVE tampering for {0} {1}, incorrect Sig.", Base58Check.Base58CheckEncoding.EncodePlain(listEntry.wallet), hostname));
                                 return false;
