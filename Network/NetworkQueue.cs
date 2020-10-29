@@ -292,6 +292,8 @@ namespace IXICore.Network
                         // Pick the oldest message
                         active_message = queueMessages[0];
                         message_found = true;
+                        // Remove it from the queue
+                        queueMessages.RemoveAt(0);
                     }
                 }
 
@@ -300,11 +302,6 @@ namespace IXICore.Network
                     Logging.info("Received {0} ({1}B) - {2}...", active_message.code, active_message.data.Length, Crypto.hashToString(active_message.data.Take(60).ToArray()));
                     // Active message set, attempt to parse it
                     IxianHandler.parseProtocolMessage(active_message.code, active_message.data, active_message.endpoint);
-                    lock (queueMessages)
-                    {
-                        // Remove it from the queue
-                        queueMessages.RemoveAt(0);
-                    }
                 }
                 else
                 {
@@ -332,6 +329,8 @@ namespace IXICore.Network
                         // Pick the oldest message
                         active_message = txqueueMessages[0];
                         message_found = true;
+                        // Remove it from the queue
+                        txqueueMessages.RemoveAt(0);
                     }
                 }
 
@@ -340,11 +339,6 @@ namespace IXICore.Network
                     Logging.info("Received {0} ({1}B) - {2}...", active_message.code, active_message.data.Length, Crypto.hashToString(active_message.data.Take(60).ToArray()));
                     // Active message set, attempt to parse it
                     IxianHandler.parseProtocolMessage(active_message.code, active_message.data, active_message.endpoint);
-                    lock (txqueueMessages)
-                    {
-                        // Remove it from the queue
-                        txqueueMessages.RemoveAt(0);
-                    }
                 }
                 else
                 {

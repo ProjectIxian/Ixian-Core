@@ -233,6 +233,11 @@ namespace IXICore.Network
                 subscribedFilters.Clear();
             }
 
+            lock(inventory)
+            {
+                inventory.Clear();
+            }
+
             // Abort all related threads
             if (recvThread != null)
             {
@@ -377,6 +382,7 @@ namespace IXICore.Network
                 }
                 catch (Exception)
                 {
+                    state = RemoteEndpointState.Closed;
                     running = false;
                 }
             }
@@ -397,6 +403,9 @@ namespace IXICore.Network
             long lastSentMessageStatTime = Clock.getTimestampMillis();
 
             int messageCount = 0;
+
+            lastDataReceivedTime = Clock.getTimestamp();
+            lastDataSentTime = Clock.getTimestamp();
 
             while (running)
             {
@@ -485,6 +494,7 @@ namespace IXICore.Network
                     if(active_message.code == ProtocolMessageCode.bye)
                     {
                         Thread.Sleep(500); // grace sleep to get the message through
+                        state = RemoteEndpointState.Closed;
                         running = false;
                         fullyStopped = true;
                     }
@@ -590,10 +600,12 @@ namespace IXICore.Network
                 catch (ThreadAbortException)
                 {
                     state = RemoteEndpointState.Closed;
+                    running = false;
                 }
                 catch (Exception e)
                 {
                     state = RemoteEndpointState.Closed;
+                    running = false;
                     Logging.error("Exception occured for client {0} in parseLoopRE: {1} ", getFullAddress(), e);
                 }
             }
@@ -626,11 +638,13 @@ namespace IXICore.Network
 
                     int curSentBytes = clientSocket.Send(ba, sentBytes, bytesToSendCount, SocketFlags.None);
 
-                    lastDataSentTime = Clock.getTimestamp();
-
+                    if(curSentBytes > 0)
+                    {
+                        lastDataSentTime = Clock.getTimestamp();
+                    }
 
                     // Sleep a bit to allow other threads to do their thing
-                    if(curSentBytes < bytesToSendCount)
+                    if (curSentBytes < bytesToSendCount)
                     {
                         Thread.Sleep(1);
                     }
@@ -645,6 +659,7 @@ namespace IXICore.Network
                         Logging.warn(String.Format("sendRE: Failed senddata to remote endpoint {0}, Closing.", getFullAddress()));
                     }
                     state = RemoteEndpointState.Closed;
+                    running = false;
                 }
             }
             catch (SocketException se)
@@ -660,10 +675,12 @@ namespace IXICore.Network
                     }
                 }
                 state = RemoteEndpointState.Closed;
+                running = false;
             }
             catch (ThreadAbortException)
             {
                 state = RemoteEndpointState.Closed;
+                running = false;
             }
             catch (Exception e)
             {
@@ -672,7 +689,7 @@ namespace IXICore.Network
                     Logging.warn("sendRE: Socket exception for {0}, closing. {1}", getFullAddress(), e);
                 }
                 state = RemoteEndpointState.Closed;
-
+                running = false;
             }
         }
 
@@ -1220,7 +1237,7 @@ namespace IXICore.Network
                 return null;
             }
 
-            using (MemoryStream m = new MemoryStream(4096))
+            using (MemoryStream m = new MemoryStream(12))
             {
                 using (BinaryWriter writer = new BinaryWriter(m))
                 {

@@ -113,6 +113,9 @@ namespace IXICore.Network
             catch (Exception)
             {
                 Logging.info("Network client connection to {0}:{1} has failed.", hostname, port);
+
+                disconnect();
+
                 running = false;
                 return false;
             }

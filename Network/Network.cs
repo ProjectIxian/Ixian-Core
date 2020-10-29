@@ -573,13 +573,14 @@ namespace IXICore.Network
                 temp.Client.SendTimeout = 500;
                 temp.Client.ReceiveTimeout = 500;
                 temp.Client.Blocking = false;
-                temp.Client.Send(new byte[1], 0, 0);
+                temp.Client.Send(new byte[1], 1, 0);
                 connected = temp.Client.Connected;
                 temp.Client.Send(RemoteEndpoint.prepareProtocolMessage(ProtocolMessageCode.bye, new byte[1], CoreConfig.protocolVersion, 0));
                 temp.Client.Shutdown(SocketShutdown.Both);
                 temp.Close();
+                temp.Dispose();
             }
-            catch (SocketException) { connected = false; }
+            catch (Exception) { connected = false; }
             return connected;
         }
 
