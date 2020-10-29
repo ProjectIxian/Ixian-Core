@@ -82,7 +82,7 @@ namespace IXICore.Meta
         /// <summary>
         /// Initialize and start the logging thread.
         /// </summary>
-        public static bool start(string path, int verbosity)
+        public static bool start(string path, int verbosity = 14)
         {
             if (running)
             {
