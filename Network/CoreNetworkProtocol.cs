@@ -996,7 +996,7 @@ namespace IXICore
         /// <param name="endpoint">Target endpoint to verify for connectivity.</param>
         public static void subscribeToEvents(RemoteEndpoint endpoint)
         {
-            if (endpoint.presenceAddress.type != 'M')
+            if (endpoint.presenceAddress.type != 'M' && endpoint.presenceAddress.type != 'H')
             {
                 return;
             }
