@@ -211,6 +211,7 @@ namespace IXICore
             {
                 using (MemoryStream m = new MemoryStream())
                 {
+                    byte[] data_to_verify = null;
                     using (BinaryWriter writer = new BinaryWriter(m))
                     {
                         if(version == 1)
@@ -223,6 +224,8 @@ namespace IXICore
                             writer.Write(lastSeenTime);
                             writer.Write(address);
                             writer.Write(type);
+
+                            data_to_verify = m.ToArray();
                         }
                         else
                         {
@@ -234,12 +237,16 @@ namespace IXICore
                             writer.WriteIxiVarInt(lastSeenTime);
                             writer.Write(address);
                             writer.Write(type);
+
+                            byte[] checksum = Crypto.sha512sq(m.ToArray());
+                            data_to_verify = new byte[ConsensusConfig.ixianChecksumLock.Length + checksum.Length];
+                            Array.Copy(ConsensusConfig.ixianChecksumLock, data_to_verify, ConsensusConfig.ixianChecksumLock.Length);
+                            Array.Copy(checksum, 0, data_to_verify, ConsensusConfig.ixianChecksumLock.Length, checksum.Length);
                         }
                     }
 
-                    byte[] bytes = m.ToArray();
                     // Verify the signature
-                    if (CryptoManager.lib.verifySignature(bytes, pub_key, signature))
+                    if (CryptoManager.lib.verifySignature(data_to_verify, pub_key, signature))
                     {
                         return true;
                     }
