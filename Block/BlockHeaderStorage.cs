@@ -338,6 +338,8 @@ namespace IXICore
 
                 FileStream fs = getStorageFile(db_path, true);
 
+                fs.Seek(0, SeekOrigin.Begin);
+
                 byte[] block_header_len_bytes = new byte[4];
                 fs.Read(block_header_len_bytes, 0, 4);
 

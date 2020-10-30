@@ -106,7 +106,7 @@ namespace IXICore
                 lastRequestedBlockTime = currentTime;
 
                 // request next blocks
-                requestBlockHeaders(lastBlockHeader.blockNum, lastBlockHeader.blockNum + 500);
+                requestBlockHeaders(lastBlockHeader.blockNum + 1, lastBlockHeader.blockNum + 500);
 
                 return true;
             }
