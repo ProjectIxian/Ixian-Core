@@ -121,7 +121,7 @@ namespace IXICore
         /// <param name="endpoint">Remote endpoint from which the message was received.</param>
         /// <param name="reader">Reader object placed at the beginning of the hello message data.</param>
         /// <returns>True if the message was formatted properly and accepted.</returns>
-        public static bool processHelloMessageV5(RemoteEndpoint endpoint, BinaryReader reader)
+        public static bool processHelloMessageV5(RemoteEndpoint endpoint, BinaryReader reader, bool set_hello_received = true)
         {
             // Node already has a presence
             if (endpoint.presence != null)
@@ -305,7 +305,10 @@ namespace IXICore
                     byte[] challenge_response = CryptoManager.lib.getSignature(challenge, IxianHandler.getWalletStorage().getPrimaryPrivateKey());
 
                     sendHelloMessageV5(endpoint, true, challenge_response);
-                    endpoint.helloReceived = true;
+                    if(set_hello_received)
+                    {
+                        endpoint.helloReceived = true;
+                    }
                 }
 
 
@@ -340,7 +343,7 @@ namespace IXICore
         /// <param name="endpoint">Remote endpoint from which the message was received.</param>
         /// <param name="reader">Reader object placed at the beginning of the hello message data.</param>
         /// <returns>True if the message was formatted properly and accepted.</returns>
-        public static bool processHelloMessageV6(RemoteEndpoint endpoint, BinaryReader reader)
+        public static bool processHelloMessageV6(RemoteEndpoint endpoint, BinaryReader reader, bool set_hello_received = true)
         {
             // Node already has a presence
             if (endpoint.presence != null)
@@ -537,7 +540,10 @@ namespace IXICore
                     }
 
                     sendHelloMessageV6(endpoint, true, challenge);
-                    endpoint.helloReceived = true;
+                    if (set_hello_received)
+                    {
+                        endpoint.helloReceived = true;
+                    }
                 }
 
 
