@@ -57,6 +57,10 @@ namespace IXICore.Network
         /// </summary>
         addressMismatch = 604,
         /// <summary>
+        ///  The connecting node has been rejected.
+        /// </summary>
+        rejected = 605,
+        /// <summary>
         ///  The serving node isn't ready yet
         /// </summary>
         notReady = 700
@@ -579,7 +583,7 @@ namespace IXICore.Network
                 temp.Client.Blocking = false;
                 temp.Client.Send(new byte[1], 1, 0);
                 connected = temp.Client.Connected;
-                temp.Client.Send(RemoteEndpoint.prepareProtocolMessage(ProtocolMessageCode.bye, new byte[1], CoreConfig.protocolVersion, 0));
+                CoreProtocolMessage.sendBye(temp.Client, ProtocolByeCode.bye, "Test OK", "");
                 temp.Client.Shutdown(SocketShutdown.Both);
                 temp.Close();
                 temp.Dispose();

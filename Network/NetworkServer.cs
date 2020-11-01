@@ -487,7 +487,7 @@ namespace IXICore.Network
 
             if (!IxianHandler.isAcceptingConnections())
             {
-                clientSocket.Send(RemoteEndpoint.prepareProtocolMessage(ProtocolMessageCode.bye, new byte[1], CoreConfig.protocolVersion, 0));
+                CoreProtocolMessage.sendBye(clientSocket, ProtocolByeCode.notReady, string.Format("The node isn't ready yet, please try again later."), "");
                 clientSocket.Shutdown(SocketShutdown.Both);
                 clientSocket.Disconnect(true);
                 return;
@@ -505,7 +505,7 @@ namespace IXICore.Network
                 {
                     Logging.warn("Maximum number of connected clients reached. Disconnecting client: {0}:{1}",
                         clientEndpoint.Address.ToString(), clientEndpoint.Port);
-                    clientSocket.Send(RemoteEndpoint.prepareProtocolMessage(ProtocolMessageCode.bye, new byte[1], CoreConfig.protocolVersion, 0));
+                    CoreProtocolMessage.sendBye(clientSocket, ProtocolByeCode.rejected, "Too many clients already connected.", "");
                     clientSocket.Shutdown(SocketShutdown.Both);
                     clientSocket.Disconnect(true);
                     return;
@@ -516,7 +516,7 @@ namespace IXICore.Network
                 {
                     Logging.warn("Client {0}:{1} already connected as {2}.",
                         clientEndpoint.Address.ToString(), clientEndpoint.Port, existing_clients.First().ToString());
-                    clientSocket.Send(RemoteEndpoint.prepareProtocolMessage(ProtocolMessageCode.bye, new byte[1], CoreConfig.protocolVersion, 0));
+                    CoreProtocolMessage.sendBye(clientSocket, ProtocolByeCode.rejected, "You are already connected.", "");
                     clientSocket.Shutdown(SocketShutdown.Both);
                     clientSocket.Disconnect(true);
                     return;

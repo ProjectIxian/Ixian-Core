@@ -7,6 +7,8 @@ using System;
 using System.Collections.Generic;
 using System.IO;
 using System.Linq;
+using System.Net;
+using System.Net.Sockets;
 using System.Text;
 
 namespace IXICore
@@ -48,6 +50,36 @@ namespace IXICore
                     PresenceList.removeAddressEntry(endpoint.presence.wallet, endpoint.presenceAddress);
                 }
                 //PeerStorage.removePeer(endpoint.getFullAddress(true));
+            }
+        }
+
+        /// <summary>
+        /// Prepares and sends the disconnect message to the specified remote endpoint.
+        /// </summary>
+        /// <param name="endpoint">Remote client.</param>
+        /// <param name="code">Disconnection reason.</param>
+        /// <param name="message">Optional text message for the user of the remote client.</param>
+        /// <param name="data">Optional payload to further explain the disconnection reason.</param>
+        /// <param name="removeAddressEntry">If true, the remote address will be removed from the `PresenceList`.</param>
+        public static void sendBye(Socket socket, ProtocolByeCode code, string message, string data)
+        {
+            using (MemoryStream m2 = new MemoryStream())
+            {
+                using (BinaryWriter writer = new BinaryWriter(m2))
+                {
+                    writer.Write((int)code);
+                    writer.Write(message);
+                    writer.Write(data);
+#if TRACE_MEMSTREAM_SIZES
+                    Logging.info(String.Format("CoreProtocolMessage::sendBye: {0}", m2.Length));
+#endif
+
+                    socket.Send(RemoteEndpoint.prepareProtocolMessage(ProtocolMessageCode.bye, m2.ToArray(), CoreConfig.protocolVersion, 0));
+
+                    IPEndPoint remoteIP = (IPEndPoint)socket.RemoteEndPoint;
+                    string address = remoteIP.Address.ToString() + ":" + remoteIP.Port;
+                    Logging.info("Sending bye to {0} with message '{1}' and data '{2}'", address, message, data);
+                }
             }
         }
 
@@ -190,7 +222,7 @@ namespace IXICore
                 if (PeerStorage.isBlacklisted(addr) || PeerStorage.isBlacklisted(endpoint.getFullAddress(true)))
                 {
                     Logging.warn("Hello: Connected node is blacklisted ({0} - {1}).", endpoint.getFullAddress(true), Base58Check.Base58CheckEncoding.EncodePlain(addr));
-                    sendBye(endpoint, ProtocolByeCode.bye, "Blacklisted", "", true);
+                    sendBye(endpoint, ProtocolByeCode.rejected, "Blacklisted", "", true);
                     return false;
                 }
 
@@ -421,7 +453,7 @@ namespace IXICore
                 if (PeerStorage.isBlacklisted(addr) || PeerStorage.isBlacklisted(endpoint.getFullAddress(true)))
                 {
                     Logging.warn("Hello: Connected node is blacklisted ({0} - {1}).", endpoint.getFullAddress(true), Base58Check.Base58CheckEncoding.EncodePlain(addr));
-                    sendBye(endpoint, ProtocolByeCode.bye, "Blacklisted", "", true);
+                    sendBye(endpoint, ProtocolByeCode.rejected, "Blacklisted", "", true);
                     return false;
                 }
 
@@ -987,7 +1019,7 @@ namespace IXICore
             if (CoreNetworkUtils.PingAddressReachable(hostname) == false)
             {
                 Logging.warn("Node {0} was not reachable on the advertised address.", hostname);
-                CoreProtocolMessage.sendBye(endpoint, ProtocolByeCode.notConnectable, "External " + hostname + " not reachable!", "");
+                sendBye(endpoint, ProtocolByeCode.notConnectable, "External " + hostname + " not reachable!", "");
                 return false;
             }
             return true;
@@ -1123,33 +1155,28 @@ namespace IXICore
                             case ProtocolByeCode.bye: // all good
                                 break;
 
-                            case ProtocolByeCode.deprecated: // deprecated node disconnected
-                                Logging.info(string.Format("Disconnected with message: {0} {1}", byeMessage, byeData));
-                                break;
-
                             case ProtocolByeCode.incorrectIp: // incorrect IP
                                 if (IxiUtils.validateIPv4(byeData))
                                 {
                                     if (NetworkClientManager.getConnectedClients(true).Length < 2)
                                     {
                                         IxianHandler.publicIP = byeData;
-                                        Logging.info("Changed internal IP Address to " + byeData + ", reconnecting");
+                                        Logging.warn("Changed internal IP Address to " + byeData + ", reconnecting");
                                     }
                                 }
                                 break;
 
                             case ProtocolByeCode.notConnectable: // not connectable from the internet
-                                Logging.error("This node must be connectable from the internet, to connect to the network.");
-                                Logging.error("Please setup uPNP and/or port forwarding on your router for port " + IxianHandler.publicPort + ".");
                                 NetworkServer.connectable = false;
-                                break;
-
-                            case ProtocolByeCode.insufficientFunds:
-                                Logging.info("Insufficient funds to connect as master node.");
+                                if (!NetworkServer.isConnectable())
+                                {
+                                    Logging.error("This node must be connectable from the internet, to connect to the network.");
+                                    Logging.error("Please setup uPNP and/or port forwarding on your router for port " + IxianHandler.publicPort + ".");
+                                }
                                 break;
 
                             default:
-                                Logging.warn(string.Format("Disconnected with message: {0} {1}", byeMessage, byeData));
+                                Logging.warn("Disconnected with message: {0} {1} {2}", byeCode.ToString(), byeMessage, byeData);
                                 break;
                         }
                     }
@@ -1168,9 +1195,9 @@ namespace IXICore
                     string message = reader.ReadString();
 
                     if (message.Length > 0)
-                        Logging.info(string.Format("Disconnected with message: {0}", message));
+                        Logging.warn("Disconnected with v0 message: {0}", message);
                     else
-                        Logging.info("Disconnected");
+                        Logging.warn("Disconnected v0");
                 }
             }
         }
