@@ -27,7 +27,6 @@ namespace IXICore.Inventory
 
     abstract class InventoryCache
     {
-        protected int maxInventoryItems = 600000;
         protected int maxRetryCount = 5;
         protected int pendingTimeOut = 200;
         protected Dictionary<InventoryItemTypes, Dictionary<byte[], PendingInventoryItem>> inventory = null;
@@ -60,21 +59,18 @@ namespace IXICore.Inventory
         {
             lock (inventory)
             {
-                var inventory_types = inventory[item.type];
-                if (!inventory_types.ContainsKey(item.hash))
+                var inventory_list = inventory[item.type];
+                if (!inventory_list.ContainsKey(item.hash))
                 {
                     PendingInventoryItem pii = new PendingInventoryItem(item);
                     pii.endpoints.Add(endpoint);
-                    inventory_types.Add(item.hash, pii);
-                    if(inventory_types.Count() > maxInventoryItems)
-                    {
-                        inventory_types.Remove(inventory_types.Keys.First());
-                    }
+                    inventory_list.Add(item.hash, pii);
+                    truncateInventory(item.type);
                     return pii;
                 }
                 else
                 {
-                    PendingInventoryItem pii = inventory_types[item.hash];
+                    PendingInventoryItem pii = inventory_list[item.hash];
                     pii.item = item;
                     if (!pii.endpoints.Contains(endpoint))
                     {
@@ -191,9 +187,12 @@ namespace IXICore.Inventory
                 {
                     if(processed)
                     {
-                        inventory[type].Add(hash, new PendingInventoryItem(new InventoryItem(type, hash)) { processed = processed });
+                        var inventory_list = inventory[type];
+                        inventory_list.Add(hash, new PendingInventoryItem(new InventoryItem(type, hash)) { processed = processed });
+                        truncateInventory(type);
                     }
-                }else
+                }
+                else
                 {
                     inventory[type][hash].processed = processed;
                     return true;
@@ -212,6 +211,31 @@ namespace IXICore.Inventory
                 count += type.Value.Count();
             }
             return count;
+        }
+
+        protected void truncateInventory(InventoryItemTypes type)
+        {
+            var inventory_list = inventory[type];
+            int max_items = 100000;
+            switch(type)
+            {
+                case InventoryItemTypes.block:
+                    max_items = 100;
+                    break;
+
+                case InventoryItemTypes.blockSignature:
+                    max_items = 200000;
+                    break;
+
+                case InventoryItemTypes.transaction:
+                case InventoryItemTypes.keepAlive:
+                    max_items = 600000;
+                    break;
+            }
+            if (inventory_list.Count() > max_items)
+            {
+                inventory_list.Remove(inventory_list.Keys.First());
+            }
         }
     }
 }
