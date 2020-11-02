@@ -16,8 +16,16 @@ namespace IXICore
 
         private static int initialConnectionCount = 0;
 
-        public static void init(string path, string filename = "peers.ixi")
+        public static void init(string path, string filename = "")
         {
+            if(filename == "")
+            {
+                filename = "peers.ixi";
+                if(IxianHandler.isTestNet)
+                {
+                    filename = "testnet-peers.ixi";
+                }
+            }
             // Obtain paths and cache them
             folderPath = path;
             fullPeersPath = Path.Combine(folderPath, filename);

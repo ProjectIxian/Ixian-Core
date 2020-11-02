@@ -190,7 +190,7 @@ namespace IXICore.Meta
 
     public class ActivityStorage
     {
-        public static string filename = "activity.dat";
+        private static string filename = "activity.dat";
 
         // Sql connections
         private static SQLiteConnection sqlConnection = null;
@@ -231,9 +231,18 @@ namespace IXICore.Meta
         // Maintain a queue of sql statements
         private static readonly List<QueueStorageMessage> queueStatements = new List<QueueStorageMessage>();
         
-        public static bool prepareStorage()
+        public static bool prepareStorage(string filename = "")
         {
             running = true;
+            if(filename == "")
+            {
+                filename = "activity.dat";
+                if (IxianHandler.isTestNet)
+                {
+                    filename = "testnet-activity.dat";
+                }
+            }
+            ActivityStorage.filename = filename;
             if (!prepareStorageInternal())
             {
                 running = false;
@@ -293,7 +302,7 @@ namespace IXICore.Meta
                 {
                     sqlConnection.Close();
                     File.Delete(filename);
-                    return prepareStorage();
+                    return prepareStorage(filename);
                 }
             }
 

@@ -29,6 +29,12 @@ namespace IXICore
             if (storage_path != "")
             {
                 path = storage_path;
+            }else
+            {
+                if(IxianHandler.isTestNet)
+                {
+                    path = "testnet-headers";
+                }
             }
             string db_path = path + Path.DirectorySeparatorChar + "0000";
             if (!Directory.Exists(db_path))
