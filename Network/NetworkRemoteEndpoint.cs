@@ -981,28 +981,33 @@ namespace IXICore.Network
                     lastDataReceivedTime = Clock.getTimestamp();
                     if (cur_header_len == 0)
                     {
-                        if (socketReadBuffer[0] == 'X') // X is the message start byte
+                        switch(socketReadBuffer[0])
                         {
-                            header[0] = socketReadBuffer[0];
-                            cur_header_len = 1;
-                            bytes_to_read = old_header_len - 1; // header length - start byte
-                            expected_header_len = old_header_len;
-                            version = 5;
-                        }
-                        else if (socketReadBuffer[0] == 0xEA) // 0xEA is the message start byte of v2 base protocol
-                        {
-                            header[0] = socketReadBuffer[0];
-                            cur_header_len = 1;
-                            bytes_to_read = new_header_len - 1; // header length - start byte
-                            expected_header_len = new_header_len;
-                            version = 6;
-                        }
-                        else if (timeSyncComplete == false)
-                        {
-                            if (socketReadBuffer[0] == 2)
-                            {
-                                readTimeSyncData();
-                            }
+                            case 0x58: // 'X' is the message start byte of v5
+                                header[0] = socketReadBuffer[0];
+                                cur_header_len = 1;
+                                bytes_to_read = old_header_len - 1; // header length - start byte
+                                expected_header_len = old_header_len;
+                                version = 5;
+                                break;
+
+                            case 0xEA: // 0xEA is the message start byte of v6 base protocol
+                                header[0] = socketReadBuffer[0];
+                                cur_header_len = 1;
+                                bytes_to_read = new_header_len - 1; // header length - start byte
+                                expected_header_len = new_header_len;
+                                version = 6;
+                                break;
+
+                            case 0x02: // 0x02 is the timesync
+                                if (timeSyncComplete == false)
+                                {
+                                    readTimeSyncData();
+                                }
+                                break;
+
+                            /*case 0x01: // 0x01 is ping; doesn't need any special handling
+                                break;*/
                         }
                         continue;
                     }
