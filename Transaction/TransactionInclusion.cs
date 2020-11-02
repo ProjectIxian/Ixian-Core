@@ -40,7 +40,19 @@ namespace IXICore
         {
         }
 
-        public void start(string block_header_storage_path = "", ulong starting_block_height = 1, byte[] starting_block_checksum = null)
+        public void start(string block_header_storage_path = "")
+        {
+            ulong block_height = 0;
+            byte[] block_checksum = null;
+            if(!IxianHandler.isTestNet)
+            {
+                block_height = CoreConfig.bakedBlockHeight;
+                block_checksum = CoreConfig.bakedBlockChecksum;
+            }
+            start(block_header_storage_path, block_height, block_checksum);
+        }
+
+        public void start(string block_header_storage_path, ulong starting_block_height, byte[] starting_block_checksum)
         {
             if (running)
             {
