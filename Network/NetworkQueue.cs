@@ -305,8 +305,8 @@ namespace IXICore.Network
                 }
                 else
                 {
-                    // Sleep for 1ms to prevent cpu waste
-                    Thread.Sleep(1);
+                    // Sleep for 10ms to prevent cpu waste
+                    Thread.Sleep(10);
                 }
             }
             Logging.info("Network queue thread stopped.");

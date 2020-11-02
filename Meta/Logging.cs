@@ -273,9 +273,10 @@ namespace IXICore.Meta
                     // Sleep for 25ms to prevent cpu waste
                     Thread.Sleep(25);
                 }
-                if(Clock.getTimestamp() - last_flush > 1)
+                long cur_time = Clock.getTimestamp();
+                if (cur_time - last_flush > 1)
                 {
-                    last_flush = Clock.getTimestamp();
+                    last_flush = cur_time;
                     lock(logfilename)
                     {
                         if(logFileStream != null)

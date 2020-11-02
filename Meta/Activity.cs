@@ -711,8 +711,8 @@ namespace IXICore.Meta
                     }
                     else
                     {
-                        // Sleep for 10ms to yield CPU schedule slot
-                        Thread.Sleep(10);
+                        // Sleep for 50ms to yield CPU schedule slot
+                        Thread.Sleep(50);
                     }
                 }
                 catch (Exception e)

@@ -340,7 +340,7 @@ namespace IXICore.Network
                 }
                 else if(!message_received)
                 {
-                    Thread.Sleep(1);
+                    Thread.Sleep(10);
                 }
             }
         }
@@ -516,7 +516,7 @@ namespace IXICore.Network
                 }
                 else if (!message_found)
                 {
-                    Thread.Sleep(1);
+                    Thread.Sleep(10);
                 }
             }
         }
@@ -538,11 +538,12 @@ namespace IXICore.Network
                 {
                     return;
                 }
-                if (inventory.Count() < CoreConfig.maxInventoryItems && inventoryLastSent > Clock.getTimestamp() - CoreConfig.inventoryInterval)
+                long cur_time = Clock.getTimestamp();
+                if (inventory.Count() < CoreConfig.maxInventoryItems && inventoryLastSent > cur_time - CoreConfig.inventoryInterval)
                 {
                     return;
                 }
-                inventoryLastSent = Clock.getTimestamp();
+                inventoryLastSent = cur_time;
                 items_to_send = inventory.Take(CoreConfig.maxInventoryItems);
                 inventory = inventory.Skip(CoreConfig.maxInventoryItems).ToList();
             }
@@ -593,7 +594,7 @@ namespace IXICore.Network
                     }
                     else
                     {
-                        Thread.Sleep(1);
+                        Thread.Sleep(10);
                     }
 
                 }
@@ -907,8 +908,12 @@ namespace IXICore.Network
             int rcv_count = 8;
             for (int i = 0; i < rcv_count && running;)
             {
-                i += socket.Receive(socketReadBuffer, i, rcv_count - i, SocketFlags.None);
-                Thread.Sleep(1);
+                int rcvd_count = socket.Receive(socketReadBuffer, i, rcv_count - i, SocketFlags.None);
+                i += rcvd_count;
+                if (rcvd_count <= 0)
+                {
+                    Thread.Sleep(1);
+                }
             }
             lock (timeSyncs)
             {
