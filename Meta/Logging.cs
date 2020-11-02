@@ -278,7 +278,10 @@ namespace IXICore.Meta
                     last_flush = Clock.getTimestamp();
                     lock(logfilename)
                     {
-                        logFileStream.Flush();
+                        if(logFileStream != null)
+                        {
+                            logFileStream.Flush();
+                        }
                     }
                 }
             }
@@ -426,13 +429,19 @@ namespace IXICore.Meta
             {
                 lock(logfilename)
                 {
-                    logFileStream.Flush();
+                    if (logFileStream != null)
+                    {
+                        logFileStream.Flush();
+                    }
                 }
                 Thread.Sleep(100);
             }
             lock (logfilename)
             {
-                logFileStream.Flush();
+                if (logFileStream != null)
+                {
+                    logFileStream.Flush();
+                }
             }
         }
 
