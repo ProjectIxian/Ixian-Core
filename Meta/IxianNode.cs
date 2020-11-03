@@ -155,19 +155,13 @@ namespace IXICore.Meta
 
         public static void receivedTransactionInclusionVerificationResponse(string txid, bool verified)
         {
-            if (handlerClass == null)
-            {
-                throw new Exception("Handler Class must be specified in IxianHandler Class");
-            }
+            verifyHandler();
             handlerClass.receivedTransactionInclusionVerificationResponse(txid, verified);
         }
 
         public static void receivedBlockHeader(BlockHeader block_header, bool verified)
         {
-            if (handlerClass == null)
-            {
-                throw new Exception("Handler Class must be specified in IxianHandler Class");
-            }
+            verifyHandler();
             handlerClass.receivedBlockHeader(block_header, verified);
         }
 
