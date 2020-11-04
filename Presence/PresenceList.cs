@@ -557,13 +557,8 @@ namespace IXICore
                 try
                 {
                     byte[] ka_bytes = null;
-                    if(CoreConfig.protocolVersion == 5)
-                    {
-                        ka_bytes = keepAlive_v1();
-                    }else
-                    {
-                        ka_bytes = keepAlive_v2();
-                    }
+                    // TODO enable v2 manually once clients upgrade to new IxiCore
+                    ka_bytes = keepAlive_v1();
 
                     byte[] address = null;
                     long last_seen = 0;

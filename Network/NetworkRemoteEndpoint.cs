@@ -87,7 +87,7 @@ namespace IXICore.Network
 
         public byte[] challenge = null;
 
-        public int version = 5;
+        public int version = 6;
 
         protected void prepareSocket(Socket socket)
         {
