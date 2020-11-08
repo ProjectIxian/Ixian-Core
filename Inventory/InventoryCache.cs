@@ -25,11 +25,16 @@ namespace IXICore.Inventory
         }
     }
 
+    class InventoryTypeTimeout
+    {
+        public int maxRetries = 5;
+        public int timeout = 200;
+    }
+
     abstract class InventoryCache
     {
-        protected int maxRetryCount = 5;
-        protected int pendingTimeOut = 200;
         protected Dictionary<InventoryItemTypes, Dictionary<byte[], PendingInventoryItem>> inventory = null;
+        protected Dictionary<InventoryItemTypes, InventoryTypeTimeout> type_timeouts = null;
 
         Random rnd = new Random();
 
@@ -40,6 +45,12 @@ namespace IXICore.Inventory
             inventory.Add(InventoryItemTypes.blockSignature, new Dictionary<byte[], PendingInventoryItem>(new ByteArrayComparer()));
             inventory.Add(InventoryItemTypes.keepAlive, new Dictionary<byte[], PendingInventoryItem>(new ByteArrayComparer()));
             inventory.Add(InventoryItemTypes.transaction, new Dictionary<byte[], PendingInventoryItem>(new ByteArrayComparer()));
+
+            type_timeouts = new Dictionary<InventoryItemTypes, InventoryTypeTimeout>();
+            type_timeouts.Add(InventoryItemTypes.block, new InventoryTypeTimeout() { maxRetries = 5, timeout = 200 });
+            type_timeouts.Add(InventoryItemTypes.blockSignature, new InventoryTypeTimeout() { maxRetries = 5, timeout = 5 });
+            type_timeouts.Add(InventoryItemTypes.keepAlive, new InventoryTypeTimeout() { maxRetries = 2, timeout = 30 });
+            type_timeouts.Add(InventoryItemTypes.transaction, new InventoryTypeTimeout() { maxRetries = 5, timeout = 200 });
         }
 
         public PendingInventoryItem get(InventoryItemTypes type, byte[] hash)
@@ -131,7 +142,7 @@ namespace IXICore.Inventory
                     if(sendInventoryRequest(pii.item, endpoint))
                     {
                         pii.lastRequested = Clock.getTimestamp();
-                        if(pii.retryCount > maxRetryCount)
+                        if(pii.retryCount > type_timeouts[pii.item.type].maxRetries)
                         {
                             pii.processed = true;
                         }
@@ -155,10 +166,10 @@ namespace IXICore.Inventory
             List<PendingInventoryItem> items_to_process = new List<PendingInventoryItem>();
             lock(inventory)
             {
-                long expiration_time = Clock.getTimestamp() - pendingTimeOut;
                 foreach(var types in inventory)
                 {
-                    foreach(var item in types.Value)
+                    long expiration_time = Clock.getTimestamp() - type_timeouts[types.Key].timeout;
+                    foreach (var item in types.Value)
                     {
                         if (item.Value.processed)
                         {
