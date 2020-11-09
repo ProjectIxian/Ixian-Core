@@ -554,8 +554,7 @@ namespace IXICore.Meta
 
             if (CoreConfig.walletNotifyCommand != "")
             {
-                string notify_cmd = CoreConfig.walletNotifyCommand.Replace("%s", Encoding.UTF8.GetString(activity.data));
-                IxiUtils.executeProcess(notify_cmd, "", false);
+                IxiUtils.executeProcess(CoreConfig.walletNotifyCommand, Encoding.UTF8.GetString(activity.data), false);
             }
 
             lock (storageLock)
@@ -590,8 +589,7 @@ namespace IXICore.Meta
 
             if (CoreConfig.walletNotifyCommand != "")
             {
-                string notify_cmd = CoreConfig.walletNotifyCommand.Replace("%s", Encoding.UTF8.GetString(data));
-                IxiUtils.executeProcess(notify_cmd, "", false);
+                IxiUtils.executeProcess(CoreConfig.walletNotifyCommand, Encoding.UTF8.GetString(data), false);
             }
 
             lock (storageLock)
@@ -633,8 +631,7 @@ namespace IXICore.Meta
 
             if (CoreConfig.walletNotifyCommand != "")
             {
-                string notify_cmd = CoreConfig.walletNotifyCommand.Replace("%s", Encoding.UTF8.GetString(data));
-                IxiUtils.executeProcess(notify_cmd, "", false);
+                IxiUtils.executeProcess(CoreConfig.walletNotifyCommand, Encoding.UTF8.GetString(data), false);
             }
 
             lock (storageLock)
