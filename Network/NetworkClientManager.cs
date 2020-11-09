@@ -623,6 +623,10 @@ namespace IXICore.Network
                     connectToRandomNeighbor();
                 }
             }
+            catch(ThreadAbortException)
+            {
+
+            }
             catch (Exception e)
             {
                 Logging.error("Fatal exception occured in NetworkClientManager.reconnectClients: " + e);
