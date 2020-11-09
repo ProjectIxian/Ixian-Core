@@ -25,16 +25,17 @@ namespace IXICore.Inventory
         }
     }
 
-    class InventoryTypeTimeout
+    class InventoryTypeOptions
     {
         public int maxRetries = 5;
         public int timeout = 200;
+        public int maxItems = 2000;
     }
 
     abstract class InventoryCache
     {
         protected Dictionary<InventoryItemTypes, Dictionary<byte[], PendingInventoryItem>> inventory = null;
-        protected Dictionary<InventoryItemTypes, InventoryTypeTimeout> type_timeouts = null;
+        protected Dictionary<InventoryItemTypes, InventoryTypeOptions> typeOptions = null;
 
         Random rnd = new Random();
 
@@ -46,11 +47,11 @@ namespace IXICore.Inventory
             inventory.Add(InventoryItemTypes.keepAlive, new Dictionary<byte[], PendingInventoryItem>(new ByteArrayComparer()));
             inventory.Add(InventoryItemTypes.transaction, new Dictionary<byte[], PendingInventoryItem>(new ByteArrayComparer()));
 
-            type_timeouts = new Dictionary<InventoryItemTypes, InventoryTypeTimeout>();
-            type_timeouts.Add(InventoryItemTypes.block, new InventoryTypeTimeout() { maxRetries = 5, timeout = 200 });
-            type_timeouts.Add(InventoryItemTypes.blockSignature, new InventoryTypeTimeout() { maxRetries = 5, timeout = 5 });
-            type_timeouts.Add(InventoryItemTypes.keepAlive, new InventoryTypeTimeout() { maxRetries = 2, timeout = 30 });
-            type_timeouts.Add(InventoryItemTypes.transaction, new InventoryTypeTimeout() { maxRetries = 5, timeout = 200 });
+            typeOptions = new Dictionary<InventoryItemTypes, InventoryTypeOptions>();
+            typeOptions.Add(InventoryItemTypes.block, new InventoryTypeOptions() { maxRetries = 5, timeout = 15, maxItems = 100 });
+            typeOptions.Add(InventoryItemTypes.blockSignature, new InventoryTypeOptions() { maxRetries = 5, timeout = 15, maxItems = 2000 });
+            typeOptions.Add(InventoryItemTypes.keepAlive, new InventoryTypeOptions() { maxRetries = 2, timeout = 30, maxItems = 10000 });
+            typeOptions.Add(InventoryItemTypes.transaction, new InventoryTypeOptions() { maxRetries = 5, timeout = 200, maxItems = 10000 });
         }
 
         public PendingInventoryItem get(InventoryItemTypes type, byte[] hash)
@@ -142,7 +143,7 @@ namespace IXICore.Inventory
                     if(sendInventoryRequest(pii.item, endpoint))
                     {
                         pii.lastRequested = Clock.getTimestamp();
-                        if(pii.retryCount > type_timeouts[pii.item.type].maxRetries)
+                        if(pii.retryCount > typeOptions[pii.item.type].maxRetries)
                         {
                             pii.processed = true;
                         }
@@ -168,7 +169,7 @@ namespace IXICore.Inventory
             {
                 foreach(var types in inventory)
                 {
-                    long expiration_time = Clock.getTimestamp() - type_timeouts[types.Key].timeout;
+                    long expiration_time = Clock.getTimestamp() - typeOptions[types.Key].timeout;
                     foreach (var item in types.Value)
                     {
                         if (item.Value.processed)
@@ -224,20 +225,14 @@ namespace IXICore.Inventory
             return count;
         }
 
-        protected virtual void truncateInventory(InventoryItemTypes type)
+        protected void truncateInventory(InventoryItemTypes type)
         {
             var inventory_list = inventory[type];
             int max_items = 2000;
-            switch(type)
+            InventoryTypeOptions options;
+            if(typeOptions.TryGetValue(type, out options))
             {
-                case InventoryItemTypes.block:
-                    max_items = 100;
-                    break;
-
-                case InventoryItemTypes.transaction:
-                case InventoryItemTypes.keepAlive:
-                    max_items = 10000;
-                    break;
+                max_items = options.maxItems;
             }
             if (inventory_list.Count() > max_items)
             {
