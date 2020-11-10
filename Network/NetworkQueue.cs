@@ -87,20 +87,32 @@ namespace IXICore.Network
             lock (txqueueMessages)
             {
                 // Move block related messages to txqueue
+                bool found_get_request = false;
+                bool found_tx_request = false;
                 switch (code)
                 {
 #pragma warning disable CS0618 // Type or member is obsolete
                     case ProtocolMessageCode.getTransaction:
                     case ProtocolMessageCode.getTransaction2:
                     case ProtocolMessageCode.getTransactions:
-                    case ProtocolMessageCode.transactionsChunk:
-                    case ProtocolMessageCode.newTransaction:
-                    case ProtocolMessageCode.transactionData:
-                    case ProtocolMessageCode.blockTransactionsChunk:
                     case ProtocolMessageCode.getBlock:
                     case ProtocolMessageCode.getBlock2:
                     case ProtocolMessageCode.getBlockHeaders:
                     case ProtocolMessageCode.getBlockHeaders2:
+                    case ProtocolMessageCode.getSignatures:
+                    case ProtocolMessageCode.getBlockSignatures2:
+                    case ProtocolMessageCode.getPIT:
+                    case ProtocolMessageCode.getPIT2:
+#pragma warning restore CS0618 // Type or member is obsolete
+                        found_get_request = true;
+                        found_tx_request = true;
+                        break;
+
+#pragma warning disable CS0618 // Type or member is obsolete
+                    case ProtocolMessageCode.transactionsChunk:
+                    case ProtocolMessageCode.newTransaction:
+                    case ProtocolMessageCode.transactionData:
+                    case ProtocolMessageCode.blockTransactionsChunk:
                     case ProtocolMessageCode.blockHeaders:
                     case ProtocolMessageCode.blockHeaders2:
                     case ProtocolMessageCode.newBlock:
@@ -108,80 +120,104 @@ namespace IXICore.Network
                     case ProtocolMessageCode.blockSignature:
                     case ProtocolMessageCode.blockSignatures:
                     case ProtocolMessageCode.blockSignature2:
-                    case ProtocolMessageCode.getSignatures:
-                    case ProtocolMessageCode.getBlockSignatures2:
                     case ProtocolMessageCode.signaturesChunk:
-                    case ProtocolMessageCode.getPIT:
-                    case ProtocolMessageCode.getPIT2:
                     case ProtocolMessageCode.pitData:
                     case ProtocolMessageCode.pitData2:
                     case ProtocolMessageCode.inventory:
 #pragma warning restore CS0618 // Type or member is obsolete
+                        found_get_request = false;
+                        found_tx_request = true;
+                        break;
+                }
+                if(found_tx_request)
+                {
+                    if(found_get_request)
+                    {
+                        if (message.helperData != null)
                         {
-                            if (message.helperData != null)
+                            if (txqueueMessages.Exists(x => x.code == message.code && x.helperData.SequenceEqual(message.helperData) && x.endpoint == message.endpoint))
                             {
-                                if (txqueueMessages.Exists(x => x.code == message.code && x.helperData.SequenceEqual(message.helperData)))
+                                int msg_index = txqueueMessages.FindIndex(x => x.code == message.code && message.helperData.SequenceEqual(x.helperData));
+                                if (txqueueMessages[msg_index].length < message.length)
                                 {
-                                    int msg_index = txqueueMessages.FindIndex(x => x.code == message.code && message.helperData.SequenceEqual(x.helperData));
-                                    if (txqueueMessages[msg_index].length < message.length)
-                                    {
-                                        txqueueMessages[msg_index] = message;
-                                    }
-                                    return;
+                                    txqueueMessages[msg_index] = message;
                                 }
-                            }
-
-                            if (txqueueMessages.Exists(x => x.code == message.code && x.checksum == message.checksum))
-                            {
-                                //Logging.warn(string.Format("Attempting to add a duplicate message (code: {0}) to the network queue", code));
                                 return;
                             }
+                        }
 
-                            bool add = true;
-                            if (txqueueMessages.Count > 20)
-                            {
-                                switch (code)
-                                {
-#pragma warning disable CS0618 // Type or member is obsolete
-                                    case ProtocolMessageCode.getTransaction:
-                                    case ProtocolMessageCode.getTransaction2:
-                                    case ProtocolMessageCode.getTransactions:
-                                    case ProtocolMessageCode.transactionsChunk:
-                                    case ProtocolMessageCode.blockTransactionsChunk:
-                                    case ProtocolMessageCode.getBlock:
-                                    case ProtocolMessageCode.getBlock2:
-                                    case ProtocolMessageCode.getBlockHeaders:
-                                    case ProtocolMessageCode.getBlockHeaders2:
-                                    case ProtocolMessageCode.blockHeaders:
-                                    case ProtocolMessageCode.blockHeaders2:
-                                    case ProtocolMessageCode.newBlock:
-                                    case ProtocolMessageCode.blockData:
-                                    case ProtocolMessageCode.blockSignature:
-                                    case ProtocolMessageCode.blockSignatures:
-                                    case ProtocolMessageCode.blockSignature2:
-                                    case ProtocolMessageCode.getSignatures:
-                                    case ProtocolMessageCode.getBlockSignatures2:
-                                    case ProtocolMessageCode.signaturesChunk:
-                                    case ProtocolMessageCode.getPIT:
-                                    case ProtocolMessageCode.getPIT2:
-                                    case ProtocolMessageCode.pitData:
-                                    case ProtocolMessageCode.pitData2:
-                                    case ProtocolMessageCode.inventory:
-#pragma warning restore CS0618 // Type or member is obsolete
-                                        {
-                                            txqueueMessages.Insert(5, message);
-                                            add = false;
-                                            break;
-                                        }
-                                }
-                            }
-                            if(add)
-                            {
-                                // Add it to the tx queue
-                                txqueueMessages.Add(message);
-                            }
+                        if (txqueueMessages.Exists(x => x.code == message.code && x.checksum == message.checksum && x.endpoint == message.endpoint))
+                        {
+                            Logging.trace("Attempting to add a duplicate message (code: {0}) to the network queue", code);
                             return;
                         }
+                    }
+                    else
+                    {
+                        if (message.helperData != null)
+                        {
+                            if (txqueueMessages.Exists(x => x.code == message.code && x.helperData.SequenceEqual(message.helperData)))
+                            {
+                                int msg_index = txqueueMessages.FindIndex(x => x.code == message.code && message.helperData.SequenceEqual(x.helperData));
+                                if (txqueueMessages[msg_index].length < message.length)
+                                {
+                                    txqueueMessages[msg_index] = message;
+                                }
+                                return;
+                            }
+                        }
+
+                        if (txqueueMessages.Exists(x => x.code == message.code && x.checksum == message.checksum))
+                        {
+                            Logging.trace("Attempting to add a duplicate message (code: {0}) to the network queue", code);
+                            return;
+                        }
+                    }
+
+                    bool add = true;
+                    if (txqueueMessages.Count > 20)
+                    {
+                        switch (code)
+                        {
+#pragma warning disable CS0618 // Type or member is obsolete
+                            case ProtocolMessageCode.getTransaction:
+                            case ProtocolMessageCode.getTransaction2:
+                            case ProtocolMessageCode.getTransactions:
+                            case ProtocolMessageCode.transactionsChunk:
+                            case ProtocolMessageCode.blockTransactionsChunk:
+                            case ProtocolMessageCode.getBlock:
+                            case ProtocolMessageCode.getBlock2:
+                            case ProtocolMessageCode.getBlockHeaders:
+                            case ProtocolMessageCode.getBlockHeaders2:
+                            case ProtocolMessageCode.blockHeaders:
+                            case ProtocolMessageCode.blockHeaders2:
+                            case ProtocolMessageCode.newBlock:
+                            case ProtocolMessageCode.blockData:
+                            case ProtocolMessageCode.blockSignature:
+                            case ProtocolMessageCode.blockSignatures:
+                            case ProtocolMessageCode.blockSignature2:
+                            case ProtocolMessageCode.getSignatures:
+                            case ProtocolMessageCode.getBlockSignatures2:
+                            case ProtocolMessageCode.signaturesChunk:
+                            case ProtocolMessageCode.getPIT:
+                            case ProtocolMessageCode.getPIT2:
+                            case ProtocolMessageCode.pitData:
+                            case ProtocolMessageCode.pitData2:
+                            case ProtocolMessageCode.inventory:
+#pragma warning restore CS0618 // Type or member is obsolete
+                                {
+                                    txqueueMessages.Insert(5, message);
+                                    add = false;
+                                    break;
+                                }
+                        }
+                    }
+                    if (add)
+                    {
+                        // Add it to the tx queue
+                        txqueueMessages.Add(message);
+                    }
+                    return;
                 }
             }
 
@@ -190,7 +226,7 @@ namespace IXICore.Network
                 // ignore duplicates
                 if (queueMessages.Exists(x => x.code == message.code && x.checksum == message.checksum && x.endpoint == message.endpoint))
                 {
-                    //Logging.warn(string.Format("Attempting to add a duplicate message (code: {0}) to the network queue", code));
+                    Logging.trace("Attempting to add a duplicate message (code: {0}) to the network queue", code);
                     return;
                 }
 
