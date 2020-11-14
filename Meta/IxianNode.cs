@@ -64,10 +64,13 @@ namespace IXICore.Meta
         /// </summary>
         public static bool isTestNet { get; private set; } = false;
 
-        public static void init(string product_version, IxianNode handler_class, NetworkType type)
+        public static void init(string product_version, IxianNode handler_class, NetworkType type, bool set_title = false)
         {
             CoreConfig.productVersion = product_version;
-            Console.Title = product_version + " (" + CoreConfig.version + ")";
+            if(set_title)
+            {
+                Console.Title = product_version + " (" + CoreConfig.version + ")";
+            }
             init(handler_class, type);
         }
 
