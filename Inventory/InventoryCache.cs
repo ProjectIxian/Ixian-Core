@@ -72,10 +72,19 @@ namespace IXICore.Inventory
             lock (inventory)
             {
                 var inventory_list = inventory[item.type];
+                if(item.hash == null)
+                {
+                    Logging.error("Error adding inventory item, hash is null.");
+                    return null;
+                }
+
                 if (!inventory_list.ContainsKey(item.hash))
                 {
                     PendingInventoryItem pii = new PendingInventoryItem(item);
-                    pii.endpoints.Add(endpoint);
+                    if(endpoint != null)
+                    {
+                        pii.endpoints.Add(endpoint);
+                    }
                     inventory_list.Add(item.hash, pii);
                     truncateInventory(item.type);
                     return pii;
@@ -84,9 +93,12 @@ namespace IXICore.Inventory
                 {
                     PendingInventoryItem pii = inventory_list[item.hash];
                     pii.item = item;
-                    if (!pii.endpoints.Contains(endpoint))
+                    if (endpoint != null)
                     {
-                        pii.endpoints.Add(endpoint);
+                        if (!pii.endpoints.Contains(endpoint))
+                        {
+                            pii.endpoints.Add(endpoint);
+                        }
                     }
                     return pii;
                 }
@@ -131,34 +143,69 @@ namespace IXICore.Inventory
 
         public bool processInventoryItem(PendingInventoryItem pii)
         {
+            if(pii == null)
+            {
+                Logging.error("Cannot process pendingInventoryItem, PendingInventoryItem is null.");
+                return false;
+            }
             if(pii.processed)
             {
                 return false;
             }
-            var endpoints = pii.endpoints.OrderBy(x => rnd.Next());
-            foreach (var endpoint in endpoints)
+            try
             {
-                if (endpoint.isConnected() && endpoint.helloReceived)
+                var endpoints = pii.endpoints.OrderBy(x => rnd.Next());
+                if(endpoints.Count() == 0)
                 {
-                    if(sendInventoryRequest(pii.item, endpoint))
+                    if (sendInventoryRequest(pii.item, null))
                     {
                         pii.lastRequested = Clock.getTimestamp();
-                        if(pii.retryCount > typeOptions[pii.item.type].maxRetries)
+                        if (pii.retryCount > typeOptions[pii.item.type].maxRetries)
                         {
                             pii.processed = true;
                         }
                         pii.retryCount++;
                         return true;
-                    }else
+                    }
+                    else
                     {
                         pii.processed = true;
                     }
                     return false;
                 }else
                 {
-                    pii.endpoints.Remove(endpoint);
+                    foreach (var endpoint in endpoints)
+                    {
+                        if (endpoint.isConnected() && endpoint.helloReceived)
+                        {
+                            if (sendInventoryRequest(pii.item, endpoint))
+                            {
+                                pii.lastRequested = Clock.getTimestamp();
+                                if (pii.retryCount > typeOptions[pii.item.type].maxRetries)
+                                {
+                                    pii.processed = true;
+                                }
+                                pii.retryCount++;
+                                return true;
+                            }
+                            else
+                            {
+                                pii.processed = true;
+                            }
+                            return false;
+                        }
+                        else
+                        {
+                            pii.endpoints.Remove(endpoint);
+                        }
+                    }
                 }
             }
+            catch (Exception e)
+            {
+                Logging.error("Exception occured in processInventoryItem: {0}", e);
+            }
+
             return false;
         }
 
