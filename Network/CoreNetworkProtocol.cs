@@ -179,11 +179,29 @@ namespace IXICore
 
                 int addrLen = reader.ReadInt32();
                 byte[] addr = reader.ReadBytes(addrLen);
+                if (addrLen > 70)
+                {
+                    Logging.error("Hello: Invalid address from {0} - {1}.", endpoint.getFullAddress(true), Base58Check.Base58CheckEncoding.EncodePlain(addr));
+                    sendBye(endpoint, ProtocolByeCode.rejected, "Invalid address", "", true);
+                    return false;
+                }
 
                 bool test_net = reader.ReadBoolean();
                 char node_type = reader.ReadChar();
                 string node_version = reader.ReadString();
+                if(node_version.Length > 20)
+                {
+                    Logging.error("Hello: Invalid node version from {0} - {1}.", endpoint.getFullAddress(true), node_version);
+                    sendBye(endpoint, ProtocolByeCode.rejected, "Invalid Node Version", "", true);
+                    return false;
+                }
                 string device_id = reader.ReadString();
+                if (device_id.Length > 128)
+                {
+                    Logging.error("Hello: Invalid device id from {0} - {1}.", endpoint.getFullAddress(true), device_id);
+                    sendBye(endpoint, ProtocolByeCode.rejected, "Invalid Device ID", "", true);
+                    return false;
+                }
 
                 int pkLen = reader.ReadInt32();
                 byte[] pubkey = null;
@@ -204,7 +222,7 @@ namespace IXICore
                 // Check the testnet designator and disconnect on mismatch
                 if (test_net != IxianHandler.isTestNet)
                 {
-                    Logging.warn("Rejected node {0} due to incorrect testnet designator: {1}", endpoint.fullAddress, test_net);
+                    Logging.warn("Hello: Rejected node {0} due to incorrect testnet designator: {1}", endpoint.fullAddress, test_net);
                     sendBye(endpoint, ProtocolByeCode.incorrectNetworkType, string.Format("Incorrect testnet designator: {0}. Should be {1}", test_net, IxianHandler.isTestNet), test_net.ToString(), true);
                     return false;
                 }
@@ -212,7 +230,7 @@ namespace IXICore
                 // Check the address and pubkey and disconnect on mismatch
                 if (!addr.SequenceEqual((new Address(pubkey)).address))
                 {
-                    Logging.warn("Pubkey and address do not match.");
+                    Logging.warn("Hello: Pubkey and address do not match.");
                     sendBye(endpoint, ProtocolByeCode.authFailed, "Pubkey and address do not match.", "", true);
                     return false;
                 }
@@ -229,15 +247,6 @@ namespace IXICore
                 // Verify the signature
                 if (node_type == 'C')
                 {
-                    // TODO: verify if the client is connectable, then if connectable, check if signature verifies
-
-                    /*if (CryptoManager.lib.verifySignature(Encoding.UTF8.GetBytes(ConsensusConfig.ixianChecksumLockString + "-" + device_id + "-" + timestamp + "-" + endpoint.getFullAddress(true)), pubkey, signature) == false)
-                    {
-                        CoreProtocolMessage.sendBye(endpoint, ProtocolByeCode.incorrectIp, "Verify signature failed in hello message, likely an incorrect IP was specified. Detected IP:", endpoint.address);
-                        Logging.warn(string.Format("Connected node used an incorrect signature in hello message, likely an incorrect IP was specified. Detected IP: {0}", endpoint.address));
-                        return false;
-                    }*/
-                    // TODO store the full address if connectable
                     // Store the presence address for this remote endpoint
                     endpoint.presenceAddress = new PresenceAddress(System.Guid.Parse(device_id).ToByteArray(), "", node_type, node_version, Clock.getNetworkTimestamp() - CoreConfig.clientKeepAliveInterval, null);
                 }
@@ -247,7 +256,7 @@ namespace IXICore
                     if (!CryptoManager.lib.verifySignature(Encoding.UTF8.GetBytes(ConsensusConfig.ixianChecksumLockString + "-" + device_id + "-" + timestamp + "-" + endpoint.getFullAddress(true)), pubkey, signature))
                     {
                         sendBye(endpoint, ProtocolByeCode.incorrectIp, "Verify signature failed in hello message, likely an incorrect IP was specified. Detected IP:", endpoint.address);
-                        Logging.warn("Connected node used an incorrect signature in hello message, likely an incorrect IP was specified. Detected IP: {0}", endpoint.address);
+                        Logging.warn("Hello: Connected node used an incorrect signature in hello message, likely an incorrect IP was specified. Detected IP: {0}", endpoint.address);
                         return false;
                     }
 
@@ -272,7 +281,7 @@ namespace IXICore
                     // Check the address and local address and disconnect on mismatch
                     if (endpoint.serverWalletAddress != null && !addr.SequenceEqual(endpoint.serverWalletAddress))
                     {
-                        Logging.warn("Local address mismatch, possible Man-in-the-middle attack.");
+                        Logging.warn("Hello: Local address mismatch, possible Man-in-the-middle attack.");
                         sendBye(endpoint, ProtocolByeCode.addressMismatch, "Local address mismatch.", "", true);
                         return false;
                     }
@@ -288,6 +297,19 @@ namespace IXICore
                 {
                     // we're the server
 
+                    // validate challenge request
+                    int challenge_len = reader.ReadInt32();
+                    byte[] challenge = reader.ReadBytes(challenge_len);
+
+                    if (challenge_len != 40 && challenge_len != 52)
+                    {
+                        Logging.error("Hello: Invalid challenge requested {0} by {1}.", challenge_len, endpoint.getFullAddress());
+                        sendBye(endpoint, ProtocolByeCode.authFailed, "Invalid challenge requested.", "");
+                        return false;
+                    }
+
+                    byte[] challenge_response = CryptoManager.lib.getSignature(challenge, IxianHandler.getWalletStorage().getPrimaryPrivateKey());
+
                     if (node_type == 'M' || node_type == 'H' || node_type == 'R')
                     {
                         if (node_type != 'R')
@@ -296,45 +318,17 @@ namespace IXICore
                             IxiNumber balance = IxianHandler.getWalletBalance(addr);
                             if (balance < ConsensusConfig.minimumMasterNodeFunds)
                             {
-                                Logging.warn("Rejected master node {0} due to insufficient funds: {1}", endpoint.getFullAddress(), balance.ToString());
+                                Logging.warn("Hello: Rejected master node {0} due to insufficient funds: {1}", endpoint.getFullAddress(), balance.ToString());
                                 sendBye(endpoint, ProtocolByeCode.insufficientFunds, string.Format("Insufficient funds. Minimum is {0}", ConsensusConfig.minimumMasterNodeFunds), balance.ToString(), true);
                                 return false;
                             }
                         }
-                        // Limit to one IP per masternode
-                        // TODO TODO TODO - think about this and do it properly
-                        /*string[] hostname_split = hostname.Split(':');
-                        if (PresenceList.containsIP(hostname_split[0], 'M'))
-                        {
-                            using (MemoryStream m2 = new MemoryStream())
-                            {
-                                using (BinaryWriter writer = new BinaryWriter(m2))
-                                {
-                                    writer.Write(string.Format("This IP address ( {0} ) already has a masternode connected.", hostname_split[0]));
-                                    Logging.info(string.Format("Rejected master node {0} due to duplicate IP address", hostname));
-                                    socket.Send(prepareProtocolMessage(ProtocolMessageCode.bye, m2.ToArray()), SocketFlags.None);
-                                    socket.Disconnect(true);
-                                    return;
-                                }
-                            }
-                        }*/
+
                         if (!checkNodeConnectivity(endpoint))
                         {
                             return false;
                         }
                     }
-
-                    int challenge_len = reader.ReadInt32();
-                    byte[] challenge = reader.ReadBytes(challenge_len);
-
-                    if (challenge_len < 20 || challenge_len > 60)
-                    {
-                        Logging.warn("Invalid challenge requested {0}", challenge_len);
-                        sendBye(endpoint, ProtocolByeCode.authFailed, "Invalid challenge requested.", "");
-                        return false;
-                    }
-
-                    byte[] challenge_response = CryptoManager.lib.getSignature(challenge, IxianHandler.getWalletStorage().getPrimaryPrivateKey());
 
                     sendHelloMessageV5(endpoint, true, challenge_response);
                     if(set_hello_received)
@@ -401,12 +395,31 @@ namespace IXICore
 
                 int addrLen = (int)reader.ReadIxiVarUInt();
                 byte[] addr = reader.ReadBytes(addrLen);
+                if (addrLen > 70)
+                {
+                    Logging.error("Hello: Invalid address from {0} - {1}.", endpoint.getFullAddress(true), Base58Check.Base58CheckEncoding.EncodePlain(addr));
+                    sendBye(endpoint, ProtocolByeCode.rejected, "Invalid address", "", true);
+                    return false;
+                }
 
                 bool test_net = reader.ReadBoolean();
                 char node_type = reader.ReadChar();
                 string node_version = reader.ReadString();
+                if (node_version.Length > 20)
+                {
+                    Logging.error("Hello: Invalid node version from {0} - {1}.", endpoint.getFullAddress(true), node_version);
+                    sendBye(endpoint, ProtocolByeCode.rejected, "Invalid Node Version", "", true);
+                    return false;
+                }
+
                 int device_id_len = (int)reader.ReadIxiVarUInt();
                 byte[] device_id = reader.ReadBytes(device_id_len);
+                if (device_id_len > 32)
+                {
+                    Logging.error("Hello: Invalid device id from {0} - {1}.", endpoint.getFullAddress(true), Crypto.hashToString(device_id));
+                    sendBye(endpoint, ProtocolByeCode.rejected, "Invalid Device ID", "", true);
+                    return false;
+                }
 
                 int pkLen = (int)reader.ReadIxiVarUInt();
                 byte[] pubkey = null;
@@ -435,7 +448,7 @@ namespace IXICore
                 // Check the testnet designator and disconnect on mismatch
                 if (test_net != IxianHandler.isTestNet)
                 {
-                    Logging.warn("Rejected node {0} due to incorrect testnet designator: {1}", endpoint.fullAddress, test_net);
+                    Logging.warn("Hello: Rejected node {0} due to incorrect testnet designator: {1}", endpoint.fullAddress, test_net);
                     sendBye(endpoint, ProtocolByeCode.incorrectNetworkType, string.Format("Incorrect testnet designator: {0}. Should be {1}", test_net, IxianHandler.isTestNet), test_net.ToString(), true);
                     return false;
                 }
@@ -443,7 +456,7 @@ namespace IXICore
                 // Check the address and pubkey and disconnect on mismatch
                 if (!addr.SequenceEqual((new Address(pubkey)).address))
                 {
-                    Logging.warn("Pubkey and address do not match.");
+                    Logging.warn("Hello: Pubkey and address do not match.");
                     sendBye(endpoint, ProtocolByeCode.authFailed, "Pubkey and address do not match.", "", true);
                     return false;
                 }
@@ -493,7 +506,7 @@ namespace IXICore
                         if (!CryptoManager.lib.verifySignature(mSig.ToArray(), pubkey, signature))
                         {
                             sendBye(endpoint, ProtocolByeCode.incorrectIp, "Verify signature failed in hello message, likely an incorrect IP was specified. Detected IP:", endpoint.address);
-                            Logging.warn("Connected node used an incorrect signature in hello message, likely an incorrect IP was specified. Detected IP: {0}", endpoint.address);
+                            Logging.warn("Hello: Connected node used an incorrect signature in hello message, likely an incorrect IP was specified. Detected IP: {0}", endpoint.address);
                             return false;
                         }
                     }
@@ -519,7 +532,7 @@ namespace IXICore
                     // Check the address and local address and disconnect on mismatch
                     if (endpoint.serverWalletAddress != null && !addr.SequenceEqual(endpoint.serverWalletAddress))
                     {
-                        Logging.warn("Local address mismatch, possible Man-in-the-middle attack.");
+                        Logging.warn("Hello: Local address mismatch, possible Man-in-the-middle attack.");
                         sendBye(endpoint, ProtocolByeCode.addressMismatch, "Local address mismatch.", "", true);
                         return false;
                     }
@@ -543,7 +556,7 @@ namespace IXICore
                             IxiNumber balance = IxianHandler.getWalletBalance(addr);
                             if (balance < ConsensusConfig.minimumMasterNodeFunds)
                             {
-                                Logging.warn("Rejected master node {0} due to insufficient funds: {1}", endpoint.getFullAddress(), balance.ToString());
+                                Logging.warn("Hello: Rejected master node {0} due to insufficient funds: {1}", endpoint.getFullAddress(), balance.ToString());
                                 sendBye(endpoint, ProtocolByeCode.insufficientFunds, string.Format("Insufficient funds. Minimum is {0}", ConsensusConfig.minimumMasterNodeFunds), balance.ToString(), true);
                                 return false;
                             }
@@ -586,7 +599,7 @@ namespace IXICore
             catch (Exception e)
             {
                 // Disconnect the node in case of any reading errors
-                Logging.warn("Exception occured in Hello Message {0}", e.ToString());
+                Logging.warn("Hello: Exception occured in Hello Message {0}", e.ToString());
                 sendBye(endpoint, ProtocolByeCode.deprecated, "Something went wrong during hello, make sure you're running the latest version of Ixian DLT.", "");
                 return false;
             }
