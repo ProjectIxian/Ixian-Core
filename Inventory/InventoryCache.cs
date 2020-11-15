@@ -155,55 +155,42 @@ namespace IXICore.Inventory
             try
             {
                 var endpoints = pii.endpoints.OrderBy(x => rnd.Next());
-                if(endpoints.Count() == 0)
+                RemoteEndpoint endpoint = null;
+                if(endpoints.Count() > 0)
                 {
-                    if (sendInventoryRequest(pii.item, null))
+                    foreach (var ep in endpoints)
                     {
-                        pii.lastRequested = Clock.getTimestamp();
-                        if (pii.retryCount > typeOptions[pii.item.type].maxRetries)
+                        if (ep.isConnected() && ep.helloReceived)
                         {
-                            pii.processed = true;
-                        }
-                        pii.retryCount++;
-                        return true;
-                    }
-                    else
-                    {
-                        pii.processed = true;
-                    }
-                    return false;
-                }else
-                {
-                    foreach (var endpoint in endpoints)
-                    {
-                        if (endpoint.isConnected() && endpoint.helloReceived)
-                        {
-                            if (sendInventoryRequest(pii.item, endpoint))
-                            {
-                                pii.lastRequested = Clock.getTimestamp();
-                                if (pii.retryCount > typeOptions[pii.item.type].maxRetries)
-                                {
-                                    pii.processed = true;
-                                }
-                                pii.retryCount++;
-                                return true;
-                            }
-                            else
-                            {
-                                pii.processed = true;
-                            }
-                            return false;
+                            endpoint = ep;
+                            break;
                         }
                         else
                         {
-                            pii.endpoints.Remove(endpoint);
+                            pii.endpoints.Remove(ep);
                         }
                     }
                 }
+                if (sendInventoryRequest(pii.item, endpoint))
+                {
+                    pii.lastRequested = Clock.getTimestamp();
+                    if (pii.retryCount > typeOptions[pii.item.type].maxRetries)
+                    {
+                        pii.processed = true;
+                    }
+                    pii.retryCount++;
+                    return true;
+                }
+                else
+                {
+                    pii.processed = true;
+                }
+                return false;
             }
             catch (Exception e)
             {
                 Logging.error("Exception occured in processInventoryItem: {0}", e);
+                pii.processed = true;
             }
 
             return false;
