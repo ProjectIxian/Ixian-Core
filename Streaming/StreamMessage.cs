@@ -1,5 +1,6 @@
 ﻿using IXICore;
 using IXICore.Meta;
+using IXICore.Utils;
 using System;
 using System.Collections.Generic;
 using System.IO;
@@ -26,16 +27,16 @@ namespace IXICore
 
     public class StreamMessage
     {
-        public int version = 0;                 // Stream Message version
+        public int version { get; private set; } = 0;                 // Stream Message version
 
         public StreamMessageCode type;          // Stream Message type
         public byte[] realSender = null;        // Used by group chat bots, isn't transmitted to the network
         public byte[] sender = null;            // Sender wallet
         public byte[] recipient = null;         // Recipient wallet 
 
-        public byte[] transaction = null;       // Unsigned transaction
+        private byte[] transaction = null;       // Unsigned transaction - obsolete, will be removed with v1
         public byte[] data = null;              // Actual message data, encrypted or decrypted
-        public byte[] sigdata = null;           // Signature data (for S2), encrypted
+        private byte[] sigdata = null;           // Signature data (for S2), encrypted - obsolete, will be removed with v1
 
         public byte[] originalData = null;      // Actual message data as was sent (before decryption)
         public byte[] originalChecksum = null;  // Checksum as it was before decryption
@@ -45,7 +46,6 @@ namespace IXICore
         public StreamMessageEncryptionCode encryptionType;
 
         public bool encrypted = false; // used locally to avoid double encryption of data
-        public bool sigEncrypted = false; // used locally to avoid double encryption of tx sig
 
         public byte[] id;                      // Message unique id
 
@@ -57,14 +57,23 @@ namespace IXICore
             type = StreamMessageCode.info;
             sender = null;
             recipient = null;
-            transaction = null;
             data = null;
-            sigdata = null;
             encryptionType = StreamMessageEncryptionCode.spixi1;
             timestamp = Clock.getNetworkTimestamp();
         }
 
         public StreamMessage(byte[] bytes)
+        {
+            if(bytes[0] == 0)
+            {
+                fromBytes_v0(bytes);
+            }else
+            {
+                fromBytes_v1(bytes);
+            }
+        }
+
+        private void fromBytes_v0(byte[] bytes)
         {
             try
             {
@@ -72,7 +81,7 @@ namespace IXICore
                 {
                     using (BinaryReader reader = new BinaryReader(m))
                     {
-                        int version = reader.ReadInt32();
+                        version = reader.ReadInt32();
 
                         int id_len = reader.ReadInt32();
                         if (id_len > 0)
@@ -107,7 +116,7 @@ namespace IXICore
                             sigdata = reader.ReadBytes(sigdata_length);
 
                         encrypted = reader.ReadBoolean();
-                        sigEncrypted = reader.ReadBoolean();
+                        reader.ReadBoolean();
 
                         int sig_length = reader.ReadInt32();
                         if (sig_length > 0)
@@ -123,7 +132,68 @@ namespace IXICore
             }
         }
 
+        private void fromBytes_v1(byte[] bytes)
+        {
+            try
+            {
+                using (MemoryStream m = new MemoryStream(bytes))
+                {
+                    using (BinaryReader reader = new BinaryReader(m))
+                    {
+                        version = (int)reader.ReadIxiVarUInt();
+
+                        int id_len = (int)reader.ReadIxiVarUInt();
+                        if (id_len > 0)
+                        {
+                            id = reader.ReadBytes(id_len);
+                        }
+
+                        int message_type = (int)reader.ReadIxiVarUInt();
+                        type = (StreamMessageCode)message_type;
+
+                        int encryption_type = (int)reader.ReadIxiVarUInt();
+                        encryptionType = (StreamMessageEncryptionCode)encryption_type;
+
+                        int sender_length = (int)reader.ReadIxiVarUInt();
+                        if (sender_length > 0)
+                            sender = reader.ReadBytes(sender_length);
+
+                        int recipient_length = (int)reader.ReadIxiVarUInt();
+                        if (recipient_length > 0)
+                            recipient = reader.ReadBytes(recipient_length);
+
+                        int data_length = (int)reader.ReadIxiVarUInt();
+                        if (data_length > 0)
+                            data = reader.ReadBytes(data_length);
+
+                        encrypted = reader.ReadBoolean();
+
+                        int sig_length = (int)reader.ReadIxiVarUInt();
+                        if (sig_length > 0)
+                            signature = reader.ReadBytes(sig_length);
+
+                        timestamp = (long)reader.ReadIxiVarUInt();
+                    }
+                }
+            }
+            catch (Exception e)
+            {
+                Logging.error("Exception occured while trying to construct StreamMessage from bytes: " + e);
+            }
+        }
+
         public byte[] getBytes(bool for_checksum = false)
+        {
+            if(version == 0)
+            {
+                return getBytes_v0(for_checksum);
+            }else
+            {
+                return getBytes_v1(for_checksum);
+            }
+        }
+
+        public byte[] getBytes_v0(bool for_checksum = false)
         {
             using (MemoryStream m = new MemoryStream())
             {
@@ -201,7 +271,7 @@ namespace IXICore
                     {
                         // TODO this likely doesn't have to be transmitted over network - it's more of a local helper
                         writer.Write(encrypted);
-                        writer.Write(sigEncrypted);
+                        writer.Write(false);
                     }
 
                     // Write the sig
@@ -216,6 +286,79 @@ namespace IXICore
                     }
 
                     writer.Write(timestamp);
+                }
+                return m.ToArray();
+            }
+        }
+        public byte[] getBytes_v1(bool for_checksum = false)
+        {
+            using (MemoryStream m = new MemoryStream())
+            {
+                using (BinaryWriter writer = new BinaryWriter(m))
+                {
+                    writer.WriteIxiVarInt(version);
+
+                    writer.WriteIxiVarInt(id.Length);
+                    writer.Write(id);
+
+                    // Write the type
+                    writer.WriteIxiVarInt((int)type);
+
+                    // Write the encryption type
+                    writer.WriteIxiVarInt((int)encryptionType);
+
+                    // Write the sender
+                    if (sender != null)
+                    {
+                        writer.WriteIxiVarInt(sender.Length);
+                        writer.Write(sender);
+                    }
+                    else
+                    {
+                        writer.WriteIxiVarInt(0);
+                    }
+
+
+                    // Write the recipient
+                    if (recipient != null)
+                    {
+                        writer.WriteIxiVarInt(recipient.Length);
+                        writer.Write(recipient);
+                    }
+                    else
+                    {
+                        writer.WriteIxiVarInt(0);
+                    }
+
+                    // Write the data
+                    if (data != null)
+                    {
+                        writer.WriteIxiVarInt(data.Length);
+                        writer.Write(data);
+                    }
+                    else
+                    {
+                        writer.WriteIxiVarInt(0);
+                    }
+
+                    if (!for_checksum)
+                    {
+                        // TODO this likely doesn't have to be transmitted over network - it's more of a local helper
+                        writer.Write(encrypted);
+                    }
+
+                    // Write the sig
+                    if (!for_checksum && signature != null)
+                    {
+                        writer.WriteIxiVarInt(signature.Length);
+                        writer.Write(signature);
+                    }
+                    else
+                    {
+                        writer.WriteIxiVarInt(0);
+                    }
+
+                    writer.WriteIxiVarInt(timestamp);
                 }
                 return m.ToArray();
             }
@@ -248,35 +391,8 @@ namespace IXICore
             if (decrypted_data != null)
             {
                 originalData = data;
+                originalChecksum = calculateChecksum();
                 data = decrypted_data;
-                return true;
-            }
-            return false;
-        }
-
-        // Encrypts a provided signature with aes, then chacha based on the keys provided
-        public bool encryptSignature(byte[] public_key, byte[] aes_password, byte[] chacha_key)
-        {
-            if (sigEncrypted)
-            {
-                return true;
-            }
-            byte[] encrypted_data = _encrypt(sigdata, public_key, aes_password, chacha_key);
-            if (encrypted_data != null)
-            {
-                sigdata = encrypted_data;
-                sigEncrypted = true;
-                return true;
-            }
-            return false;
-        }
-
-        public bool decryptSignature(byte[] private_key, byte[] aes_key, byte[] chacha_key)
-        {
-            byte[] decrypted_data = _decrypt(sigdata, private_key, aes_key, chacha_key);
-            if (decrypted_data != null)
-            {
-                sigdata = decrypted_data;
                 return true;
             }
             return false;
@@ -300,8 +416,12 @@ namespace IXICore
 
         public bool verifySignature(byte[] public_key)
         {
-            byte[] checksum = originalChecksum;
-            if(checksum == null)
+            byte[] checksum = null;
+            if (version > 0)
+            {
+                checksum = originalChecksum;
+            }
+            if (checksum == null)
             {
                 checksum = calculateChecksum();
             }
