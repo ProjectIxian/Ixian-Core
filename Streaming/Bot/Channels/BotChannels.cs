@@ -53,7 +53,7 @@ namespace IXICore.SpixiBot
                 }
                 catch (Exception e)
                 {
-                    Logging.error("Cannot write to {9} file: {1}", channelsPath, e.Message);
+                    Logging.error("Cannot write to {0} file: {1}", channelsPath, e.Message);
                 }
                 writer.Flush();
                 writer.Close();
@@ -80,7 +80,7 @@ namespace IXICore.SpixiBot
                 }
                 catch (Exception e)
                 {
-                    Logging.error("Cannot open {9} file: {1}", channelsPath, e.Message);
+                    Logging.error("Cannot open {0} file: {1}", channelsPath, e.Message);
                     return;
                 }
 

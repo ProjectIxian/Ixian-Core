@@ -80,7 +80,7 @@ namespace IXICore.SpixiBot
                 }
                 catch (Exception e)
                 {
-                    Logging.error("Cannot open {9} file: {1}", groupsPath, e.Message);
+                    Logging.error("Cannot open {0} file: {1}", groupsPath, e.Message);
                     return;
                 }
 
