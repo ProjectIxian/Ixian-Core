@@ -115,7 +115,7 @@ namespace IXICore.Inventory
 
         public static InventoryItem decodeInventoryItem(byte[] bytes)
         {
-            InventoryItemTypes type = (InventoryItemTypes)bytes.GetIxiVarInt(0);
+            InventoryItemTypes type = (InventoryItemTypes)bytes.GetIxiVarInt(0).num;
             InventoryItem item = null;
             switch (type)
             {

@@ -114,59 +114,60 @@ namespace IXICore.Utils
 		}
 
 		// byte[] extensions
-		public static long GetIxiVarInt(this byte[] data, int offset)
+		public static (long num, int bytesRead) GetIxiVarInt(this byte[] data, int offset)
 		{
 			byte type = data[offset];
 			if (type < 0xf8)
 			{
-				return data[offset];
+				return (data[offset], 1);
 			}
 			else if (type == 0xf8)
 			{
-				return -BitConverter.ToUInt16(data, offset + 1);
+				return (-BitConverter.ToUInt16(data, offset + 1), 3);
 			}
 			else if (type == 0xf9)
 			{
-				return -BitConverter.ToUInt32(data, offset + 1);
+				return (-BitConverter.ToUInt32(data, offset + 1), 5);
 			}
 			else if (type == 0xfa)
 			{
-				return -(long)BitConverter.ToUInt64(data, offset + 1);
+				return (-(long)BitConverter.ToUInt64(data, offset + 1), 9);
 			}
 			else if (type == 0xfc)
 			{
-				return BitConverter.ToUInt16(data, offset + 1);
+				return (BitConverter.ToUInt16(data, offset + 1), 3);
 			}
 			else if (type == 0xfd)
 			{
-				return BitConverter.ToUInt32(data, offset + 1);
+				return (BitConverter.ToUInt32(data, offset + 1), 5);
 			}
 			else if (type == 0xfe)
 			{
-				return -(long)BitConverter.ToUInt64(data, offset + 1);
+				return (-(long)BitConverter.ToUInt64(data, offset + 1), 9);
 			}
 			throw new Exception("Cannot decode VarInt from bytes, unknown type " + type.ToString());
 		}
 
-		public static ulong GetIxiVarUInt(this byte[] data, int offset)
+		public static (ulong num, int bytesRead) GetIxiVarUInt(this byte[] data, int offset)
 		{
 			byte type = data[offset];
 			if (type < 0xf8)
 			{
-				return data[offset];
+				return (data[offset], 1);
 			}
 			else if (type == 0xfc)
 			{
-				return BitConverter.ToUInt16(data, offset + 1);
+				return (BitConverter.ToUInt16(data, offset + 1), 3);
 			}
 			else if (type == 0xfd)
 			{
-				return BitConverter.ToUInt32(data, offset + 1);
+				return (BitConverter.ToUInt32(data, offset + 1), 5);
 			}
 			else if (type == 0xfe)
 			{
-				return BitConverter.ToUInt64(data, offset + 1);
-			}else if(type < 0xfc)
+				return (BitConverter.ToUInt64(data, offset + 1), 9);
+			}
+			else if(type < 0xfc)
             {
 				throw new Exception("Cannot decode VarInt from bytes, signed type was used " + type.ToString());
 			}

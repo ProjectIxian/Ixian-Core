@@ -169,7 +169,7 @@ namespace IXICore
             /// <summary>
             ///  TXID of the original transaction which this transaction validates.
             /// </summary>
-            public string origTXId;
+            public byte[] origTXId;
             /// <summary>
             ///  Public key of the signer which can help authorize a Multisig transaction, if required (key is not yet present in the PresenceList).
             /// </summary>
@@ -195,7 +195,7 @@ namespace IXICore
         /// <remarks>
         ///  The transaction ID is not transferred over the network, because it can be recalculated from the transaction data.
         /// </remarks>
-        public string id;
+        public byte[] id;
         /// <summary>
         ///  Transaction type. See also `Transaction.Type`.
         /// </summary>
@@ -340,6 +340,10 @@ namespace IXICore
             else if (block_version < BlockVer.v7)
             {
                 ver = 4;
+            }
+            else if (block_version < BlockVer.v8)
+            {
+                ver = 5;
             }
             else
             {
@@ -970,7 +974,7 @@ namespace IXICore
 
             if(signature == null || pubkey == null)
             {
-                Logging.warn("Signature or pubkey for received txid {0} was null, verification failed.", id);
+                Logging.warn("Signature or pubkey for received txid {0} was null, verification failed.", txIdV8ToLegacy(id));
                 return false;
             }
 
@@ -982,7 +986,7 @@ namespace IXICore
         ///  Generates the Transaction ID from the transaction data.
         /// </summary>
         /// <returns>TXID</returns>
-        public string generateID()
+        public byte[] generateID()
         {
             string txid = "";
 
@@ -1054,7 +1058,7 @@ namespace IXICore
             }
             txid += chk;
 
-            return txid;
+            return txIdLegacyToV8(txid);
         }
 
         /// <summary>
@@ -1068,7 +1072,7 @@ namespace IXICore
             rawData.AddRange(ConsensusConfig.ixianChecksumLock);
             if (transaction.version < 5)
             {
-                rawData.AddRange(Encoding.UTF8.GetBytes(transaction.id));
+                rawData.AddRange(Encoding.UTF8.GetBytes(txIdV8ToLegacy(transaction.id)));
             }
             rawData.AddRange(BitConverter.GetBytes(transaction.type));
             rawData.AddRange(Encoding.UTF8.GetBytes(transaction.amount.ToString()));
@@ -1393,7 +1397,7 @@ namespace IXICore
 
                         return new MultisigTxData
                         {
-                            origTXId = Encoding.UTF8.GetString(orig_txid),
+                            origTXId = orig_txid,
                             signerPubKey = signer_pub_key,
                             signerNonce = signer_nonce
                         };
@@ -1532,7 +1536,7 @@ namespace IXICore
                                 signer_nonce_len = rd.ReadInt32();
                                 if (signer_nonce_len > 16)
                                 {
-                                    Logging.warn(String.Format("Multisig transaction: Invalid signer nonce length stored in data: {0}", signer_nonce_len));
+                                    Logging.warn("Multisig transaction: Invalid signer nonce length stored in data: {0}", signer_nonce_len);
                                     return null;
                                 }
                                 signer_nonce = rd.ReadBytes(signer_nonce_len);
@@ -1544,7 +1548,7 @@ namespace IXICore
                                     signerNonce = signer_nonce
                                 };
                             default:
-                                Logging.warn(String.Format("Invalid MultisigWalletChangeType for a multisig change transaction {{ {0} }}.", id));
+                                Logging.warn("Invalid MultisigWalletChangeType for a multisig change transaction {{ {0} }}.", txIdV8ToLegacy(id));
                                 return null;
                         }
                     }
@@ -1573,7 +1577,7 @@ namespace IXICore
             }
             else
             {
-                Logging.info(String.Format("Transaction {{ {0} }} is not a multisig transaction, so MultisigData cannot be retrieved.", id));
+                Logging.info(String.Format("Transaction {{ {0} }} is not a multisig transaction, so MultisigData cannot be retrieved.", txIdV8ToLegacy(id)));
                 return null;
             }
         }
@@ -1823,7 +1827,7 @@ namespace IXICore
         public Dictionary<string, object> toDictionary()
         {
             Dictionary<string, object> tDic = new Dictionary<string, object>();
-            tDic.Add("id", id);
+            tDic.Add("id", txIdV8ToLegacy(id));
             tDic.Add("version", version);
             tDic.Add("blockHeight", blockHeight.ToString());
             tDic.Add("nonce", nonce.ToString());
@@ -1874,5 +1878,60 @@ namespace IXICore
             int milliseconds = (int)(DateTimeOffset.Now.ToUnixTimeMilliseconds() - (DateTimeOffset.Now.ToUnixTimeSeconds() * 1000));
             return (milliseconds * 1000) + random.Next(1000);
         }
+
+        public static byte[] txIdLegacyToV8(string txid)
+        {
+            byte[] b_txid;
+
+            var split_txid = txid.Split('-');
+
+            if (txid.StartsWith("stk-"))
+            {
+                byte[] b_type = IxiVarInt.GetIxiVarIntBytes(0);
+                byte[] b_bh = IxiVarInt.GetIxiVarIntBytes(UInt64.Parse(split_txid[2]));
+                byte[] b_tx_hash = Base58Check.Base58CheckEncoding.DecodePlain(split_txid[3]);
+                b_txid = new byte[b_type.Length + b_bh.Length + b_tx_hash.Length];
+                Array.Copy(b_type, 0, b_txid, 0, b_type.Length);
+                Array.Copy(b_bh, 0, b_txid, b_type.Length, b_bh.Length);
+                Array.Copy(b_tx_hash, 0, b_txid, b_type.Length + b_bh.Length, b_tx_hash.Length);
+            }
+            else
+            {
+                byte[] b_type = IxiVarInt.GetIxiVarIntBytes(1);
+                byte[] b_bh = IxiVarInt.GetIxiVarIntBytes(UInt64.Parse(split_txid[0]));
+                byte[] b_tx_hash = Base58Check.Base58CheckEncoding.DecodePlain(split_txid[1]);
+                b_txid = new byte[b_type.Length + b_bh.Length + b_tx_hash.Length];
+                Array.Copy(b_type, 0, b_txid, 0, b_type.Length);
+                Array.Copy(b_bh, 0, b_txid, b_type.Length, b_bh.Length);
+                Array.Copy(b_tx_hash, 0, b_txid, b_type.Length + b_bh.Length, b_tx_hash.Length);
+            }
+
+            return b_txid;
+        }
+
+        public static string txIdV8ToLegacy(byte[] txid)
+        {
+            string s_txid;
+            var type_ret = IxiVarInt.GetIxiVarUInt(txid, 0);
+            int type = (int)type_ret.num;
+            int type_len = type_ret.bytesRead;
+
+            var bh_ret = IxiVarInt.GetIxiVarUInt(txid, type_len);
+            ulong bh = bh_ret.num;
+            int bh_len = bh_ret.bytesRead;
+
+            byte[] tx_hash = new byte[txid.Length - type_len - bh_len];
+            Array.Copy(txid, type_len + bh_len, tx_hash, 0, tx_hash.Length);
+            if (type == 0)
+            {
+                s_txid = "stk-" + (bh - 5) + "-" + bh + "-" + Base58Check.Base58CheckEncoding.EncodePlain(tx_hash);
+            }
+            else
+            {
+                s_txid = bh + "-" + Base58Check.Base58CheckEncoding.EncodePlain(tx_hash);
+            }
+            return s_txid;
+        }
+
     }
 }

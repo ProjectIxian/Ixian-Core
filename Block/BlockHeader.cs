@@ -18,6 +18,7 @@ namespace IXICore
         public static int v6 = 6;
         public static int v7 = 7;
         public static int v8 = 8;
+        public static int v9 = 9;
     }
 
     public class SuperBlockSegment
@@ -46,7 +47,7 @@ namespace IXICore
         /// <summary>
         /// The list of transactions which should act on the WalletState from the previous block to produce the WalletState for this block.
         /// </summary>
-        public List<string> transactions = new List<string> { };
+        public List<byte[]> transactions = new List<byte[]> { };
         /// <summary>
         /// Block version.
         /// </summary>
@@ -118,7 +119,7 @@ namespace IXICore
         {
             version = BlockVer.v0;
             blockNum = 0;
-            transactions = new List<string>();
+            transactions = new List<byte[]>();
         }
 
         /// <summary>
@@ -140,7 +141,7 @@ namespace IXICore
             if (block.version < BlockVer.v6)
             {
                 // Add transactions and signatures from the old block
-                foreach (string txid in block.transactions)
+                foreach (byte[] txid in block.transactions)
                 {
                     transactions.Add(txid);
                 }
@@ -215,7 +216,7 @@ namespace IXICore
                                 for (int i = 0; i < num_transactions; i++)
                                 {
                                     string txid = reader.ReadString();
-                                    transactions.Add(txid);
+                                    transactions.Add(Transaction.txIdLegacyToV8(txid));
                                 }
                             }else
                             {
@@ -313,9 +314,9 @@ namespace IXICore
                         writer.Write(num_transactions);
 
                         // Write each wallet
-                        foreach (string txid in transactions)
+                        foreach (byte[] txid in transactions)
                         {
-                            writer.Write(txid);
+                            writer.Write(Transaction.txIdV8ToLegacy(txid));
                         }
                     }else
                     {
@@ -404,9 +405,9 @@ namespace IXICore
             if (version < BlockVer.v6)
             {
                 StringBuilder merged_txids = new StringBuilder();
-                foreach (string txid in transactions)
+                foreach (byte[] txid in transactions)
                 {
-                    merged_txids.Append(txid);
+                    merged_txids.Append(Transaction.txIdV8ToLegacy(txid));
                 }
 
                 rawData.AddRange(Encoding.UTF8.GetBytes(merged_txids.ToString()));

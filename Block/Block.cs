@@ -4,6 +4,7 @@ using System;
 using System.Collections.Generic;
 using System.IO;
 using System.Linq;
+using System.Text;
 
 namespace IXICore
 {
@@ -30,7 +31,7 @@ namespace IXICore
         /// <summary>
         /// The list of transactions which should act on the WalletState from the previous block to produce the WalletState for this block.
         /// </summary>
-        public List<string> transactions = new List<string> { };
+        public List<byte[]> transactions = new List<byte[]> { };
 
         /// <summary>
         /// The list of Master Node signatures which enable the Ixian Consensus algorithm.
@@ -154,7 +155,7 @@ namespace IXICore
         {
             version = BlockVer.v0;
             blockNum = 0;
-            transactions = new List<string>();
+            transactions = new List<byte[]>();
             initPITTree();
         }
 
@@ -180,10 +181,17 @@ namespace IXICore
             }
 
             // Add transactions and signatures from the old block
-            foreach (string txid in block.transactions)
+            foreach (byte[] txid in block.transactions)
             {
                 transactions.Add(txid);
-                transactionPIT.add(txid);
+                if (version < BlockVer.v8)
+                {
+                    transactionPIT.add(UTF8Encoding.UTF8.GetBytes(Transaction.txIdV8ToLegacy(txid)));
+                }
+                else
+                {
+                    transactionPIT.add(txid);
+                }
             }
 
             foreach (byte[][] signature in block.signatures)
@@ -274,6 +282,17 @@ namespace IXICore
         public Block(byte[] bytes)
         {
             initPITTree();
+            if(bytes[0] < BlockVer.v8)
+            {
+                fromBytesLegacy(bytes);
+            }else
+            {
+                fromBytesV8(bytes);
+            }
+        }
+
+        private void fromBytesLegacy(byte[] bytes)
+        {
             try
             {
                 using (MemoryStream m = new MemoryStream(bytes))
@@ -290,7 +309,8 @@ namespace IXICore
                             {
                                 throw new Exception("Block #" + blockNum + " size is bigger than 49MB.");
                             }
-                        }else
+                        }
+                        else
                         {
                             if (bytes.Length > 10240000)
                             {
@@ -306,13 +326,14 @@ namespace IXICore
                             for (int i = 0; i < num_transactions; i++)
                             {
                                 string txid = reader.ReadString();
-                                if (transactions.Contains(txid))
+                                byte[] b_txid = Transaction.txIdLegacyToV8(txid);
+                                if (transactions.Contains(b_txid, new ByteArrayComparer()))
                                 {
                                     // Block contains duplicate txid
                                     throw new Exception("Block #" + blockNum + " contains duplicate txid");
                                 }
-                                transactions.Add(txid);
-                                transactionPIT.add(txid);
+                                transactions.Add(b_txid);
+                                transactionPIT.add(UTF8Encoding.UTF8.GetBytes(txid));
                             }
 
                             // Get the signatures
@@ -350,7 +371,7 @@ namespace IXICore
                             }
 
                             int dataLen = reader.ReadInt32();
-                            if(dataLen > 0)
+                            if (dataLen > 0)
                             {
                                 blockChecksum = reader.ReadBytes(dataLen);
                             }
@@ -376,7 +397,7 @@ namespace IXICore
                             difficulty = reader.ReadUInt64();
                             timestamp = reader.ReadInt64();
 
-                            if(version > BlockVer.v4)
+                            if (version > BlockVer.v4)
                             {
                                 lastSuperBlockNum = reader.ReadUInt64();
 
@@ -387,7 +408,7 @@ namespace IXICore
                                 }
 
                                 int super_block_seg_count = reader.ReadInt32();
-                                for(int i = 0; i < super_block_seg_count; i++)
+                                for (int i = 0; i < super_block_seg_count; i++)
                                 {
                                     ulong seg_block_num = reader.ReadUInt64();
                                     int seg_bc_len = reader.ReadInt32();
@@ -403,7 +424,135 @@ namespace IXICore
                     }
                 }
             }
-            catch(Exception e)
+            catch (Exception e)
+            {
+                Logging.warn(string.Format("Cannot create block from bytes: {0}", e.ToString()));
+                throw;
+            }
+        }
+
+        private void fromBytesV8(byte[] bytes)
+        {
+            try
+            {
+                using (MemoryStream m = new MemoryStream(bytes))
+                {
+                    using (BinaryReader reader = new BinaryReader(m))
+                    {
+                        version = (int)reader.ReadIxiVarUInt();
+
+                        blockNum = reader.ReadIxiVarUInt();
+
+                        if (bytes.Length > 10240000)
+                        {
+                            throw new Exception("Block #" + blockNum + " size is bigger than 19MB.");
+                        }
+
+                        if (version <= maxVersion)
+                        {
+                            return;
+                        }
+
+                        // Get the transaction ids
+                        int num_transactions = (int)reader.ReadIxiVarUInt();
+                        for (int i = 0; i < num_transactions; i++)
+                        {
+                            int txid_len = (int)reader.ReadIxiVarUInt();
+                            byte[] txid = reader.ReadBytes(txid_len);
+                            if (transactions.Contains(txid, new ByteArrayComparer()))
+                            {
+                                // Block contains duplicate txid
+                                throw new Exception("Block #" + blockNum + " contains duplicate txid");
+                            }
+                            transactions.Add(txid);
+                            transactionPIT.add(txid);
+                        }
+
+                        // Get the signatures
+                        int num_signatures = (int)reader.ReadIxiVarUInt();
+
+                        if (num_signatures > ConsensusConfig.maximumBlockSigners * 2)
+                        {
+                            throw new Exception("Block #" + blockNum + " has more than " + (ConsensusConfig.maximumBlockSigners * 2) + " signatures");
+                        }
+
+
+                        for (int i = 0; i < num_signatures; i++)
+                        {
+                            int sigLen = (int)reader.ReadIxiVarUInt();
+                            byte[] sig = null;
+                            if (sigLen > 0)
+                            {
+                                sig = reader.ReadBytes(sigLen);
+                            }
+
+                            int sigAddresLen = (int)reader.ReadIxiVarUInt();
+                            byte[] sigAddress = null;
+                            if (sigAddresLen > 0)
+                            {
+                                sigAddress = reader.ReadBytes(sigAddresLen);
+                            }
+
+                            if (!containsSignature(new Address(sigAddress)))
+                            {
+                                byte[][] newSig = new byte[2][];
+                                newSig[0] = sig;
+                                newSig[1] = sigAddress;
+                                signatures.Add(newSig);
+                            }
+                        }
+
+                        int dataLen = (int)reader.ReadIxiVarUInt();
+                        if (dataLen > 0)
+                        {
+                            blockChecksum = reader.ReadBytes(dataLen);
+                        }
+
+                        dataLen = (int)reader.ReadIxiVarUInt();
+                        if (dataLen > 0)
+                        {
+                            lastBlockChecksum = reader.ReadBytes(dataLen);
+                        }
+
+                        dataLen = (int)reader.ReadIxiVarUInt();
+                        if (dataLen > 0)
+                        {
+                            walletStateChecksum = reader.ReadBytes(dataLen);
+                        }
+
+                        dataLen = (int)reader.ReadIxiVarUInt();
+                        if (dataLen > 0)
+                        {
+                            signatureFreezeChecksum = reader.ReadBytes(dataLen);
+                        }
+
+                        difficulty = reader.ReadIxiVarUInt();
+                        timestamp = (long)reader.ReadIxiVarUInt();
+
+                        lastSuperBlockNum = reader.ReadIxiVarUInt();
+
+                        dataLen = (int)reader.ReadIxiVarUInt();
+                        if (dataLen > 0)
+                        {
+                            lastSuperBlockChecksum = reader.ReadBytes(dataLen);
+                        }
+
+                        int super_block_seg_count = (int)reader.ReadIxiVarUInt();
+                        for (int i = 0; i < super_block_seg_count; i++)
+                        {
+                            ulong seg_block_num = reader.ReadIxiVarUInt();
+                            int seg_bc_len = (int)reader.ReadIxiVarUInt();
+                            byte[] seg_bc = null;
+                            if (seg_bc_len > 0)
+                            {
+                                seg_bc = reader.ReadBytes(seg_bc_len);
+                            }
+                            superBlockSegments.Add(seg_block_num, new SuperBlockSegment(seg_block_num, seg_bc));
+                        }
+                    }
+                }
+            }
+            catch (Exception e)
             {
                 Logging.warn(string.Format("Cannot create block from bytes: {0}", e.ToString()));
                 throw;
@@ -433,6 +582,18 @@ namespace IXICore
                 Logging.error("Trying to use getBytes() from a compacted Block {0}", blockNum);
                 return null;
             }
+
+            if(version < BlockVer.v8)
+            {
+                return getBytesLegacy(include_sb_segments, frozen_sigs_only);
+            }else
+            {
+                return getBytesV8(include_sb_segments, frozen_sigs_only);
+            }
+        }
+
+        private byte[] getBytesLegacy(bool include_sb_segments = true, bool frozen_sigs_only = true)
+        {
             using (MemoryStream m = new MemoryStream(5120))
             {
                 using (BinaryWriter writer = new BinaryWriter(m))
@@ -446,15 +607,15 @@ namespace IXICore
                     writer.Write(num_transactions);
 
                     // Write each wallet
-                    foreach (string txid in transactions)
+                    foreach (byte[] txid in transactions)
                     {
-                        writer.Write(txid);
+                        writer.Write(Transaction.txIdV8ToLegacy(txid));
                     }
 
                     lock (signatures)
                     {
                         List<byte[][]> tmp_signatures = signatures;
-                        if(frozen_sigs_only && frozenSignatures != null)
+                        if (frozen_sigs_only && frozenSignatures != null)
                         {
                             tmp_signatures = frozenSignatures;
                         }
@@ -462,7 +623,7 @@ namespace IXICore
                         // Write the number of signatures
                         int num_signatures = tmp_signatures.Count;
 
-                        if(num_signatures > ConsensusConfig.maximumBlockSigners * 2)
+                        if (num_signatures > ConsensusConfig.maximumBlockSigners * 2)
                         {
                             num_signatures = ConsensusConfig.maximumBlockSigners * 2;
                         }
@@ -478,7 +639,8 @@ namespace IXICore
                             {
                                 writer.Write(signature[0].Length);
                                 writer.Write(signature[0]);
-                            }else
+                            }
+                            else
                             {
                                 writer.Write((int)0);
                             }
@@ -494,7 +656,8 @@ namespace IXICore
                     {
                         writer.Write(lastBlockChecksum.Length);
                         writer.Write(lastBlockChecksum);
-                    }else
+                    }
+                    else
                     {
                         writer.Write((int)0);
                     }
@@ -543,9 +706,139 @@ namespace IXICore
                             writer.Write(entry.Value.blockChecksum.Length);
                             writer.Write(entry.Value.blockChecksum);
                         }
-                    }else
+                    }
+                    else
                     {
                         writer.Write((int)0);
+                    }
+#if TRACE_MEMSTREAM_SIZES
+                    Logging.info(String.Format("Block::getBytes: {0}", m.Length));
+#endif
+                }
+
+                return m.ToArray();
+            }
+        }
+
+        private byte[] getBytesV8(bool include_sb_segments = true, bool frozen_sigs_only = true)
+        {
+            using (MemoryStream m = new MemoryStream(5120))
+            {
+                using (BinaryWriter writer = new BinaryWriter(m))
+                {
+                    writer.WriteIxiVarInt(version);
+
+                    writer.WriteIxiVarInt(blockNum);
+
+                    // Write the number of transactions
+                    int num_transactions = transactions.Count;
+                    writer.WriteIxiVarInt(num_transactions);
+
+                    // Write each wallet
+                    foreach (byte[] txid in transactions)
+                    {
+                        writer.WriteIxiVarInt(txid.Length);
+                        writer.Write(txid);
+                    }
+
+                    lock (signatures)
+                    {
+                        List<byte[][]> tmp_signatures = signatures;
+                        if (frozen_sigs_only && frozenSignatures != null)
+                        {
+                            tmp_signatures = frozenSignatures;
+                        }
+
+                        // Write the number of signatures
+                        int num_signatures = tmp_signatures.Count;
+
+                        if (num_signatures > ConsensusConfig.maximumBlockSigners * 2)
+                        {
+                            num_signatures = ConsensusConfig.maximumBlockSigners * 2;
+                        }
+
+                        writer.WriteIxiVarInt(num_signatures);
+
+                        // Write each signature
+                        for (int i = 0; i < num_signatures; i++)
+                        {
+                            byte[][] signature = tmp_signatures[i];
+
+                            if (signature[0] != null)
+                            {
+                                writer.WriteIxiVarInt(signature[0].Length);
+                                writer.Write(signature[0]);
+                            }
+                            else
+                            {
+                                writer.WriteIxiVarInt((int)0);
+                            }
+                            writer.WriteIxiVarInt(signature[1].Length);
+                            writer.Write(signature[1]);
+                        }
+                    }
+
+                    writer.WriteIxiVarInt(blockChecksum.Length);
+                    writer.Write(blockChecksum);
+
+                    if (lastBlockChecksum != null)
+                    {
+                        writer.WriteIxiVarInt(lastBlockChecksum.Length);
+                        writer.Write(lastBlockChecksum);
+                    }
+                    else
+                    {
+                        writer.WriteIxiVarInt((int)0);
+                    }
+
+                    if (walletStateChecksum != null)
+                    {
+                        writer.WriteIxiVarInt(walletStateChecksum.Length);
+                        writer.Write(walletStateChecksum);
+                    }
+                    else
+                    {
+                        writer.WriteIxiVarInt((int)0);
+                    }
+
+                    if (signatureFreezeChecksum != null)
+                    {
+                        writer.WriteIxiVarInt(signatureFreezeChecksum.Length);
+                        writer.Write(signatureFreezeChecksum);
+                    }
+                    else
+                    {
+                        writer.WriteIxiVarInt((int)0);
+                    }
+
+                    writer.WriteIxiVarInt(difficulty);
+                    writer.WriteIxiVarInt(timestamp);
+
+                    writer.WriteIxiVarInt(lastSuperBlockNum);
+
+                    if (lastSuperBlockChecksum != null)
+                    {
+                        writer.WriteIxiVarInt(lastSuperBlockChecksum.Length);
+                        writer.Write(lastSuperBlockChecksum);
+                    }
+                    else
+                    {
+                        writer.WriteIxiVarInt((int)0);
+                    }
+
+                    if (include_sb_segments)
+                    {
+                        writer.WriteIxiVarInt(superBlockSegments.Count);
+                        foreach (var entry in superBlockSegments)
+                        {
+                            writer.WriteIxiVarInt(entry.Key);
+                            writer.WriteIxiVarInt(entry.Value.blockChecksum.Length);
+                            writer.Write(entry.Value.blockChecksum);
+                        }
+                    }
+                    else
+                    {
+                        writer.WriteIxiVarInt((int)0);
                     }
 #if TRACE_MEMSTREAM_SIZES
                     Logging.info(String.Format("Block::getBytes: {0}", m.Length));
@@ -600,7 +893,7 @@ namespace IXICore
         /// </remarks>
         /// <param name="txid">ID of the transaction to add.</param>
         /// <returns>True, if the transaction was added successfully.</returns>
-        public bool addTransaction(string txid)
+        public bool addTransaction(byte[] txid)
         {
             if (compacted)
             {
@@ -609,13 +902,20 @@ namespace IXICore
             }
             // TODO: this assumes the transaction is properly validated as it's already in the Transaction Pool
             // Could add an additional layer of checks here, just as in the TransactionPool - to avoid tampering
-            if (!transactions.Contains(txid))
+            if (!transactions.Contains(txid, new ByteArrayComparer()))
             {
                 transactions.Add(txid);
-                transactionPIT.add(txid);
-            }else
+                if (version < BlockVer.v8)
+                {
+                    transactionPIT.add(UTF8Encoding.UTF8.GetBytes(Transaction.txIdV8ToLegacy(txid)));
+                }else
+                {
+                    transactionPIT.add(txid);
+                }
+            }
+            else
             {
-                Logging.warn(String.Format("Tried to add a duplicate transaction {0} to block {1}.", txid, blockNum));
+                Logging.warn("Tried to add a duplicate transaction {0} to block {1}.", txid, blockNum);
             }
 
             return true;

@@ -413,11 +413,11 @@ namespace IXICore
         ///  will always be placed in the same leaf node, depending on the tree's number of levels.
         /// </summary>
         /// <param name="txid">Transaction ID to add to the tree.</param>
-        public void add(string txid)
+        public void add(byte[] txid)
         {
             lock(threadLock)
             {
-                addIntRec(UTF8Encoding.UTF8.GetBytes(txid), root, 0);
+                addIntRec(txid, root, 0);
             }
         }
 
@@ -428,11 +428,11 @@ namespace IXICore
         /// If the transaction ID is not in the tree, no change is done.
         /// </remarks>
         /// <param name="txid">Transaction ID to remove from the tree.</param>
-        public void remove(string txid)
+        public void remove(byte[] txid)
         {
             lock(threadLock)
             {
-                delIntRec(UTF8Encoding.UTF8.GetBytes(txid), root);
+                delIntRec(txid, root);
             }
         }
 
@@ -441,11 +441,11 @@ namespace IXICore
         /// </summary>
         /// <param name="txid">Transaction ID to search for in the Tree.</param>
         /// <returns>True, if `txid` was found in the tree, false otherwise.</returns>
-        public bool contains(string txid)
+        public bool contains(byte[] txid)
         {
             lock(threadLock)
             {
-                return containsIntRec(UTF8Encoding.UTF8.GetBytes(txid), root);
+                return containsIntRec(txid, root);
             }
         }
 
@@ -497,7 +497,7 @@ namespace IXICore
         /// </remarks>
         /// <param name="txid">Transaction ID for which the minimal tree will be constructed/</param>
         /// <returns>Byte stream containig the minimal tree for the specified transaction.</returns>
-        public byte[] getMinimumTree(string txid)
+        public byte[] getMinimumTree(byte[] txid)
         {
             lock(threadLock)
             {
@@ -511,7 +511,7 @@ namespace IXICore
                     bw.Write((byte)PIT_MinimumTreeType.SingleTX);
                     bw.Write(levels);
                     bw.Write(hashLength);
-                    writeMinTreeInt(UTF8Encoding.UTF8.GetBytes(txid), bw, root);
+                    writeMinTreeInt(txid, bw, root);
                 }
                 return ms.ToArray();
             }
@@ -548,7 +548,7 @@ namespace IXICore
         /// </summary>
         /// <param name="txids">List of transaction IDs- the minimal tree will be able to verify all transctions witch are in this list and present in the tree.</param>
         /// <returns>Byte stream which allows reconstructing a minimal tree, which is used for transaction inclusion verification (TIV).</returns>
-        public byte[] getMinimumTreeTXList(List<string> txids)
+        public byte[] getMinimumTreeTXList(List<byte[]> txids)
         {
             lock (threadLock)
             {
@@ -556,7 +556,7 @@ namespace IXICore
                 {
                     calculateTreeHash();
                 }
-                List<byte[]> included = txids.Select(x => UTF8Encoding.UTF8.GetBytes(x)).ToList();
+                List<byte[]> included = txids.Select(x => x).ToList();
                 MemoryStream ms = new MemoryStream();
                 using (BinaryWriter bw = new BinaryWriter(ms, Encoding.UTF8, true))
                 {

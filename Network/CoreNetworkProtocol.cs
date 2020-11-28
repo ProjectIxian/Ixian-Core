@@ -1139,6 +1139,40 @@ namespace IXICore
             }
         }
 
+        public static bool broadcastGetTransaction3(byte[] txid, ulong block_num, RemoteEndpoint endpoint = null, bool broadcast_to_single_node = true)
+        {
+            using (MemoryStream mw = new MemoryStream())
+            {
+                using (BinaryWriter writerw = new BinaryWriter(mw))
+                {
+                    writerw.WriteIxiVarInt(txid.Length);
+                    writerw.Write(txid);
+                    writerw.WriteIxiVarInt(block_num);
+#if TRACE_MEMSTREAM_SIZES
+                        Logging.info(String.Format("NetworkProtocol::broadcastGetTransaction: {0}", mw.Length));
+#endif
+
+                    if (endpoint != null)
+                    {
+                        if (endpoint.isConnected())
+                        {
+                            endpoint.sendData(ProtocolMessageCode.getTransaction3, mw.ToArray());
+                            return true;
+                        }
+                    }
+                    // TODO TODO TODO TODO TODO determine if historic transaction and send to 'H' instead of 'M'
+                    if (broadcast_to_single_node)
+                    {
+                        return broadcastProtocolMessageToSingleRandomNode(new char[] { 'M', 'H' }, ProtocolMessageCode.getTransaction3, mw.ToArray(), block_num);
+                    }
+                    else
+                    {
+                        return broadcastProtocolMessage(new char[] { 'M', 'H' }, ProtocolMessageCode.getTransaction3, mw.ToArray(), null);
+                    }
+                }
+            }
+        }
+
         public static bool addToInventory(char[] types, InventoryItem item, RemoteEndpoint skip_endpoint, ProtocolMessageCode code, byte[] data, byte[] helper)
         {
             bool c_result = NetworkClientManager.addToInventory(types, item, skip_endpoint, code, data, helper);

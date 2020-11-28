@@ -17,7 +17,7 @@ namespace IXICore
     /// </summary>
     class PITCacheItem
     {
-        public List<string> requestedForTXIDs;
+        public List<byte[]> requestedForTXIDs;
         public long requestSent;
         public PrefixInclusionTree pit;
     }
@@ -26,7 +26,7 @@ namespace IXICore
         private Thread tiv_thread = null;
         private bool running = false;
 
-        Dictionary<string, Transaction> txQueue = new Dictionary<string, Transaction>(); // List of all transactions that should be verified
+        Dictionary<byte[], Transaction> txQueue = new Dictionary<byte[], Transaction>(new ByteArrayComparer()); // List of all transactions that should be verified
         SortedList<ulong, PITCacheItem> pitCache = new SortedList<ulong, PITCacheItem>();
         long pitRequestTimeout = 5; // timeout (seconds) before PIT for a specific block is re-requested
         long pitCachePruneInterval = 30; // interval how often pit cache is checked and uninteresting entries removed (to save memory)
@@ -193,7 +193,7 @@ namespace IXICore
                     {
                         txQueue.Remove(tx.id);
 
-                        if(bh.transactions.Contains(tx.id))
+                        if(bh.transactions.Contains(tx.id, new ByteArrayComparer()))
                         {
                             // valid
                             IxianHandler.receivedTransactionInclusionVerificationResponse(tx.id, true);
@@ -214,11 +214,19 @@ namespace IXICore
                                 // Note: PIT has been verified against the block header when it was received, so additional verification is not needed here.
                                 // Note: the PIT we have cached might have been requested for different txids (the current txid could have been added later)
                                 // For that reason, the list of TXIDs we requested is stored together with the cached PIT
-                                if (pitCache[tx.applied].requestedForTXIDs.Contains(tx.id))
+                                byte[] txid = null;
+                                if(bh.version < BlockVer.v8)
                                 {
-                                    txQueue.Remove(tx.id);
+                                    txid = UTF8Encoding.UTF8.GetBytes(Transaction.txIdV8ToLegacy(tx.id));
+                                }else
+                                {
+                                    txid = tx.id;
+                                }
+                                if (pitCache[tx.applied].requestedForTXIDs.Contains(txid, new ByteArrayComparer()))
+                                {
+                                    txQueue.Remove(txid);
 
-                                    if (pitCache[tx.applied].pit.contains(tx.id))
+                                    if (pitCache[tx.applied].pit.contains(txid))
                                     {
                                         // valid
                                         IxianHandler.receivedTransactionInclusionVerificationResponse(tx.id, true);
@@ -270,7 +278,7 @@ namespace IXICore
         /// </summary>
         /// <param name="block_num">Block number for which the PIT should be included.</param>
         /// <param name="txids">List of interesting transactions, which we wish to verify.</param>
-        private void requestPITForBlock(ulong block_num, List<string> txids)
+        private void requestPITForBlock(ulong block_num, List<byte[]> txids)
         {
             lock(pitCache)
             {
@@ -281,17 +289,17 @@ namespace IXICore
                     Cuckoo filter = new Cuckoo(txids.Count);
                     foreach (var tx in txids)
                     {
-                        filter.Add(Encoding.UTF8.GetBytes(tx));
+                        filter.Add(tx);
                     }
                     byte[] filter_bytes = filter.getFilterBytes();
                     MemoryStream m = new MemoryStream(filter_bytes.Length + 12);
                     using (BinaryWriter w = new BinaryWriter(m, Encoding.UTF8, true))
                     {
-                        w.Write(block_num);
-                        w.Write(filter_bytes.Length);
+                        w.WriteIxiVarInt(block_num);
+                        w.WriteIxiVarInt(filter_bytes.Length);
                         w.Write(filter_bytes);
                     }
-                    CoreProtocolMessage.broadcastProtocolMessageToSingleRandomNode(new char[] { 'M', 'H' }, ProtocolMessageCode.getPIT, m.ToArray(), 0);
+                    CoreProtocolMessage.broadcastProtocolMessageToSingleRandomNode(new char[] { 'M', 'H' }, ProtocolMessageCode.getPIT2, m.ToArray(), 0);
                     PITCacheItem ci = new PITCacheItem()
                     {
                         pit = null,
@@ -544,25 +552,6 @@ namespace IXICore
             {
                 using (BinaryWriter writer = new BinaryWriter(mOut))
                 {
-                    writer.Write(from);
-                    writer.Write(to);
-                }
-
-                // Request from all nodes
-                //NetworkClientManager.broadcastData(new char[] { 'M', 'H' }, ProtocolMessageCode.getBlockHeaders, mOut.ToArray(), null);
-
-                // Request from a single random node
-                CoreProtocolMessage.broadcastProtocolMessageToSingleRandomNode(new char[] { 'M', 'H' }, ProtocolMessageCode.getBlockHeaders, mOut.ToArray(), 0);
-            }
-        }
-
-        private void requestBlockHeaders2(ulong from, ulong to)
-        {
-            Logging.info("Requesting block headers from {0} to {1}", from, to);
-            using (MemoryStream mOut = new MemoryStream())
-            {
-                using (BinaryWriter writer = new BinaryWriter(mOut))
-                {
                     writer.WriteIxiVarInt(from);
                     writer.WriteIxiVarInt(to);
                 }
@@ -584,7 +573,7 @@ namespace IXICore
                     List<ulong> to_remove = new List<ulong>();
                     foreach (var i in pitCache)
                     {
-                        if (i.Value.requestedForTXIDs.Intersect(txQueue.Values.Select(tx => tx.id)).Any())
+                        if (i.Value.requestedForTXIDs.Intersect(txQueue.Values.Select(tx => tx.id), new ByteArrayComparer()).Any())
                         {
                             // PIT cache item is still needed
                         }
