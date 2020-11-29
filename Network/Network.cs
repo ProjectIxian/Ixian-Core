@@ -81,6 +81,7 @@ namespace IXICore.Network
         blockHeight = 5,
         getKeepAlives = 6,
         keepAlivesChunk = 7,
+        [Obsolete("Use getTransactions2 instead")]
         getTransactions = 8,
         [Obsolete("Use getTransaction3 instead")]
         getTransaction = 9,
@@ -106,6 +107,7 @@ namespace IXICore.Network
         s2data = 26,
         s2failed = 27,
         s2signature = 28,
+        [Obsolete("Use inventory2 instead")]
         inventory = 29,
         getBalance2 = 30,
         balance2 = 31,
