@@ -302,7 +302,7 @@ namespace IXICore.Meta
                 {
                     sqlConnection.Close();
                     File.Delete(filename);
-                    return prepareStorage(filename);
+                    return prepareStorageInternal();
                 }
             }
 
@@ -652,7 +652,7 @@ namespace IXICore.Meta
             }
             catch (Exception e)
             {
-                Logging.error(String.Format("Exception has been thrown while executing SQL Query {0}. Exception message: {1}", sql, e.Message));
+                Logging.error("Exception has been thrown while executing SQL Query {0}. Exception message: {1}", sql, e);
                 return false;
             }
             return true;

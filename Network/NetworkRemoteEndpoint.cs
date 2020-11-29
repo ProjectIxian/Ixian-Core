@@ -531,35 +531,41 @@ namespace IXICore.Network
 
         protected void sendInventory()
         {
-            IEnumerable<InventoryItem> items_to_send = null;
-            lock (inventory)
+            try
             {
-                if (inventory.Count() == 0)
+                IEnumerable<InventoryItem> items_to_send = null;
+                lock (inventory)
                 {
-                    return;
-                }
-                long cur_time = Clock.getTimestamp();
-                if (inventory.Count() < CoreConfig.maxInventoryItems && inventoryLastSent > cur_time - CoreConfig.inventoryInterval)
-                {
-                    return;
-                }
-                inventoryLastSent = cur_time;
-                items_to_send = inventory.Take(CoreConfig.maxInventoryItems);
-                inventory = inventory.Skip(CoreConfig.maxInventoryItems).ToList();
-            }
-            using (MemoryStream m = new MemoryStream())
-            {
-                using (BinaryWriter writer = new BinaryWriter(m))
-                {
-                    writer.WriteIxiVarInt(items_to_send.Count());
-                    foreach (var item in items_to_send)
+                    if (inventory.Count() == 0)
                     {
-                        byte[] item_bytes = item.getBytes();
-                        writer.WriteIxiVarInt(item_bytes.Length);
-                        writer.Write(item_bytes);
+                        return;
                     }
+                    long cur_time = Clock.getTimestamp();
+                    if (inventory.Count() < CoreConfig.maxInventoryItems && inventoryLastSent > cur_time - CoreConfig.inventoryInterval)
+                    {
+                        return;
+                    }
+                    inventoryLastSent = cur_time;
+                    items_to_send = inventory.Take(CoreConfig.maxInventoryItems);
+                    inventory = inventory.Skip(CoreConfig.maxInventoryItems).ToList();
                 }
-                sendDataInternal(ProtocolMessageCode.inventory, m.ToArray(), 0);
+                using (MemoryStream m = new MemoryStream())
+                {
+                    using (BinaryWriter writer = new BinaryWriter(m))
+                    {
+                        writer.WriteIxiVarInt(items_to_send.Count());
+                        foreach (var item in items_to_send)
+                        {
+                            byte[] item_bytes = item.getBytes();
+                            writer.WriteIxiVarInt(item_bytes.Length);
+                            writer.Write(item_bytes);
+                        }
+                    }
+                    sendDataInternal(ProtocolMessageCode.inventory, m.ToArray(), 0);
+                }
+            } catch (Exception e)
+            {
+                Logging.error("Exception occured in sendInventory: " + e);
             }
         }
 
