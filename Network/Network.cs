@@ -82,7 +82,7 @@ namespace IXICore.Network
         getKeepAlives = 6,
         keepAlivesChunk = 7,
         getTransactions = 8,
-        [Obsolete("Use getTransaction2 instead")]
+        [Obsolete("Use getTransaction3 instead")]
         getTransaction = 9,
         transactionData = 10,
         getSignatures = 11,
@@ -99,6 +99,7 @@ namespace IXICore.Network
         blockHeaders2 = 20,
         getPIT2 = 21,
         pitData2 = 22,
+        [Obsolete("Use getTransaction3 instead")]
         getTransaction2 = 23,
         updatePresence = 24,
         //removePresence = 25,
@@ -141,7 +142,10 @@ namespace IXICore.Network
         getWalletStateChunk = 51,
         walletStateChunk = 52,
         syncWalletState = 53,
-        walletState = 54
+        walletState = 54,
+        getTransactions2 = 55,
+        getTransaction3 = 56,
+        inventory2 = 57
     }
 
     /// <summary>

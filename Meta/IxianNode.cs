@@ -36,7 +36,7 @@ namespace IXICore.Meta
         public abstract void shutdown();
 
         // Optional
-        public virtual void receivedTransactionInclusionVerificationResponse(string txid, bool verified) { }
+        public virtual void receivedTransactionInclusionVerificationResponse(byte[] txid, bool verified) { }
         public virtual void receivedBlockHeader(BlockHeader block_header, bool verified) { }
     }
 
@@ -156,7 +156,7 @@ namespace IXICore.Meta
             return handlerClass.getWalletStorage();
         }
 
-        public static void receivedTransactionInclusionVerificationResponse(string txid, bool verified)
+        public static void receivedTransactionInclusionVerificationResponse(byte[] txid, bool verified)
         {
             verifyHandler();
             handlerClass.receivedTransactionInclusionVerificationResponse(txid, verified);

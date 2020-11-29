@@ -63,7 +63,7 @@ namespace IXICore
             return amount;
         }
 
-        public static void remove(string txid)
+        public static void remove(byte[] txid)
         {
             lock (pendingTransactions)
             {
@@ -71,7 +71,7 @@ namespace IXICore
             }
         }
 
-        public static PendingTransaction getPendingTransaction(string txid)
+        public static PendingTransaction getPendingTransaction(byte[] txid)
         {
             lock (pendingTransactions)
             {
@@ -79,7 +79,7 @@ namespace IXICore
             }
         }
 
-        public static void increaseReceivedCount(string txid, byte[] address)
+        public static void increaseReceivedCount(byte[] txid, byte[] address)
         {
             lock (pendingTransactions)
             {

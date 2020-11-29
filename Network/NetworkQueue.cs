@@ -94,7 +94,9 @@ namespace IXICore.Network
 #pragma warning disable CS0618 // Type or member is obsolete
                     case ProtocolMessageCode.getTransaction:
                     case ProtocolMessageCode.getTransaction2:
+                    case ProtocolMessageCode.getTransaction3:
                     case ProtocolMessageCode.getTransactions:
+                    case ProtocolMessageCode.getTransactions2:
                     case ProtocolMessageCode.getBlock:
                     case ProtocolMessageCode.getBlock2:
                     case ProtocolMessageCode.getBlockHeaders:
@@ -124,6 +126,7 @@ namespace IXICore.Network
                     case ProtocolMessageCode.pitData:
                     case ProtocolMessageCode.pitData2:
                     case ProtocolMessageCode.inventory:
+                    case ProtocolMessageCode.inventory2:
 #pragma warning restore CS0618 // Type or member is obsolete
                         found_get_request = false;
                         found_tx_request = true;
@@ -182,7 +185,9 @@ namespace IXICore.Network
 #pragma warning disable CS0618 // Type or member is obsolete
                             case ProtocolMessageCode.getTransaction:
                             case ProtocolMessageCode.getTransaction2:
+                            case ProtocolMessageCode.getTransaction3:
                             case ProtocolMessageCode.getTransactions:
+                            case ProtocolMessageCode.getTransactions2:
                             case ProtocolMessageCode.transactionsChunk:
                             case ProtocolMessageCode.blockTransactionsChunk:
                             case ProtocolMessageCode.getBlock:
@@ -204,6 +209,7 @@ namespace IXICore.Network
                             case ProtocolMessageCode.pitData:
                             case ProtocolMessageCode.pitData2:
                             case ProtocolMessageCode.inventory:
+                            case ProtocolMessageCode.inventory2:
 #pragma warning restore CS0618 // Type or member is obsolete
                                 {
                                     txqueueMessages.Insert(5, message);

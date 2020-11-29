@@ -8,6 +8,7 @@ using System.IO;
 using System.Linq;
 using System.Net;
 using System.Net.Sockets;
+using System.Text;
 using System.Threading;
 
 namespace IXICore.Network
@@ -556,6 +557,11 @@ namespace IXICore.Network
                         writer.WriteIxiVarInt(items_to_send.Count());
                         foreach (var item in items_to_send)
                         {
+                            // TODO remove the next if section after upgrade to inventory2
+                            if(item.type == InventoryItemTypes.transaction)
+                            {
+                                item.hash = UTF8Encoding.UTF8.GetBytes(Transaction.txIdV8ToLegacy(item.hash));
+                            }
                             byte[] item_bytes = item.getBytes();
                             writer.WriteIxiVarInt(item_bytes.Length);
                             writer.Write(item_bytes);
@@ -563,7 +569,8 @@ namespace IXICore.Network
                     }
                     sendDataInternal(ProtocolMessageCode.inventory, m.ToArray(), 0);
                 }
-            } catch (Exception e)
+            }
+            catch(Exception e)
             {
                 Logging.error("Exception occured in sendInventory: " + e);
             }
