@@ -887,7 +887,7 @@ namespace IXICore
                 error = new JsonError { code = (int)RPCErrorCode.RPC_INVALID_PARAMETER, message = "origtx parameter is missing" };
                 return new JsonResponse { result = null, error = error };
             }
-            string orig_txid = (string)parameters["origtx"];
+            byte[] orig_txid = Transaction.txIdLegacyToV8((string)parameters["origtx"]);
             // no need to check if orig_txid exists as it may not (yet) because we're C/W node, TODO TODO in the future we could query a M/H node
 
             IxiNumber fee = ConsensusConfig.transactionPrice;

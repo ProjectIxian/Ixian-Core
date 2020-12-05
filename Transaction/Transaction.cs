@@ -292,11 +292,6 @@ namespace IXICore
         public bool fromLocalStorage = false;
 
         /// <summary>
-        ///  Unique value to identify serialized MultiSig data in the transaction `data` field.
-        /// </summary>
-        private readonly static byte[] multisigStartMarker = { 0x4d, 0x73 };
-
-        /// <summary>
         ///  Helper flag that determines whether PoW solution was already verified (used locally)
         /// </summary>
         public bool powVerified = false;
@@ -1222,33 +1217,26 @@ namespace IXICore
         /// <param name="orig_txid">Original multisig transaction's ID.</param>
         /// <param name="signer_pub_key">Public key of the additional signer.</param>
         /// <param name="signer_nonce">Nonce value of the wallet which is allowed to sign `orig_txid` and can be signed with the `signer_pub_key`.</param>
-        private void AddMultisigOrig(string orig_txid, byte[] signer_pub_key, byte[] signer_nonce)
+        private void AddMultisigOrig(byte[] orig_txid, byte[] signer_pub_key, byte[] signer_nonce)
         {
-            byte[] orig_txid_bytes = null;
-            if (orig_txid != null && orig_txid != "")
-            {
-                orig_txid_bytes = Encoding.UTF8.GetBytes(orig_txid);
-            }
             using (MemoryStream ms = new MemoryStream())
             {
                 using (BinaryWriter bw = new BinaryWriter(ms))
                 {
-                    bw.Write(multisigStartMarker[0]);
-                    bw.Write(multisigStartMarker[1]);
-                    if (orig_txid_bytes == null)
+                    if (orig_txid == null)
                     {
-                        bw.Write((int)0);
+                        bw.WriteIxiVarInt((int)0);
                     }
                     else
                     {
-                        bw.Write(orig_txid_bytes.Length);
-                        bw.Write(orig_txid_bytes);
+                        bw.WriteIxiVarInt(orig_txid.Length);
+                        bw.Write(orig_txid);
                     }
 
-                    bw.Write(signer_pub_key.Length);
+                    bw.WriteIxiVarInt(signer_pub_key.Length);
                     bw.Write(signer_pub_key);
 
-                    bw.Write(signer_nonce.Length);
+                    bw.WriteIxiVarInt(signer_nonce.Length);
                     bw.Write(signer_nonce);
 #if TRACE_MEMSTREAM_SIZES
                         Logging.info(String.Format("Transaction::AddMultisigOrig: {0}", ms.Length));
@@ -1272,17 +1260,15 @@ namespace IXICore
             {
                 using (BinaryWriter bw = new BinaryWriter(ms))
                 {
-                    bw.Write(multisigStartMarker[0]);
-                    bw.Write(multisigStartMarker[1]);
                     bw.Write((byte)change_type);
 
-                    bw.Write(addr.Length);
+                    bw.WriteIxiVarInt(addr.Length);
                     bw.Write(addr);
 
-                    bw.Write(signer_pub_key.Length);
+                    bw.WriteIxiVarInt(signer_pub_key.Length);
                     bw.Write(signer_pub_key);
 
-                    bw.Write(signer_nonce.Length);
+                    bw.WriteIxiVarInt(signer_nonce.Length);
                     bw.Write(signer_nonce);
 #if TRACE_MEMSTREAM_SIZES
                         Logging.info(String.Format("Transaction::AddMultisigChWallet: {0}", ms.Length));
@@ -1305,16 +1291,14 @@ namespace IXICore
             {
                 using (BinaryWriter bw = new BinaryWriter(ms))
                 {
-                    bw.Write(multisigStartMarker[0]);
-                    bw.Write(multisigStartMarker[1]);
                     bw.Write((byte)MultisigWalletChangeType.ChangeReqSigs);
 
-                    bw.Write(num_sigs);
+                    bw.WriteIxiVarInt(num_sigs);
 
-                    bw.Write(signer_pub_key.Length);
+                    bw.WriteIxiVarInt(signer_pub_key.Length);
                     bw.Write(signer_pub_key);
 
-                    bw.Write(signer_nonce.Length);
+                    bw.WriteIxiVarInt(signer_nonce.Length);
                     bw.Write(signer_nonce);
 #if TRACE_MEMSTREAM_SIZES
                         Logging.info(String.Format("Transaction::AddMultisigChReqSigs: {0}", ms.Length));
@@ -1341,15 +1325,7 @@ namespace IXICore
                 {
                     try
                     {
-                        byte start_marker_1 = rd.ReadByte();
-                        byte start_marker_2 = rd.ReadByte();
-                        if (start_marker_1 != multisigStartMarker[0] || start_marker_2 != multisigStartMarker[1])
-                        {
-                            Logging.warn(String.Format("Multisig transaction: Invalid multisig transaction: Data start marker does not match! ({0}, {1})", start_marker_1, start_marker_2));
-                            return null;
-                        }
-
-                        int orig_tx_len = rd.ReadInt32();
+                        int orig_tx_len = (int)rd.ReadIxiVarUInt();
                         if (orig_tx_len < 0 || orig_tx_len > 100)
                         {
                             Logging.warn(String.Format("Multisig transaction: Invalid origin TXID length stored in data: {0}", orig_tx_len));
@@ -1365,12 +1341,8 @@ namespace IXICore
                                 return null;
                             }
                         }
-                        else
-                        {
-                            orig_txid = Encoding.UTF8.GetBytes("");
-                        }
 
-                        int signer_pub_key_len = rd.ReadInt32();
+                        int signer_pub_key_len = (int)rd.ReadIxiVarUInt();
                         if (signer_pub_key_len < 36 || signer_pub_key_len > 2500)
                         {
                             Logging.warn(String.Format("Multisig transaction: Invalid signer pub key length stored in data: {0}", signer_pub_key_len));
@@ -1387,7 +1359,7 @@ namespace IXICore
                             return null;
                         }
 
-                        int signer_nonce_len = rd.ReadInt32();
+                        int signer_nonce_len = (int)rd.ReadIxiVarUInt();
                         if (signer_nonce_len > 16)
                         {
                             Logging.warn(String.Format("Multisig transaction: Invalid signer nonce length stored in data: {0}", signer_nonce_len));
@@ -1427,19 +1399,12 @@ namespace IXICore
                 {
                     try
                     {
-                        byte start_marker_1 = rd.ReadByte();
-                        byte start_marker_2 = rd.ReadByte();
-                        if (start_marker_1 != multisigStartMarker[0] || start_marker_2 != multisigStartMarker[1])
-                        {
-                            Logging.warn(String.Format("Multisig change transaction: Invalid multisig transaction: Data start marker does not match! ({0}, {1})", start_marker_1, start_marker_2));
-                            return null;
-                        }
                         // multisig change type
                         MultisigWalletChangeType change_type = (MultisigWalletChangeType)rd.ReadByte();
                         switch (change_type)
                         {
                             case MultisigWalletChangeType.AddSigner:
-                                int ch_addr_len = rd.ReadInt32();
+                                int ch_addr_len = (int)rd.ReadIxiVarUInt();
                                 if (ch_addr_len < 36 || ch_addr_len > 128)
                                 {
                                     Logging.warn("Multisig change transaction: Adding signer, but the data does not contain a valid address!");
@@ -1452,7 +1417,7 @@ namespace IXICore
                                     return null;
                                 }
 
-                                int signer_pub_key_len = rd.ReadInt32();
+                                int signer_pub_key_len = (int)rd.ReadIxiVarUInt();
                                 if (signer_pub_key_len < 36 || signer_pub_key_len > 2500)
                                 {
                                     Logging.warn(String.Format("Multisig transaction: Invalid signer pub key length stored in data: {0}", signer_pub_key_len));
@@ -1464,7 +1429,7 @@ namespace IXICore
                                 }
                                 byte[] signer_pub_key = rd.ReadBytes(signer_pub_key_len);
 
-                                int signer_nonce_len = rd.ReadInt32();
+                                int signer_nonce_len = (int)rd.ReadIxiVarUInt();
                                 if (signer_nonce_len > 16)
                                 {
                                     Logging.warn(String.Format("Multisig transaction: Invalid signer nonce length stored in data: {0}", signer_nonce_len));
@@ -1479,7 +1444,7 @@ namespace IXICore
                                     signerNonce = signer_nonce
                                 };
                             case MultisigWalletChangeType.DelSigner:
-                                ch_addr_len = rd.ReadInt32();
+                                ch_addr_len = (int)rd.ReadIxiVarUInt();
                                 if (ch_addr_len < 36 || ch_addr_len > 128)
                                 {
                                     Logging.warn("Multisig change transaction: Deleting signer, but the data does not contain a valid address!");
@@ -1492,7 +1457,7 @@ namespace IXICore
                                     return null;
                                 }
 
-                                signer_pub_key_len = rd.ReadInt32();
+                                signer_pub_key_len = (int)rd.ReadIxiVarUInt();
                                 if (signer_pub_key_len < 36 || signer_pub_key_len > 2500)
                                 {
                                     Logging.warn(String.Format("Multisig transaction: Invalid signer pub key length stored in data: {0}", signer_pub_key_len));
@@ -1504,7 +1469,7 @@ namespace IXICore
                                 }
                                 signer_pub_key = rd.ReadBytes(signer_pub_key_len);
 
-                                signer_nonce_len = rd.ReadInt32();
+                                signer_nonce_len = (int)rd.ReadIxiVarUInt();
                                 if (signer_nonce_len > 16)
                                 {
                                     Logging.warn(String.Format("Multisig transaction: Invalid signer nonce length stored in data: {0}", signer_nonce_len));
@@ -1521,7 +1486,7 @@ namespace IXICore
                             case MultisigWalletChangeType.ChangeReqSigs:
                                 byte new_req_sigs = rd.ReadByte();
 
-                                signer_pub_key_len = rd.ReadInt32();
+                                signer_pub_key_len = (int)rd.ReadIxiVarUInt();
                                 if (signer_pub_key_len < 36 || signer_pub_key_len > 2500)
                                 {
                                     Logging.warn(String.Format("Multisig transaction: Invalid signer pub key length stored in data: {0}", signer_pub_key_len));
@@ -1533,7 +1498,7 @@ namespace IXICore
                                 }
                                 signer_pub_key = rd.ReadBytes(signer_pub_key_len);
 
-                                signer_nonce_len = rd.ReadInt32();
+                                signer_nonce_len = (int)rd.ReadIxiVarUInt();
                                 if (signer_nonce_len > 16)
                                 {
                                     Logging.warn("Multisig transaction: Invalid signer nonce length stored in data: {0}", signer_nonce_len);
@@ -1552,9 +1517,10 @@ namespace IXICore
                                 return null;
                         }
                     }
-                    catch (Exception)
+                    catch (Exception e)
                     {
                         // early EOL or strange data error
+                        Logging.error("Exception occured in getChangeMultisigWalletData for txid {0}: {1}", txIdV8ToLegacy(id), e);
                         return null;
                     }
                 }
@@ -1690,7 +1656,7 @@ namespace IXICore
         /// <param name="tx_from">Own address which may be allowed to sign `orig_txid`.</param>
         /// <param name="tx_blockHeight">Block height at which to generate the new transaction/</param>
         /// <returns>Signing transaction.</returns>
-        public static Transaction multisigAddTxSignature(string orig_txid, IxiNumber tx_fee, byte[] tx_from, ulong tx_blockHeight)
+        public static Transaction multisigAddTxSignature(byte[] orig_txid, IxiNumber tx_fee, byte[] tx_from, ulong tx_blockHeight)
         {
             Transaction t = new Transaction((int)Transaction.Type.MultisigAddTxSignature, new IxiNumber(0), tx_fee, tx_from, tx_from, null, tx_from, tx_blockHeight);
 
