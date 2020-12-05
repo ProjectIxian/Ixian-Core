@@ -259,6 +259,16 @@ namespace IXICore.Inventory
             return count;
         }
 
+        public long getProcessedItemCount()
+        {
+            long count = 0;
+            foreach (var type in inventory)
+            {
+                count += type.Value.Where(x => x.Value.processed == true).Count();
+            }
+            return count;
+        }
+
         protected void truncateInventory(InventoryItemTypes type)
         {
             var inventory_list = inventory[type];
