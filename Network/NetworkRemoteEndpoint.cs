@@ -615,28 +615,38 @@ namespace IXICore.Network
                     MessagePriority priority = MessagePriority.auto;
                     lock(requestedMessageIds)
                     {
-                        switch(active_message.code)
+                        long msg_id = 0;
+                        if(active_message.code == ProtocolMessageCode.blockData
+                            || active_message.code == ProtocolMessageCode.newBlock)
                         {
-                            case ProtocolMessageCode.transactionsChunk2:
-                            case ProtocolMessageCode.blockData:
-                            case ProtocolMessageCode.newBlock:
-                                long msg_id = active_message.data.GetIxiVarInt(0).num;
-                                if (msg_id != 0)
+                            int ver = (int)active_message.data.GetIxiVarInt(0).num;
+                            if (ver <= BlockVer.v7)
+                            {
+                                msg_id = (long)BitConverter.ToUInt64(active_message.data, 4);
+                            }
+                            else
+                            {
+                                msg_id = (long)active_message.data.GetIxiVarUInt(active_message.data.GetIxiVarUInt(0).bytesRead).num;
+                            }
+                        }
+                        else if(active_message.code == ProtocolMessageCode.transactionsChunk2)
+                        {
+                            msg_id = active_message.data.GetIxiVarInt(0).num;
+                        }
+                        if (msg_id != 0)
+                        {
+                            if (!requestedMessageIds.Contains(msg_id > 0 ? msg_id : -msg_id))
+                            {
+                                Logging.error("Received message with code {0}, message id {1} which was not requested.", active_message.code, msg_id);
+                            }
+                            else
+                            {
+                                priority = MessagePriority.medium;
+                                if (msg_id > 0)
                                 {
-                                    if (!requestedMessageIds.Contains(msg_id > 0 ? msg_id : -msg_id))
-                                    {
-                                        Logging.error("Received message with code {0}, message id {1} which was not requested.", active_message.code, msg_id);
-                                    }
-                                    else
-                                    {
-                                        priority = MessagePriority.medium;
-                                        if(msg_id > 0)
-                                        {
-                                            requestedMessageIds.Remove(msg_id);
-                                        }
-                                    }
+                                    requestedMessageIds.Remove(msg_id);
                                 }
-                                break;
+                            }
                         }
                     }
                     CoreProtocolMessage.readProtocolMessage(active_message, priority, this);
