@@ -327,7 +327,7 @@ namespace IXICore.Network
                 // Sleep a while to throttle the client
                 // Check if there are too many messages
                 // TODO TODO TODO this can be handled way better
-                int total_message_count = NetworkQueue.getQueuedMessageCount() + NetworkQueue.getTxQueuedMessageCount();
+                int total_message_count = NetworkQueue.getQueuedMessageCount();
                 if (total_message_count > 10000)
                 {
                     Thread.Sleep(1000);
@@ -625,11 +625,11 @@ namespace IXICore.Network
                                 {
                                     if (!requestedMessageIds.Contains(msg_id > 0 ? msg_id : -msg_id))
                                     {
-                                        Logging.error("Received message with message id, that was not requested");
+                                        Logging.error("Received message with code {0}, message id {1} which was not requested.", active_message.code, msg_id);
                                     }
                                     else
                                     {
-                                        priority = MessagePriority.high;
+                                        priority = MessagePriority.medium;
                                         if(msg_id > 0)
                                         {
                                             requestedMessageIds.Remove(msg_id);
@@ -870,18 +870,33 @@ namespace IXICore.Network
             return message;
         }
 
-        public int getQueuedMessageCount()
+        public int getHighPriorityMessageCount()
         {
             lock (sendQueueMessagesHighPriority)
             {
-                lock (sendQueueMessagesNormalPriority)
-                {
-                    lock (sendQueueMessagesLowPriority)
-                    {
-                        return sendQueueMessagesHighPriority.Count + sendQueueMessagesNormalPriority.Count + sendQueueMessagesLowPriority.Count;
-                    }
-                }
+                return sendQueueMessagesHighPriority.Count;
             }
+        }
+
+        public int getMediumPriorityMessageCount()
+        {
+            lock (sendQueueMessagesNormalPriority)
+            {
+                return sendQueueMessagesNormalPriority.Count;
+            }
+        }
+
+        public int getLowPriorityMessageCount()
+        {
+            lock (sendQueueMessagesLowPriority)
+            {
+                return sendQueueMessagesLowPriority.Count;
+            }
+        }
+
+        public int getQueuedMessageCount()
+        {
+            return getLowPriorityMessageCount() + getMediumPriorityMessageCount() + getHighPriorityMessageCount();
         }
 
         public bool isConnected()

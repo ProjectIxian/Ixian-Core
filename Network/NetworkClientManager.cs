@@ -769,7 +769,6 @@ namespace IXICore.Network
 
         public static bool addToInventory(char[] types, InventoryItem item, RemoteEndpoint skip_endpoint, ProtocolMessageCode code, byte[] data, byte[] helper)
         {
-            QueueMessage queue_message = RemoteEndpoint.getQueueMessage(code, data, helper);
             lock (networkClients)
             {
                 foreach (var client in networkClients)
@@ -795,6 +794,7 @@ namespace IXICore.Network
                         else
                         {
                             // TODO legacy, can be removed after network upgrades
+                            QueueMessage queue_message = RemoteEndpoint.getQueueMessage(code, data, helper);
                             client.sendData(queue_message);
                         }
                     }catch (Exception e)

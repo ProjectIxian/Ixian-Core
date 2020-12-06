@@ -42,24 +42,42 @@ namespace IXICore.Network
         }
 
         // Maintain a queue of messages to receive
-        private static List<QueueMessageRecv> queueMessages = new List<QueueMessageRecv>();
-        private static List<QueueMessageRecv> txqueueMessages = new List<QueueMessageRecv>();
+        private static List<QueueMessageRecv> queueHighPriority = new List<QueueMessageRecv>(); // all other messages that don't belong to normal or low priority (keep alives, hello, etc...)
+        private static List<QueueMessageRecv> queueMediumPriority = new List<QueueMessageRecv>(); // current block, sig and tx related to current block messages
+        private static List<QueueMessageRecv> queueLowPriority = new List<QueueMessageRecv>(); // tx related messages
+
+        private static Thread queueHighPriorityThread;
+        private static Thread queueMediumPriorityThread;
+        private static Thread queueLowPriorityThread;
 
 
-        public static int getQueuedMessageCount()
+        public static int getHighPriorityMessageCount()
         {
-            lock (queueMessages)
+            lock (queueHighPriority)
             {
-                return queueMessages.Count;
+                return queueHighPriority.Count;
             }
         }
 
-        public static int getTxQueuedMessageCount()
+        public static int getMediumPriorityMessageCount()
         {
-            lock (txqueueMessages)
+            lock (queueMediumPriority)
             {
-                return txqueueMessages.Count;
+                return queueMediumPriority.Count;
             }
+        }
+
+        public static int getLowPriorityMessageCount()
+        {
+            lock (queueLowPriority)
+            {
+                return queueLowPriority.Count;
+            }
+        }
+
+        public static int getQueuedMessageCount()
+        {
+            return getLowPriorityMessageCount() + getMediumPriorityMessageCount() + getHighPriorityMessageCount();
         }
 
         private static byte[] extractHelperData(ProtocolMessageCode code, byte[] data)
@@ -83,8 +101,45 @@ namespace IXICore.Network
                 helperData = extractHelperData(code, data)
             };
 
+            switch (code)
+            {
+                case ProtocolMessageCode.blockSignature2:
+                case ProtocolMessageCode.signaturesChunk:
+                    ulong last_bh = IxianHandler.getLastBlockHeight();
 
-            lock (txqueueMessages)
+                    priority = MessagePriority.medium;
+                    break;
+            }
+
+            if (priority == MessagePriority.medium)
+            {
+                lock(queueMediumPriority)
+                {
+                    if (message.helperData != null)
+                    {
+                        if (queueMediumPriority.Exists(x => x.code == message.code && x.helperData.SequenceEqual(message.helperData)))
+                        {
+                            int msg_index = queueMediumPriority.FindIndex(x => x.code == message.code && message.helperData.SequenceEqual(x.helperData));
+                            if (queueMediumPriority[msg_index].length < message.length)
+                            {
+                                queueMediumPriority[msg_index] = message;
+                            }
+                            return;
+                        }
+                    }
+
+                    if (queueMediumPriority.Exists(x => x.code == message.code && x.checksum == message.checksum))
+                    {
+                        Logging.trace("Attempting to add a duplicate message (code: {0}) to the network queue", code);
+                        return;
+                    }
+
+                    queueMediumPriority.Add(message);
+                }
+                return;
+            }
+
+            lock (queueLowPriority)
             {
                 // Move block related messages to txqueue
                 bool found_get_request = false;
@@ -122,8 +177,6 @@ namespace IXICore.Network
                     case ProtocolMessageCode.blockData:
                     case ProtocolMessageCode.blockSignature:
                     case ProtocolMessageCode.blockSignatures:
-                    case ProtocolMessageCode.blockSignature2:
-                    case ProtocolMessageCode.signaturesChunk:
                     case ProtocolMessageCode.pitData:
                     case ProtocolMessageCode.pitData2:
                     case ProtocolMessageCode.inventory:
@@ -139,18 +192,18 @@ namespace IXICore.Network
                     {
                         if (message.helperData != null)
                         {
-                            if (txqueueMessages.Exists(x => x.code == message.code && x.helperData.SequenceEqual(message.helperData) && x.endpoint == message.endpoint))
+                            if (queueLowPriority.Exists(x => x.code == message.code && x.helperData.SequenceEqual(message.helperData) && x.endpoint == message.endpoint))
                             {
-                                int msg_index = txqueueMessages.FindIndex(x => x.code == message.code && message.helperData.SequenceEqual(x.helperData));
-                                if (txqueueMessages[msg_index].length < message.length)
+                                int msg_index = queueLowPriority.FindIndex(x => x.code == message.code && message.helperData.SequenceEqual(x.helperData));
+                                if (queueLowPriority[msg_index].length < message.length)
                                 {
-                                    txqueueMessages[msg_index] = message;
+                                    queueLowPriority[msg_index] = message;
                                 }
                                 return;
                             }
                         }
 
-                        if (txqueueMessages.Exists(x => x.code == message.code && x.checksum == message.checksum && x.endpoint == message.endpoint))
+                        if (queueLowPriority.Exists(x => x.code == message.code && x.checksum == message.checksum && x.endpoint == message.endpoint))
                         {
                             Logging.trace("Attempting to add a duplicate message (code: {0}) to the network queue", code);
                             return;
@@ -160,18 +213,18 @@ namespace IXICore.Network
                     {
                         if (message.helperData != null)
                         {
-                            if (txqueueMessages.Exists(x => x.code == message.code && x.helperData.SequenceEqual(message.helperData)))
+                            if (queueLowPriority.Exists(x => x.code == message.code && x.helperData.SequenceEqual(message.helperData)))
                             {
-                                int msg_index = txqueueMessages.FindIndex(x => x.code == message.code && message.helperData.SequenceEqual(x.helperData));
-                                if (txqueueMessages[msg_index].length < message.length)
+                                int msg_index = queueLowPriority.FindIndex(x => x.code == message.code && message.helperData.SequenceEqual(x.helperData));
+                                if (queueLowPriority[msg_index].length < message.length)
                                 {
-                                    txqueueMessages[msg_index] = message;
+                                    queueLowPriority[msg_index] = message;
                                 }
                                 return;
                             }
                         }
 
-                        if (txqueueMessages.Exists(x => x.code == message.code && x.checksum == message.checksum))
+                        if (queueLowPriority.Exists(x => x.code == message.code && x.checksum == message.checksum))
                         {
                             Logging.trace("Attempting to add a duplicate message (code: {0}) to the network queue", code);
                             return;
@@ -179,14 +232,7 @@ namespace IXICore.Network
                     }
 
                     bool add = true;
-                    if(priority == MessagePriority.high)
-                    {
-                        if (txqueueMessages.Count > 10)
-                        {
-                            txqueueMessages.Insert(5, message);
-                            add = false;
-                        }
-                    }else if (txqueueMessages.Count > 20)
+                    if (queueLowPriority.Count > 20)
                     {
                         switch (code)
                         {
@@ -204,17 +250,15 @@ namespace IXICore.Network
                             case ProtocolMessageCode.blockData:
                             case ProtocolMessageCode.blockSignature:
                             case ProtocolMessageCode.blockSignatures:
-                            case ProtocolMessageCode.blockSignature2:
                             case ProtocolMessageCode.getSignatures:
                             case ProtocolMessageCode.getBlockSignatures2:
-                            case ProtocolMessageCode.signaturesChunk:
                             case ProtocolMessageCode.getPIT:
                             case ProtocolMessageCode.getPIT2:
                             case ProtocolMessageCode.inventory:
                             case ProtocolMessageCode.inventory2:
 #pragma warning restore CS0618 // Type or member is obsolete
                                 {
-                                    txqueueMessages.Insert(5, message);
+                                    queueLowPriority.Insert(5, message);
                                     add = false;
                                     break;
                                 }
@@ -223,16 +267,16 @@ namespace IXICore.Network
                     if (add)
                     {
                         // Add it to the tx queue
-                        txqueueMessages.Add(message);
+                        queueLowPriority.Add(message);
                     }
                     return;
                 }
             }
 
-            lock (queueMessages)
+            lock (queueHighPriority)
             {
                 // ignore duplicates
-                if (queueMessages.Exists(x => x.code == message.code && x.checksum == message.checksum && x.endpoint == message.endpoint))
+                if (queueHighPriority.Exists(x => x.code == message.code && x.checksum == message.checksum && x.endpoint == message.endpoint))
                 {
                     Logging.trace("Attempting to add a duplicate message (code: {0}) to the network queue", code);
                     return;
@@ -244,7 +288,7 @@ namespace IXICore.Network
                     case ProtocolMessageCode.bye:
                     case ProtocolMessageCode.hello:
                     case ProtocolMessageCode.helloData:
-                        queueMessages.Insert(0, message);
+                        queueHighPriority.Insert(0, message);
                         return;
 
                     case ProtocolMessageCode.keepAlivePresence:
@@ -252,9 +296,9 @@ namespace IXICore.Network
                     case ProtocolMessageCode.getPresence2:
                     case ProtocolMessageCode.updatePresence:
                         // Prioritize if queue is large
-                        if (queueMessages.Count > 10)
+                        if (queueHighPriority.Count > 10)
                         {
-                            queueMessages.Insert(5, message);
+                            queueHighPriority.Insert(5, message);
                             return;
                         }
 
@@ -262,7 +306,7 @@ namespace IXICore.Network
                 }
 
                 // Add it to the normal queue
-                queueMessages.Add(message);
+                queueHighPriority.Add(message);
             }
         }
 
@@ -278,21 +322,23 @@ namespace IXICore.Network
             running = true;
 
             shouldStop = false;
-            queueMessages.Clear();
-            txqueueMessages.Clear();
+            queueHighPriority.Clear();
+            queueMediumPriority.Clear();
+            queueLowPriority.Clear();
 
             TLC = new ThreadLiveCheck();
-            // Multi-threaded network queue parsing
-            for (int i = 0; i < 1; i++)
-            {
-                Thread queue_thread = new Thread(queueThreadLoop);
-                queue_thread.Name = "Network_Queue_Thread_#" + i.ToString();
-                queue_thread.Start();
-            }
 
-            Thread txqueue_thread = new Thread(txqueueThreadLoop);
-            txqueue_thread.Name = "Network_Queue_TX_Thread";
-            txqueue_thread.Start();
+            queueHighPriorityThread = new Thread(queueHighPriorityLoop);
+            queueHighPriorityThread.Name = "Network_Queue_High_Priority_Thread";
+            queueHighPriorityThread.Start();
+
+            queueMediumPriorityThread = new Thread(queueMediumPriorityLoop);
+            queueMediumPriorityThread.Name = "Network_Queue_Medium_Priority_Thread";
+            queueMediumPriorityThread.Start();
+
+            queueLowPriorityThread = new Thread(queueLowPriorityLoop);
+            queueLowPriorityThread.Name = "Network_Queue_Low_Priority_Thread";
+            queueLowPriorityThread.Start();
 
             Logging.info("Network queue thread started.");
         }
@@ -308,19 +354,23 @@ namespace IXICore.Network
         // Resets the network queues
         public static void reset()
         {
-            lock (queueMessages)
+            lock (queueHighPriority)
             {
-                queueMessages.Clear();
+                queueHighPriority.Clear();
             }
 
-            lock (txqueueMessages)
+            lock (queueMediumPriority)
             {
-                txqueueMessages.Clear();
+                queueMediumPriority.Clear();
+            }
+
+            lock (queueLowPriority)
+            {
+                queueLowPriority.Clear();
             }
         }
 
-        // Actual network queue logic
-        public static void queueThreadLoop()
+        private static void queueLoop(List<QueueMessageRecv> queue)
         {
             // Prepare an special message object to use while receiving and parsing, without locking up the queue messages
             QueueMessageRecv active_message = new QueueMessageRecv();
@@ -329,15 +379,15 @@ namespace IXICore.Network
             {
                 TLC.Report();
                 bool message_found = false;
-                lock (queueMessages)
+                lock (queue)
                 {
-                    if (queueMessages.Count > 0)
+                    if (queue.Count > 0)
                     {
                         // Pick the oldest message
-                        active_message = queueMessages[0];
+                        active_message = queue[0];
                         message_found = true;
                         // Remove it from the queue
-                        queueMessages.RemoveAt(0);
+                        queue.RemoveAt(0);
                     }
                 }
 
@@ -356,41 +406,19 @@ namespace IXICore.Network
             Logging.info("Network queue thread stopped.");
         }
 
-        // Actual tx network queue logic
-        public static void txqueueThreadLoop()
+        public static void queueHighPriorityLoop()
         {
-            // Prepare an special message object to use while receiving and parsing, without locking up the queue messages
-            QueueMessageRecv active_message = new QueueMessageRecv();
+            queueLoop(queueHighPriority);
+        }
 
-            while (!shouldStop)
-            {
-                TLC.Report();
-                bool message_found = false;
-                lock (txqueueMessages)
-                {
-                    if (txqueueMessages.Count > 0)
-                    {
-                        // Pick the oldest message
-                        active_message = txqueueMessages[0];
-                        message_found = true;
-                        // Remove it from the queue
-                        txqueueMessages.RemoveAt(0);
-                    }
-                }
+        public static void queueMediumPriorityLoop()
+        {
+            queueLoop(queueMediumPriority);
+        }
 
-                if (message_found)
-                {
-                    Logging.trace("Received {0} ({1}B) - {2}...", active_message.code, active_message.data.Length, Crypto.hashToString(active_message.data.Take(60).ToArray()));
-                    // Active message set, attempt to parse it
-                    IxianHandler.parseProtocolMessage(active_message.code, active_message.data, active_message.endpoint);
-                }
-                else
-                {
-                    // Sleep for 10ms to prevent cpu waste
-                    Thread.Sleep(10);
-                }
-            }
-            Logging.info("Network Tx queue thread stopped.");
+        public static void queueLowPriorityLoop()
+        {
+            queueLoop(queueLowPriority);
         }
     }
 }
