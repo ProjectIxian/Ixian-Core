@@ -90,6 +90,7 @@ namespace IXICore.Network
         signaturesChunk = 12,
         blockSignature2 = 13,
         getBlockSignatures2 = 14,
+        [Obsolete("Use transactionsChunk2 instead")]
         transactionsChunk = 15,
         [Obsolete("Use transactionData instead")]
         newTransaction = 16, // deprecated
@@ -145,9 +146,11 @@ namespace IXICore.Network
         walletStateChunk = 52,
         syncWalletState = 53,
         walletState = 54,
-        getTransactions2 = 55,
-        getTransaction3 = 56,
-        inventory2 = 57
+        getBlock3 = 55,
+        getTransactions2 = 56,
+        transactionsChunk2 = 57,
+        getTransaction3 = 58,
+        inventory2 = 59
     }
 
     /// <summary>

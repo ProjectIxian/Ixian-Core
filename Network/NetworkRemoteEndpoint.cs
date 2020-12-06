@@ -13,6 +13,14 @@ using System.Threading;
 
 namespace IXICore.Network
 {
+    public enum MessagePriority
+    {
+        auto = 0,
+        low = 10,
+        medium = 20,
+        high = 30
+    }
+
     public class TimeSyncData
     {
         public long timeDifference = 0;
@@ -82,6 +90,8 @@ namespace IXICore.Network
 
         private List<InventoryItem> inventory = new List<InventoryItem>();
         private long inventoryLastSent = 0;
+
+        private List<long> requestedMessageIds = new List<long>();
 
         public byte[] serverWalletAddress = null;
         public byte[] serverPubKey = null;
@@ -595,16 +605,41 @@ namespace IXICore.Network
                         }
                     }
 
-                    if (message_found)
-                    {
-                        // Active message set, add it to Network Queue
-                        CoreProtocolMessage.readProtocolMessage(active_message, this);
-                    }
-                    else
+                    if (!message_found)
                     {
                         Thread.Sleep(10);
+                        continue;
                     }
 
+                    // Active message set, add it to Network Queue
+                    MessagePriority priority = MessagePriority.auto;
+                    lock(requestedMessageIds)
+                    {
+                        switch(active_message.code)
+                        {
+                            case ProtocolMessageCode.transactionsChunk2:
+                            case ProtocolMessageCode.blockData:
+                            case ProtocolMessageCode.newBlock:
+                                long msg_id = active_message.data.GetIxiVarInt(0).num;
+                                if (msg_id != 0)
+                                {
+                                    if (!requestedMessageIds.Contains(msg_id > 0 ? msg_id : -msg_id))
+                                    {
+                                        Logging.error("Received message with message id, that was not requested");
+                                    }
+                                    else
+                                    {
+                                        priority = MessagePriority.high;
+                                        if(msg_id > 0)
+                                        {
+                                            requestedMessageIds.Remove(msg_id);
+                                        }
+                                    }
+                                }
+                                break;
+                        }
+                    }
+                    CoreProtocolMessage.readProtocolMessage(active_message, priority, this);
                 }
                 catch (ThreadAbortException)
                 {
@@ -733,7 +768,7 @@ namespace IXICore.Network
 
 
         // Sends data over the network
-        public void sendData(ProtocolMessageCode code, byte[] data, byte[] helper_data = null)
+        public void sendData(ProtocolMessageCode code, byte[] data, byte[] helper_data = null, long msg_id = 0, MessagePriority priority = MessagePriority.auto)
         {
             if (data == null)
             {
@@ -742,11 +777,51 @@ namespace IXICore.Network
             }
 
             QueueMessage message = getQueueMessage(code, data, helper_data);
-            sendData(message);
+            sendData(message, msg_id, priority);
         }
 
-        public void sendData(QueueMessage message)
+        public void sendData(QueueMessage message, long msg_id = 0,  MessagePriority priority = MessagePriority.auto)
         {
+            if(message.code == ProtocolMessageCode.getBlock3)
+            {
+                msg_id = message.data.GetIxiVarInt(0).num;
+                priority = MessagePriority.high;
+            }
+            if(msg_id != 0)
+            {
+                lock(requestedMessageIds)
+                {
+                    if(!requestedMessageIds.Contains(msg_id))
+                    {
+                        requestedMessageIds.Add(msg_id);
+                    }
+                }
+            }
+
+            switch(priority)
+            {
+                case MessagePriority.low:
+                    lock (sendQueueMessagesLowPriority)
+                    {
+                        addMessageToSendQueue(sendQueueMessagesLowPriority, message);
+                    }
+                    return;
+
+                case MessagePriority.medium:
+                    lock (sendQueueMessagesNormalPriority)
+                    {
+                        addMessageToSendQueue(sendQueueMessagesNormalPriority, message);
+                    }
+                    return;
+
+                case MessagePriority.high:
+                    lock (sendQueueMessagesHighPriority)
+                    {
+                        addMessageToSendQueue(sendQueueMessagesHighPriority, message);
+                    }
+                    return;
+            }
+
             ProtocolMessageCode code = message.code;
             switch (code)
             {
@@ -764,6 +839,7 @@ namespace IXICore.Network
                     break;
 
                 case ProtocolMessageCode.transactionsChunk:
+                case ProtocolMessageCode.transactionsChunk2:
                 case ProtocolMessageCode.blockTransactionsChunk:
                 case ProtocolMessageCode.transactionData:
                 case ProtocolMessageCode.newTransaction:

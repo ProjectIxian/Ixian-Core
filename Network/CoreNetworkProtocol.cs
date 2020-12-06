@@ -92,7 +92,7 @@ namespace IXICore
         /// </remarks>
         /// <param name="recv_buffer">Byte-field with an Ixian protocol message.</param>
         /// <param name="endpoint">Remote endpoint from where the message was received.</param>
-        public static void readProtocolMessage(QueueMessageRaw raw_message, RemoteEndpoint endpoint)
+        public static void readProtocolMessage(QueueMessageRaw raw_message, MessagePriority priority, RemoteEndpoint endpoint)
         {
             if (endpoint == null)
             {
@@ -141,7 +141,7 @@ namespace IXICore
             // Can proceed to parse the data parameter based on the protocol message code.
             // Data can contain multiple elements.
             //parseProtocolMessage(code, data, socket, endpoint);
-            NetworkQueue.receiveProtocolMessage(code, raw_message.data, Crc32CAlgorithm.Compute(raw_message.data), endpoint);
+            NetworkQueue.receiveProtocolMessage(code, raw_message.data, Crc32CAlgorithm.Compute(raw_message.data), priority, endpoint);
         }
 
         /// <summary>
@@ -1138,8 +1138,7 @@ namespace IXICore
                 }
             }
         }
-
-        public static bool broadcastGetTransaction3(byte[] txid, ulong block_num, RemoteEndpoint endpoint = null, bool broadcast_to_single_node = true)
+        public static bool broadcastGetTransaction3_XXX(byte[] txid, ulong block_num, RemoteEndpoint endpoint = null, bool broadcast_to_single_node = true)
         {
             using (MemoryStream mw = new MemoryStream())
             {

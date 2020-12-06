@@ -71,7 +71,7 @@ namespace IXICore.Network
             return null;
         }
 
-        public static void receiveProtocolMessage(ProtocolMessageCode code, byte[] data, uint checksum, RemoteEndpoint endpoint)
+        public static void receiveProtocolMessage(ProtocolMessageCode code, byte[] data, uint checksum, MessagePriority priority, RemoteEndpoint endpoint)
         {
             QueueMessageRecv message = new QueueMessageRecv
             {
@@ -112,6 +112,7 @@ namespace IXICore.Network
 
 #pragma warning disable CS0618 // Type or member is obsolete
                     case ProtocolMessageCode.transactionsChunk:
+                    case ProtocolMessageCode.transactionsChunk2:
                     case ProtocolMessageCode.newTransaction:
                     case ProtocolMessageCode.transactionData:
                     case ProtocolMessageCode.blockTransactionsChunk:
@@ -178,7 +179,14 @@ namespace IXICore.Network
                     }
 
                     bool add = true;
-                    if (txqueueMessages.Count > 20)
+                    if(priority == MessagePriority.high)
+                    {
+                        if (txqueueMessages.Count > 10)
+                        {
+                            txqueueMessages.Insert(5, message);
+                            add = false;
+                        }
+                    }else if (txqueueMessages.Count > 20)
                     {
                         switch (code)
                         {
@@ -188,14 +196,10 @@ namespace IXICore.Network
                             case ProtocolMessageCode.getTransaction3:
                             case ProtocolMessageCode.getTransactions:
                             case ProtocolMessageCode.getTransactions2:
-                            case ProtocolMessageCode.transactionsChunk:
-                            case ProtocolMessageCode.blockTransactionsChunk:
                             case ProtocolMessageCode.getBlock:
                             case ProtocolMessageCode.getBlock2:
                             case ProtocolMessageCode.getBlockHeaders:
                             case ProtocolMessageCode.getBlockHeaders2:
-                            case ProtocolMessageCode.blockHeaders:
-                            case ProtocolMessageCode.blockHeaders2:
                             case ProtocolMessageCode.newBlock:
                             case ProtocolMessageCode.blockData:
                             case ProtocolMessageCode.blockSignature:
@@ -206,8 +210,6 @@ namespace IXICore.Network
                             case ProtocolMessageCode.signaturesChunk:
                             case ProtocolMessageCode.getPIT:
                             case ProtocolMessageCode.getPIT2:
-                            case ProtocolMessageCode.pitData:
-                            case ProtocolMessageCode.pitData2:
                             case ProtocolMessageCode.inventory:
                             case ProtocolMessageCode.inventory2:
 #pragma warning restore CS0618 // Type or member is obsolete
