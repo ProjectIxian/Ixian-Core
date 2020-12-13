@@ -31,7 +31,7 @@ namespace IXICore
         /// <summary>
         /// The list of transactions which should act on the WalletState from the previous block to produce the WalletState for this block.
         /// </summary>
-        public List<byte[]> transactions = new List<byte[]> { };
+        public HashSet<byte[]> transactions = new HashSet<byte[]> (new ByteArrayComparer());
 
         /// <summary>
         /// The list of Master Node signatures which enable the Ixian Consensus algorithm.
@@ -155,7 +155,7 @@ namespace IXICore
         {
             version = BlockVer.v0;
             blockNum = 0;
-            transactions = new List<byte[]>();
+            transactions = new HashSet<byte[]>(new ByteArrayComparer());
             initPITTree();
         }
 
@@ -327,7 +327,7 @@ namespace IXICore
                             {
                                 string txid = reader.ReadString();
                                 byte[] b_txid = Transaction.txIdLegacyToV8(txid);
-                                if (transactions.Contains(b_txid, new ByteArrayComparer()))
+                                if (transactions.Contains(b_txid))
                                 {
                                     // Block contains duplicate txid
                                     throw new Exception("Block #" + blockNum + " contains duplicate txid");
@@ -459,7 +459,7 @@ namespace IXICore
                         {
                             int txid_len = (int)reader.ReadIxiVarUInt();
                             byte[] txid = reader.ReadBytes(txid_len);
-                            if (transactions.Contains(txid, new ByteArrayComparer()))
+                            if (transactions.Contains(txid))
                             {
                                 // Block contains duplicate txid
                                 throw new Exception("Block #" + blockNum + " contains duplicate txid");
@@ -902,7 +902,7 @@ namespace IXICore
             }
             // TODO: this assumes the transaction is properly validated as it's already in the Transaction Pool
             // Could add an additional layer of checks here, just as in the TransactionPool - to avoid tampering
-            if (!transactions.Contains(txid, new ByteArrayComparer()))
+            if (!transactions.Contains(txid))
             {
                 transactions.Add(txid);
                 if (version < BlockVer.v8)

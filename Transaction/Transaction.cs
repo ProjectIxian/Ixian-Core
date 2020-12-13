@@ -1201,7 +1201,7 @@ namespace IXICore
             int bytesLen = getBytes().Length;
             if (checksum == null)
             {
-                bytesLen += 32;
+                bytesLen += 44;
             }
             if (signature == null)
             {

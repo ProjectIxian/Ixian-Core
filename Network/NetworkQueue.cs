@@ -1,4 +1,6 @@
 ﻿using IXICore.Meta;
+using IXICore.Utils;
+using System;
 using System.Collections.Generic;
 using System.Linq;
 using System.Threading;
@@ -101,16 +103,6 @@ namespace IXICore.Network
                 helperData = extractHelperData(code, data)
             };
 
-            switch (code)
-            {
-                case ProtocolMessageCode.blockSignature2:
-                case ProtocolMessageCode.signaturesChunk:
-                    ulong last_bh = IxianHandler.getLastBlockHeight();
-
-                    priority = MessagePriority.medium;
-                    break;
-            }
-
             if (priority == MessagePriority.medium)
             {
                 lock(queueMediumPriority)
@@ -154,6 +146,7 @@ namespace IXICore.Network
                     case ProtocolMessageCode.getTransactions2:
                     case ProtocolMessageCode.getBlock:
                     case ProtocolMessageCode.getBlock2:
+                    case ProtocolMessageCode.getBlock3:
                     case ProtocolMessageCode.getBlockHeaders:
                     case ProtocolMessageCode.getBlockHeaders2:
                     case ProtocolMessageCode.getSignatures:
@@ -175,8 +168,6 @@ namespace IXICore.Network
                     case ProtocolMessageCode.blockHeaders2:
                     case ProtocolMessageCode.newBlock:
                     case ProtocolMessageCode.blockData:
-                    case ProtocolMessageCode.blockSignature:
-                    case ProtocolMessageCode.blockSignatures:
                     case ProtocolMessageCode.pitData:
                     case ProtocolMessageCode.pitData2:
                     case ProtocolMessageCode.inventory:
@@ -244,12 +235,11 @@ namespace IXICore.Network
                             case ProtocolMessageCode.getTransactions2:
                             case ProtocolMessageCode.getBlock:
                             case ProtocolMessageCode.getBlock2:
+                            case ProtocolMessageCode.getBlock3:
                             case ProtocolMessageCode.getBlockHeaders:
                             case ProtocolMessageCode.getBlockHeaders2:
                             case ProtocolMessageCode.newBlock:
                             case ProtocolMessageCode.blockData:
-                            case ProtocolMessageCode.blockSignature:
-                            case ProtocolMessageCode.blockSignatures:
                             case ProtocolMessageCode.getSignatures:
                             case ProtocolMessageCode.getBlockSignatures2:
                             case ProtocolMessageCode.getPIT:

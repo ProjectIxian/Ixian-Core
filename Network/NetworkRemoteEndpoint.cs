@@ -616,23 +616,48 @@ namespace IXICore.Network
                     lock(requestedMessageIds)
                     {
                         long msg_id = 0;
-                        if(active_message.code == ProtocolMessageCode.blockData
-                            || active_message.code == ProtocolMessageCode.newBlock)
+                        ulong last_bh = IxianHandler.getLastBlockHeight();
+                        switch (active_message.code)
                         {
-                            int ver = (int)active_message.data.GetIxiVarInt(0).num;
-                            if (ver <= BlockVer.v7)
-                            {
-                                msg_id = (long)BitConverter.ToUInt64(active_message.data, 4);
-                            }
-                            else
-                            {
-                                msg_id = (long)active_message.data.GetIxiVarUInt(active_message.data.GetIxiVarUInt(0).bytesRead).num;
-                            }
+                            case ProtocolMessageCode.newBlock:
+                            case ProtocolMessageCode.blockData:
+                                int ver = (int)active_message.data.GetIxiVarInt(0).num;
+                                if (ver <= BlockVer.v7)
+                                {
+                                    ulong bh = BitConverter.ToUInt64(active_message.data, 4);
+                                    if (bh == last_bh || bh == last_bh + 1)
+                                    {
+                                        priority = MessagePriority.medium;
+                                    }
+                                    msg_id = (long)BitConverter.ToUInt64(active_message.data, 4);
+                                }
+                                else
+                                {
+                                    ulong bh = active_message.data.GetIxiVarUInt(active_message.data.GetIxiVarUInt(0).bytesRead).num;
+                                    if (bh == last_bh || bh == last_bh + 1)
+                                    {
+                                        priority = MessagePriority.medium;
+                                    }
+                                    msg_id = (long)active_message.data.GetIxiVarUInt(active_message.data.GetIxiVarUInt(0).bytesRead).num;
+                                }
+                                break;
+
+                            case ProtocolMessageCode.blockSignature2:
+                            case ProtocolMessageCode.signaturesChunk:
+                            case ProtocolMessageCode.blockSignature:
+                            case ProtocolMessageCode.blockSignatures:
+                                priority = MessagePriority.medium;
+                                break;
+
+                            case ProtocolMessageCode.transactionsChunk2:
+                                if (msg_id == (long)last_bh + 1)
+                                {
+                                    priority = MessagePriority.medium;
+                                }
+                                msg_id = active_message.data.GetIxiVarInt(0).num;
+                                break;
                         }
-                        else if(active_message.code == ProtocolMessageCode.transactionsChunk2)
-                        {
-                            msg_id = active_message.data.GetIxiVarInt(0).num;
-                        }
+
                         if (msg_id != 0)
                         {
                             if (!requestedMessageIds.Contains(msg_id > 0 ? msg_id : -msg_id))
