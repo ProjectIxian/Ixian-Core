@@ -1,4 +1,5 @@
 ﻿using IXICore.Meta;
+using IXICore.Utils;
 using System;
 using System.Collections.Generic;
 using System.IO;
@@ -47,7 +48,7 @@ namespace IXICore
         /// <summary>
         /// The list of transactions which should act on the WalletState from the previous block to produce the WalletState for this block.
         /// </summary>
-        public List<byte[]> transactions = new List<byte[]> { };
+        public HashSet<byte[]> transactions = new HashSet<byte[]>(new ByteArrayComparer());
         /// <summary>
         /// Block version.
         /// </summary>
@@ -119,7 +120,7 @@ namespace IXICore
         {
             version = BlockVer.v0;
             blockNum = 0;
-            transactions = new List<byte[]>();
+            transactions = new HashSet<byte[]>(new ByteArrayComparer());
         }
 
         /// <summary>
