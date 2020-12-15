@@ -36,6 +36,8 @@ namespace IXICore
         long lastRequestedBlockTime = 0;
         long lastPITPruneTime = 0;
 
+        ulong minBlockHeightReorg = 0;
+
         public TransactionInclusion()
         {
         }
@@ -319,9 +321,26 @@ namespace IXICore
 
                 // discard the block
 
-                // require previous block to get verifications from 3 nodes
-
+                // TODO require previous block to get verifications from 3 nodes
                 // if in verification mode, detect liar and flag him
+                // below is an implementation that's good enough for now
+
+                if (minBlockHeightReorg < lastBlockHeader.blockNum - 7)
+                {
+                    minBlockHeightReorg = lastBlockHeader.blockNum - 7;
+                }
+
+                BlockHeader prev_header = BlockHeaderStorage.getBlockHeader(minBlockHeightReorg);
+
+                if(prev_header == null)
+                {
+                    return false;
+                }
+
+                lastBlockHeader = prev_header;
+
+                ConsensusConfig.redactedWindowSize = ConsensusConfig.getRedactedWindowSize(lastBlockHeader.version);
+                ConsensusConfig.minRedactedWindowSize = ConsensusConfig.getRedactedWindowSize(lastBlockHeader.version);
 
                 return false;
             }
@@ -337,15 +356,13 @@ namespace IXICore
             ConsensusConfig.redactedWindowSize = ConsensusConfig.getRedactedWindowSize(lastBlockHeader.version);
             ConsensusConfig.minRedactedWindowSize = ConsensusConfig.getRedactedWindowSize(lastBlockHeader.version);
 
-            if (!BlockHeaderStorage.saveBlockHeader(lastBlockHeader))
+            if(BlockHeaderStorage.saveBlockHeader(lastBlockHeader))
             {
-                return false;
-            }
-
-            // Cleanup every n blocks
-            if ((header.blockNum > CoreConfig.maxBlockHeadersPerDatabase * 25) && header.blockNum % CoreConfig.maxBlockHeadersPerDatabase == 0)
-            {
-                BlockHeaderStorage.removeAllBlocksBefore(header.blockNum - (CoreConfig.maxBlockHeadersPerDatabase * 25));
+                // Cleanup every n blocks
+                if ((header.blockNum > CoreConfig.maxBlockHeadersPerDatabase * 25) && header.blockNum % CoreConfig.maxBlockHeadersPerDatabase == 0)
+                {
+                    BlockHeaderStorage.removeAllBlocksBefore(header.blockNum - (CoreConfig.maxBlockHeadersPerDatabase * 25));
+                }
             }
 
             IxianHandler.receivedBlockHeader(lastBlockHeader, true);
