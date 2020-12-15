@@ -8,7 +8,7 @@ namespace IXICore
         /// <summary>
         /// Current version of IxiCore.
         /// </summary>
-        public static readonly string version = "xcore-0.7.5f";
+        public static readonly string version = "xcore-0.7.6-dev";
 
         /// <summary>
         /// Current version of the Ixian network protocol.
@@ -20,13 +20,13 @@ namespace IXICore
         /// Useful for optimized block header sync
         /// Note: Always round last block height to 1000 and subtract 1 (i.e. if last block height is 33234, the correct value is 32999)
         /// </summary>
-        public static ulong bakedBlockHeight = 1534999;
+        public static ulong bakedBlockHeight = 1612999;
 
         /// <summary>
         /// Mainnet block checksum (paired with bakedBlockHeight) of bakedBlockHeight
         /// Useful for optimized block header sync
         /// </summary>
-        public static byte[] bakedBlockChecksum = Crypto.stringToHash("86eca07d31d45e0090ed6a7cb0ddbd7e336b36b84a08f853f019dcd7473b43d813dbb7294e9cf17a3c67d051");
+        public static byte[] bakedBlockChecksum = Crypto.stringToHash("d7f8c0dad79929ff0a6cf8a3b2ceb09f1c7c8633b6bfcac9346616f2988ddeec113b95cc96797bfb23dbad47");
 
         /// <summary>
         /// Number of wallets to send in each chunk of data when synchronizing new Master Nodes.
