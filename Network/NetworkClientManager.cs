@@ -266,6 +266,9 @@ namespace IXICore.Network
                     networkClients.Add(new_client);
                 }
 
+            }else
+            {
+                new_client.stop();
             }
 
             // Remove this node from the connecting clients list
@@ -346,7 +349,7 @@ namespace IXICore.Network
         // Returns all the connected clients
         public static string[] getConnectedClients(bool only_fully_connected = false)
         {
-            List<String> result = new List<String>();
+            List<string> result = new List<string>();
 
             lock (networkClients)
             {
@@ -615,6 +618,7 @@ namespace IXICore.Network
                         networkClients.RemoveAt(0);
                     }
                     CoreProtocolMessage.sendBye(client, ProtocolByeCode.bye, "Disconnected for shuffling purposes.", "", false);
+                    client.stop();
                 }
 
                 // Connect randomly to a new node. Currently a 1% chance to reconnect during this iteration

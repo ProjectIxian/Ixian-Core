@@ -8,7 +8,6 @@ using System.IO;
 using System.Linq;
 using System.Net;
 using System.Net.Sockets;
-using System.Text;
 using System.Threading;
 
 namespace IXICore.Network
@@ -204,6 +203,7 @@ namespace IXICore.Network
             catch (Exception e)
             {
                 Logging.error("Error starting remote endpoint: {0}", e.Message);
+                stop();
             }
         }
 
@@ -359,18 +359,19 @@ namespace IXICore.Network
         public virtual void disconnect()
         {
             // Close the client socket
-            if (clientSocket != null)
+            if (clientSocket == null)
             {
-                try
-                {
-                    clientSocket.Shutdown(SocketShutdown.Both);
-                    clientSocket.Close();
-                    clientSocket = null;
-                }
-                catch (Exception e)
-                {
-                    Logging.warn(string.Format("recvRE: Could not shutdown client socket: {0}", e.ToString()));
-                }
+                return;
+            }
+            try
+            {
+                clientSocket.Shutdown(SocketShutdown.Both);
+                clientSocket.Close();
+                clientSocket = null;
+            }
+            catch (Exception e)
+            {
+                Logging.warn("recvRE: Could not shutdown client socket: {0}", e.ToString());
             }
         }
 
