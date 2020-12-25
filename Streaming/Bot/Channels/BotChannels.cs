@@ -225,7 +225,7 @@ namespace IXICore.SpixiBot
             {
                 try
                 {
-                    var channel = channels.First(x => x.Value.index == id);
+                    var channel = channels.FirstOrDefault(x => x.Value.index == id);
                     return channel.Key;
                 }catch(Exception e)
                 {
