@@ -1,4 +1,6 @@
-﻿var primaryAddress = null;
+﻿/*! Ixian Core | MIT License | github.com/ProjectIxian/Ixian-Core */
+
+var primaryAddress = null;
 
 var qrcode = null;
 
