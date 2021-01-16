@@ -20,6 +20,8 @@ using System.Linq;
 using System.Text;
 using System.Threading;
 
+// TODO TODO PIT tree should be included with the transaction, it should be requested from the nodes only in cases where PIT wasn't included
+
 namespace IXICore
 {
     /// <summary>
@@ -236,9 +238,10 @@ namespace IXICore
                                 {
                                     txid = tx.id;
                                 }
-                                if (pitCache[tx.applied].requestedForTXIDs.Contains(txid, new ByteArrayComparer()))
+                                if (pitCache[tx.applied].requestedForTXIDs.Contains(tx.id, new ByteArrayComparer()))
                                 {
-                                    txQueue.Remove(txid);
+                                    // TODO TODO it shouldn't be immediatelly removed but checked with other nodes first
+                                    txQueue.Remove(tx.id);
 
                                     if (pitCache[tx.applied].pit.contains(txid))
                                     {
