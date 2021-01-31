@@ -1329,7 +1329,18 @@ namespace IXICore
         /// <returns>Byte-field with the checksum value.</returns>
         public static byte[] calculateChecksum(Transaction transaction)
         {
-            List<byte> rawData = new List<byte>();
+            if(transaction.version < 6)
+            {
+                return calculateChecksumLegacy(transaction);
+            }else
+            {
+                return calculateChecksum_v6(transaction);
+            }
+        }
+
+        public static byte[] calculateChecksumLegacy(Transaction transaction)
+        {
+                List<byte> rawData = new List<byte>();
             rawData.AddRange(ConsensusConfig.ixianChecksumLock);
             if (transaction.version < 5)
             {
@@ -1354,7 +1365,8 @@ namespace IXICore
             if (transaction.fromList.Count == 1)
             {
                 rawData.AddRange(new Address(transaction.pubKey).address);
-            }else
+            }
+            else
             {
                 foreach (var entry in transaction.fromList)
                 {
@@ -1369,7 +1381,8 @@ namespace IXICore
                 {
                     rawData.AddRange(transaction.data);
                 }
-            }else
+            }
+            else
             {
                 if (transaction.dataChecksum != null)
                 {
@@ -1384,7 +1397,7 @@ namespace IXICore
                 rawData.AddRange(BitConverter.GetBytes(transaction.timeStamp));
             }
             rawData.AddRange(BitConverter.GetBytes(transaction.version));
-            if((transaction.version <= 1 && transaction.pubKey != null && transaction.pubKey.Length > 36)
+            if ((transaction.version <= 1 && transaction.pubKey != null && transaction.pubKey.Length > 36)
                 || transaction.version >= 2)
             {
                 rawData.AddRange(transaction.pubKey);
@@ -1392,10 +1405,46 @@ namespace IXICore
             if (transaction.version <= 2)
             {
                 return Crypto.sha512quTrunc(rawData.ToArray());
-            }else
+            }
+            else
             {
                 return Crypto.sha512sqTrunc(rawData.ToArray());
             }
+        }
+
+        public static byte[] calculateChecksum_v6(Transaction transaction)
+        {
+            List<byte> rawData = new List<byte>();
+            rawData.AddRange(ConsensusConfig.ixianChecksumLock);
+            rawData.AddRange(BitConverter.GetBytes(transaction.type));
+            rawData.AddRange(transaction.amount.getBytes());
+            rawData.AddRange(transaction.fee.getBytes());
+            foreach (var entry in transaction.toList)
+            {
+                rawData.AddRange(entry.Key);
+                rawData.AddRange(entry.Value.getBytes());
+            }
+
+            foreach (var entry in transaction.fromList)
+            {
+                rawData.AddRange(entry.Key);
+                rawData.AddRange(entry.Value.getBytes());
+            }
+
+            if (transaction.dataChecksum != null)
+            {
+                rawData.AddRange(transaction.dataChecksum);
+            }
+
+            rawData.AddRange(BitConverter.GetBytes(transaction.blockHeight));
+            rawData.AddRange(BitConverter.GetBytes(transaction.nonce));
+            if (transaction.type != (int)Transaction.Type.StakingReward)
+            {
+                rawData.AddRange(BitConverter.GetBytes(transaction.timeStamp));
+            }
+            rawData.AddRange(BitConverter.GetBytes(transaction.version));
+            rawData.AddRange(transaction.pubKey);
+            return Crypto.sha512sqTrunc(rawData.ToArray());
         }
 
         /// <summary>
