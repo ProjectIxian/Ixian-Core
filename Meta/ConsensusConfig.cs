@@ -184,29 +184,39 @@ namespace IXICore
             if (blockNum < 1051200) // first year
             {
                 pow_reward = (blockNum * 9) + 9; // +0.009 IXI
+                pow_reward = (pow_reward / 2 + 10000) * 100000; // Divide by 2 (assuming 50% block coverage) + add inital 10 IXI block reward + add the full amount of 0s to cover IxiNumber decimals
             }
-            else if (blockNum < 2102400) // second year
+            else if (blockNum < 1802000) // second year, until first adjustment
             {
                 pow_reward = (1051200 * 9);
+                pow_reward = (pow_reward / 2 + 10000) * 100000; // Divide by 2 (assuming 50% block coverage) + add inital 10 IXI block reward + add the full amount of 0s to cover IxiNumber decimals
             }
-            else if (blockNum < 3153600) // third year
+            else if (blockNum < 6307200) // up to first halving
             {
-                pow_reward = (1051200 * 9) + ((blockNum - 2102400) * 9) + 9; // +0.009 IXI
+                pow_reward = 2304;
+                pow_reward *= 100000000;
             }
-            else if (blockNum < 4204800) // fourth year
+            else if (blockNum < 9460800) // up to 2nd halving
             {
-                pow_reward = (2102400 * 9) + ((blockNum - 3153600) * 2) + 2; // +0.0020 IXI
+                pow_reward = 1152;
+                pow_reward *= 100000000;
             }
-            else if (blockNum < 5256001) // fifth year
+            else if (blockNum < 12614400) // up to 3rd halving
             {
-                pow_reward = (2102400 * 9) + (1051200 * 2) + ((blockNum - 4204800) * 9) + 9; // +0.009 IXI
+                pow_reward = 576;
+                pow_reward *= 100000000;
             }
-            else // after fifth year if mining is still operational
+            else if (blockNum < 15768000) // up to final reward
             {
-                pow_reward = ((3153600 * 9) + (1051200 * 2)) / 2;
+                pow_reward = 288;
+                pow_reward *= 100000000;
+            }
+            else // final reward
+            {
+                pow_reward = 18;
+                pow_reward *= 100000000;
             }
 
-            pow_reward = (pow_reward / 2 + 10000) * 100000; // Divide by 2 (assuming 50% block coverage) + add inital 10 IXI block reward + add the full amount of 0s to cover IxiNumber decimals
             return new IxiNumber(new BigInteger(pow_reward)); // Generate the corresponding IxiNumber, including decimals
         }
 
@@ -218,29 +228,35 @@ namespace IXICore
         /// <returns>Mining reward amount for the specified block.</returns>
         public static IxiNumber calculateSigningRewardForBlock(ulong target_block_num, IxiNumber current_supply)
         {
-            IxiNumber inflationPA = new IxiNumber("0.1"); // 0.1% inflation per year for the first month
-
-            if (target_block_num > 86400) // increase inflation to 5% after 1 month
-            {
-                inflationPA = new IxiNumber("5");
-            }
-
             IxiNumber reward = 0;
-            if (current_supply > new IxiNumber("100000000000"))
+            if (target_block_num <= 86400)
             {
-                reward = 1000;
+                reward = current_supply * new IxiNumber("0.1") / new IxiNumber("100000000"); // approximation of 2*60*24*365*100
             }
-            else if (current_supply > new IxiNumber("50000000000"))
+            else if(target_block_num < 1802000)
             {
-                // Set the annual inflation to 1% after 50bn IXIs in circulation 
-                inflationPA = new IxiNumber("1");
-                reward = current_supply * inflationPA / new IxiNumber("100000000"); // approximation of 2*60*24*365*100
+                reward = current_supply * new IxiNumber("5") / new IxiNumber("100000000"); // approximation of 2*60*24*365*100
             }
-            else
+            else if (target_block_num < 6307200)
             {
-                // Calculate the amount of new IXIs to be minted
-                reward = current_supply * inflationPA / new IxiNumber("100000000"); // approximation of 2*60*24*365*100
+                reward = 576;
             }
+            else if (target_block_num < 9460800)
+            {
+                reward = 288;
+            }
+            else if(target_block_num < 12614400)
+            {
+                reward = 144;
+            }
+            else if (target_block_num < 15768000)
+            {
+                reward = 72;
+            }else
+            {
+                reward = 36; // 36 per block after block num > 15768000 (12 years)
+            }
+
             return reward;
         }
     }
