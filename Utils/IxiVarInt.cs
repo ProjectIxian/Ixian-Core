@@ -258,5 +258,18 @@ namespace IXICore.Utils
 			}
 			throw new Exception("Cannot decode VarInt from bytes, unknown type " + type.ToString());
 		}
+
+		public static IxiNumber ReadIxiNumber(this BinaryReader reader)
+        {
+			int len = (int)reader.ReadIxiVarUInt();
+			return new IxiNumber(reader.ReadBytes(len));
+        }
+
+		public static void WriteIxiNumber(this BinaryWriter writer, IxiNumber number)
+        {
+			var bytes = number.getBytes();
+			writer.WriteIxiVarInt(bytes.Length);
+			writer.Write(bytes);
+        }
 	}
 }

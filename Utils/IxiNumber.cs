@@ -36,6 +36,11 @@ namespace IXICore
             amount = big_integer;
         }
 
+        public IxiNumber(byte[] bytes)
+        {
+            amount = new BigInteger(bytes);
+        }
+
         public IxiNumber(ulong number)
         {
             amount = BigInteger.Multiply(number, divisor);
@@ -170,6 +175,11 @@ namespace IXICore
         public BigInteger getAmount()
         {
             return amount;
+        }
+
+        public byte[] getBytes()
+        {
+            return amount.ToByteArray();
         }
 
         public void add(IxiNumber num)

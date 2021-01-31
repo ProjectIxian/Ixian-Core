@@ -311,7 +311,7 @@ namespace IXICore
         /// <summary>
         ///  Currently latest transaction version.
         /// </summary>
-        public static int maxVersion = 5;
+        public static int maxVersion = 6;
 
         /// <summary>
         ///  Sets the transaction's version appropriately, based on the current block version.
@@ -676,6 +676,18 @@ namespace IXICore
         /// <param name="include_applied">Whether to include the 'applied' flag when reading the transaction data.</param>
         public Transaction(byte[] bytes, bool include_applied = false)
         {
+            if (bytes[0] < 6)
+            {
+                fromBytesLegacy(bytes, include_applied);
+            }
+            else
+            {
+                fromBytesV6(bytes, include_applied);
+            }
+        }
+
+        public void fromBytesLegacy(byte[] bytes, bool include_applied = false)
+        {
             try
             {
                 if (bytes.Length > 512000)
@@ -774,38 +786,155 @@ namespace IXICore
                             {
                                 // remove the try/catch wrapper after the upgrade
                                 ulong tmp_applied = reader.ReadUInt64();
-                                if(include_applied)
+                                if (include_applied)
                                 {
                                     applied = tmp_applied;
                                 }
-                            }catch(Exception)
+                            }
+                            catch (Exception)
                             {
 
                             }
 
                             id = generateID();
 
-                            if(version >= 4 && data != null)
+                            if (version >= 4 && data != null)
                             {
-                                if(dataChecksum == null)
+                                if (dataChecksum == null)
                                 {
                                     throw new Exception("Invalid transaction's data checksum, should be non null.");
                                 }
 
-                                if(!calculateDataChecksum().SequenceEqual(dataChecksum))
+                                if (!calculateDataChecksum().SequenceEqual(dataChecksum))
                                 {
                                     throw new Exception("Invalid transaction's data checksum.");
                                 }
                             }
-                        }else
+                        }
+                        else
                         {
                             throw new Exception("Unknown transaction version " + version);
                         }
                     }
                 }
             }
-            catch(Exception e)
-            {              
+            catch (Exception e)
+            {
+                Logging.error("Exception occured while trying to construct Transaction from bytes: " + e);
+                throw;
+            }
+        }
+        public void fromBytesV6(byte[] bytes, bool include_applied = false)
+        {
+            try
+            {
+                if (bytes.Length > 512000)
+                {
+                    throw new Exception("Transaction size is bigger than 500kB.");
+                }
+                using (MemoryStream m = new MemoryStream(bytes))
+                {
+                    using (BinaryReader reader = new BinaryReader(m))
+                    {
+                        version = (int)reader.ReadIxiVarInt();
+
+                        if (version > maxVersion)
+                        {
+                            throw new Exception("Unknown transaction version " + version);
+                        }
+
+                        type = (int)reader.ReadIxiVarInt();
+                        amount = reader.ReadIxiNumber();
+                        fee = reader.ReadIxiNumber();
+
+                        int toListLen = (int)reader.ReadIxiVarInt();
+                        for (int i = 0; i < toListLen; i++)
+                        {
+                            int addrLen = (int)reader.ReadIxiVarInt();
+                            byte[] address = null;
+                            if (addrLen > 0)
+                            {
+                                address = reader.ReadBytes(addrLen);
+                            }
+                            IxiNumber amount = reader.ReadIxiNumber();
+                            toList.Add(address, amount);
+                        }
+
+                        int fromListLen = (int)reader.ReadIxiVarInt();
+                        for (int i = 0; i < fromListLen; i++)
+                        {
+                            int addrLen = (int)reader.ReadIxiVarInt();
+                            byte[] address = null;
+                            if (addrLen > 0)
+                            {
+                                address = reader.ReadBytes(addrLen);
+                            }
+                            IxiNumber amount = reader.ReadIxiNumber();
+                            fromList.Add(address, amount);
+                        }
+
+                        int dataChecksumLen = (int)reader.ReadIxiVarInt();
+                        if (dataChecksumLen > 0)
+                        {
+                            dataChecksum = reader.ReadBytes(dataChecksumLen);
+                        }
+
+                        int dataLen = (int)reader.ReadIxiVarInt();
+                        if (dataLen > 0)
+                        {
+                            _data = reader.ReadBytes(dataLen);
+                        }
+
+
+                        blockHeight = reader.ReadIxiVarUInt();
+
+                        nonce = (int)reader.ReadIxiVarInt();
+
+                        timeStamp = reader.ReadIxiVarInt();
+
+                        int crcLen = (int)reader.ReadIxiVarInt();
+                        if (crcLen > 0)
+                        {
+                            checksum = reader.ReadBytes(crcLen);
+                        }
+
+                        int sigLen = (int)reader.ReadIxiVarInt();
+                        if (sigLen > 0)
+                        {
+                            signature = reader.ReadBytes(sigLen);
+                        }
+
+                        int pkLen = (int)reader.ReadIxiVarInt();
+                        if (pkLen > 0)
+                        {
+                            pubKey = reader.ReadBytes(pkLen);
+                        }
+
+                        ulong tmp_applied = reader.ReadIxiVarUInt();
+                        if (include_applied)
+                        {
+                            applied = tmp_applied;
+                        }
+
+                        id = generateID();
+
+                        if (data != null)
+                        {
+                            if (dataChecksum == null)
+                            {
+                                throw new Exception("Invalid transaction's data checksum, should be non null.");
+                            }
+
+                            if (!calculateDataChecksum().SequenceEqual(dataChecksum))
+                            {
+                                throw new Exception("Invalid transaction's data checksum.");
+                            }
+                        }
+                    }
+                }
+            }
+            catch (Exception e)
+            {
                 Logging.error("Exception occured while trying to construct Transaction from bytes: " + e);
                 throw;
             }
@@ -815,7 +944,19 @@ namespace IXICore
         ///  Serializes the transaction object for transmission and returns a byte-field. See also the constructor `Transaction(byte[])`.
         /// </summary>
         /// <returns>Byte-field with the serialized transaction, suiteable for network transmission.</returns>
-        public byte[] getBytes(bool include_applied = false)
+        public byte[] getBytes(bool include_applied = true)
+        {
+            if (version < 6)
+            {
+                return getBytesLegacy(include_applied);
+            }
+            else
+            {
+                return getBytesV6(include_applied);
+            }
+        }
+
+        private byte[] getBytesLegacy(bool include_applied = false)
         {
             using (MemoryStream m = new MemoryStream(832))
             {
@@ -924,6 +1065,119 @@ namespace IXICore
             }
         }
 
+        private byte[] getBytesV6(bool include_applied = false)
+        {
+            using (MemoryStream m = new MemoryStream(832))
+            {
+                using (BinaryWriter writer = new BinaryWriter(m))
+                {
+                    writer.WriteIxiVarInt(version);
+
+                    writer.WriteIxiVarInt(type);
+                    writer.WriteIxiNumber(amount);
+
+                    writer.WriteIxiNumber(fee);
+
+                    writer.WriteIxiVarInt(toList.Count);
+                    foreach (var entry in toList)
+                    {
+                        writer.WriteIxiVarInt(entry.Key.Length);
+                        writer.Write(entry.Key);
+                        writer.WriteIxiNumber(entry.Value);
+                    }
+
+                    if (version <= 1)
+                    {
+                        byte[] tmp_address = (new Address(pubKey)).address;
+                        writer.WriteIxiVarInt(tmp_address.Length);
+                        writer.Write(tmp_address);
+                    }
+                    else
+                    {
+                        writer.WriteIxiVarInt(fromList.Count);
+                        foreach (var entry in fromList)
+                        {
+                            writer.WriteIxiVarInt(entry.Key.Length);
+                            writer.Write(entry.Key);
+                            writer.WriteIxiNumber(entry.Value);
+                        }
+                    }
+
+                    if (version >= 4)
+                    {
+                        if (dataChecksum != null)
+                        {
+                            writer.WriteIxiVarInt(dataChecksum.Length);
+                            writer.Write(dataChecksum);
+                        }
+                        else
+                        {
+                            writer.WriteIxiVarInt((int)0);
+                        }
+                    }
+
+                    if (data != null)
+                    {
+                        writer.WriteIxiVarInt(data.Length);
+                        writer.Write(data);
+                    }
+                    else
+                    {
+                        writer.WriteIxiVarInt((int)0);
+                    }
+                    writer.WriteIxiVarInt(blockHeight);
+                    writer.WriteIxiVarInt(nonce);
+
+                    writer.WriteIxiVarInt(timeStamp);
+
+                    if (checksum != null)
+                    {
+                        writer.WriteIxiVarInt(checksum.Length);
+                        writer.Write(checksum);
+                    }
+                    else
+                    {
+                        writer.WriteIxiVarInt((int)0);
+                    }
+
+                    if (signature != null)
+                    {
+                        writer.WriteIxiVarInt(signature.Length);
+                        writer.Write(signature);
+                    }
+                    else
+                    {
+                        writer.WriteIxiVarInt((int)0);
+                    }
+
+                    if ((version <= 1 && pubKey != null && pubKey.Length > 36)
+                        || version >= 2)
+                    {
+                        writer.WriteIxiVarInt(pubKey.Length);
+                        writer.Write(pubKey);
+                    }
+                    else
+                    {
+                        writer.WriteIxiVarInt((int)0);
+                    }
+
+                    if (include_applied)
+                    {
+                        writer.WriteIxiVarInt(applied);
+                    }
+                    else
+                    {
+                        writer.WriteIxiVarInt((ulong)0);
+                    }
+
+#if TRACE_MEMSTREAM_SIZES
+                    Logging.info(String.Format("Transaction::getBytes: {0}", m.Length));
+#endif
+                }
+                return m.ToArray();
+            }
+        }
+
         /// <summary>
         ///  Checks if the two transactions are exactly equal.
         /// </summary>
@@ -931,8 +1185,8 @@ namespace IXICore
         /// <returns>True if both objects represent the same Ixian transaction.</returns>
         public bool equals(Transaction tx)
         {
-            byte[] a1 = getBytes();
-            byte[] a2 = tx.getBytes();
+            byte[] a1 = getBytes(false);
+            byte[] a2 = tx.getBytes(false);
 
             return a1.SequenceEqual(a2);
         }
@@ -1210,7 +1464,7 @@ namespace IXICore
         /// <returns>Minimum fee given the specified price per kilobyte.</returns>
         public IxiNumber calculateMinimumFee(IxiNumber pricePerKb)
         {
-            int bytesLen = getBytes().Length;
+            int bytesLen = getBytes(false).Length;
             if (checksum == null)
             {
                 bytesLen += 44;
