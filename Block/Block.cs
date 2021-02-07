@@ -10,6 +10,7 @@
 // MERCHANTABILITY or FITNESS FOR A PARTICULAR PURPOSE.  See the
 // MIT License for more details.
 
+using DLT.Meta;
 using IXICore.Meta;
 using IXICore.Utils;
 using System;
@@ -33,7 +34,7 @@ namespace IXICore
         /// <summary>
         /// Latest possible version of the Block structure. New blocks should usually be created with the latest version.
         /// </summary>
-        public static int maxVersion = BlockVer.v7;
+        public static int maxVersion = BlockVer.v8;
 
         /// <summary>
         /// Block height (block number). This is a sequential index in the blockchain which uniquely identifies each block.
@@ -460,7 +461,7 @@ namespace IXICore
                             throw new Exception("Block #" + blockNum + " size is bigger than 19MB.");
                         }
 
-                        if (version <= maxVersion)
+                        if (version > maxVersion)
                         {
                             return;
                         }
@@ -566,7 +567,7 @@ namespace IXICore
             }
             catch (Exception e)
             {
-                Logging.warn(string.Format("Cannot create block from bytes: {0}", e.ToString()));
+                Logging.warn("Cannot create block from bytes: {0}", e.ToString());
                 throw;
             }
         }
