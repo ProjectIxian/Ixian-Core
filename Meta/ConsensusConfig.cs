@@ -201,17 +201,12 @@ namespace IXICore
                 pow_reward = 1152;
                 pow_reward *= 100000000;
             }
-            else if (blockNum < 12614400) // up to 3rd halving
+            else if (blockNum < 12614400) // up to final reward
             {
                 pow_reward = 576;
                 pow_reward *= 100000000;
             }
-            else if (blockNum < 15768000) // up to final reward
-            {
-                pow_reward = 288;
-                pow_reward *= 100000000;
-            }
-            else // final reward
+            else if (blockNum < 105120000) // final reward
             {
                 pow_reward = 18;
                 pow_reward *= 100000000;
