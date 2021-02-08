@@ -147,7 +147,7 @@ namespace IXICore
         /// <summary>
         /// Block height after which mining/PoW transactions are not accepted anymore.
         /// </summary>
-        public static readonly ulong miningExpirationBlockHeight = 5256000;
+        public static readonly ulong miningExpirationBlockHeight = 105120000;
 
 
         /// <summary>
