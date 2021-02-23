@@ -585,7 +585,7 @@ namespace IXICore.Network
                             writer.Write(item_bytes);
                         }
                     }
-                    sendDataInternal(ProtocolMessageCode.inventory, m.ToArray(), 0);
+                    sendDataInternal(ProtocolMessageCode.inventory2, m.ToArray(), 0);
                 }
             }
             catch(Exception e)
@@ -675,7 +675,7 @@ namespace IXICore.Network
                         {
                             if (!requestedMessageIds.Contains(msg_id > 0 ? msg_id : -msg_id))
                             {
-                                Logging.error("Received message with code {0}, message id {1} which was not requested.", active_message.code, msg_id);
+                                Logging.warn("Received message with code {0}, message id {1} which was not requested.", active_message.code, msg_id);
                             }
                             else
                             {
