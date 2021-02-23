@@ -189,7 +189,7 @@ namespace IXICore
 
                 try
                 {
-                    Logging.info("Processing request " + context.Request.Url);
+                    Logging.trace("Processing request " + context.Request.Url);
                     if (!processRequest(context, method_name, method_params))
                     {
                         processGenericRequest(context, method_name, method_params);
@@ -200,7 +200,7 @@ namespace IXICore
                     context.Response.ContentType = "application/json";
                     JsonError error = new JsonError { code = (int)RPCErrorCode.RPC_INTERNAL_ERROR, message = "Unknown error occured, see log for details." };
                     sendResponse(context.Response, new JsonResponse { error = error });
-                    Logging.error("Exception occured in API server while processing '{0}'. {1}", method_name, e);
+                    Logging.error("Exception occured in API server while processing '{0}'. {1}", context.Request.Url, e);
                 }
             }
             catch (Exception e)
@@ -539,7 +539,7 @@ namespace IXICore
                 responseError = response.error.ToString();
             }
 
-            Logging.info("Processed request, sending response with error code: {0}", responseError);
+            Logging.trace("Processed request, sending response with error code: {0}", responseError);
 
             byte[] buffer = Encoding.UTF8.GetBytes(responseString);
 

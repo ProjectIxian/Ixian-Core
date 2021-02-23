@@ -1033,7 +1033,6 @@ namespace IXICore
 
             byte[] myPubKey = IxianHandler.getWalletStorage().getPrimaryPublicKey();
 
-            // TODO: optimize this in case our signature is already in the block, without locking signatures for too long
             byte[] private_key = IxianHandler.getWalletStorage().getPrimaryPrivateKey();
             byte[] signature = CryptoManager.lib.getSignature(blockChecksum, private_key);
 
