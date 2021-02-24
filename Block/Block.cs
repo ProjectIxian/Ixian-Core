@@ -151,16 +151,10 @@ namespace IXICore
         /// </summary>
         public bool compactedSigs = false;
 
-        // Generate the genesis block
-        static Block createGenesisBlock()
-        {
-            Block genesis = new Block();
- 
-            genesis.calculateChecksum();
-            genesis.applySignature();
-
-            return genesis;
-        }
+        /// <summary>
+        ///  Address of the block proposer/first signer.
+        /// </summary>
+        public byte[] blockProposer = null; 
 
 
         public Block()
@@ -281,6 +275,12 @@ namespace IXICore
             compacted = block.compacted;
             compactedSigs = block.compactedSigs;
             signatureCount = block.signatureCount;
+
+            if(block.blockProposer != null)
+            {
+                blockProposer = new byte[block.blockProposer.Length];
+                Array.Copy(block.blockProposer, blockProposer, blockProposer.Length);
+            }
         }
 
         /// <summary>
@@ -560,6 +560,19 @@ namespace IXICore
                                 seg_bc = reader.ReadBytes(seg_bc_len);
                             }
                             superBlockSegments.Add(seg_block_num, new SuperBlockSegment(seg_block_num, seg_bc));
+                        }
+
+                        try
+                        {
+                            dataLen = (int)reader.ReadIxiVarUInt();
+                            if (dataLen > 0)
+                            {
+                                blockProposer = reader.ReadBytes(dataLen);
+                            }
+                        }
+                        catch (Exception e)
+                        {
+
                         }
                     }
                 }
@@ -847,6 +860,16 @@ namespace IXICore
                             writer.WriteIxiVarInt(entry.Value.blockChecksum.Length);
                             writer.Write(entry.Value.blockChecksum);
                         }
+                    }
+                    else
+                    {
+                        writer.WriteIxiVarInt((int)0);
+                    }
+
+                    if(blockProposer != null)
+                    {
+                        writer.WriteIxiVarInt(blockProposer.Length);
+                        writer.Write(blockProposer);
                     }
                     else
                     {
@@ -1214,6 +1237,41 @@ namespace IXICore
         }
 
         /// <summary>
+        ///  Verifies that the first signer of the block is block proposer.
+        /// </summary>
+        /// <returns>True if all signatures are valid and (optionally) match the block's checksum.</returns>
+        public bool verifyBlockProposer()
+        {
+            if(blockProposer == null)
+            {
+                return true;
+            }
+            lock (signatures)
+            {
+                List<byte[][]> tmp_sigs = null;
+                if (frozenSignatures != null)
+                {
+                    tmp_sigs = frozenSignatures;
+                }
+                else
+                {
+                    tmp_sigs = signatures;
+                }
+                if(tmp_sigs != null && tmp_sigs.Count > 0)
+                {
+                    byte[] proposer_address = new Address(tmp_sigs[0][1]).address;
+                    if (!blockProposer.SequenceEqual(proposer_address))
+                    {
+                        Logging.error("First signature on block #{0} is not from block proposer {1}.", blockNum, Base58Check.Base58CheckEncoding.EncodePlain(proposer_address));
+                        return false;
+                    }
+                    return true;
+                }
+            }
+            return false;
+        }
+
+        /// <summary>
         ///  Verifies that all signatures on this block are valid.
         /// </summary>
         /// <remarks>
@@ -1246,9 +1304,9 @@ namespace IXICore
                 safe_sigs = new List<byte[][]>(signatures);
             }
 
+
             foreach (byte[][] sig in safe_sigs)
             {
-
                 byte[] signature = sig[0];
                 byte[] address = sig[1];
 
