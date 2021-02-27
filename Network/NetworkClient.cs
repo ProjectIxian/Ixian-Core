@@ -167,14 +167,8 @@ namespace IXICore.Network
         {
             try
             {
-                if(CoreConfig.protocolVersion == 5)
-                {
-                    CoreProtocolMessage.sendHelloMessageV5(this, false, null);
-                }else
-                {
-                    Random rnd = new Random();
-                    CoreProtocolMessage.sendHelloMessageV6(this, false, rnd.Next());
-                }
+                Random rnd = new Random();
+                CoreProtocolMessage.sendHelloMessageV6(this, false, rnd.Next());
 
                 base.recvLoop();
             }catch(Exception e)

@@ -570,7 +570,7 @@ namespace IXICore
                                 blockProposer = reader.ReadBytes(dataLen);
                             }
                         }
-                        catch (Exception e)
+                        catch (Exception)
                         {
 
                         }
