@@ -1244,6 +1244,7 @@ namespace IXICore
         {
             if(blockProposer == null)
             {
+                Logging.error("Block proposer is empty for block #" + this.blockNum);
                 return true;
             }
             lock (signatures)
@@ -1259,7 +1260,7 @@ namespace IXICore
                 }
                 if(tmp_sigs != null && tmp_sigs.Count > 0)
                 {
-                    byte[] proposer_address = new Address(tmp_sigs[0][1]).address;
+                    byte[] proposer_address = new Address(tmp_sigs[0][1], null, false).address;
                     if (!blockProposer.SequenceEqual(proposer_address))
                     {
                         Logging.error("First signature on block #{0} is not from block proposer {1}.", blockNum, Base58Check.Base58CheckEncoding.EncodePlain(proposer_address));
