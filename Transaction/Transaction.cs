@@ -328,7 +328,30 @@ namespace IXICore
         public static int getExpectedVersion(int block_version)
         {
             int ver;
-            if (block_version < BlockVer.v9)
+            if (block_version == BlockVer.v0)
+            {
+                ver = 0;
+            }
+            else if (block_version == BlockVer.v1)
+            {
+                ver = 1;
+            }
+            else if (block_version == BlockVer.v2)
+            {
+                ver = 2;
+            }
+            else if (block_version < BlockVer.v6)
+            {
+                ver = 3;
+            }
+            else if (block_version < BlockVer.v7)
+            {
+                ver = 4;
+            }
+            else if (block_version < BlockVer.v8)
+            {
+                ver = 5;
+            }else if (block_version < BlockVer.v9)
             {
                 ver = 6;
             }
