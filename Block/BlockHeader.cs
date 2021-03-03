@@ -32,6 +32,7 @@ namespace IXICore
         public static int v7 = 7;
         public static int v8 = 8;
         public static int v9 = 9;
+        public static int v10 = 10;
     }
 
     public class SuperBlockSegment
@@ -127,6 +128,10 @@ namespace IXICore
         ///  PIT Hash - transaction root hash, available from block v6
         /// </summary>
         public byte[] pitHash = null;
+        /// <summary>
+        ///  Address of the block proposer/first signer.
+        /// </summary>
+        public byte[] blockProposer = null;
 
         public BlockHeader()
         {
@@ -197,6 +202,11 @@ namespace IXICore
 
             timestamp = block.timestamp;
 
+            if (block.blockProposer != null)
+            {
+                blockProposer = new byte[block.blockProposer.Length];
+                Array.Copy(block.blockProposer, blockProposer, blockProposer.Length);
+            }
         }
 
         /// <summary>
@@ -291,6 +301,19 @@ namespace IXICore
                             }
 
                             timestamp = reader.ReadInt64();
+
+                            try
+                            {
+                                dataLen = (int)reader.ReadIxiVarUInt();
+                                if (dataLen > 0)
+                                {
+                                    blockProposer = reader.ReadBytes(dataLen);
+                                }
+                            }
+                            catch (Exception)
+                            {
+
+                            }
                         }
                     }
                 }
@@ -393,6 +416,16 @@ namespace IXICore
                     }
 
                     writer.Write(timestamp);
+
+                    if (blockProposer != null)
+                    {
+                        writer.WriteIxiVarInt(blockProposer.Length);
+                        writer.Write(blockProposer);
+                    }
+                    else
+                    {
+                        writer.WriteIxiVarInt((int)0);
+                    }
                 }
                 return m.ToArray();
             }
@@ -458,6 +491,11 @@ namespace IXICore
             if (version >= BlockVer.v7)
             {
                 rawData.AddRange(BitConverter.GetBytes(timestamp));
+            }
+
+            if(version >= BlockVer.v9)
+            {
+                rawData.AddRange(blockProposer);
             }
 
             if (version <= BlockVer.v2)
