@@ -799,6 +799,10 @@ namespace IXICore.Network
                         {
                             continue;
                         }
+                        if(client.presenceAddress == null)
+                        {
+                            continue;
+                        }
                         if (!types.Contains(client.presenceAddress.type))
                         {
                             continue;
