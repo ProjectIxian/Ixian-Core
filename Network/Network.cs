@@ -405,7 +405,12 @@ namespace IXICore.Network
                         new string[2] { "seed3.ixian.io:10234", "1Dp9bEFkymhN8PcN7QBzKCg2buz4njjp4eJeFngh769H4vUWi" },
                         new string[2] { "seed4.ixian.io:10234", "1SWy7jYky8xkuN5dnr3aVMJiNiQVh4GSLggZ9hBD3q7ALVEYY" },
                         new string[2] { "seed5.ixian.io:10234", "1R2WxZ7rmQhMTt5mCFTPhPe9Ltw8pTPY6uTsWHCvVd3GvWupC" },
-                        new string[2] { "ixian.kiramine.com:10234", "3TWxD1MdTUEV7hcpy6LFE5RU2HGtC2PqjFfmEtjAyBeoC6moS22LtXknxRjMVqSqg" }
+                        new string[2] { "ixian.kiramine.com:10234", "3TWxD1MdTUEV7hcpy6LFE5RU2HGtC2PqjFfmEtjAyBeoC6moS22LtXknxRjMVqSqg" },
+                        new string[2] { "95.217.224.139:10234", "3fpSjhMM8Ji9ppU7wWBkhMx7R6Nibv3uJufFeUwGKQuzmuzLmmuzQQ3YCj1K61VqX" },
+                        new string[2] { "108.61.221.103:10234", "3Tb7dHWbxfCKkK1gCE3YMfKrznf2xwKbnduExFHwArV7iVL1EjMqBZSk3SfyJYUCd" },
+                        new string[2] { "80.240.18.159:10234", "3zk3ywgkztGMuiMMx2PzfWoi1r5pP6ekzUS7NRozSEEEqWQBxAbCmvbt9dUe2vS7v" },
+                        new string[2] { "45.77.222.27:10234", "4PQFjQ9wKE5HVdZx4ApgL5noxbZ2rK4khsgMYNbGcoRkcae6fV91AAJACH1uCKwcQ" },
+                        new string[2] { "149.28.172.226:10234", "3Vn3WzxAS7rUiDVN2EfKhpYQyGhKfRxMB3pmFiEAxnfmx8B5TYA3h1YN4vpS1Fosr" }
                     };
 
         /// <summary>
