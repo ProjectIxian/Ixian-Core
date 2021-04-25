@@ -52,7 +52,10 @@
     <Compile Include="$(MSBuildThisFileDirectory)Peer\Peer.cs" />
     <Compile Include="$(MSBuildThisFileDirectory)Peer\PeerStorage.cs" />
     <Compile Include="$(MSBuildThisFileDirectory)Platform\NativeMethods.cs" />
+    <Compile Include="$(MSBuildThisFileDirectory)Presence\KeepAlive.cs" />
+    <Compile Include="$(MSBuildThisFileDirectory)Presence\PowSolution.cs" />
     <Compile Include="$(MSBuildThisFileDirectory)Presence\Presence.cs" />
+    <Compile Include="$(MSBuildThisFileDirectory)Presence\PresenceAddress.cs" />
     <Compile Include="$(MSBuildThisFileDirectory)Presence\PresenceList.cs" />
     <Compile Include="$(MSBuildThisFileDirectory)Presence\PresenceSelector.cs" />
     <Compile Include="$(MSBuildThisFileDirectory)Streaming\Bot\Channels\BotChannel.cs" />

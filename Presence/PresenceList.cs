@@ -399,85 +399,12 @@ namespace IXICore
             return true;
         }*/
 
-        public static bool verifyPresence(Presence presence)
-        {
-            if (presence.wallet.Length > 128 && presence.wallet.Length < 4)
-            {
-                return false;
-            }
-
-            if (presence.pubkey == null || presence.pubkey.Length < 32 || presence.pubkey.Length > 2500)
-            {
-                return false;
-            }
-
-            List<PresenceAddress> valid_addresses = new List<PresenceAddress>();
-
-            long currentTime = Clock.getNetworkTimestamp();
-
-            foreach (var entry in presence.addresses)
-            {
-                if (entry.device.Length > 64)
-                {
-                    continue;
-                }
-
-                if (entry.nodeVersion.Length > 64)
-                {
-                    continue;
-                }
-
-                if (entry.address.Length > 24 && entry.address.Length < 9)
-                {
-                    continue;
-                }
-
-                long lTimestamp = entry.lastSeenTime;
-
-                int expiration_time = CoreConfig.serverPresenceExpiration;
-
-                if (entry.type == 'C')
-                {
-                    expiration_time = CoreConfig.clientPresenceExpiration;
-                }
-
-                // Check for tampering. Includes a +300, -30 second synchronization zone
-                if ((currentTime - lTimestamp) > expiration_time)
-                {
-                    Logging.warn(string.Format("[PL] Received expired presence for {0} {1}. Skipping; {2} - {3}", Crypto.hashToString(presence.wallet), entry.address, currentTime, lTimestamp));
-                    continue;
-                }
-
-                if ((currentTime - lTimestamp) < -30)
-                {
-                    Logging.warn(string.Format("[PL] Potential presence tampering for {0} {1}. Skipping; {2} - {3}", Crypto.hashToString(presence.wallet), entry.address, currentTime, lTimestamp));
-                    continue;
-                }
-
-                if (!entry.verifySignature(presence.wallet, presence.pubkey))
-                {
-                    Logging.warn("Invalid presence address received in verifyPresence, signature verification failed for {0}.", Base58Check.Base58CheckEncoding.EncodePlain(presence.wallet));
-                    continue;
-                }
-
-                valid_addresses.Add(entry);
-            }
-
-            if(valid_addresses.Count > 0)
-            {
-                presence.addresses = valid_addresses;
-                return true;
-            }
-
-            return false;
-        }
-
         // Update a presence from a byte array
         public static Presence updateFromBytes(byte[] bytes)
         {
             Presence presence = new Presence(bytes);
 
-            if(verifyPresence(presence))
+            if(presence.verify())
             {
                 return updateEntry(presence, true);
             }
@@ -568,9 +495,19 @@ namespace IXICore
 
                 try
                 {
-                    byte[] ka_bytes = null;
-                    // TODO enable v2 manually once clients upgrade to new IxiCore
-                    ka_bytes = keepAlive_v1();
+                    KeepAlive ka = new KeepAlive() { 
+                        deviceId = CoreConfig.device_id,
+                        hostName = curNodePresenceAddress.address,
+                        nodeType = curNodePresenceAddress.type,
+                        timestamp = Clock.getNetworkTimestamp(),
+                        walletAddress = IxianHandler.getWalletStorage().getPrimaryAddress()
+                    };
+                    ka.sign(IxianHandler.getWalletStorage().getPrimaryPrivateKey());
+
+                    curNodePresenceAddress.lastSeenTime = ka.timestamp;
+                    curNodePresenceAddress.signature = ka.signature;
+
+                    byte[] ka_bytes = ka.getBytes();
 
                     byte[] address = null;
                     long last_seen = 0;
@@ -592,94 +529,6 @@ namespace IXICore
             }
         }
 
-        private static byte[] keepAlive_v1()
-        {
-            // Prepare the keepalive message
-            using (MemoryStream m = new MemoryStream(640))
-            {
-                using (BinaryWriter writer = new BinaryWriter(m))
-                {
-                    writer.Write(1); // version
-
-                    byte[] wallet = IxianHandler.getWalletStorage().getPrimaryAddress();
-                    writer.Write(wallet.Length);
-                    writer.Write(wallet);
-
-                    writer.Write(new System.Guid(CoreConfig.device_id).ToString());
-
-                    // Add the unix timestamp
-                    long timestamp = Clock.getNetworkTimestamp();
-                    writer.Write(timestamp);
-
-                    string hostname = curNodePresenceAddress.address;
-                    writer.Write(hostname);
-                    writer.Write(PresenceList.curNodePresenceAddress.type);
-
-                    // Add a verifiable signature
-                    byte[] private_key = IxianHandler.getWalletStorage().getPrimaryPrivateKey();
-                    byte[] signature = CryptoManager.lib.getSignature(m.ToArray(), private_key);
-                    writer.Write(signature.Length);
-                    writer.Write(signature);
-
-                    PresenceList.curNodePresenceAddress.lastSeenTime = timestamp;
-                    PresenceList.curNodePresenceAddress.signature = signature;
-
-#if TRACE_MEMSTREAM_SIZES
-                    Logging.info(String.Format("PresenceList::keepAlive_v1: {0}", m.Length));
-#endif
-                }
-
-                return m.ToArray();
-            }
-        }
-
-        private static byte[] keepAlive_v2()
-        {
-            // Prepare the keepalive message
-            using (MemoryStream m = new MemoryStream(640))
-            {
-                using (BinaryWriter writer = new BinaryWriter(m))
-                {
-                    writer.WriteIxiVarInt(2); // version
-
-                    byte[] wallet = IxianHandler.getWalletStorage().getPrimaryAddress();
-                    writer.WriteIxiVarInt(wallet.Length);
-                    writer.Write(wallet);
-
-                    writer.WriteIxiVarInt(CoreConfig.device_id.Length);
-                    writer.Write(CoreConfig.device_id);
-
-                    // Add the unix timestamp
-                    long timestamp = Clock.getNetworkTimestamp();
-                    writer.WriteIxiVarInt(timestamp);
-
-                    string hostname = curNodePresenceAddress.address;
-                    writer.Write(hostname);
-                    writer.Write(PresenceList.curNodePresenceAddress.type);
-
-                    // Add a verifiable signature
-                    byte[] private_key = IxianHandler.getWalletStorage().getPrimaryPrivateKey();
-                    
-                    byte[] checksum = Crypto.sha512sq(m.ToArray());
-                    byte[] checksum_with_lock = new byte[ConsensusConfig.ixianChecksumLock.Length + checksum.Length];
-                    Array.Copy(ConsensusConfig.ixianChecksumLock, checksum_with_lock, ConsensusConfig.ixianChecksumLock.Length);
-                    Array.Copy(checksum, 0, checksum_with_lock, ConsensusConfig.ixianChecksumLock.Length, checksum.Length);
-                    byte[] signature = CryptoManager.lib.getSignature(checksum_with_lock, private_key);
-                    writer.WriteIxiVarInt(signature.Length);
-                    writer.Write(signature);
-
-                    PresenceList.curNodePresenceAddress.lastSeenTime = timestamp;
-                    PresenceList.curNodePresenceAddress.signature = signature;
-
-#if TRACE_MEMSTREAM_SIZES
-                    Logging.info(String.Format("PresenceList::keepAlive_v1: {0}", m.Length));
-#endif
-                }
-
-                return m.ToArray();
-            }
-        }
-
         // Called when receiving a keepalive network message. The PresenceList will update the appropriate entry based on the timestamp.
         // Returns TRUE if it updated an entry in the PL
         // Sets the out address parameter to be the KA wallet's address or null if an error occured
@@ -694,231 +543,158 @@ namespace IXICore
 
             try
             {
-                using (MemoryStream m = new MemoryStream(bytes))
+                KeepAlive ka = new KeepAlive(bytes);
+                byte[] wallet = ka.walletAddress;
+
+                if (ka.nodeType == 'C' || ka.nodeType == 'R')
                 {
-                    using (BinaryReader reader = new BinaryReader(m))
+                    // all good, continue
+                }
+                else if (ka.nodeType == 'M' || ka.nodeType == 'H')
+                {
+                    if (ka.version == 1)
                     {
-                        int keepAliveVersion = 0;
-                        if (bytes[0] == 1)
+                        if (myPresenceType == 'M' || myPresenceType == 'H')
                         {
-                            // TODO temporary, remove after network upgrade
-                            keepAliveVersion = reader.ReadInt32();
-                        }else
-                        {
-                            keepAliveVersion = (int)reader.ReadIxiVarInt();
-                        }
-
-                        byte[] wallet;
-                        byte[] deviceid;
-                        long timestamp;
-                        string hostname;
-                        char node_type = '0';
-                        int sigLen;
-                        byte[] signature;
-
-                        long checksum_data_len = 0;
-
-                        byte[] data_to_verify;
-
-                        if (keepAliveVersion == 1)
-                        {
-                            // TODO temporary, remove after network upgrade
-                            int walletLen = reader.ReadInt32();
-                            wallet = reader.ReadBytes(walletLen);
-
-                            // Assign the out address parameter
-                            address = wallet;
-
-                            string device_id_str = reader.ReadString();
-                            device_id = deviceid = System.Guid.Parse(device_id_str).ToByteArray();
-                            last_seen = timestamp = reader.ReadInt64();
-                            hostname = reader.ReadString();
-
-                            node_type = reader.ReadChar();
-
-                            checksum_data_len = m.Position;
-
-                            sigLen = reader.ReadInt32();
-                            signature = reader.ReadBytes(sigLen);
-
-                            data_to_verify = bytes.Take((int)checksum_data_len).ToArray();
-                        }
-                        else
-                        {
-                            int walletLen = (int)reader.ReadIxiVarUInt();
-                            wallet = reader.ReadBytes(walletLen);
-
-                            // Assign the out address parameter
-                            address = wallet;
-
-                            int deviceid_len = (int)reader.ReadIxiVarUInt();
-                            device_id = deviceid = reader.ReadBytes(deviceid_len);
-                            last_seen = timestamp = reader.ReadIxiVarInt();
-                            hostname = reader.ReadString();
-
-                            node_type = reader.ReadChar();
-
-                            checksum_data_len = m.Position;
-
-                            sigLen = (int)reader.ReadIxiVarUInt();
-                            signature = reader.ReadBytes(sigLen);
-
-                            byte[] checksum = Crypto.sha512sq(bytes.Take((int)checksum_data_len).ToArray());
-                            data_to_verify = new byte[ConsensusConfig.ixianChecksumLock.Length + checksum.Length];
-                            Array.Copy(ConsensusConfig.ixianChecksumLock, data_to_verify, ConsensusConfig.ixianChecksumLock.Length);
-                            Array.Copy(checksum, 0, data_to_verify, ConsensusConfig.ixianChecksumLock.Length, checksum.Length);
-                        }
-                        //Logging.info(String.Format("[PL] KEEPALIVE request from {0}", hostname));
-
-                        if (node_type == 'C' || node_type == 'R')
-                        {
-                            // all good, continue
-                        }
-                        else if (node_type == 'M' || node_type == 'H')
-                        {
-                            if (myPresenceType == 'M' || myPresenceType == 'H')
+                            // check balance
+                            if (IxianHandler.getWalletBalance(ka.walletAddress) < ConsensusConfig.minimumMasterNodeFunds)
                             {
-                                // check balance
-                                if (IxianHandler.getWalletBalance(wallet) < ConsensusConfig.minimumMasterNodeFunds)
-                                {
-                                    return false;
-                                }
-                            }
-                        }
-                        else
-                        {
-                            // reject everything else
-                            return false;
-                        }
-
-                        lock (presences)
-                        {
-                            Presence listEntry = presences.Find(x => x.wallet.SequenceEqual(wallet));
-                            if (listEntry == null && wallet.SequenceEqual(IxianHandler.getWalletStorage().getPrimaryAddress()))
-                            {
-                                Logging.warn("My entry was removed from local PL, readding.");
-                                curNodePresence.addresses.Clear();
-                                curNodePresence.addresses.Add(curNodePresenceAddress);
-                                updateEntry(curNodePresence);
-                                listEntry = presences.Find(x => x.wallet.SequenceEqual(wallet));
-                            }
-
-                            // Check if no such wallet found in presence list
-                            if (listEntry == null)
-                            {
-                                // request for additional data
-                                using (MemoryStream mw = new MemoryStream())
-                                {
-                                    using (BinaryWriter writer = new BinaryWriter(mw))
-                                    {
-                                        writer.Write(wallet.Length);
-                                        writer.Write(wallet);
-
-                                        if (endpoint != null && endpoint.isConnected())
-                                        {
-                                            endpoint.sendData(ProtocolMessageCode.getPresence, mw.ToArray(), wallet);
-                                        }
-                                        else
-                                        {
-                                            CoreProtocolMessage.broadcastProtocolMessageToSingleRandomNode(new char[] { 'M', 'R', 'H' }, ProtocolMessageCode.getPresence, mw.ToArray(), 0, null);
-                                        }
-                                    }
-                                }
                                 return false;
                             }
+                        }
+                    }
+                }
+                else
+                {
+                    // reject everything else
+                    return false;
+                }
 
-                            // Verify the signature
-                            if (CryptoManager.lib.verifySignature(data_to_verify, listEntry.pubkey, signature) == false)
+                lock (presences)
+                {
+                    Presence listEntry = presences.Find(x => x.wallet.SequenceEqual(wallet));
+                    if (listEntry == null && wallet.SequenceEqual(IxianHandler.getWalletStorage().getPrimaryAddress()))
+                    {
+                        Logging.warn("My entry was removed from local PL, readding.");
+                        curNodePresence.addresses.Clear();
+                        curNodePresence.addresses.Add(curNodePresenceAddress);
+                        updateEntry(curNodePresence);
+                        listEntry = presences.Find(x => x.wallet.SequenceEqual(wallet));
+                    }
+
+                    // Check if no such wallet found in presence list
+                    if (listEntry == null)
+                    {
+                        // request for additional data
+                        using (MemoryStream mw = new MemoryStream())
+                        {
+                            using (BinaryWriter writer = new BinaryWriter(mw))
                             {
-                                Logging.warn(string.Format("[PL] KEEPALIVE tampering for {0} {1}, incorrect Sig.", Base58Check.Base58CheckEncoding.EncodePlain(listEntry.wallet), hostname));
-                                return false;
-                            }
+                                writer.WriteIxiVarInt(wallet.Length);
+                                writer.Write(wallet);
 
-                            PresenceAddress pa = listEntry.addresses.Find(x => x.address == hostname && x.device.SequenceEqual(deviceid));
-
-                            if(pa != null)
-                            {
-                                // Check the node type
-                                if (pa.lastSeenTime != timestamp)
+                                if (endpoint != null && endpoint.isConnected())
                                 {
-                                    // Check for outdated timestamp
-                                    if (timestamp < pa.lastSeenTime)
-                                    {
-                                        // We already have a newer timestamp for this entry
-                                        return false;
-                                    }
-
-                                    int expiration_time = CoreConfig.serverPresenceExpiration;
-
-                                    if (pa.type == 'C')
-                                    {
-                                        expiration_time = CoreConfig.clientPresenceExpiration;
-                                    }
-
-                                    // Check for tampering. Includes a +300, -30 second synchronization zone
-                                    if ((currentTime - timestamp) > expiration_time)
-                                    {
-                                        Logging.warn(string.Format("[PL] Received expired KEEPALIVE for {0} {1}. Timestamp {2}", Base58Check.Base58CheckEncoding.EncodePlain(listEntry.wallet), pa.address, timestamp));
-                                        return false;
-                                    }
-
-                                    if ((currentTime - timestamp) < -30)
-                                    {
-                                        Logging.warn(string.Format("[PL] Potential KEEPALIVE tampering for {0} {1}. Timestamp {2}", Base58Check.Base58CheckEncoding.EncodePlain(listEntry.wallet), pa.address, timestamp));
-                                        return false;
-                                    }
-
-                                    // Update the timestamp
-                                    pa.lastSeenTime = timestamp;
-                                    pa.signature = signature;
-                                    pa.version = keepAliveVersion;
-                                    if (pa.type != node_type)
-                                    {
-                                        lock (presenceCount)
-                                        {
-                                            presenceCount[pa.type]--;
-                                            if (!presenceCount.ContainsKey(node_type))
-                                            {
-                                                presenceCount.Add(node_type, 0);
-                                            }
-                                            presenceCount[node_type]++;
-                                        }
-                                    }
-                                    pa.type = node_type;
-                                    //Console.WriteLine("[PL] LASTSEEN for {0} - {1} set to {2}", hostname, deviceid, pa.lastSeenTime);
-                                    return true;
-                                }
-                            }
-                            else
-                            {
-                                if (wallet.SequenceEqual(IxianHandler.getWalletStorage().getPrimaryAddress()))
-                                {
-                                    curNodePresence.addresses.Clear();
-                                    curNodePresence.addresses.Add(curNodePresenceAddress);
-                                    updateEntry(curNodePresence);
-                                    return true;
+                                    endpoint.sendData(ProtocolMessageCode.getPresence2, mw.ToArray(), wallet);
                                 }
                                 else
                                 {
-                                    using (MemoryStream mw = new MemoryStream())
-                                    {
-                                        using (BinaryWriter writer = new BinaryWriter(mw))
-                                        {
-                                            writer.Write(wallet.Length);
-                                            writer.Write(wallet);
-
-                                            if (endpoint != null && endpoint.isConnected())
-                                            {
-                                                endpoint.sendData(ProtocolMessageCode.getPresence, mw.ToArray(), wallet);
-                                            }else
-                                            { 
-                                                CoreProtocolMessage.broadcastProtocolMessageToSingleRandomNode(new char[] { 'M', 'R', 'H'}, ProtocolMessageCode.getPresence, mw.ToArray(), 0, null);
-                                            }
-                                        }
-                                    }
-                                    return false;
+                                    CoreProtocolMessage.broadcastProtocolMessageToSingleRandomNode(new char[] { 'M', 'R', 'H' }, ProtocolMessageCode.getPresence2, mw.ToArray(), 0, null);
                                 }
                             }
+                        }
+                        return false;
+                    }
+
+
+                    if(!ka.verifySignature(listEntry.pubkey))
+                    {
+                        return false;
+                    }
+
+                    PresenceAddress pa = listEntry.addresses.Find(x => x.address == ka.hostName && x.device.SequenceEqual(ka.deviceId));
+
+                    if(pa != null)
+                    {
+                        // Check the node type
+                        if (pa.lastSeenTime != ka.timestamp)
+                        {
+                            // Check for outdated timestamp
+                            if (ka.timestamp < pa.lastSeenTime)
+                            {
+                                // We already have a newer timestamp for this entry
+                                return false;
+                            }
+
+                            int expiration_time = CoreConfig.serverPresenceExpiration;
+
+                            if (pa.type == 'C')
+                            {
+                                expiration_time = CoreConfig.clientPresenceExpiration;
+                            }
+
+                            // Check for tampering. Includes a +300, -30 second synchronization zone
+                            if ((currentTime - ka.timestamp) > expiration_time)
+                            {
+                                Logging.warn(string.Format("[PL] Received expired KEEPALIVE for {0} {1}. Timestamp {2}", Base58Check.Base58CheckEncoding.EncodePlain(listEntry.wallet), pa.address, ka.timestamp));
+                                return false;
+                            }
+
+                            if ((currentTime - ka.timestamp) < -30)
+                            {
+                                Logging.warn(string.Format("[PL] Potential KEEPALIVE tampering for {0} {1}. Timestamp {2}", Base58Check.Base58CheckEncoding.EncodePlain(listEntry.wallet), pa.address, ka.timestamp));
+                                return false;
+                            }
+
+                            // Update the timestamp
+                            pa.lastSeenTime = ka.timestamp;
+                            pa.signature = ka.signature;
+                            pa.version = ka.version;
+                            if (pa.type != ka.nodeType)
+                            {
+                                lock (presenceCount)
+                                {
+                                    presenceCount[pa.type]--;
+                                    if (!presenceCount.ContainsKey(ka.nodeType))
+                                    {
+                                        presenceCount.Add(ka.nodeType, 0);
+                                    }
+                                    presenceCount[ka.nodeType]++;
+                                }
+                            }
+                            pa.type = ka.nodeType;
+                            //Console.WriteLine("[PL] LASTSEEN for {0} - {1} set to {2}", hostname, deviceid, pa.lastSeenTime);
+                            return true;
+                        }
+                    }
+                    else
+                    {
+                        if (wallet.SequenceEqual(IxianHandler.getWalletStorage().getPrimaryAddress()))
+                        {
+                            curNodePresence.addresses.Clear();
+                            curNodePresence.addresses.Add(curNodePresenceAddress);
+                            updateEntry(curNodePresence);
+                            return true;
+                        }
+                        else
+                        {
+                            using (MemoryStream mw = new MemoryStream())
+                            {
+                                using (BinaryWriter writer = new BinaryWriter(mw))
+                                {
+                                    writer.WriteIxiVarInt(wallet.Length);
+                                    writer.Write(wallet);
+
+                                    if (endpoint != null && endpoint.isConnected())
+                                    {
+                                        endpoint.sendData(ProtocolMessageCode.getPresence2, mw.ToArray(), wallet);
+                                    }else
+                                    { 
+                                        CoreProtocolMessage.broadcastProtocolMessageToSingleRandomNode(new char[] { 'M', 'R', 'H'}, ProtocolMessageCode.getPresence2, mw.ToArray(), 0, null);
+                                    }
+                                }
+                            }
+                            return false;
                         }
                     }
                 }
