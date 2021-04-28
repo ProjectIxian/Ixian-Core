@@ -2163,6 +2163,10 @@ namespace IXICore
             return (milliseconds * 1000) + random.Next(1000);
         }
 
+        // Cache block type values
+        private static byte[] b_type0 = IxiVarInt.GetIxiVarIntBytes(0);
+        private static byte[] b_type1 = IxiVarInt.GetIxiVarIntBytes(1);
+
         public static byte[] txIdLegacyToV8(string txid)
         {
             byte[] b_txid;
@@ -2171,23 +2175,21 @@ namespace IXICore
 
             if (txid.StartsWith("stk-"))
             {
-                byte[] b_type = IxiVarInt.GetIxiVarIntBytes(0);
                 byte[] b_bh = IxiVarInt.GetIxiVarIntBytes(UInt64.Parse(split_txid[2]));
                 byte[] b_tx_hash = Base58Check.Base58CheckEncoding.DecodePlain(split_txid[3]);
-                b_txid = new byte[b_type.Length + b_bh.Length + b_tx_hash.Length];
-                Array.Copy(b_type, 0, b_txid, 0, b_type.Length);
-                Array.Copy(b_bh, 0, b_txid, b_type.Length, b_bh.Length);
-                Array.Copy(b_tx_hash, 0, b_txid, b_type.Length + b_bh.Length, b_tx_hash.Length);
+                b_txid = new byte[b_type0.Length + b_bh.Length + b_tx_hash.Length];
+                Array.Copy(b_type0, 0, b_txid, 0, b_type0.Length);
+                Array.Copy(b_bh, 0, b_txid, b_type0.Length, b_bh.Length);
+                Array.Copy(b_tx_hash, 0, b_txid, b_type0.Length + b_bh.Length, b_tx_hash.Length);
             }
             else
             {
-                byte[] b_type = IxiVarInt.GetIxiVarIntBytes(1);
                 byte[] b_bh = IxiVarInt.GetIxiVarIntBytes(UInt64.Parse(split_txid[0]));
                 byte[] b_tx_hash = Base58Check.Base58CheckEncoding.DecodePlain(split_txid[1]);
-                b_txid = new byte[b_type.Length + b_bh.Length + b_tx_hash.Length];
-                Array.Copy(b_type, 0, b_txid, 0, b_type.Length);
-                Array.Copy(b_bh, 0, b_txid, b_type.Length, b_bh.Length);
-                Array.Copy(b_tx_hash, 0, b_txid, b_type.Length + b_bh.Length, b_tx_hash.Length);
+                b_txid = new byte[b_type1.Length + b_bh.Length + b_tx_hash.Length];
+                Array.Copy(b_type1, 0, b_txid, 0, b_type1.Length);
+                Array.Copy(b_bh, 0, b_txid, b_type1.Length, b_bh.Length);
+                Array.Copy(b_tx_hash, 0, b_txid, b_type1.Length + b_bh.Length, b_tx_hash.Length);
             }
 
             return b_txid;
