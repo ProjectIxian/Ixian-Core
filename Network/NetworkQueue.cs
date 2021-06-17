@@ -96,7 +96,7 @@ namespace IXICore.Network
 
         private static byte[] extractHelperData(ProtocolMessageCode code, byte[] data)
         {
-            if (code == ProtocolMessageCode.blockData)
+            if (code == ProtocolMessageCode.blockData || code == ProtocolMessageCode.newBlock)
             {
                 return data.Take(8).ToArray();
             }
@@ -151,7 +151,10 @@ namespace IXICore.Network
                 switch (code)
                 {
 #pragma warning disable CS0618 // Type or member is obsolete
+                    case ProtocolMessageCode.getTransaction:
+                    case ProtocolMessageCode.getTransaction2:
                     case ProtocolMessageCode.getTransaction3:
+                    case ProtocolMessageCode.getTransactions:
                     case ProtocolMessageCode.getTransactions2:
                     case ProtocolMessageCode.getBlock:
                     case ProtocolMessageCode.getBlock2:
@@ -170,10 +173,12 @@ namespace IXICore.Network
 #pragma warning disable CS0618 // Type or member is obsolete
                     case ProtocolMessageCode.transactionsChunk:
                     case ProtocolMessageCode.transactionsChunk2:
+                    case ProtocolMessageCode.newTransaction:
                     case ProtocolMessageCode.transactionData:
                     case ProtocolMessageCode.blockTransactionsChunk:
                     case ProtocolMessageCode.blockHeaders:
                     case ProtocolMessageCode.blockHeaders2:
+                    case ProtocolMessageCode.newBlock:
                     case ProtocolMessageCode.blockData:
                     case ProtocolMessageCode.pitData:
                     case ProtocolMessageCode.pitData2:
@@ -235,13 +240,17 @@ namespace IXICore.Network
                         switch (code)
                         {
 #pragma warning disable CS0618 // Type or member is obsolete
+                            case ProtocolMessageCode.getTransaction:
+                            case ProtocolMessageCode.getTransaction2:
                             case ProtocolMessageCode.getTransaction3:
+                            case ProtocolMessageCode.getTransactions:
                             case ProtocolMessageCode.getTransactions2:
                             case ProtocolMessageCode.getBlock:
                             case ProtocolMessageCode.getBlock2:
                             case ProtocolMessageCode.getBlock3:
                             case ProtocolMessageCode.getBlockHeaders:
                             case ProtocolMessageCode.getBlockHeaders2:
+                            case ProtocolMessageCode.newBlock:
                             case ProtocolMessageCode.blockData:
                             case ProtocolMessageCode.getSignatures:
                             case ProtocolMessageCode.getBlockSignatures2:

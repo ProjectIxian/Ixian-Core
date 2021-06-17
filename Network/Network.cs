@@ -93,10 +93,10 @@ namespace IXICore.Network
         blockHeight = 5,
         getKeepAlives = 6,
         keepAlivesChunk = 7,
-        //[Obsolete("Use getTransactions2 instead")]
-        //getTransactions = 8,
-        //[Obsolete("Use getTransaction3 instead")]
-        //getTransaction = 9,
+        [Obsolete("Use getTransactions2 instead")]
+        getTransactions = 8,
+        [Obsolete("Use getTransaction3 instead")]
+        getTransaction = 9,
         transactionData = 10,
         getSignatures = 11,
         signaturesChunk = 12,
@@ -104,15 +104,17 @@ namespace IXICore.Network
         getBlockSignatures2 = 14,
         [Obsolete("Use transactionsChunk2 instead")]
         transactionsChunk = 15,
-        //newTransaction = 16, // deprecated
-        //newBlock = 17, // deprecated
+        [Obsolete("Use transactionData instead")]
+        newTransaction = 16, // deprecated
+        [Obsolete("Use blockData instead")]
+        newBlock = 17, // deprecated
         getBlock2 = 18,
         getBlockHeaders2 = 19,
         blockHeaders2 = 20,
         getPIT2 = 21,
         pitData2 = 22,
-        //[Obsolete("Use getTransaction3 instead")]
-        //getTransaction2 = 23,
+        [Obsolete("Use getTransaction3 instead")]
+        getTransaction2 = 23,
         updatePresence = 24,
         //removePresence = 25,
         s2data = 26,
@@ -136,12 +138,12 @@ namespace IXICore.Network
         extend = 39,
         attachEvent = 40,
         detachEvent = 41,
-        //[Obsolete("Use blockSignature2 instead")]
-        //blockSignature = 42,
-        //[Obsolete("Use getBlockSignatures2 instead")]
-        //getBlockSignatures = 43,
-        //[Obsolete("Use signaturesChunk instead")]
-        //blockSignatures = 44, // deprecated
+        [Obsolete("Use blockSignature2 instead")]
+        blockSignature = 42,
+        [Obsolete("Use getBlockSignatures2 instead")]
+        getBlockSignatures = 43,
+        [Obsolete("Use signaturesChunk instead")]
+        blockSignatures = 44, // deprecated
         getNextSuperBlock = 45,
         [Obsolete("Use getBlockHeaders2 instead")]
         getBlockHeaders = 46, // deprecated
