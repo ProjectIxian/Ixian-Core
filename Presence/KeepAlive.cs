@@ -193,11 +193,6 @@ namespace IXICore
 
                         int sigLen = (int)reader.ReadIxiVarUInt();
                         signature = reader.ReadBytes(sigLen);
-
-                        byte[] tmp_checksum = Crypto.sha512sq(kaBytes.Take((int)checksumDataLen).ToArray());
-                        checksum = new byte[ConsensusConfig.ixianChecksumLock.Length + checksum.Length];
-                        Array.Copy(ConsensusConfig.ixianChecksumLock, checksum, ConsensusConfig.ixianChecksumLock.Length);
-                        Array.Copy(checksum, 0, checksum, ConsensusConfig.ixianChecksumLock.Length, checksum.Length);
                     }
                 }
             }
@@ -210,30 +205,39 @@ namespace IXICore
 
         public void calculateChecksum()
         {
-            if(checksum != null)
+            if (checksum != null)
             {
                 return;
             }
 
-            checksum = Crypto.sha512sq(getBytes(true));
+            byte[] tmpChecksum = Crypto.sha512sq(getBytes(true));
+            byte[] checksumWithLock = new byte[ConsensusConfig.ixianChecksumLock.Length + tmpChecksum.Length];
+            Array.Copy(ConsensusConfig.ixianChecksumLock, checksum, ConsensusConfig.ixianChecksumLock.Length);
+            Array.Copy(tmpChecksum, 0, checksum, ConsensusConfig.ixianChecksumLock.Length, tmpChecksum.Length);
+            checksum = checksumWithLock;
         }
 
         public void sign(byte[] privateKey)
         {
+            if (signature != null)
+            {
+                return;
+            }
             calculateChecksum();
-            byte[] checksumWithLock = new byte[ConsensusConfig.ixianChecksumLock.Length + checksum.Length];
-            Array.Copy(ConsensusConfig.ixianChecksumLock, checksumWithLock, ConsensusConfig.ixianChecksumLock.Length);
-            Array.Copy(checksum, 0, checksumWithLock, ConsensusConfig.ixianChecksumLock.Length, checksum.Length);
 
-            signature = CryptoManager.lib.getSignature(checksumWithLock, privateKey);
+            signature = CryptoManager.lib.getSignature(checksum, privateKey);
         }
 
         public bool verifySignature(byte[] pubKey)
         {
-            // Verify the signature
-            if (CryptoManager.lib.verifySignature(getBytes(true), pubKey, signature) == false)
+            if (signature != null)
             {
-                Logging.warn(string.Format("[PL] KEEPALIVE tampering for {0} {1}, incorrect Sig.", walletAddress, hostName));
+                return false;
+            }
+            calculateChecksum();
+            // Verify the signature
+            if (CryptoManager.lib.verifySignature(checksum, pubKey, signature) == false)
+            {
                 return false;
             }
             return true;

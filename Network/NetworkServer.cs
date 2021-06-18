@@ -665,9 +665,8 @@ namespace IXICore.Network
             return connectable;
         }
 
-        public static bool addToInventory(char[] types, InventoryItem item, RemoteEndpoint skip_endpoint, ProtocolMessageCode code, byte[] data, byte[] helper)
+        public static bool addToInventory(char[] types, InventoryItem item, RemoteEndpoint skip_endpoint)
         {
-            QueueMessage queue_message = RemoteEndpoint.getQueueMessage(code, data, helper);
             lock (connectedClients)
             {
                 foreach (var client in connectedClients)
@@ -682,19 +681,15 @@ namespace IXICore.Network
                         {
                             continue;
                         }
+                        if (client.presenceAddress == null)
+                        {
+                            continue;
+                        }
                         if (!types.Contains(client.presenceAddress.type))
                         {
                             continue;
                         }
-                        if (client.version > 5)
-                        {
-                            client.addInventoryItem(item);
-                        }
-                        else
-                        {
-                            // TODO legacy, can be removed after network upgrades
-                            client.sendData(queue_message);
-                        }
+                        client.addInventoryItem(item);
                     }catch (Exception e)
                     {
                         Logging.error("Exception occured in NetworkServer.addToInventory: " + e);

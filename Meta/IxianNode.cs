@@ -50,6 +50,8 @@ namespace IXICore.Meta
         // Optional
         public virtual void receivedTransactionInclusionVerificationResponse(byte[] txid, bool verified) { }
         public virtual void receivedBlockHeader(BlockHeader block_header, bool verified) { }
+
+        public virtual Block getBlock(ulong blockNum) { return null; }
     }
 
     public static class IxianHandler
@@ -178,6 +180,12 @@ namespace IXICore.Meta
         {
             verifyHandler();
             handlerClass.receivedBlockHeader(block_header, verified);
+        }
+
+        public static Block getBlock(ulong blockNum)
+        {
+            verifyHandler();
+            return handlerClass.getBlock(blockNum);
         }
 
         public static void parseProtocolMessage(ProtocolMessageCode code, byte[] data, RemoteEndpoint endpoint)

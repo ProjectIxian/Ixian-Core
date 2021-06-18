@@ -656,6 +656,7 @@ namespace IXICore.Network
 
                             case ProtocolMessageCode.blockSignature2:
                             case ProtocolMessageCode.signaturesChunk:
+                            case ProtocolMessageCode.signaturesChunk2:
                                 priority = MessagePriority.medium;
                                 break;
 
@@ -1126,14 +1127,6 @@ namespace IXICore.Network
                     {
                         switch(socketReadBuffer[0])
                         {
-                            case 0x58: // 'X' is the message start byte of v5
-                                header[0] = socketReadBuffer[0];
-                                cur_header_len = 1;
-                                bytes_to_read = old_header_len - 1; // header length - start byte
-                                expected_header_len = old_header_len;
-                                version = 5;
-                                break;
-
                             case 0xEA: // 0xEA is the message start byte of v6 base protocol
                                 header[0] = socketReadBuffer[0];
                                 cur_header_len = 1;
@@ -1186,16 +1179,7 @@ namespace IXICore.Network
                                 // Find next start byte if available
                                 for (int i = cur_header_len - 1; i > 1; i--)
                                 {
-                                    if (header[i] == 'X')
-                                    {
-                                        cur_header_len = cur_header_len - i;
-                                        Array.Copy(header, i, header, 0, cur_header_len);
-                                        expected_header_len = old_header_len;
-                                        bytes_to_read = expected_header_len - cur_header_len;
-                                        version = 5;
-                                        break;
-                                    }
-                                    else if (header[i] == 0xEA)
+                                    if (header[i] == 0xEA)
                                     {
                                         cur_header_len = cur_header_len - i;
                                         Array.Copy(header, i, header, 0, cur_header_len);

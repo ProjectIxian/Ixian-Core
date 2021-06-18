@@ -263,22 +263,28 @@ namespace IXICore.Inventory
 
         public long getItemCount()
         {
-            long count = 0;
-            foreach (var type in inventory)
+            lock(inventory)
             {
-                count += type.Value.Count();
+                long count = 0;
+                foreach (var type in inventory)
+                {
+                    count += type.Value.Count();
+                }
+                return count;
             }
-            return count;
         }
 
         public long getProcessedItemCount()
         {
-            long count = 0;
-            foreach (var type in inventory)
+            lock (inventory)
             {
-                count += type.Value.Where(x => x.Value.processed == true).Count();
+                long count = 0;
+                foreach (var type in inventory)
+                {
+                    count += type.Value.Where(x => x.Value.processed == true).Count();
+                }
+                return count;
             }
-            return count;
         }
 
         protected void truncateInventory(InventoryItemTypes type)

@@ -98,14 +98,16 @@ namespace IXICore.Network
         //[Obsolete("Use getTransaction3 instead")]
         //getTransaction = 9,
         transactionData = 10,
+        [Obsolete("Use getSignatures2 instead")]
         getSignatures = 11,
+        [Obsolete("Use signaturesChunk2 instead")]
         signaturesChunk = 12,
         blockSignature2 = 13,
         getBlockSignatures2 = 14,
         [Obsolete("Use transactionsChunk2 instead")]
         transactionsChunk = 15,
-        //newTransaction = 16, // deprecated
-        //newBlock = 17, // deprecated
+        getSignatures2 = 16,
+        signaturesChunk2 = 17,
         getBlock2 = 18,
         getBlockHeaders2 = 19,
         blockHeaders2 = 20,

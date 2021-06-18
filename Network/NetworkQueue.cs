@@ -159,6 +159,7 @@ namespace IXICore.Network
                     case ProtocolMessageCode.getBlockHeaders:
                     case ProtocolMessageCode.getBlockHeaders2:
                     case ProtocolMessageCode.getSignatures:
+                    case ProtocolMessageCode.getSignatures2:
                     case ProtocolMessageCode.getBlockSignatures2:
                     case ProtocolMessageCode.getPIT:
                     case ProtocolMessageCode.getPIT2:
@@ -244,6 +245,7 @@ namespace IXICore.Network
                             case ProtocolMessageCode.getBlockHeaders2:
                             case ProtocolMessageCode.blockData:
                             case ProtocolMessageCode.getSignatures:
+                            case ProtocolMessageCode.getSignatures2:
                             case ProtocolMessageCode.getBlockSignatures2:
                             case ProtocolMessageCode.getPIT:
                             case ProtocolMessageCode.getPIT2:

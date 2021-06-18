@@ -15,7 +15,6 @@ using IXICore.Utils;
 using System;
 using System.Collections.Generic;
 using System.IO;
-using System.Linq;
 
 namespace IXICore
 {
@@ -27,7 +26,7 @@ namespace IXICore
         public byte[] pubkey;
         public byte[] metadata; 
         public List<PresenceAddress> addresses;
-        public PowSolution powSolution;
+        public SignerPowSolution powSolution;
 
         public Presence()
         {
@@ -366,10 +365,40 @@ namespace IXICore
 
                 if(version == 1 && (entry.type == 'M' || entry.type == 'H'))
                 {
-                    if(powSolution == null || !powSolution.verify())
+                    if(powSolution == null)
                     {
-                        Logging.warn("Invalid pr empty pow solution received in verifyPresence, verification failed for {0}.", Base58Check.Base58CheckEncoding.EncodePlain(wallet));
+                        Logging.warn("Invalid or empty pow solution received in verifyPresence, verification failed for {0}.", Base58Check.Base58CheckEncoding.EncodePlain(wallet));
                         continue;
+                    }else if(PresenceList.myPresenceType == 'M' || PresenceList.myPresenceType == 'H' || PresenceList.myPresenceType == 'W')
+                    {
+                        if(IxianHandler.getLastBlockHeight() - powSolution.blockNum > ConsensusConfig.plPowBlocksValidity)
+                        {
+                            Logging.warn("Expired pow solution received in verifyPresence, verification failed for {0}.", Base58Check.Base58CheckEncoding.EncodePlain(wallet));
+                            powSolution = null;
+                            continue;
+                        }
+                        Block plPowBlock = IxianHandler.getBlock(powSolution.blockNum);
+                        if (plPowBlock == null)
+                        {
+                            Logging.warn("No block for PL pow solution found in verifyPresence, verification failed for {0}.", Base58Check.Base58CheckEncoding.EncodePlain(wallet));
+                            powSolution = null;
+                            continue;
+                        }
+
+                        byte[] blockHash = plPowBlock.blockChecksum;
+                        ulong difficulty = plPowBlock.signerDifficulty;
+                        if(!powSolution.verifySignature(pubkey))
+                        {
+                            Logging.warn("Invalid pow solution received in verifyPresence, verification failed for {0}.", Base58Check.Base58CheckEncoding.EncodePlain(wallet));
+                            powSolution = null;
+                            continue;
+                        }
+                        if (!SignerPowSolution.verifyNonce(powSolution.solution, blockHash, wallet, difficulty))
+                        {
+                            Logging.warn("Invalid or empty pow solution received in verifyPresence, verification failed for {0}.", Base58Check.Base58CheckEncoding.EncodePlain(wallet));
+                            powSolution = null;
+                            continue;
+                        }
                     }
                 }
 

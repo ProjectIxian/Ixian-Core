@@ -781,10 +781,10 @@ namespace IXICore
             }
         }
 
-        public static bool addToInventory(char[] types, InventoryItem item, RemoteEndpoint skip_endpoint, ProtocolMessageCode code, byte[] data, byte[] helper)
+        public static bool addToInventory(char[] types, InventoryItem item, RemoteEndpoint skip_endpoint)
         {
-            bool c_result = NetworkClientManager.addToInventory(types, item, skip_endpoint, code, data, helper);
-            bool s_result = NetworkServer.addToInventory(types, item, skip_endpoint, code, data, helper);
+            bool c_result = NetworkClientManager.addToInventory(types, item, skip_endpoint);
+            bool s_result = NetworkServer.addToInventory(types, item, skip_endpoint);
             return c_result || s_result;
         }
 

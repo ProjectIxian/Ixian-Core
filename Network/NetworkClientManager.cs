@@ -783,7 +783,7 @@ namespace IXICore.Network
             }
         }
 
-        public static bool addToInventory(char[] types, InventoryItem item, RemoteEndpoint skip_endpoint, ProtocolMessageCode code, byte[] data, byte[] helper)
+        public static bool addToInventory(char[] types, InventoryItem item, RemoteEndpoint skip_endpoint)
         {
             lock (networkClients)
             {
@@ -807,16 +807,7 @@ namespace IXICore.Network
                         {
                             continue;
                         }
-                        if (client.version > 5)
-                        {
-                            client.addInventoryItem(item);
-                        }
-                        else
-                        {
-                            // TODO legacy, can be removed after network upgrades
-                            QueueMessage queue_message = RemoteEndpoint.getQueueMessage(code, data, helper);
-                            client.sendData(queue_message);
-                        }
+                        client.addInventoryItem(item);
                     }catch (Exception e)
                     {
                         Logging.error("Exception occured in NetworkClientManager.addToInventory: " + e);

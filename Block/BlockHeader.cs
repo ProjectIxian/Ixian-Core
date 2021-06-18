@@ -33,6 +33,7 @@ namespace IXICore
         public static int v8 = 8;
         public static int v9 = 9;
         public static int v10 = 10;
+        public static int v11 = 11;
     }
 
     public class SuperBlockSegment
@@ -116,7 +117,7 @@ namespace IXICore
         /// </summary>
         public ulong lastSuperBlockNum = 0;
         /// <summary>
-        ///  Ixian Hybrid PoW difficulty value.
+        ///  Ixian Mining PoW difficulty value.
         /// </summary>
         /// <remarks>
         ///  Ixian Blockchain works on a consensus model and mining is not strictly required. An optional mining system is included to enable initial coin supply distribution.
@@ -132,6 +133,17 @@ namespace IXICore
         ///  Address of the block proposer/first signer.
         /// </summary>
         public byte[] blockProposer = null;
+        /// <summary>
+        ///  Ixian Hybrid PoW difficulty value.
+        /// </summary>
+        /// <remarks>
+        /// </remarks>
+        public ulong signerDifficulty = 0;
+
+        /// <summary>
+        /// The list of Master Node signatures which enable the Ixian Consensus algorithm.
+        /// </summary>
+        public List<BlockSignature> signatures = new List<BlockSignature> { };
 
         public BlockHeader()
         {
@@ -207,6 +219,8 @@ namespace IXICore
                 blockProposer = new byte[block.blockProposer.Length];
                 Array.Copy(block.blockProposer, blockProposer, blockProposer.Length);
             }
+
+            signerDifficulty = block.signerDifficulty;
         }
 
         /// <summary>
@@ -309,6 +323,11 @@ namespace IXICore
                                 {
                                     blockProposer = reader.ReadBytes(dataLen);
                                 }
+
+                                if(version >= BlockVer.v10)
+                                {
+                                    signerDifficulty = reader.ReadUInt64();
+                                }
                             }
                             catch (Exception)
                             {
@@ -343,7 +362,7 @@ namespace IXICore
 
                     writer.Write(blockNum);
 
-                    if (version < 6)
+                    if (version < BlockVer.v6)
                     {
                         // Write the number of transactions
                         int num_transactions = transactions.Count;
@@ -426,6 +445,8 @@ namespace IXICore
                     {
                         writer.WriteIxiVarInt((int)0);
                     }
+
+                    writer.Write(signerDifficulty);
                 }
                 return m.ToArray();
             }
@@ -493,9 +514,14 @@ namespace IXICore
                 rawData.AddRange(BitConverter.GetBytes(timestamp));
             }
 
-            if(version >= BlockVer.v9)
+            if (version >= BlockVer.v9)
             {
                 rawData.AddRange(blockProposer);
+            }
+
+            if (version >= BlockVer.v10)
+            {
+                rawData.AddRange(BitConverter.GetBytes(signerDifficulty));
             }
 
             if (version <= BlockVer.v2)
