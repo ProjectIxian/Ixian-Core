@@ -698,5 +698,21 @@ namespace IXICore.Network
             }
             return true;
         }
+
+        public static ulong getHighestBlockHeight()
+        {
+            ulong bh = 0;
+            lock (connectedClients)
+            {
+                foreach (var client in connectedClients)
+                {
+                    if (client.blockHeight > bh)
+                    {
+                        bh = client.blockHeight;
+                    }
+                }
+            }
+            return bh;
+        }
     }
 }
