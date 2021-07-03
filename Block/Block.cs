@@ -388,6 +388,8 @@ namespace IXICore
                                 blockChecksum = reader.ReadBytes(dataLen);
                             }
 
+                            blockChecksum = calculateChecksum();
+
                             dataLen = reader.ReadInt32();
                             if (dataLen > 0)
                             {
@@ -519,6 +521,8 @@ namespace IXICore
                         {
                             blockChecksum = reader.ReadBytes(dataLen);
                         }
+
+                        blockChecksum = calculateChecksum(); // TODO TODO TODO not necessary, can be removed with block v10
 
                         dataLen = (int)reader.ReadIxiVarUInt();
                         if (dataLen > 0)
@@ -803,7 +807,7 @@ namespace IXICore
                         }
                     }
 
-                    writer.WriteIxiVarInt(blockChecksum.Length); // TODO TODO TODO can be removed with v9
+                    writer.WriteIxiVarInt(blockChecksum.Length); // TODO TODO TODO can be removed with v10
                     writer.Write(blockChecksum);
 
                     if (lastBlockChecksum != null)
