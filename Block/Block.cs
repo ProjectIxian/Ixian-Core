@@ -388,8 +388,6 @@ namespace IXICore
                                 blockChecksum = reader.ReadBytes(dataLen);
                             }
 
-                            blockChecksum = calculateChecksum();
-
                             dataLen = reader.ReadInt32();
                             if (dataLen > 0)
                             {
@@ -434,6 +432,8 @@ namespace IXICore
                                     superBlockSegments.Add(seg_block_num, new SuperBlockSegment(seg_block_num, seg_bc));
                                 }
                             }
+
+                            blockChecksum = calculateChecksum();
                         }
                     }
                 }
@@ -519,10 +519,8 @@ namespace IXICore
                         int dataLen = (int)reader.ReadIxiVarUInt();
                         if (dataLen > 0)
                         {
-                            blockChecksum = reader.ReadBytes(dataLen);
+                            blockChecksum = reader.ReadBytes(dataLen); // TODO TODO TODO not necessary, can be removed with block v10
                         }
-
-                        blockChecksum = calculateChecksum(); // TODO TODO TODO not necessary, can be removed with block v10
 
                         dataLen = (int)reader.ReadIxiVarUInt();
                         if (dataLen > 0)
@@ -578,6 +576,8 @@ namespace IXICore
                         {
 
                         }
+
+                        blockChecksum = calculateChecksum();
                     }
                 }
             }
