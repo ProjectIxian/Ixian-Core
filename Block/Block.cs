@@ -803,7 +803,7 @@ namespace IXICore
                         }
                     }
 
-                    writer.WriteIxiVarInt(blockChecksum.Length);
+                    writer.WriteIxiVarInt(blockChecksum.Length); // TODO TODO TODO can be removed with v9
                     writer.Write(blockChecksum);
 
                     if (lastBlockChecksum != null)

@@ -799,7 +799,7 @@ namespace IXICore
 
                             }
 
-                            id = generateID();
+                            generateChecksums();
 
                             if (version >= 4 && data != null)
                             {
@@ -898,7 +898,7 @@ namespace IXICore
                         int crcLen = (int)reader.ReadIxiVarInt();
                         if (crcLen > 0)
                         {
-                            checksum = reader.ReadBytes(crcLen);
+                            checksum = reader.ReadBytes(crcLen); // TODO TODO TODO not necessary, can be removed with tx v7
                         }
 
                         int sigLen = (int)reader.ReadIxiVarInt();
@@ -919,7 +919,7 @@ namespace IXICore
                             applied = tmp_applied;
                         }
 
-                        id = generateID();
+                        generateChecksums();
 
                         if (data != null)
                         {
@@ -1135,7 +1135,7 @@ namespace IXICore
 
                     if (checksum != null)
                     {
-                        writer.WriteIxiVarInt(checksum.Length);
+                        writer.WriteIxiVarInt(checksum.Length); // TODO TODO TODO not necessary, can be removed with tx v7
                         writer.Write(checksum);
                     }
                     else
@@ -1247,32 +1247,33 @@ namespace IXICore
         }
 
         /// <summary>
-        ///  Generates the Transaction ID from the transaction data.
+        ///  Generates the Transaction ID from the transaction data and stores it in the transaction.
+        ///  Calculates the transaction checksum and stores it in the transaction.
         /// </summary>
         /// <returns>TXID</returns>
-        public byte[] generateID()
+        public void generateChecksums()
         {
-            string txid = "";
-
-            if(type == (int)Type.StakingReward)
-            {
-
-                if (data != null)
-                {
-                    ulong blockNum = BitConverter.ToUInt64(data, 0);
-                    if (blockNum > 0)
-                    {
-                        txid = "stk-" + blockNum + "-";
-                    }
-                }
-            }
-
-            txid += blockHeight + "-";
-
-            string chk;
-
             if (version < 5)
             {
+                string txid = "";
+
+                if (type == (int)Type.StakingReward)
+                {
+
+                    if (data != null)
+                    {
+                        ulong blockNum = BitConverter.ToUInt64(data, 0);
+                        if (blockNum > 0)
+                        {
+                            txid = "stk-" + blockNum + "-";
+                        }
+                    }
+                }
+
+                txid += blockHeight + "-";
+
+                string chk;
+
                 List<byte> rawData = new List<byte>();
                 rawData.AddRange(BitConverter.GetBytes(type));
                 rawData.AddRange(Encoding.UTF8.GetBytes(amount.ToString()));
@@ -1316,13 +1317,32 @@ namespace IXICore
                 {
                     chk = Base58Check.Base58CheckEncoding.EncodePlain(Crypto.sha512sqTrunc(rawData.ToArray()));
                 }
-            }else
-            {
-                chk = Base58Check.Base58CheckEncoding.EncodePlain(calculateChecksum(this));
-            }
-            txid += chk;
+                txid += chk;
 
-            return txIdLegacyToV8(txid);
+                id = txIdLegacyToV8(txid);
+                checksum = calculateChecksum(this);
+            }
+            else
+            {
+                byte[] b_bh = IxiVarInt.GetIxiVarIntBytes(blockHeight);
+                byte[] b_tx_hash = calculateChecksum(this);
+                byte[] tx_type;
+                if (type == (int)Transaction.Type.StakingReward)
+                {
+                    tx_type = b_type0;
+                }
+                else
+                {
+                    tx_type = b_type1;
+                }
+                byte[] b_txid = new byte[tx_type.Length + b_bh.Length + b_tx_hash.Length];
+                Array.Copy(tx_type, 0, b_txid, 0, tx_type.Length);
+                Array.Copy(b_bh, 0, b_txid, tx_type.Length, b_bh.Length);
+                Array.Copy(b_tx_hash, 0, b_txid, tx_type.Length + b_bh.Length, b_tx_hash.Length);
+
+                checksum = b_tx_hash;
+                id = b_txid;
+            }
         }
 
         /// <summary>
@@ -1343,7 +1363,7 @@ namespace IXICore
 
         public static byte[] calculateChecksumLegacy(Transaction transaction)
         {
-                List<byte> rawData = new List<byte>();
+            List<byte> rawData = new List<byte>();
             rawData.AddRange(ConsensusConfig.ixianChecksumLock);
             if (transaction.version < 5)
             {
@@ -1485,15 +1505,6 @@ namespace IXICore
                 total += entry.Value;
             }
             return total;
-        }
-
-        /// <summary>
-        ///  Calculates the transaction checksum and stores it in the transaction.
-        /// </summary>
-        public void generateChecksums()
-        {
-            id = generateID();
-            checksum = calculateChecksum(this);
         }
 
         /// <summary>
