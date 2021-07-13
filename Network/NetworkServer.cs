@@ -704,20 +704,20 @@ namespace IXICore.Network
             return true;
         }
 
-        public static ulong getHighestBlockHeight()
+        public static List<ulong> getBlockHeights()
         {
-            ulong bh = 0;
+            List<ulong> blockHeights = new List<ulong>();
             lock (connectedClients)
             {
                 foreach (var client in connectedClients)
                 {
-                    if (client.blockHeight > bh)
+                    if(client.blockHeight != 0)
                     {
-                        bh = client.blockHeight;
+                        blockHeights.Add(client.blockHeight);
                     }
                 }
             }
-            return bh;
+            return blockHeights;
         }
     }
 }
