@@ -340,9 +340,9 @@ namespace IXICore
                 // if in verification mode, detect liar and flag him
                 // below is an implementation that's good enough for now
 
-                if (minBlockHeightReorg < lastBlockHeader.blockNum - 7)
+                if (minBlockHeightReorg < lastBlockHeader.blockNum - 100)
                 {
-                    minBlockHeightReorg = lastBlockHeader.blockNum - 7;
+                    minBlockHeightReorg = lastBlockHeader.blockNum - 100;
                 }
 
                 BlockHeader prev_header = BlockHeaderStorage.getBlockHeader(minBlockHeightReorg);

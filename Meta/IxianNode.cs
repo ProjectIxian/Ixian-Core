@@ -78,31 +78,43 @@ namespace IXICore.Meta
         /// </summary>
         public static bool isTestNet { get; private set; } = false;
 
-        public static void init(string product_version, IxianNode handler_class, NetworkType type, bool set_title = false)
+        public static void init(string product_version, IxianNode handler_class, NetworkType type, bool set_title = false,
+            byte[] checksum_lock = null)
         {
             CoreConfig.productVersion = product_version;
             if(set_title)
             {
                 Console.Title = product_version + " (" + CoreConfig.version + ")";
             }
-            init(handler_class, type);
+            init(handler_class, type, checksum_lock);
         }
 
-        public static void init(IxianNode handler_class, NetworkType type)
+        public static void init(IxianNode handler_class, NetworkType type, byte[] checksum_lock = null)
         {
             handlerClass = handler_class;
             networkType = type;
             switch(type)
             {
                 case NetworkType.main:
-                    ConsensusConfig.ixianChecksumLock = ConsensusConfig.ixianChecksumLockMainNet;
-                    ConsensusConfig.ixianChecksumLockString = UTF8Encoding.UTF8.GetString(ConsensusConfig.ixianChecksumLock);
+                    if(checksum_lock != null)
+                    {
+                        ConsensusConfig.ixianChecksumLock = checksum_lock;
+                    }else
+                    {
+                        ConsensusConfig.ixianChecksumLock = ConsensusConfig.ixianChecksumLockMainNet;
+                    }
                     isTestNet = false;
                     break;
 
                 case NetworkType.test:
-                    ConsensusConfig.ixianChecksumLock = ConsensusConfig.ixianChecksumLockTestNet;
-                    ConsensusConfig.ixianChecksumLockString = UTF8Encoding.UTF8.GetString(ConsensusConfig.ixianChecksumLock);
+                    if (checksum_lock != null)
+                    {
+                        ConsensusConfig.ixianChecksumLock = checksum_lock;
+                    }
+                    else
+                    {
+                        ConsensusConfig.ixianChecksumLock = ConsensusConfig.ixianChecksumLockTestNet;
+                    }
                     isTestNet = true;
                     break;
             }

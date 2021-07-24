@@ -34,7 +34,7 @@ namespace IXICore
         /// <summary>
         /// Latest possible version of the Block structure. New blocks should usually be created with the latest version.
         /// </summary>
-        public static int maxVersion = BlockVer.v9;
+        public static int maxVersion = BlockVer.v10;
 
         /// <summary>
         /// Block height (block number). This is a sequential index in the blockchain which uniquely identifies each block.
@@ -270,6 +270,8 @@ namespace IXICore
                 blockProposer = new byte[block.blockProposer.Length];
                 Array.Copy(block.blockProposer, blockProposer, blockProposer.Length);
             }
+
+            signerDifficulty = block.signerDifficulty;
         }
 
         /// <summary>
@@ -481,23 +483,40 @@ namespace IXICore
                         for (int i = 0; i < num_signatures; i++)
                         {
                             int sigLen = (int)reader.ReadIxiVarUInt();
-                            byte[] sig = null;
-                            if (sigLen > 0)
+                            if (version >= BlockVer.v10)
                             {
-                                sig = reader.ReadBytes(sigLen);
-                            }
+                                BlockSignature sig = null;
+                                if (sigLen > 0)
+                                {
+                                    sig = new BlockSignature(reader.ReadBytes(sigLen), false);
+                                }
 
-                            int sigAddresLen = (int)reader.ReadIxiVarUInt();
-                            byte[] sigAddress = null;
-                            if (sigAddresLen > 0)
-                            {
-                                sigAddress = reader.ReadBytes(sigAddresLen);
+                                if (!containsSignature(new Address(sig.signerAddress)))
+                                {
+                                    signatures.Add(sig);
+                                }
                             }
-
-                            if (!containsSignature(new Address(sigAddress)))
+                            else
                             {
-                                BlockSignature newSig = new BlockSignature() { signature = sig, signerAddress = sigAddress };
-                                signatures.Add(newSig);
+                                byte[] sig = null;
+
+                                if (sigLen > 0)
+                                {
+                                    sig = reader.ReadBytes(sigLen);
+                                }
+
+                                int sigAddresLen = (int)reader.ReadIxiVarUInt();
+                                byte[] sigAddress = null;
+                                if (sigAddresLen > 0)
+                                {
+                                    sigAddress = reader.ReadBytes(sigAddresLen);
+                                }
+
+                                if (!containsSignature(new Address(sigAddress)))
+                                {
+                                    BlockSignature newSig = new BlockSignature() { signature = sig, signerAddress = sigAddress };
+                                    signatures.Add(newSig);
+                                }
                             }
                         }
 
@@ -559,7 +578,7 @@ namespace IXICore
 
                             if(version >= BlockVer.v10)
                             {
-                                signerDifficulty = reader.ReadUInt64();
+                                signerDifficulty = reader.ReadIxiVarUInt();
                             }
                         }
                         catch (Exception)
@@ -1071,6 +1090,8 @@ namespace IXICore
 
             BlockSignature newSig = new BlockSignature();
             newSig.signature = signature;
+            newSig.blockNum = blockNum;
+            newSig.blockHash = blockChecksum;
             if (w.publicKey == null)
             {
                 newSig.signerAddress = myPubKey;
@@ -1651,15 +1672,16 @@ namespace IXICore
             {
                 last_block_chksum = "G E N E S I S  B L O C K";
             }
-            Logging.info(String.Format("\t\t|- Block Number:\t\t {0}", blockNum));
-            Logging.info(String.Format("\t\t|- Block Version:\t\t {0}", version));
-            Logging.info(String.Format("\t\t|- Signatures:\t\t\t {0}", signatures.Count));
-            Logging.info(String.Format("\t\t|- Block Checksum:\t\t {0}", Crypto.hashToString(blockChecksum)));
-            Logging.info(String.Format("\t\t|- Last Block Checksum: \t {0}", last_block_chksum));
-            Logging.info(String.Format("\t\t|- WalletState Checksum:\t {0}", Crypto.hashToString(walletStateChecksum)));
-            Logging.info(String.Format("\t\t|- Sig Freeze Checksum: \t {0}", Crypto.hashToString(signatureFreezeChecksum)));
-            Logging.info(String.Format("\t\t|- Difficulty:\t\t\t {0}", difficulty));
-            Logging.info(String.Format("\t\t|- Transaction Count:\t\t {0}", transactions.Count));
+            Logging.info(String.Format("\t\t|- Block Number:\t {0}", blockNum));
+            Logging.info(String.Format("\t\t|- Block Version:\t {0}", version));
+            Logging.info(String.Format("\t\t|- Signatures:\t\t {0}", signatures.Count));
+            Logging.info(String.Format("\t\t|- Block Checksum:\t {0}", Crypto.hashToString(blockChecksum)));
+            Logging.info(String.Format("\t\t|- Last Block Checksum:\t {0}", last_block_chksum));
+            Logging.info(String.Format("\t\t|- WalletState Checksum: {0}", Crypto.hashToString(walletStateChecksum)));
+            Logging.info(String.Format("\t\t|- Sig Freeze Checksum:\t {0}", Crypto.hashToString(signatureFreezeChecksum)));
+            Logging.info(String.Format("\t\t|- Mining Difficulty:\t {0}", difficulty));
+            Logging.info(String.Format("\t\t|- Signing Difficulty:\t {0}", signerDifficulty));
+            Logging.info(String.Format("\t\t|- Transaction Count:\t {0}", transactions.Count));
         }
 
         /// <summary>
@@ -1693,7 +1715,13 @@ namespace IXICore
                 }
                 foreach (BlockSignature sig in sigs)
                 {
-                    totalDiff += SignerPowSolution.getTargetHashcount(sig.powSoluton.difficulty);
+                    if(sig.powSoluton == null)
+                    {
+                        totalDiff += 1;
+                    }else
+                    {
+                        totalDiff += sig.powSoluton.difficulty;
+                    }
                 }
             }
             return totalDiff;

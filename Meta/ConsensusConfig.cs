@@ -139,12 +139,6 @@ namespace IXICore
         public static byte[] ixianChecksumLock = Encoding.UTF8.GetBytes("Ixian");
 
         /// <summary>
-        /// Initial value for seeding various SHA512 checksums throughout Ixian.
-        /// </summary>
-        public static string ixianChecksumLockString = "Ixian";
-
-
-        /// <summary>
         /// Block height after which mining/PoW transactions are not accepted anymore.
         /// </summary>
         public static readonly ulong miningExpirationBlockHeight = 105120000;

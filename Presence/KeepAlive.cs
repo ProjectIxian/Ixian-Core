@@ -189,10 +189,10 @@ namespace IXICore
 
                         nodeType = reader.ReadChar();
 
-                        long checksumDataLen = m.Position;
-
                         int sigLen = (int)reader.ReadIxiVarUInt();
                         signature = reader.ReadBytes(sigLen);
+
+                        calculateChecksum();
                     }
                 }
             }
@@ -210,11 +210,17 @@ namespace IXICore
                 return;
             }
 
-            byte[] tmpChecksum = Crypto.sha512sq(getBytes(true));
-            byte[] checksumWithLock = new byte[ConsensusConfig.ixianChecksumLock.Length + tmpChecksum.Length];
-            Array.Copy(ConsensusConfig.ixianChecksumLock, checksum, ConsensusConfig.ixianChecksumLock.Length);
-            Array.Copy(tmpChecksum, 0, checksum, ConsensusConfig.ixianChecksumLock.Length, tmpChecksum.Length);
-            checksum = checksumWithLock;
+            if(version <= 1)
+            {
+                checksum = getBytes(true);
+            }else
+            {
+                byte[] tmpBytes = getBytes(true);
+                byte[] tmpBytesWithLock = new byte[ConsensusConfig.ixianChecksumLock.Length + tmpBytes.Length];
+                Array.Copy(ConsensusConfig.ixianChecksumLock, tmpBytesWithLock, ConsensusConfig.ixianChecksumLock.Length);
+                Array.Copy(tmpBytes, 0, tmpBytesWithLock, ConsensusConfig.ixianChecksumLock.Length, tmpBytes.Length);
+                checksum = Crypto.sha512sq(tmpBytesWithLock);
+            }
         }
 
         public void sign(byte[] privateKey)

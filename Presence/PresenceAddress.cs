@@ -161,7 +161,7 @@ namespace IXICore
                     {
                         if (version == 1)
                         {
-                            // TODO remove this section after upgrade to Presence v1
+                            // TODO remove this section after upgrade to Presence v2
                             writer.Write(version);
                             writer.Write(wallet.Length);
                             writer.Write(wallet);
@@ -183,10 +183,11 @@ namespace IXICore
                             writer.Write(address);
                             writer.Write(type);
 
-                            byte[] checksum = Crypto.sha512sq(m.ToArray());
-                            data_to_verify = new byte[ConsensusConfig.ixianChecksumLock.Length + checksum.Length];
-                            Array.Copy(ConsensusConfig.ixianChecksumLock, data_to_verify, ConsensusConfig.ixianChecksumLock.Length);
-                            Array.Copy(checksum, 0, data_to_verify, ConsensusConfig.ixianChecksumLock.Length, checksum.Length);
+                            byte[] tmpBytes = m.ToArray();
+                            byte[] tmpBytesWithLock = new byte[ConsensusConfig.ixianChecksumLock.Length + tmpBytes.Length];
+                            Array.Copy(ConsensusConfig.ixianChecksumLock, tmpBytesWithLock, ConsensusConfig.ixianChecksumLock.Length);
+                            Array.Copy(tmpBytes, 0, tmpBytesWithLock, ConsensusConfig.ixianChecksumLock.Length, tmpBytes.Length);
+                            data_to_verify = Crypto.sha512sq(tmpBytesWithLock);
                         }
                     }
 

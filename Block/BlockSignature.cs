@@ -34,8 +34,11 @@ namespace IXICore
         {
             blockNum = src.blockNum;
 
-            blockHash = new byte[src.blockHash.Length];
-            Array.Copy(src.blockHash, blockHash, blockHash.Length);
+            if(src.blockHash != null)
+            {
+                blockHash = new byte[src.blockHash.Length];
+                Array.Copy(src.blockHash, blockHash, blockHash.Length);
+            }
 
             signature = new byte[src.signature.Length];
             Array.Copy(src.signature, signature, signature.Length);
@@ -43,7 +46,10 @@ namespace IXICore
             signerAddress = new byte[src.signerAddress.Length];
             Array.Copy(src.signerAddress, signerAddress, signerAddress.Length);
 
-            powSoluton = new SignerPowSolution(src.powSoluton);
+            if(powSoluton != null)
+            {
+                powSoluton = new SignerPowSolution(src.powSoluton);
+            }
         }
 
         public BlockSignature(byte[] bytes, bool bytesFromBroadcast)
@@ -68,9 +74,9 @@ namespace IXICore
                         int signerAddressLen = (int)reader.ReadIxiVarUInt();
                         signerAddress = reader.ReadBytes(signerAddressLen);
 
-                        if(m.Position < m.Length)
+                        int powSolutonLen = (int)reader.ReadIxiVarUInt();
+                        if(powSolutonLen > 0)
                         {
-                            int powSolutonLen = (int)reader.ReadIxiVarUInt();
                             powSoluton = new SignerPowSolution(reader.ReadBytes(powSolutonLen));
                         }
                     }

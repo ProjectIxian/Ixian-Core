@@ -389,7 +389,7 @@ namespace IXICore
                         ulong difficulty = plPowBlock.signerDifficulty;
                         if(!powSolution.verifySignature(pubkey))
                         {
-                            Logging.warn("Invalid pow solution received in verifyPresence, verification failed for {0}.", Base58Check.Base58CheckEncoding.EncodePlain(wallet));
+                            Logging.warn("Invalid pow signature received in verifyPresence, verification failed for {0}.", Base58Check.Base58CheckEncoding.EncodePlain(wallet));
                             powSolution = null;
                             continue;
                         }
