@@ -560,7 +560,14 @@ namespace IXICore
                 publicKey = public_key;
                 if (baseNonce == null)
                 {
-                    baseNonce = Crypto.sha512sqTrunc(privateKey, publicKey.Length, 64);
+                    if(walletVersion < 2)
+                    {
+                        baseNonce = Crypto.sha512quTrunc(privateKey, publicKey.Length, 64);
+                    }
+                    else
+                    {
+                        baseNonce = Crypto.sha512sqTrunc(privateKey, publicKey.Length, 64);
+                    }
                 }
                 walletPassword = password;
             }
