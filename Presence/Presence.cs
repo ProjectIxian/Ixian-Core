@@ -443,12 +443,17 @@ namespace IXICore
 
         public bool verifyPowSolution(SignerPowSolution signerPow, ulong minDifficulty)
         {
+            // TODO Omega remove this once blockHash is part of SignerPowSolution
+            if(PresenceList.myPresenceType == 'C' || PresenceList.myPresenceType == 'R')
+            {
+                return true;
+            }
             if (IxianHandler.getLastBlockHeight() - signerPow.blockNum > ConsensusConfig.plPowBlocksValidity)
             {
                 Logging.warn("Expired pow solution received in verifyPowSolution, verification failed for {0}.", Base58Check.Base58CheckEncoding.EncodePlain(wallet));
                 return false;
             }
-            Block plPowBlock = IxianHandler.getBlock(signerPow.blockNum);
+            BlockHeader plPowBlock = IxianHandler.getBlockHeader(signerPow.blockNum);
             if (plPowBlock == null)
             {
                 Logging.warn("No block for PL pow solution found in verifyPowSolution, verification failed for {0}.", Base58Check.Base58CheckEncoding.EncodePlain(wallet));
