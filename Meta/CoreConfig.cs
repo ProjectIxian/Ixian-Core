@@ -32,13 +32,13 @@ namespace IXICore
         /// Useful for optimized block header sync
         /// Note: Always round last block height to 1000 and subtract 1 (i.e. if last block height is 33234, the correct value is 32999)
         /// </summary>
-        public static ulong bakedBlockHeight = 1951999;
+        public static ulong bakedBlockHeight = 2055999;
 
         /// <summary>
         /// Mainnet block checksum (paired with bakedBlockHeight) of bakedBlockHeight
         /// Useful for optimized block header sync
         /// </summary>
-        public static byte[] bakedBlockChecksum = Crypto.stringToHash("17c8d399fa80c054617ccfdfb34a9878f5fc1cdf5f16637b10d8d67cb92cd367da57e3892b5d03b97056ede5");
+        public static byte[] bakedBlockChecksum = Crypto.stringToHash("51f4eace54abc617ce92a30b8a0692c77df34e2b59c5c9ea615454a0a49b5228f380d16ca63a78c61d93aaeb");
 
         /// <summary>
         /// Number of wallets to send in each chunk of data when synchronizing new Master Nodes.

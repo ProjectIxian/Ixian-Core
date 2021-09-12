@@ -236,7 +236,7 @@ namespace IXICore
 
         public bool verifySignature(byte[] pubKey)
         {
-            if (signature != null)
+            if (signature == null)
             {
                 return false;
             }

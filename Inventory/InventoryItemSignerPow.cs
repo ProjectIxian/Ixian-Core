@@ -16,23 +16,21 @@ using System.IO;
 
 namespace IXICore.Inventory
 {
-    public class InventoryItemSignature : InventoryItem
+    public class InventoryItemSignerPow : InventoryItem
     {
-        public ulong blockNum;
-        public byte[] blockHash;
         public byte[] address;
+        public ulong blockNum;
 
-        public InventoryItemSignature(byte[] address, ulong blockNum, byte[] blockHash)
+        public InventoryItemSignerPow(byte[] address, ulong blockNum)
         {
-            type = InventoryItemTypes.blockSignature;
+            type = InventoryItemTypes.signerPow;
             this.address = address;
             this.blockNum = blockNum;
-            this.blockHash = blockHash;
 
-            hash = getHash(address, blockHash);
+            hash = getHash(address, blockNum);
         }
 
-        public InventoryItemSignature(byte[] bytes)
+        public InventoryItemSignerPow(byte[] bytes)
         {
             using (MemoryStream m = new MemoryStream(bytes))
             {
@@ -45,10 +43,7 @@ namespace IXICore.Inventory
 
                     blockNum = reader.ReadIxiVarUInt();
 
-                    int block_hash_len = (int)reader.ReadIxiVarUInt();
-                    blockHash = reader.ReadBytes(block_hash_len);
-
-                    hash = getHash(address, blockHash);
+                    hash = getHash(address, blockNum);
                 }
             }
         }
@@ -65,20 +60,18 @@ namespace IXICore.Inventory
                     writer.Write(address);
 
                     writer.WriteIxiVarInt(blockNum);
-
-                    writer.WriteIxiVarInt(blockHash.Length);
-                    writer.Write(blockHash);
                 }
                 return m.ToArray();
             }
         }
 
-        static public byte[] getHash(byte[] address, byte[] block_hash)
+        static public byte[] getHash(byte[] address, ulong blockNum)
         {
-            byte[] address_block_hash = new byte[address.Length + block_hash.Length];
-            Array.Copy(address, address_block_hash, address.Length);
-            Array.Copy(block_hash, 0, address_block_hash, address.Length, block_hash.Length);
-            return Crypto.sha512sqTrunc(address_block_hash);
+            byte[] blockNumBytes = BitConverter.GetBytes(blockNum);
+            byte[] addressBlockNum = new byte[address.Length + blockNumBytes.Length];
+            Array.Copy(address, addressBlockNum, address.Length);
+            Array.Copy(blockNumBytes, 0, addressBlockNum, address.Length, blockNumBytes.Length);
+            return Crypto.sha512sqTrunc(addressBlockNum);
         }
     }
 }

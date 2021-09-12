@@ -34,7 +34,7 @@ namespace IXICore
         /// <summary>
         /// Latest possible version of the Block structure. New blocks should usually be created with the latest version.
         /// </summary>
-        public static int maxVersion = BlockVer.v10;
+        public static int maxVersion = BlockVer.v9;
 
         /// <summary>
         /// Block height (block number). This is a sequential index in the blockchain which uniquely identifies each block.
@@ -1033,7 +1033,17 @@ namespace IXICore
             merged_sigs.AddRange(BitConverter.GetBytes(blockNum));
             foreach (BlockSignature sig in sortedSigs)
             {
-                if(version > BlockVer.v3)
+                if(version >= BlockVer.v10)
+                {
+                    if(sig.powSoluton != null)
+                    {
+                        merged_sigs.AddRange(BitConverter.GetBytes(sig.powSoluton.version));
+                        merged_sigs.AddRange(BitConverter.GetBytes(sig.powSoluton.blockNum));
+                        merged_sigs.AddRange(sig.powSoluton.solution);
+                    }
+                    merged_sigs.AddRange(sig.signerAddress);
+                }
+                else if(version > BlockVer.v3)
                 {
                     merged_sigs.AddRange(sig.signerAddress);
                 }
@@ -1066,7 +1076,7 @@ namespace IXICore
         ///  An example of this is when this node's public key is present in the Presence List.
         /// </remarks>
         /// <returns>Byte array with the node's signature and public key or address.</returns>
-        public BlockSignature applySignature()
+        public BlockSignature applySignature(SignerPowSolution powSolution = null)
         {
             if (compacted)
             {
@@ -1088,6 +1098,7 @@ namespace IXICore
 
             Wallet w = IxianHandler.getWallet(myAddress);
 
+            // TODO Omega powSolution should somehow be tied in with the signature
             BlockSignature newSig = new BlockSignature();
             newSig.signature = signature;
             newSig.blockNum = blockNum;
@@ -1100,6 +1111,7 @@ namespace IXICore
             {
                 newSig.signerAddress = myAddress;
             }
+            newSig.powSoluton = powSolution;
 
             lock (signatures)
             {

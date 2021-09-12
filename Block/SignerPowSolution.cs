@@ -10,19 +10,16 @@
 // MERCHANTABILITY or FITNESS FOR A PARTICULAR PURPOSE.  See the
 // MIT License for more details.
 
-using DLT;
 using IXICore.Meta;
 using IXICore.Utils;
 using System;
 using System.IO;
-using System.Numerics;
 using System.Runtime.InteropServices;
 
 namespace IXICore
 {
     public class SignerPowSolution
     {
-        public static ulong maxDifficulty = 0x2C00000000000000;
         [ThreadStatic] private static byte[] dummyExpandedNonce = null;
 
         public int version = 1;
@@ -31,6 +28,11 @@ namespace IXICore
         public byte[] signature;
         public byte[] checksum; // checksum is not trasmitted over the network
         public ulong difficulty; // difficulty is not transmitted over the network
+
+        public SignerPowSolution()
+        {
+
+        }
 
         public SignerPowSolution(SignerPowSolution src)
         {
@@ -59,7 +61,7 @@ namespace IXICore
                     {
                         version = (int)reader.ReadIxiVarInt();
 
-                        blockNum = reader.ReadUInt64();
+                        blockNum = reader.ReadIxiVarUInt();
 
                         int solutionLen = (int)reader.ReadIxiVarUInt();
                         solution = reader.ReadBytes(solutionLen);
@@ -78,7 +80,7 @@ namespace IXICore
                 throw;
             }
         }
-
+        // TODO Omega a blockHash should be included so that clients can verify PoW
         public byte[] getBytes(bool includeSig)
         {
             using (MemoryStream m = new MemoryStream(640))
@@ -87,7 +89,7 @@ namespace IXICore
                 {
                     writer.WriteIxiVarInt(version);
 
-                    writer.Write(blockNum);
+                    writer.WriteIxiVarInt(blockNum);
 
                     writer.WriteIxiVarInt(solution.Length);
                     writer.Write(solution);
@@ -131,7 +133,7 @@ namespace IXICore
 
         public bool verifySignature(byte[] pubKey)
         {
-            if (signature != null)
+            if (signature == null)
             {
                 return false;
             }
@@ -169,52 +171,37 @@ namespace IXICore
         // block hash = 44 bytes
         // FFFF FFFF FFFF FFFF FFFF FFFF FFFF FFFF FFFF FFFF FFFF FFFF FFFF FFFF FFFF FFFF FFFF FFFF FFFF FFFF FFFF FFFF
         // difficulty 8 bytes - first byte number of bytes, other 7 bytes should contain MSB
-        public static byte[] targetToHash(ulong target, int hashLength = 44)
+        public static byte[] difficultyToHash(ulong target, int hashLength = 44)
         {
             byte[] targetBytes = BitConverter.GetBytes(target);
-            int targetLen = targetBytes[0];
-            if (targetLen < 7)
-            {
-                throw new Exception("Difficulty length is smaller than 7 bytes.");
-            }
+            int targetLen = targetBytes[7];
             byte[] hash = new byte[hashLength];
-            Array.Copy(targetBytes, 1, hash, hashLength - targetLen, 7);
+            for (int i = 0; i < 7; i++)
+            {
+                hash[targetLen + i] = targetBytes[6 - i];
+            }
             return hash;
         }
 
-        public static ulong hashToTarget(byte[] hashBytes)
+        public static ulong hashToDifficulty(byte[] hashBytes)
         {
             int len = hashBytes.Length;
-            int i;
-            for (i = 0; i < len - 7; i++)
+            int i = 0;
+            while (i < len - 7)
             {
                 if (hashBytes[i] != 0)
                 {
                     break;
                 }
-            }
-            if (i == len)
-            {
-                return 0;
+                i++;
             }
             byte[] targetBytes = new byte[8];
             for(int j = 0; j < 7; j++)
             {
-                targetBytes[j] = hashBytes[i + 7 - j];
-                Array.Copy(hashBytes, i, targetBytes, 1, 7);
+                targetBytes[6 - j] = hashBytes[i + j];
             }
-            targetBytes[7] = (byte)(len - i);
+            targetBytes[7] = (byte)(i);
             return BitConverter.ToUInt64(targetBytes, 0);
-        }
-
-        public static byte[] difficultyToHash(ulong difficulty)
-        {
-            return  targetToHash(maxDifficulty / difficulty);
-        }
-
-        public static ulong hashToDifficulty(byte[] hashBytes)
-        {
-            return maxDifficulty * hashToTarget(hashBytes);
         }
 
         public static bool validateHash(byte[] hash, ulong expectedDifficulty)
@@ -229,9 +216,26 @@ namespace IXICore
         // Verify nonce
         public static bool verifyNonce(byte[] nonce, byte[] blockHash, byte[] solverAddress, ulong difficulty)
         {
-            if (nonce == null || nonce.Length < 1 || nonce.Length > 128)
+            byte[] hash = nonceToHash(nonce, blockHash, solverAddress);
+            if(hash == null)
             {
                 return false;
+            }
+
+            if (validateHash(hash, difficulty) == true)
+            {
+                // Hash is valid
+                return true;
+            }
+
+            return false;
+        }
+
+        public static byte[] nonceToHash(byte[] nonce, byte[] blockHash, byte[] solverAddress)
+        {
+            if (nonce == null || nonce.Length < 1 || nonce.Length > 128)
+            {
+                return null;
             }
 
             // TODO protect against spamming with invalid nonce/block_num
@@ -242,13 +246,7 @@ namespace IXICore
             byte[] fullnonce = expandNonce(nonce, 234234);
             byte[] hash = getArgon2idHash(p1, fullnonce);
 
-            if (validateHash(hash, difficulty) == true)
-            {
-                // Hash is valid
-                return true;
-            }
-
-            return false;
+            return hash;
         }
 
         public static byte[] getArgon2idHash(byte[] data, byte[] salt)

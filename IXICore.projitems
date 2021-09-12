@@ -33,6 +33,7 @@
     <Compile Include="$(MSBuildThisFileDirectory)Inventory\InventoryItemBlock.cs" />
     <Compile Include="$(MSBuildThisFileDirectory)Inventory\InventoryItemKeepAlive.cs" />
     <Compile Include="$(MSBuildThisFileDirectory)Inventory\InventoryItemSignature.cs" />
+    <Compile Include="$(MSBuildThisFileDirectory)Inventory\InventoryItemSignerPow.cs" />
     <Compile Include="$(MSBuildThisFileDirectory)Meta\Activity.cs" />
     <Compile Include="$(MSBuildThisFileDirectory)Meta\ConsensusConfig.cs" />
     <Compile Include="$(MSBuildThisFileDirectory)Meta\CoreConfig.cs" />

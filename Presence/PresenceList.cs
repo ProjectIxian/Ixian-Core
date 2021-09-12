@@ -400,11 +400,11 @@ namespace IXICore
         }*/
 
         // Update a presence from a byte array
-        public static Presence updateFromBytes(byte[] bytes)
+        public static Presence updateFromBytes(byte[] bytes, ulong minDifficulty)
         {
             Presence presence = new Presence(bytes);
 
-            if(presence.verify())
+            if(presence.verify(minDifficulty))
             {
                 return updateEntry(presence, true);
             }
@@ -532,9 +532,9 @@ namespace IXICore
         // Called when receiving a keepalive network message. The PresenceList will update the appropriate entry based on the timestamp.
         // Returns TRUE if it updated an entry in the PL
         // Sets the out address parameter to be the KA wallet's address or null if an error occured
-        public static bool receiveKeepAlive(byte[] bytes, out byte[] address, out long last_seen, out byte[] device_id, RemoteEndpoint endpoint)
+        public static bool receiveKeepAlive(byte[] bytes, out byte[] wallet, out long last_seen, out byte[] device_id, RemoteEndpoint endpoint)
         {
-            address = null;
+            wallet = null;
             last_seen = 0;
             device_id = null;
 
@@ -544,7 +544,9 @@ namespace IXICore
             try
             {
                 KeepAlive ka = new KeepAlive(bytes);
-                byte[] wallet = ka.walletAddress;
+                wallet = ka.walletAddress;
+                last_seen = ka.timestamp;
+                device_id = ka.deviceId;
 
                 if (ka.nodeType == 'C' || ka.nodeType == 'R')
                 {
@@ -572,43 +574,29 @@ namespace IXICore
 
                 lock (presences)
                 {
-                    Presence listEntry = presences.Find(x => x.wallet.SequenceEqual(wallet));
+                    byte[] address = wallet;
+                    Presence listEntry = presences.Find(x => x.wallet.SequenceEqual(address));
                     if (listEntry == null && wallet.SequenceEqual(IxianHandler.getWalletStorage().getPrimaryAddress()))
                     {
                         Logging.warn("My entry was removed from local PL, readding.");
                         curNodePresence.addresses.Clear();
                         curNodePresence.addresses.Add(curNodePresenceAddress);
                         updateEntry(curNodePresence);
-                        listEntry = presences.Find(x => x.wallet.SequenceEqual(wallet));
+                        listEntry = presences.Find(x => x.wallet.SequenceEqual(address));
                     }
 
                     // Check if no such wallet found in presence list
                     if (listEntry == null)
                     {
                         // request for additional data
-                        using (MemoryStream mw = new MemoryStream())
-                        {
-                            using (BinaryWriter writer = new BinaryWriter(mw))
-                            {
-                                writer.WriteIxiVarInt(wallet.Length);
-                                writer.Write(wallet);
-
-                                if (endpoint != null && endpoint.isConnected())
-                                {
-                                    endpoint.sendData(ProtocolMessageCode.getPresence2, mw.ToArray(), wallet);
-                                }
-                                else
-                                {
-                                    CoreProtocolMessage.broadcastProtocolMessageToSingleRandomNode(new char[] { 'M', 'R', 'H' }, ProtocolMessageCode.getPresence2, mw.ToArray(), 0, null);
-                                }
-                            }
-                        }
+                        CoreProtocolMessage.broadcastGetPresence(wallet, endpoint);
                         return false;
                     }
 
 
                     if(!ka.verifySignature(listEntry.pubkey))
                     {
+                        Logging.warn("[PL] KEEPALIVE tampering for {0} {1}, incorrect Sig.", Base58Check.Base58CheckEncoding.EncodePlain(listEntry.wallet), ka.hostName);
                         return false;
                     }
 
@@ -678,22 +666,7 @@ namespace IXICore
                         }
                         else
                         {
-                            using (MemoryStream mw = new MemoryStream())
-                            {
-                                using (BinaryWriter writer = new BinaryWriter(mw))
-                                {
-                                    writer.WriteIxiVarInt(wallet.Length);
-                                    writer.Write(wallet);
-
-                                    if (endpoint != null && endpoint.isConnected())
-                                    {
-                                        endpoint.sendData(ProtocolMessageCode.getPresence2, mw.ToArray(), wallet);
-                                    }else
-                                    { 
-                                        CoreProtocolMessage.broadcastProtocolMessageToSingleRandomNode(new char[] { 'M', 'R', 'H'}, ProtocolMessageCode.getPresence2, mw.ToArray(), 0, null);
-                                    }
-                                }
-                            }
+                            CoreProtocolMessage.broadcastGetPresence(wallet, endpoint);
                             return false;
                         }
                     }
@@ -870,6 +843,21 @@ namespace IXICore
                 var sorted_presences = presences.FindAll(x => x.addresses.Find(y => y.type == 'M' || y.type == 'H') != null).OrderBy(x => x.wallet, new ByteArrayComparer());
                 return new PresenceOrderedEnumerator(sorted_presences, address_len, selector, target_count);
             }
+        }
+
+        public static void setPowSolution(SignerPowSolution powSolution)
+        {
+            curNodePresence.powSolution = powSolution;
+            Presence p = getPresenceByAddress(IxianHandler.getWalletStorage().getPrimaryAddress());
+            if (p != null)
+            {
+                p.powSolution = powSolution;
+            }
+        }
+
+        public static SignerPowSolution getPowSolution()
+        {
+            return curNodePresence.powSolution;
         }
 
         public static string myPublicAddress

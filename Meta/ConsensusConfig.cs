@@ -150,14 +150,14 @@ namespace IXICore
         public static readonly ulong plPowBlocksValidity = 120; // 120 blocks = approx. 1 hour
 
         /// <summary>
-        /// Min. number of blocks that the PL PoW will be calculated for.
+        /// Min. number of seconds that the PL PoW will be calculated for.
         /// </summary>
-        public static readonly ulong plPowMinCalculationTime = 20; // 20 blocks = approx. 10 mins
+        public static readonly long plPowMinCalculationTime = 600; // 600 seconds = 10 mins
 
         /// <summary>
         /// Number of blocks after how many to re-calculate the PL PoW since last solution.
         /// </summary>
-        public static readonly ulong plPowCalculationInterval = 60; // 60 blocks = approx. 30 mins
+        public static readonly ulong plPowCalculationInterval = 40; // 40 blocks = approx. 20 mins
 
         /// <summary>
         ///  Retrieves the lenght of the redacted window based on the block version in use.

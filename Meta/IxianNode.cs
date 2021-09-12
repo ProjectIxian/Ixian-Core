@@ -11,8 +11,10 @@
 // MIT License for more details.
 
 using IXICore.Network;
+using IXICore.Utils;
 using System;
-using System.Text;
+using System.Collections.Generic;
+using System.Linq;
 
 namespace IXICore.Meta
 {
@@ -42,7 +44,6 @@ namespace IXICore.Meta
         public abstract bool isAcceptingConnections();
         public abstract Wallet getWallet(byte[] id);
         public abstract IxiNumber getWalletBalance(byte[] id);
-        public abstract WalletStorage getWalletStorage();
         public abstract void parseProtocolMessage(ProtocolMessageCode code, byte[] data, RemoteEndpoint endpoint);
 
         public abstract void shutdown();
@@ -51,7 +52,7 @@ namespace IXICore.Meta
         public virtual void receivedTransactionInclusionVerificationResponse(byte[] txid, bool verified) { }
         public virtual void receivedBlockHeader(BlockHeader block_header, bool verified) { }
 
-        public virtual Block getBlock(ulong blockNum) { return null; }
+        public abstract Block getBlock(ulong blockNum);
     }
 
     public static class IxianHandler
@@ -77,6 +78,9 @@ namespace IXICore.Meta
         /// Testnet designator. If false the node can only connect to mainnet, if true it can only connect to testnet.
         /// </summary>
         public static bool isTestNet { get; private set; } = false;
+
+        public static byte[] primaryWalletAddress = null;
+        public static Dictionary<byte[], WalletStorage> wallets = new Dictionary<byte[], WalletStorage>(new ByteArrayComparer());
 
         public static void init(string product_version, IxianNode handler_class, NetworkType type, bool set_title = false,
             byte[] checksum_lock = null)
@@ -176,12 +180,6 @@ namespace IXICore.Meta
             return handlerClass.getWalletBalance(id);
         }
 
-        public static WalletStorage getWalletStorage()
-        {
-            verifyHandler();
-            return handlerClass.getWalletStorage();
-        }
-
         public static void receivedTransactionInclusionVerificationResponse(byte[] txid, bool verified)
         {
             verifyHandler();
@@ -211,6 +209,98 @@ namespace IXICore.Meta
             forceShutdown = true;
             verifyHandler();
             handlerClass.shutdown();
+        }
+
+        public static WalletStorage getWalletStorage(byte[] walletAddress = null)
+        {
+            if (walletAddress == null)
+            {
+                return wallets[primaryWalletAddress];
+            }
+            return wallets[walletAddress];
+        }
+
+        public static WalletStorage getWalletStorageByFilename(string filename)
+        {
+            return wallets.First(x => x.Value.filename == filename).Value;
+        }
+
+        public static bool addWallet(WalletStorage ws)
+        {
+            lock (wallets)
+            {
+                if (wallets.Count == 0)
+                {
+                    primaryWalletAddress = ws.getPrimaryAddress();
+                }
+                if (wallets.ContainsKey(ws.getPrimaryAddress()))
+                {
+                    return false;
+                }
+                wallets.Add(ws.getPrimaryAddress(), ws);
+            }
+            return true;
+        }
+
+        public static bool removeWallet(byte[] walletAddress)
+        {
+            lock(wallets)
+            {
+                return wallets.Remove(walletAddress);
+            }
+        }
+
+        public static bool isMyAddress(byte[] walletAddress)
+        {
+            lock(wallets)
+            {
+                foreach (var wallet in wallets)
+                {
+                    if(wallet.Value.isMyAddress(walletAddress))
+                    {
+                        return true;
+                    }
+                }
+            }
+            return false;
+        }
+
+        public static Dictionary<byte[], List<byte[]>> extractMyAddressesFromAddressList(SortedDictionary<byte[], IxiNumber> addressList, bool useSeedHashAsKey = true)
+        {
+            Dictionary<byte[], List<byte[]>> addresses = new Dictionary<byte[], List<byte[]>>();
+            lock (wallets)
+            {
+                foreach (var wallet in wallets)
+                {
+                    var extractedAddresses = wallet.Value.extractMyAddressesFromAddressList(addressList);
+                    if(extractedAddresses != null && extractedAddresses.Count > 0)
+                    {
+                        if(useSeedHashAsKey)
+                        {
+                            addresses.Add(wallet.Value.getSeedHash(), extractedAddresses);
+                        }else
+                        {
+                            addresses.Add(wallet.Key, extractedAddresses);
+                        }
+                    }
+                }
+            }
+            return addresses;
+        }
+
+        public static List<string> getWalletList()
+        {
+            List<string> walletList = new List<string>();
+
+            lock (wallets)
+            {
+                foreach (var wallet in wallets)
+                {
+                    walletList.Add(Base58Check.Base58CheckEncoding.EncodePlain(wallet.Key));
+                }
+            }
+
+            return walletList;
         }
 
         /// <summary>

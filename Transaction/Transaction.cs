@@ -1528,6 +1528,7 @@ namespace IXICore
         public IxiNumber calculateMinimumFee(IxiNumber pricePerKb)
         {
             int bytesLen = getBytes(false).Length;
+            // TODO Omega checksum can be removed
             if (checksum == null)
             {
                 bytesLen += 44;
