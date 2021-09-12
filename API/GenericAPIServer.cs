@@ -300,17 +300,17 @@ namespace IXICore
 
             if (methodName.Equals("gettotalbalance", StringComparison.OrdinalIgnoreCase))
             {
-                response = onGetTotalBalance();
+                response = onGetTotalBalance(parameters);
             }
             
             if (methodName.Equals("mywallet", StringComparison.OrdinalIgnoreCase))
             {
-                response = onMyWallet();
+                response = onMyWallet(parameters);
             }
 
             if (methodName.Equals("mypubkey", StringComparison.OrdinalIgnoreCase))
             {
-                response = onMyPubKey();
+                response = onMyPubKey(parameters);
             }
             
             if (methodName.Equals("clients", StringComparison.OrdinalIgnoreCase))
@@ -345,7 +345,37 @@ namespace IXICore
 
             if (methodName.Equals("getwalletbackup", StringComparison.OrdinalIgnoreCase))
             {
-                response = onGetWalletBackup();
+                response = onGetWalletBackup(parameters);
+            }
+
+            if (methodName.Equals("getviewingwallet", StringComparison.OrdinalIgnoreCase))
+            {
+                response = onGetViewingWallet(parameters);
+            }
+
+            if (methodName.Equals("loadwallet", StringComparison.OrdinalIgnoreCase))
+            {
+                response = onLoadWallet(parameters);
+            }
+
+            if (methodName.Equals("unloadwallet", StringComparison.OrdinalIgnoreCase))
+            {
+                response = onUnloadWallet(parameters);
+            }
+
+            if (methodName.Equals("sign", StringComparison.OrdinalIgnoreCase))
+            {
+                response = onSign(parameters);
+            }
+
+            if (methodName.Equals("verify", StringComparison.OrdinalIgnoreCase))
+            {
+                response = onVerify(parameters);
+            }
+
+            if (methodName.Equals("listwallets", StringComparison.OrdinalIgnoreCase))
+            {
+                response = onListWallets();
             }
 
             if (methodName.Equals("validateaddress", StringComparison.OrdinalIgnoreCase))
@@ -361,6 +391,11 @@ namespace IXICore
             if (methodName.Equals("clearpeerblacklist", StringComparison.OrdinalIgnoreCase))
             {
                 response = onClearPeerBlacklist();
+            }
+
+            if (methodName.Equals("getpresence", StringComparison.OrdinalIgnoreCase))
+            {
+                response = onGetPresence(parameters);
             }
 
             bool resources = false;
@@ -1123,21 +1158,33 @@ namespace IXICore
             return new JsonResponse { result = null, error = new JsonError() { code = (int)RPCErrorCode.RPC_INTERNAL_ERROR, message = "Error while creating the transaction." } };
         }
 
-        private JsonResponse onGetTotalBalance()
+        private JsonResponse onGetTotalBalance(Dictionary<string, object> parameters)
         {
-            IxiNumber balance = IxianHandler.getWalletStorage().getMyTotalBalance(IxianHandler.getWalletStorage().getPrimaryAddress());
+            byte[] wallet = null;
+            if (parameters.ContainsKey("wallet"))
+            {
+                wallet = Base58Check.Base58CheckEncoding.DecodePlain((string)parameters["wallet"]);
+            }
+
+            IxiNumber balance = IxianHandler.getWalletStorage(wallet).getMyTotalBalance(IxianHandler.getWalletStorage(wallet).getPrimaryAddress());
             // TODO TODO TODO TODO adapt the following line for v3 wallets
             balance -= PendingTransactions.getPendingSendingTransactionsAmount(null);
             return new JsonResponse { result = balance.ToString(), error = null };
         }
 
 
-        private JsonResponse onMyWallet()
+        private JsonResponse onMyWallet(Dictionary<string, object> parameters)
         {
             JsonError error = null;
 
+            byte[] wallet = null;
+            if (parameters.ContainsKey("wallet"))
+            {
+                wallet = Base58Check.Base58CheckEncoding.DecodePlain((string)parameters["wallet"]);
+            }
+
             // Show own address, balance and blockchain synchronization status
-            List<Address> address_list = IxianHandler.getWalletStorage().getMyAddresses();
+            List<Address> address_list = IxianHandler.getWalletStorage(wallet).getMyAddresses();
 
             Dictionary<string, string> address_balance_list = new Dictionary<string, string>();
 
@@ -1149,11 +1196,17 @@ namespace IXICore
             return new JsonResponse { result = address_balance_list, error = error };
         }
 
-        private JsonResponse onMyPubKey()
+        private JsonResponse onMyPubKey(Dictionary<string, object> parameters)
         {
             JsonError error = null;
 
-            return new JsonResponse { result = Crypto.hashToString(IxianHandler.getWalletStorage().getPrimaryPublicKey()), error = error };
+            byte[] wallet = null;
+            if (parameters.ContainsKey("wallet"))
+            {
+                wallet = Base58Check.Base58CheckEncoding.DecodePlain((string)parameters["wallet"]);
+            }
+
+            return new JsonResponse { result = Crypto.hashToString(IxianHandler.getWalletStorage(wallet).getPrimaryPublicKey()), error = error };
         }
 
         private JsonResponse onClients()
@@ -1262,15 +1315,21 @@ namespace IXICore
                 descending = true;
             }
 
+            byte[] wallet = null;
+            if (parameters.ContainsKey("wallet"))
+            {
+                wallet = Base58Check.Base58CheckEncoding.DecodePlain((string)parameters["wallet"]);
+            }
+
             List<Activity> res = null;
 
             if (type == -1)
             {
-                res = ActivityStorage.getActivitiesBySeedHash(IxianHandler.getWalletStorage().getSeedHash(), Int32.Parse(fromIndex), Int32.Parse(count), descending);
+                res = ActivityStorage.getActivitiesBySeedHash(IxianHandler.getWalletStorage(wallet).getSeedHash(), Int32.Parse(fromIndex), Int32.Parse(count), descending);
             }
             else
             {
-                res = ActivityStorage.getActivitiesBySeedHashAndType(IxianHandler.getWalletStorage().getSeedHash(), (ActivityType)type, Int32.Parse(fromIndex), Int32.Parse(count), descending);
+                res = ActivityStorage.getActivitiesBySeedHashAndType(IxianHandler.getWalletStorage(wallet).getSeedHash(), (ActivityType)type, Int32.Parse(fromIndex), Int32.Parse(count), descending);
             }
             return new JsonResponse { result = res, error = error };
 #else
@@ -1280,23 +1339,29 @@ namespace IXICore
 
         private JsonResponse onGenerateNewAddress(Dictionary<string, object> parameters)
         {
+            byte[] wallet_address = null;
+            if (parameters.ContainsKey("wallet"))
+            {
+                wallet_address = Base58Check.Base58CheckEncoding.DecodePlain((string)parameters["address"]);
+            }
+
             string base_address_str = null;
             if (parameters.ContainsKey("address"))
             {
                 base_address_str = (string)parameters["address"];
             }
 
-            byte[] base_address = null;
+            byte[] base_address;
             if (base_address_str == null)
             {
-                base_address = IxianHandler.getWalletStorage().getPrimaryAddress();
+                base_address = IxianHandler.getWalletStorage(wallet_address).getPrimaryAddress();
             }
             else
             {
                 base_address = Base58Check.Base58CheckEncoding.DecodePlain(base_address_str);
             }
 
-            Address new_address = IxianHandler.getWalletStorage().generateNewAddress(new Address(base_address), null);
+            Address new_address = IxianHandler.getWalletStorage(wallet_address).generateNewAddress(new Address(base_address), null);
             if (new_address != null)
             {
                 return new JsonResponse { result = new_address.ToString(), error = null };
@@ -1307,12 +1372,146 @@ namespace IXICore
             }
         }
 
-        // Returns an empty PoW block based on the search algorithm provided as a parameter
-        private JsonResponse onGetWalletBackup()
+        private JsonResponse onGetWalletBackup(Dictionary<string, object> parameters)
         {
-            List<byte> wallet = new List<byte>();
-            wallet.AddRange(IxianHandler.getWalletStorage().getRawWallet());
-            return new JsonResponse { result = "IXIHEX" + Crypto.hashToString(wallet.ToArray()), error = null };
+            byte[] wallet = null;
+            if (parameters.ContainsKey("wallet"))
+            {
+                wallet = Base58Check.Base58CheckEncoding.DecodePlain((string)parameters["address"]);
+            }
+            return new JsonResponse { result = "IXIHEX" + Crypto.hashToString(IxianHandler.getWalletStorage(wallet).getRawWallet()), error = null };
+        }
+
+        private JsonResponse onGetViewingWallet(Dictionary<string, object> parameters)
+        {
+            byte[] wallet = null;
+            if (parameters.ContainsKey("wallet"))
+            {
+                wallet = Base58Check.Base58CheckEncoding.DecodePlain((string)parameters["address"]);
+            }
+            return new JsonResponse { result = "IXIHEX" + Crypto.hashToString(IxianHandler.getWalletStorage(wallet).getRawViewingWallet()), error = null };
+        }
+
+        private JsonResponse onLoadWallet(Dictionary<string, object> parameters)
+        {
+            if (!parameters.ContainsKey("file"))
+            {
+                return new JsonResponse { result = null, error = new JsonError() { code = (int)RPCErrorCode.RPC_INVALID_PARAMS, message = "Missing parameter 'file'." } };
+            }
+            if (!parameters.ContainsKey("password"))
+            {
+                return new JsonResponse { result = null, error = new JsonError() { code = (int)RPCErrorCode.RPC_INVALID_PARAMS, message = "Missing parameter 'password'." } };
+            }
+
+            string file = (string)parameters["file"];
+            string password = (string)parameters["password"];
+            
+            WalletStorage ws = IxianHandler.getWalletStorageByFilename(file);
+            if(ws == null)
+            {
+                ws = new WalletStorage(file);
+                if (!ws.readWallet(password))
+                {
+                    return new JsonResponse { result = null, error = new JsonError() { code = (int)RPCErrorCode.RPC_WALLET_ERROR, message = "Error occured while reading wallet file - incorrect password or file doesn't exist." } };
+                }
+
+                IxianHandler.addWallet(ws);
+                ws.scanForLostAddresses();
+            }
+
+            return new JsonResponse { result = Base58Check.Base58CheckEncoding.EncodePlain(ws.getPrimaryAddress()), error = null };
+        }
+
+        private JsonResponse onUnloadWallet(Dictionary<string, object> parameters)
+        {
+            if (!parameters.ContainsKey("wallet"))
+            {
+                return new JsonResponse { result = null, error = new JsonError() { code = (int)RPCErrorCode.RPC_INVALID_PARAMS, message = "Missing parameter 'wallet'." } };
+            }
+
+            byte[] wallet = Base58Check.Base58CheckEncoding.DecodePlain((string)parameters["wallet"]);
+
+            IxianHandler.removeWallet(wallet);
+
+            return new JsonResponse { result = "OK", error = null };
+        }
+
+        // Signs message or hash
+        private JsonResponse onSign(Dictionary<string, object> parameters)
+        {
+            if (!parameters.ContainsKey("wallet"))
+            {
+                return new JsonResponse { result = null, error = new JsonError() { code = (int)RPCErrorCode.RPC_INVALID_PARAMS, message = "Missing parameter 'wallet'." } };
+            }
+
+            byte[] wallet = Base58Check.Base58CheckEncoding.DecodePlain((string)parameters["wallet"]);
+            byte[] signature;
+
+            if (parameters.ContainsKey("message"))
+            {
+                string message = (string)parameters["message"];
+                byte[] hash = Crypto.sha512sqTrunc(Crypto.stringToHash(message));
+                signature = CryptoManager.lib.getSignature(hash, IxianHandler.getWalletStorage(wallet).getPrimaryPrivateKey());
+
+            }else if (parameters.ContainsKey("hash"))
+            {
+                byte[] hash = Crypto.stringToHash((string)parameters["hash"]);
+                signature = CryptoManager.lib.getSignature(hash, IxianHandler.getWalletStorage(wallet).getPrimaryPrivateKey());
+            }else
+            {
+                return new JsonResponse { result = null, error = new JsonError() { code = (int)RPCErrorCode.RPC_INVALID_PARAMS, message = "Missing parameter 'message' or 'hash'." } };
+            }
+
+            return new JsonResponse { result = signature, error = null };
+        }
+
+        // Verifies message or hash
+        private JsonResponse onVerify(Dictionary<string, object> parameters)
+        {
+            if (!parameters.ContainsKey("publicKey"))
+            {
+                return new JsonResponse { result = null, error = new JsonError() { code = (int)RPCErrorCode.RPC_INVALID_PARAMS, message = "Missing parameter 'publicKey'." } };
+            }
+
+            if (!parameters.ContainsKey("signature"))
+            {
+                return new JsonResponse { result = null, error = new JsonError() { code = (int)RPCErrorCode.RPC_INVALID_PARAMS, message = "Missing parameter 'signature'." } };
+            }
+
+            byte[] publicKey = Crypto.stringToHash((string)parameters["publicKey"]);
+            byte[] signature = Crypto.stringToHash((string)parameters["signature"]);
+
+            bool sigOk = false;
+
+            if (parameters.ContainsKey("message"))
+            {
+                string message = (string)parameters["message"];
+                byte[] hash = Crypto.sha512sqTrunc(Crypto.stringToHash(message));
+                sigOk = CryptoManager.lib.verifySignature(hash, publicKey, signature);
+
+            }
+            else if (parameters.ContainsKey("hash"))
+            {
+                byte[] hash = Crypto.stringToHash((string)parameters["hash"]);
+                sigOk = CryptoManager.lib.verifySignature(hash, publicKey, signature);
+            }
+            else
+            {
+                return new JsonResponse { result = null, error = new JsonError() { code = (int)RPCErrorCode.RPC_INVALID_PARAMS, message = "Missing parameter 'message' or 'hash'." } };
+            }
+
+            if (sigOk)
+            {
+                return new JsonResponse { result = "OK", error = null };
+            }else
+            {
+                return new JsonResponse { result = "FAIL", error = null };
+            }
+        }
+
+        private JsonResponse onListWallets()
+        {
+            return new JsonResponse { result = IxianHandler.getWalletList(), error = null };
         }
 
         // Returns "OK" if checksum of the address passes and error RPC_INVALID_ADDRESS_OR_KEY if the address is incorrect
@@ -1363,6 +1562,21 @@ namespace IXICore
             return new JsonResponse { result = "OK", error = null };
         }
 
+        private JsonResponse onGetPresence(Dictionary<string, object> parameters)
+        {
+            if (!parameters.ContainsKey("wallet"))
+            {
+                return new JsonResponse { result = null, error = new JsonError() { code = (int)RPCErrorCode.RPC_INVALID_PARAMS, message = "Missing parameter 'wallet'" } };
+            }
+            byte[] address = Base58Check.Base58CheckEncoding.DecodePlain((string)parameters["wallet"]);
+            Presence p = PresenceList.getPresenceByAddress(address);
+            if(p != null)
+            {
+                return new JsonResponse { result = p, error = null };
+            }
+            return new JsonResponse { result = null, error = null };
+        }
+
         // This is a bit hacky way to return useful error values
         // returns either Transaction or JsonResponse
         private object createTransactionHelper(Dictionary<string, object> parameters, bool sign_transaction = true)
@@ -1380,10 +1594,18 @@ namespace IXICore
                 }
             }
 
+            byte[] walletAddress = null;
+            if (parameters.ContainsKey("wallet"))
+            {
+                walletAddress = Base58Check.Base58CheckEncoding.DecodePlain((string)parameters["wallet"]);
+            }
+
+            WalletStorage ws = IxianHandler.getWalletStorage(walletAddress);
+
             byte[] primary_address_bytes = null;
             if (!parameters.ContainsKey("primaryAddress"))
             {
-                primary_address_bytes = IxianHandler.getWalletStorage().getPrimaryAddress();
+                primary_address_bytes = ws.getPrimaryAddress();
             }
             else
             {
@@ -1400,11 +1622,11 @@ namespace IXICore
                     {
                         string[] single_from_split = single_from.Split('_');
                         byte[] single_from_address = Base58Check.Base58CheckEncoding.DecodePlain(single_from_split[0]);
-                        if (!IxianHandler.getWalletStorage().isMyAddress(single_from_address))
+                        if (!ws.isMyAddress(single_from_address))
                         {
                             return new JsonResponse { result = null, error = new JsonError() { code = (int)RPCErrorCode.RPC_INVALID_ADDRESS_OR_KEY, message = "Invalid from address was specified" } };
                         }
-                        byte[] single_from_nonce = IxianHandler.getWalletStorage().getAddress(single_from_address).nonce;
+                        byte[] single_from_nonce = ws.getAddress(single_from_address).nonce;
                         IxiNumber singleFromAmount = new IxiNumber(single_from_split[1]);
                         if (singleFromAmount < 0 || singleFromAmount == 0)
                         {
@@ -1461,7 +1683,7 @@ namespace IXICore
                 return new JsonResponse { result = null, error = new JsonError() { code = (int)RPCErrorCode.RPC_INVALID_PARAMS, message = "Invalid to amount was specified" } };
             }
 
-            byte[] pubKey = IxianHandler.getWalletStorage().getKeyPair(primary_address_bytes).publicKeyBytes;
+            byte[] pubKey = ws.getKeyPair(primary_address_bytes).publicKeyBytes;
 
             // Check if this wallet's public key is already in the WalletState
             Wallet mywallet = IxianHandler.getWallet(primary_address_bytes);
@@ -1476,7 +1698,7 @@ namespace IXICore
             {
                 lock (PendingTransactions.pendingTransactions)
                 {
-                    fromList = IxianHandler.getWalletStorage().generateFromList(primary_address_bytes, to_amount + fee, toList.Keys.ToList(), PendingTransactions.pendingTransactions.Select(x => x.transaction).ToList());
+                    fromList = ws.generateFromList(primary_address_bytes, to_amount + fee, toList.Keys.ToList(), PendingTransactions.pendingTransactions.Select(x => x.transaction).ToList());
                 }
                 adjust_amount = true;
             }
@@ -1497,7 +1719,7 @@ namespace IXICore
                     total_tx_fee = transaction.fee;
                     lock (PendingTransactions.pendingTransactions)
                     {
-                        fromList = IxianHandler.getWalletStorage().generateFromList(primary_address_bytes, to_amount + total_tx_fee, toList.Keys.ToList(), PendingTransactions.pendingTransactions.Select(x => x.transaction).ToList());
+                        fromList = ws.generateFromList(primary_address_bytes, to_amount + total_tx_fee, toList.Keys.ToList(), PendingTransactions.pendingTransactions.Select(x => x.transaction).ToList());
                     }
                     if (fromList == null || fromList.Count == 0)
                     {
@@ -1526,7 +1748,7 @@ namespace IXICore
             {
                 return new JsonResponse { result = null, error = new JsonError() { code = (int)RPCErrorCode.RPC_VERIFY_ERROR, message = "From amounts (incl. fee) do not match to amounts. If you haven't accounted for the transaction fee in the from amounts, use the parameter 'autofee' to have the node do it automatically." } };
             }
-            if (to_amount + transaction.fee > IxianHandler.getWalletStorage().getMyTotalBalance(primary_address_bytes))
+            if (to_amount + transaction.fee > ws.getMyTotalBalance(primary_address_bytes))
             {
                 return new JsonResponse { result = null, error = new JsonError() { code = (int)RPCErrorCode.RPC_WALLET_INSUFFICIENT_FUNDS, message = "Balance is too low" } };
             }
