@@ -918,7 +918,11 @@ namespace IXICore
                 return false;
 
             // Encrypt data first
-            byte[] b_privateKey = CryptoManager.lib.encryptWithPassword(privateKey, password, false);
+            byte[] b_privateKey = null;
+            if (privateKey != null)
+            {
+                CryptoManager.lib.encryptWithPassword(privateKey, password, false);
+            }
             byte[] b_baseNonce = CryptoManager.lib.encryptWithPassword(baseNonce, password, false);
             byte[] b_publicKey = CryptoManager.lib.encryptWithPassword(publicKey, password, false);
 
@@ -1166,6 +1170,10 @@ namespace IXICore
 
         public byte[] getRawViewingWallet()
         {
+            if(walletVersion != 2 && walletVersion != 4)
+            {
+                throw new Exception("Cannot generate raw viewing wallet for wallet version " + walletVersion + ", v2 or v4 required.");
+            }
             string password = walletPassword;
             if (password.Length < 10)
                 return null;

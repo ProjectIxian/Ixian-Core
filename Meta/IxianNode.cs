@@ -221,7 +221,14 @@ namespace IXICore.Meta
 
         public static WalletStorage getWalletStorageByFilename(string filename)
         {
-            return wallets.First(x => x.Value.filename == filename).Value;
+            try
+            {
+                return wallets.First(x => x.Value.filename == filename).Value;
+            }catch (Exception)
+            {
+
+            }
+            return null;
         }
 
         public static bool addWallet(WalletStorage ws)
