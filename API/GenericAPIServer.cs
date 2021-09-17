@@ -1342,7 +1342,7 @@ namespace IXICore
             byte[] wallet_address = null;
             if (parameters.ContainsKey("wallet"))
             {
-                wallet_address = Base58Check.Base58CheckEncoding.DecodePlain((string)parameters["address"]);
+                wallet_address = Base58Check.Base58CheckEncoding.DecodePlain((string)parameters["wallet"]);
             }
 
             string base_address_str = null;
@@ -1377,7 +1377,7 @@ namespace IXICore
             byte[] wallet = null;
             if (parameters.ContainsKey("wallet"))
             {
-                wallet = Base58Check.Base58CheckEncoding.DecodePlain((string)parameters["address"]);
+                wallet = Base58Check.Base58CheckEncoding.DecodePlain((string)parameters["wallet"]);
             }
             return new JsonResponse { result = "IXIHEX" + Crypto.hashToString(IxianHandler.getWalletStorage(wallet).getRawWallet()), error = null };
         }
@@ -1387,7 +1387,7 @@ namespace IXICore
             byte[] wallet = null;
             if (parameters.ContainsKey("wallet"))
             {
-                wallet = Base58Check.Base58CheckEncoding.DecodePlain((string)parameters["address"]);
+                wallet = Base58Check.Base58CheckEncoding.DecodePlain((string)parameters["wallet"]);
             }
             return new JsonResponse { result = "IXIHEX" + Crypto.hashToString(IxianHandler.getWalletStorage(wallet).getRawViewingWallet()), error = null };
         }
@@ -1439,12 +1439,13 @@ namespace IXICore
         // Signs message or hash
         private JsonResponse onSign(Dictionary<string, object> parameters)
         {
-            if (!parameters.ContainsKey("wallet"))
+            byte[] wallet = null;
+            if (parameters.ContainsKey("wallet"))
             {
-                return new JsonResponse { result = null, error = new JsonError() { code = (int)RPCErrorCode.RPC_INVALID_PARAMS, message = "Missing parameter 'wallet'." } };
+                wallet = Base58Check.Base58CheckEncoding.DecodePlain((string)parameters["wallet"]);
             }
 
-            byte[] wallet = Base58Check.Base58CheckEncoding.DecodePlain((string)parameters["wallet"]);
+
             byte[] signature;
 
             if (parameters.ContainsKey("message"))
