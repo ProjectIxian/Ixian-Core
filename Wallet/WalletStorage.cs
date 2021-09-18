@@ -921,7 +921,7 @@ namespace IXICore
             byte[] b_privateKey = null;
             if (privateKey != null)
             {
-                CryptoManager.lib.encryptWithPassword(privateKey, password, false);
+                b_privateKey = CryptoManager.lib.encryptWithPassword(privateKey, password, false);
             }
             byte[] b_baseNonce = CryptoManager.lib.encryptWithPassword(baseNonce, password, false);
             byte[] b_publicKey = CryptoManager.lib.encryptWithPassword(publicKey, password, false);

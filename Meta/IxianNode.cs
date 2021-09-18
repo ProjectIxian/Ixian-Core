@@ -231,6 +231,22 @@ namespace IXICore.Meta
             return null;
         }
 
+        public static WalletStorage getWalletStorageBySecondaryAddress(byte[] walletAddress)
+        {
+            lock (wallets)
+            {
+                foreach (var wallet in wallets)
+                {
+                    if (wallet.Value.isMyAddress(walletAddress))
+                    {
+                        return wallet.Value;
+                    }
+                }
+            }
+            return null;
+        }
+
+
         public static bool addWallet(WalletStorage ws)
         {
             lock (wallets)
@@ -252,6 +268,11 @@ namespace IXICore.Meta
         {
             lock(wallets)
             {
+                if(walletAddress.SequenceEqual(primaryWalletAddress))
+                {
+                    Logging.warn("Cannot remove primary wallet {0}", Base58Check.Base58CheckEncoding.EncodePlain(primaryWalletAddress));
+                    return false;
+                }
                 return wallets.Remove(walletAddress);
             }
         }

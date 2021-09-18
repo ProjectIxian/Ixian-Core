@@ -1430,10 +1430,14 @@ namespace IXICore
             }
 
             byte[] wallet = Base58Check.Base58CheckEncoding.DecodePlain((string)parameters["wallet"]);
-
-            IxianHandler.removeWallet(wallet);
-
-            return new JsonResponse { result = "OK", error = null };
+            if (IxianHandler.removeWallet(wallet))
+            {
+                return new JsonResponse { result = "OK", error = null };
+            }
+            else
+            {
+                return new JsonResponse { result = "FAIL", error = null };
+            }
         }
 
         // Signs message or hash

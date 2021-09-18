@@ -1485,10 +1485,14 @@ namespace IXICore
 
             byte[] address =  new Address(pubKey).address;
 
-            IxianKeyPair kp = IxianHandler.getWalletStorage().getKeyPair(address);
-            if (kp != null)
+            WalletStorage ws = IxianHandler.getWalletStorageBySecondaryAddress(address);
+            if(ws != null)
             {
-                return CryptoManager.lib.getSignature(checksum, kp.privateKeyBytes);
+                IxianKeyPair kp = ws.getKeyPair(address);
+                if (kp != null)
+                {
+                    return CryptoManager.lib.getSignature(checksum, kp.privateKeyBytes);
+                }
             }
             return null;
         }
@@ -1885,10 +1889,14 @@ namespace IXICore
         /// <returns>Own address which is allowed to sign transactions for `multisig_address`, or null, if no such local address.</returns>
         public static AddressData findMyMultisigAddressData(byte[] multisig_address)
         {
-            AddressData ad = IxianHandler.getWalletStorage().getAddress(multisig_address);
-            if (ad != null)
+            WalletStorage ws = IxianHandler.getWalletStorageBySecondaryAddress(multisig_address);
+            if(ws != null)
             {
-                return ad;
+                AddressData ad = ws.getAddress(multisig_address);
+                if (ad != null)
+                {
+                    return ad;
+                }
             }
 
             Wallet w = IxianHandler.getWallet(multisig_address);
@@ -1901,7 +1909,12 @@ namespace IXICore
             {
                 foreach(var entry in w.allowedSigners)
                 {
-                    AddressData tmp_ad = IxianHandler.getWalletStorage().getAddress(entry);
+                    ws = IxianHandler.getWalletStorageBySecondaryAddress(entry);
+                    if(ws == null)
+                    {
+                        continue;
+                    }
+                    AddressData tmp_ad = ws.getAddress(entry);
                     if(tmp_ad != null)
                     {
                         return tmp_ad;
