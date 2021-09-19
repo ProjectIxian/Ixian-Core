@@ -1450,18 +1450,18 @@ namespace IXICore
             }
 
 
-            byte[] signature;
+            string signature;
 
             if (parameters.ContainsKey("message"))
             {
                 string message = (string)parameters["message"];
-                byte[] hash = Crypto.sha512sqTrunc(Crypto.stringToHash(message));
-                signature = CryptoManager.lib.getSignature(hash, IxianHandler.getWalletStorage(wallet).getPrimaryPrivateKey());
+                byte[] hash = Crypto.sha512sqTrunc(UTF8Encoding.UTF8.GetBytes(message));
+                signature = Crypto.hashToString(CryptoManager.lib.getSignature(hash, IxianHandler.getWalletStorage(wallet).getPrimaryPrivateKey()));
 
             }else if (parameters.ContainsKey("hash"))
             {
                 byte[] hash = Crypto.stringToHash((string)parameters["hash"]);
-                signature = CryptoManager.lib.getSignature(hash, IxianHandler.getWalletStorage(wallet).getPrimaryPrivateKey());
+                signature = Crypto.hashToString(CryptoManager.lib.getSignature(hash, IxianHandler.getWalletStorage(wallet).getPrimaryPrivateKey()));
             }else
             {
                 return new JsonResponse { result = null, error = new JsonError() { code = (int)RPCErrorCode.RPC_INVALID_PARAMS, message = "Missing parameter 'message' or 'hash'." } };
@@ -1491,7 +1491,7 @@ namespace IXICore
             if (parameters.ContainsKey("message"))
             {
                 string message = (string)parameters["message"];
-                byte[] hash = Crypto.sha512sqTrunc(Crypto.stringToHash(message));
+                byte[] hash = Crypto.sha512sqTrunc(UTF8Encoding.UTF8.GetBytes(message));
                 sigOk = CryptoManager.lib.verifySignature(hash, publicKey, signature);
 
             }
