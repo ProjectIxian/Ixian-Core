@@ -1065,7 +1065,27 @@ namespace IXICore
             }
 
             File.Delete(filename);
+            reset();
             return true;
+        }
+
+        // Resets wallet storage instance to the initial state
+        public void reset()
+        {
+            walletVersion = 0;
+            viewingWallet = false;
+            walletPassword = "";
+            seedHash = null;
+            masterSeed = null;
+            derivedMasterSeed = null;
+            myKeys.Clear();
+            myAddresses.Clear();
+            privateKey = null;
+            publicKey = null;
+            address = null;
+            lastAddress = null;
+            walletLoaded = false;
+            baseNonce = null;
         }
 
         // Generate a new wallet with matching private/public key pairs
