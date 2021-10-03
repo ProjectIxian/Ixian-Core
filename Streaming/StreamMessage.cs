@@ -63,6 +63,8 @@ namespace IXICore
 
         public long timestamp = 0;
 
+        public bool requireRcvConfirmation = true;
+
         public StreamMessage()
         {
             id = Guid.NewGuid().ToByteArray(); // Generate a new unique id
@@ -135,6 +137,11 @@ namespace IXICore
                             signature = reader.ReadBytes(sig_length);
 
                         timestamp = reader.ReadInt64();
+
+                        if (reader.BaseStream.Length - reader.BaseStream.Position > 0)
+                        {
+                            requireRcvConfirmation = reader.ReadBoolean();
+                        }
                     }
                 }
             }
@@ -185,6 +192,11 @@ namespace IXICore
                             signature = reader.ReadBytes(sig_length);
 
                         timestamp = (long)reader.ReadIxiVarUInt();
+
+                        if (reader.BaseStream.Length - reader.BaseStream.Position > 0)
+                        {
+                            requireRcvConfirmation = reader.ReadBoolean();
+                        }
                     }
                 }
             }
@@ -298,6 +310,8 @@ namespace IXICore
                     }
 
                     writer.Write(timestamp);
+
+                    writer.Write(requireRcvConfirmation);
                 }
                 return m.ToArray();
             }
@@ -371,6 +385,8 @@ namespace IXICore
                     }
 
                     writer.WriteIxiVarInt(timestamp);
+
+                    writer.Write(requireRcvConfirmation);
                 }
                 return m.ToArray();
             }
