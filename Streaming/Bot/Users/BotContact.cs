@@ -32,7 +32,7 @@ namespace IXICore.SpixiBot
         public byte[] publicKey;
         private string role = "";
         public bool hasAvatar = false;
-        public bool sendNotification = true;
+        public bool sendNotification = false;
         public BotContactStatus status = BotContactStatus.normal;
 
         public BotContact(byte[] nick_data, byte[] public_key, int role_index, bool has_avatar, bool send_notification = true, BotContactStatus status = BotContactStatus.normal)
@@ -63,8 +63,13 @@ namespace IXICore.SpixiBot
             {
                 try
                 {
-                    nick = Encoding.UTF8.GetString(new SpixiMessage(new StreamMessage(nickData).data).data);
-                }catch(Exception)
+                    byte[] nickBytes = new SpixiMessage(new StreamMessage(nickData).data).data;
+                    if(nickBytes != null)
+                    {
+                        nick = Encoding.UTF8.GetString(nickBytes);
+                    }
+                }
+                catch(Exception)
                 {
                 }
             }

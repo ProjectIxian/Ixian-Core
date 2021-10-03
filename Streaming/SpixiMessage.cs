@@ -95,7 +95,7 @@ namespace IXICore
                         if (data_length > 0)
                             data = reader.ReadBytes(data_length);
 
-                        if(reader.BaseStream.Length - reader.BaseStream.Position > 0)
+                        if (reader.BaseStream.Length - reader.BaseStream.Position > 0)
                         {
                             channel = reader.ReadInt32();
                         }
@@ -130,10 +130,7 @@ namespace IXICore
                         writer.Write(0);
                     }
 
-                    if (channel != 0)
-                    {
-                        writer.Write(channel);
-                    }
+                    writer.Write(channel);
                 }
                 return m.ToArray();
             }
