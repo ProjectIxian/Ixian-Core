@@ -571,7 +571,13 @@ namespace IXICore
             string responseError = "null";
             if (response.error != null)
             {
-                responseError = response.error.ToString();
+                try
+                {
+                    responseError = JsonConvert.SerializeObject(response.error);
+                }catch(Exception)
+                {
+                    responseError = response.error.ToString();
+                }
             }
 
             Logging.trace("Processed request, sending response with error code: {0}", responseError);
