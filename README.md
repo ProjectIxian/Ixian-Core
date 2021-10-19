@@ -1,5 +1,17 @@
-# Ixian Project - Core
-Shared functionality used by all other Ixian projects.
+# IXI Core
+IXI Core repository contains the Ixian SDK which is used by all Ixian components (DLT, S2, SPIXI, LiteWallet, ...). The Ixian Core library contains primitives for:
+
+* Wallet addresses
+* Block data
+* Cryptographic functions
+* Logging
+* Platform-specific functions
+* Networking
+* Presence List
+* Transactions
+* JSON REST server
+
+The code in the shared Ixian-Core repository may be used by simply including the shared project in your solution and referencing it through the `IXICore` namespace.
 
 ## About Ixian
 
@@ -13,11 +25,13 @@ Ixian DLT is a revolutionary blockchain that brings several innovative advantage
 
 **Documentation**: https://docs.ixian.io
 
-## The repository
+**GitHub**: https://www.github.com/ProjectIxian
+
+## Main repositories
 
 The Ixian GitHub project is divided into seven main parts:
 
-* [Ixian-Core](https://github.com/ProjectIxian/Ixian-Core): Functionality common to all other projects.
+* [Ixian-Core](https://github.com/ProjectIxian/Ixian-Core): Ixian SDK - Functionality common to all other projects.
 * [Ixian-DLT](https://github.com/ProjectIxian/Ixian-DLT): Implementation of the blockchain-processing part (the Master Node software).
 * [Ixian-S2](https://github.com/ProjectIxian/Ixian-S2): Implementation of the streaming network (the S2 Node software).
 * [Spixi](https://github.com/ProjectIxian/Spixi): Implementation of the SPIXI messaging client for Windows, Android and iOS.
@@ -25,27 +39,11 @@ The Ixian GitHub project is divided into seven main parts:
 * [Ixian-LiteWallet](https://github.com/ProjectIxian/Ixian-LiteWallet): Simple CLI wallet for the Ixian DLT network.
 * [Ixian-Pool](https://github.com/ProjectIxian/Ixian-Pool): Mining pool software.
 
-## About Ixian-Core
-
-The Ixian Core project contains the shared code which is used by all Ixian components (DLT, S2, SPIXI, LiteWallet, ...). The Ixian Core library contains primitives for:
-
-* Wallet addresses
-* Block data
-* Cryptographic functions
-* Logging
-* Platform-specific functions
-* Networking
-* Presence List
-* Transactions
-* JSON REST server
-
-The code in the shared Ixian-Core project may be used by simply including the shared project in your solution and referencing it through the `IXICore` namespace.
-
 ## Development branches
 
 There are two main development branches:
-* **master**: This branch is used to build the binaries for the official IXIAN DLT network. It should change slowly and be quite well-tested. This is also the default branch for anyone who wishes to build their Ixian software from source.
-* **development**: This is the main development branch and the source for testnet binaries. The branch might not always be kept bug-free, if an extensive new feature is being worked on. If you are simply looking to build a current binary yourself, please use one of the release tags which will be associated with the master branch.
+* **master**: This branch is used to build the binaries for the latest stable release of IXI Core. It should change slowly and be quite well-tested. This is also the default branch for anyone who wishes to build their Ixian software from source.
+* **development**: This is the main development branch. The branch might not always be kept bug-free, if an extensive new feature is being worked on. If you are simply looking to build a current binary yourself, please use one of the release tags which will be associated with the master branch.
 
 ## Documentation
 

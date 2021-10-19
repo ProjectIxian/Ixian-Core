@@ -20,7 +20,7 @@ namespace IXICore
         /// <summary>
         /// Current version of IxiCore.
         /// </summary>
-        public static readonly string version = "xcore-0.8.2a";
+        public static readonly string version = "xcore-0.8.2b";
 
         /// <summary>
         /// Current version of the Ixian network protocol.
@@ -32,13 +32,13 @@ namespace IXICore
         /// Useful for optimized block header sync
         /// Note: Always round last block height to 1000 and subtract 1 (i.e. if last block height is 33234, the correct value is 32999)
         /// </summary>
-        public static ulong bakedBlockHeight = 2063999;
+        public static ulong bakedBlockHeight = 2095999;
 
         /// <summary>
         /// Mainnet block checksum (paired with bakedBlockHeight) of bakedBlockHeight
         /// Useful for optimized block header sync
         /// </summary>
-        public static byte[] bakedBlockChecksum = Crypto.stringToHash("6a7e301f4ae6510ccc008c42ca5225a8764601cb054c942855b67eda86a55689e8989e71ba6c9a0199746886");
+        public static byte[] bakedBlockChecksum = Crypto.stringToHash("9822b548d9a372d4020d01b2868673cfc54b7e8c0b3affedd90ebee9fb82e2420db86af84233c108bbe4aacd");
 
         /// <summary>
         /// Number of wallets to send in each chunk of data when synchronizing new Master Nodes.
@@ -119,7 +119,7 @@ namespace IXICore
         ///  If more neighbors are connected, they will slowly be disconnected. 
         ///  If fewer neighbors are connected, more will be added over time.
         /// </remarks>
-        public static int simultaneousConnectedNeighbors = 6;
+        public static int simultaneousConnectedNeighbors = 12;
         /// <summary>
         /// Maximum number of events a client can be subscribed to.
         /// </summary>
