@@ -141,6 +141,9 @@ namespace IXICore
                         if (reader.BaseStream.Length - reader.BaseStream.Position > 0)
                         {
                             requireRcvConfirmation = reader.ReadBoolean();
+                        }else
+                        {
+                            requireRcvConfirmation = true;
                         }
                     }
                 }
@@ -185,18 +188,13 @@ namespace IXICore
                         if (data_length > 0)
                             data = reader.ReadBytes(data_length);
 
-                        encrypted = reader.ReadBoolean();
+                        timestamp = (long)reader.ReadIxiVarUInt();
 
                         int sig_length = (int)reader.ReadIxiVarUInt();
                         if (sig_length > 0)
                             signature = reader.ReadBytes(sig_length);
 
-                        timestamp = (long)reader.ReadIxiVarUInt();
-
-                        if (reader.BaseStream.Length - reader.BaseStream.Position > 0)
-                        {
-                            requireRcvConfirmation = reader.ReadBoolean();
-                        }
+                        requireRcvConfirmation = reader.ReadBoolean();
                     }
                 }
             }
@@ -367,26 +365,23 @@ namespace IXICore
                         writer.WriteIxiVarInt(0);
                     }
 
-                    if (!for_checksum)
-                    {
-                        // TODO this likely doesn't have to be transmitted over network - it's more of a local helper
-                        writer.Write(encrypted);
-                    }
-
-                    // Write the sig
-                    if (!for_checksum && signature != null)
-                    {
-                        writer.WriteIxiVarInt(signature.Length);
-                        writer.Write(signature);
-                    }
-                    else
-                    {
-                        writer.WriteIxiVarInt(0);
-                    }
-
                     writer.WriteIxiVarInt(timestamp);
 
-                    writer.Write(requireRcvConfirmation);
+                    if (!for_checksum)
+                    {
+                        // Write the sig
+                        if (signature != null)
+                        {
+                            writer.WriteIxiVarInt(signature.Length);
+                            writer.Write(signature);
+                        }
+                        else
+                        {
+                            writer.WriteIxiVarInt(0);
+                        }
+
+                        writer.Write(requireRcvConfirmation);
+                    }
                 }
                 return m.ToArray();
             }
