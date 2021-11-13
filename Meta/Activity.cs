@@ -318,28 +318,31 @@ namespace IXICore.Meta
                 }
             }
 
-            Logging.info("Clearing old Activity entries, please wait...");
-            Logging.flush();
-            lock (storageLock)
+            if(CoreConfig.minActivityBlockHeight > 0)
             {
-                string sql = "select * from `activity` ORDER BY `blockHeight` DESC LIMIT 1;";
-                try
+                Logging.info("Clearing old Activity entries, please wait...");
+                Logging.flush();
+                lock (storageLock)
                 {
-                    Activity activity = null;
-                    List<Activity> tmpActivityList = sqlConnection.Query<Activity>(sql);
-                    if (tmpActivityList != null && tmpActivityList.Count > 0)
+                    string sql = "select * from `activity` ORDER BY `blockHeight` DESC LIMIT 1;";
+                    try
                     {
-                        activity = tmpActivityList[0];
-                        if(activity.blockHeight > CoreConfig.minActivityBlockHeight)
+                        Activity activity = null;
+                        List<Activity> tmpActivityList = sqlConnection.Query<Activity>(sql);
+                        if (tmpActivityList != null && tmpActivityList.Count > 0)
                         {
-                            executeSQL("DELETE FROM `activity` WHERE `blockHeight` < ?", activity.blockHeight - CoreConfig.minActivityBlockHeight);
-                            executeSQL("VACUUM;");
+                            activity = tmpActivityList[0];
+                            if(activity.blockHeight > CoreConfig.minActivityBlockHeight)
+                            {
+                                executeSQL("DELETE FROM `activity` WHERE `blockHeight` < ?", activity.blockHeight - CoreConfig.minActivityBlockHeight);
+                                executeSQL("VACUUM;");
+                            }
                         }
                     }
-                }
-                catch (Exception e)
-                {
-                    Logging.error(String.Format("Exception has been thrown while executing SQL Query {0}. Exception message: {1}", sql, e.Message));
+                    catch (Exception e)
+                    {
+                        Logging.error(String.Format("Exception has been thrown while executing SQL Query {0}. Exception message: {1}", sql, e.Message));
+                    }
                 }
             }
             Logging.info("Prepared Activity storage");
