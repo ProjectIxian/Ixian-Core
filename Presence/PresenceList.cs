@@ -127,7 +127,14 @@ namespace IXICore
                             PresenceAddress addr = pr.addresses.Find(x => x.device.SequenceEqual(local_addr.device));
                             if (addr != null)
                             {
-                                if (addr.lastSeenTime < local_addr.lastSeenTime)
+                                int interval = CoreConfig.clientKeepAliveInterval;
+                                if (local_addr.type == 'M' || local_addr.type == 'H')
+                                {
+                                    interval = CoreConfig.serverKeepAliveInterval;
+                                }
+                                if (addr.signature == null
+                                    || addr.lastSeenTime + interval < local_addr.lastSeenTime
+                                    || (addr.address != local_addr.address && addr.lastSeenTime + 10 < local_addr.lastSeenTime))
                                 {
                                     if (local_addr.signature != null)
                                     {

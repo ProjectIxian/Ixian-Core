@@ -87,6 +87,7 @@ namespace IXICore.Network
         hello = 0,
         helloData = 1,
         bye = 2,
+        [Obsolete("Use getBlock3 instead")]
         getBlock = 3,
         blockData = 4,
         [Obsolete("Use inventory instead")]
@@ -108,6 +109,7 @@ namespace IXICore.Network
         transactionsChunk = 15,
         getSignatures2 = 16,
         signaturesChunk2 = 17,
+        [Obsolete("Use getBlock3 instead")]
         getBlock2 = 18,
         getBlockHeaders2 = 19,
         blockHeaders2 = 20,
@@ -120,8 +122,8 @@ namespace IXICore.Network
         s2data = 26,
         s2failed = 27,
         s2signature = 28,
-        [Obsolete("Use inventory2 instead")]
-        inventory = 29,
+        //[Obsolete("Use inventory2 instead")]
+        //inventory = 29,
         getBalance2 = 30,
         balance2 = 31,
         [Obsolete("Use getBalance2 instead")]

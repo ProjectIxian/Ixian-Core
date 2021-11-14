@@ -74,10 +74,14 @@ namespace IXICore
 
                 peerList.Add(p);
 
-                if (peerList.Count > 500)
+                if (peerList.Count > 2000)
                 {
                     long minLastSeen = peerList.Min(x => x.lastSeen);
-                    peerList.RemoveAll(x => x.lastSeen == minLastSeen);
+                    var tmp_peerList = peerList.Where(x => x.lastSeen == minLastSeen);
+                    if(tmp_peerList.Count() > 0)
+                    {
+                        peerList.Remove(tmp_peerList.First());
+                    }
                 }
             }
 

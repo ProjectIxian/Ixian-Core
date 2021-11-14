@@ -177,7 +177,6 @@ namespace IXICore.Network
                     case ProtocolMessageCode.blockData:
                     case ProtocolMessageCode.pitData:
                     case ProtocolMessageCode.pitData2:
-                    case ProtocolMessageCode.inventory:
                     case ProtocolMessageCode.inventory2:
                     case ProtocolMessageCode.signerPow:
 #pragma warning restore CS0618 // Type or member is obsolete
@@ -249,7 +248,6 @@ namespace IXICore.Network
                             case ProtocolMessageCode.getBlockSignatures2:
                             case ProtocolMessageCode.getPIT:
                             case ProtocolMessageCode.getPIT2:
-                            case ProtocolMessageCode.inventory:
                             case ProtocolMessageCode.inventory2:
 #pragma warning restore CS0618 // Type or member is obsolete
                                 {
