@@ -1285,7 +1285,7 @@ namespace IXICore
         {
             if(blockProposer == null)
             {
-                Logging.error("Block proposer is empty for block #" + this.blockNum);
+                Logging.warn("Block proposer is empty for block #" + this.blockNum);
                 return true;
             }
             lock (signatures)

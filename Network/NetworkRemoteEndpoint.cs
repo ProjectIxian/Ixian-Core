@@ -828,7 +828,9 @@ namespace IXICore.Network
 
         public void sendData(QueueMessage message, long msg_id = 0,  MessagePriority priority = MessagePriority.auto)
         {
-            if(message.code == ProtocolMessageCode.getBlock3)
+            //Logging.trace("Sending {0} id: {1}", message.code, msg_id);
+
+            if (message.code == ProtocolMessageCode.getBlock3)
             {
                 msg_id = message.data.GetIxiVarInt(0).num;
                 priority = MessagePriority.high;
