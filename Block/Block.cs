@@ -1156,6 +1156,38 @@ namespace IXICore
         }
 
         /// <summary>
+        ///  Checks if the block's signatures field contains exactly the same signature of the specified node.
+        /// </summary>
+        /// <param name="sigToCheck">Signature to check.</param>
+        /// <returns></returns>
+        public bool containsSignature(BlockSignature sigToCheck)
+        {
+            if (compacted)
+            {
+                Logging.error("Trying to check if compacted block {0} contains signature", blockNum);
+                return false;
+            }
+
+            byte[] addressToCheck = new Address(sigToCheck.signerAddress, null, false).address;
+
+            lock (signatures)
+            {
+                foreach (BlockSignature sig in signatures)
+                {
+                    // Generate an address in case we got the pub key
+                    byte[] sigAddress = new Address(sig.signerAddress, null, false).address;
+
+                    if (sigAddress.SequenceEqual(addressToCheck)
+                        && sig.signature.SequenceEqual(sigToCheck.signature))
+                    {
+                        return true;
+                    }
+                }
+                return false;
+            }
+        }
+
+        /// <summary>
         ///  Mergest the signatures of two blocks without duplicating.
         /// </summary>
         /// <remarks>
@@ -1165,7 +1197,7 @@ namespace IXICore
         /// </remarks>
         /// <param name="other">The other block (should be the same `blockNum`) whose signatures will be merged.</param>
         /// <returns>The list of 'new' signatures.</returns>
-        public List<BlockSignature> addSignaturesFrom(Block other)
+        public List<BlockSignature> addSignaturesFrom(Block other, bool verifySigs)
         {
             if (compacted)
             {
@@ -1181,6 +1213,19 @@ namespace IXICore
                 {
                     if (!containsSignature(new Address(sig.signerAddress)))
                     {
+                        if (PresenceList.getPresenceByAddress(sig.signerAddress) == null)
+                        {
+                            Logging.info("Received signature for block {0} whose signer isn't in the PL", blockNum);
+                            continue;
+                        }
+                        if(verifySigs)
+                        {
+                            byte[] pub_key = getSignerPubKey(sig.signerAddress);
+                            if (pub_key == null || !verifySignature(sig.signature, pub_key))
+                            {
+                                continue;
+                            }
+                        }
                         count++;
                         signatures.Add(sig);
                         added_signatures.Add(sig);
@@ -1323,7 +1368,7 @@ namespace IXICore
         /// </remarks>
         /// <param name="skip_sig_verification">False for simpler, non-cryptographic verification.</param>
         /// <returns>True if all signatures are valid and (optionally) match the block's checksum.</returns>
-        public bool verifySignatures(bool skip_sig_verification = false)
+        public bool verifySignatures(Block local_block, bool skip_sig_verification = false)
         {
             if (compacted)
             {
@@ -1331,21 +1376,18 @@ namespace IXICore
                 return false;
             }
 
+            List<byte[]> sig_addresses = new List<byte[]>();
+            List<BlockSignature> safe_sigs = null;
+
             lock (signatures)
             {
                 if (signatures.Count == 0)
                 {
                     return false;
                 }
-            }
-            List<byte[]> sig_addresses = new List<byte[]>();
-            List<BlockSignature> safe_sigs = null;
 
-            lock (signatures)
-            {
                 safe_sigs = new List<BlockSignature>(signatures);
             }
-
 
             foreach (BlockSignature sig in safe_sigs)
             {
@@ -1374,6 +1416,18 @@ namespace IXICore
                         signatures.Remove(sig);
                     }
                     continue;
+                }
+
+                if(local_block != null)
+                {
+                    // If the sig was already verified, don't verify it again
+                    lock (local_block.signatures)
+                    {
+                        if (local_block.containsSignature(sig))
+                        {
+                            continue;
+                        }
+                    }
                 }
 
                 if (skip_sig_verification == false && verifySignature(signature, signer_pub_key) == false)
