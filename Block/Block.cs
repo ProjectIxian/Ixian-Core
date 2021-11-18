@@ -61,7 +61,7 @@ namespace IXICore
         /// <summary>
         /// The list of Frozen Master Node signatures which enable the Ixian Consensus algorithm.
         /// </summary>
-        public List<BlockSignature> frozenSignatures = null;
+        public List<BlockSignature> frozenSignatures { get; private set; } = null;
 
         private int signatureCount = 0; // used only when block is compacted
 
@@ -205,19 +205,22 @@ namespace IXICore
                 }
             }
 
-            foreach (BlockSignature signature in block.signatures)
+            lock(block.signatures)
             {
-                signatures.Add(new BlockSignature(signature));
-            }
-
-            if (block.frozenSignatures != null)
-            {
-                List<BlockSignature> frozen_signatures = new List<BlockSignature>();
-                foreach (BlockSignature signature in block.frozenSignatures)
+                foreach (BlockSignature signature in block.signatures)
                 {
-                    frozen_signatures.Add(new BlockSignature(signature));
+                    signatures.Add(new BlockSignature(signature));
                 }
-                setFrozenSignatures(frozen_signatures);
+
+                if (block.frozenSignatures != null)
+                {
+                    List<BlockSignature> frozen_signatures = new List<BlockSignature>();
+                    foreach (BlockSignature signature in block.frozenSignatures)
+                    {
+                        frozen_signatures.Add(new BlockSignature(signature));
+                    }
+                    setFrozenSignatures(frozen_signatures);
+                }
             }
 
             if (block.blockChecksum != null)
