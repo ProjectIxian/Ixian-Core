@@ -1492,53 +1492,35 @@ namespace IXICore
 
             lock (signatures)
             {
-                if(signatures != null)
+                var sigs = signatures;
+                if(sigs == null)
                 {
-                    foreach (BlockSignature merged_signature in signatures)
+                    sigs = frozenSignatures;
+                }
+                if (sigs == null)
+                {
+                    return null;
+                }
+                foreach (BlockSignature merged_signature in signatures)
+                {
+                    bool condition = false;
+
+                    // Check if we have an address instead of a public key
+                    if (merged_signature.signerAddress.Length < 70)
                     {
-                        bool condition = false;
-
-                        // Check if we have an address instead of a public key
-                        if (merged_signature.signerAddress.Length < 70)
-                        {
-                            // Compare wallet address
-                            condition = node_address.SequenceEqual(merged_signature.signerAddress);
-                        }
-                        else
-                        {
-                            // Legacy, compare public key
-                            condition = public_key.SequenceEqual(merged_signature.signerAddress);
-                        }
-
-                        // Check if it matches
-                        if (condition)
-                        {
-                            return merged_signature;
-                        }
+                        // Compare wallet address
+                        condition = node_address.SequenceEqual(merged_signature.signerAddress);
                     }
-                }else if(frozenSignatures != null)
-                {
-                    foreach (BlockSignature merged_signature in frozenSignatures)
+                    else
                     {
-                        bool condition = false;
+                        // Legacy, compare public key
+                        condition = public_key.SequenceEqual(merged_signature.signerAddress);
+                    }
 
-                        // Check if we have an address instead of a public key
-                        if (merged_signature.signerAddress.Length < 70)
-                        {
-                            // Compare wallet address
-                            condition = node_address.SequenceEqual(merged_signature.signerAddress);
-                        }
-                        else
-                        {
-                            // Legacy, compare public key
-                            condition = public_key.SequenceEqual(merged_signature.signerAddress);
-                        }
-
-                        // Check if it matches
-                        if (condition)
-                        {
-                            return merged_signature;
-                        }
+                    // Check if it matches
+                    if (condition)
+                    {
+                        return merged_signature;
                     }
                 }
             }
@@ -1681,6 +1663,9 @@ namespace IXICore
             }
 
             compactedSigs = true;
+
+            // TODO TODO prune frozen sigs as well
+            // TODO TODO locking?
 
             int compacted_cnt = 0;
             List<BlockSignature> new_sigs = new List<BlockSignature>();
