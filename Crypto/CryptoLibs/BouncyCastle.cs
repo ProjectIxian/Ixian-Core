@@ -152,7 +152,7 @@ namespace IXICore
                 return rcsp;
             }catch(Exception e)
             {
-                Logging.warn(String.Format("An exception occured while trying to reconstruct PKI from bytes: {0}", e.Message));
+                Logging.warn("An exception occurred while trying to reconstruct PKI from bytes: {0}", e.Message);
             }
             return null;
         }
@@ -172,13 +172,13 @@ namespace IXICore
 
             if (!decryptWithRSA(encrypted, key_pair.privateKeyBytes).SequenceEqual(plain))
             {
-                Logging.warn(string.Format("Error decrypting data while testing keys."));
+                Logging.warn("Error decrypting data while testing keys.");
                 return false;
             }
 
             if (!verifySignature(plain, key_pair.publicKeyBytes, signature))
             {
-                Logging.warn(string.Format("Error verifying signature while testing keys."));
+                Logging.warn("Error verifying signature while testing keys.");
                 return false;
             }
 
@@ -205,7 +205,7 @@ namespace IXICore
             }
             catch (Exception e)
             {
-                Logging.warn(string.Format("Exception while generating signature keys: {0}", e.ToString()));
+                Logging.warn("Exception while generating signature keys: {0}", e.ToString());
                 return null;
             }
         }
@@ -221,7 +221,7 @@ namespace IXICore
             }
             catch (Exception e)
             {
-                Logging.warn(string.Format("Cannot generate signature: {0}", e.Message));
+                Logging.warn("Cannot generate signature: {0}", e.Message);
             }
             return null;
         }
@@ -297,7 +297,7 @@ namespace IXICore
             }
             catch (Exception e)
             {
-                Logging.error(string.Format("Error initializing encryption. {0}", e.ToString()));
+                Logging.error("Error initializing encryption. {0}", e.ToString());
                 return null;
             }
 
@@ -360,7 +360,7 @@ namespace IXICore
             catch (Exception e)
             {
                 bytes = null;
-                Logging.error(string.Format("Error initializing decryption. {0}", e.ToString()));
+                Logging.error("Error initializing decryption. {0}", e.ToString());
             }
 
             return bytes;
@@ -427,7 +427,7 @@ namespace IXICore
             }
             catch (Exception e)
             {
-                Logging.error(string.Format("Error in chacha encryption. {0}", e.ToString()));
+                Logging.error("Error in chacha encryption. {0}", e.ToString());
                 return null;
             }
 
@@ -461,7 +461,7 @@ namespace IXICore
             }
             catch (Exception e)
             {
-                Logging.error(string.Format("Error in chacha decryption. {0}", e.ToString()));
+                Logging.error("Error in chacha decryption. {0}", e.ToString());
                 return null;
             }
 

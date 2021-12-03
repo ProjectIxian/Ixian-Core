@@ -645,7 +645,7 @@ namespace IXICore.Network
             }
             catch (Exception e)
             {
-                Logging.error("Fatal exception occured in NetworkClientManager.reconnectClients: " + e);
+                Logging.error("Fatal exception occurred in NetworkClientManager.reconnectClients: " + e);
             }
         }
 
@@ -810,7 +810,7 @@ namespace IXICore.Network
                         client.addInventoryItem(item);
                     }catch (Exception e)
                     {
-                        Logging.error("Exception occured in NetworkClientManager.addToInventory: " + e);
+                        Logging.error("Exception occurred in NetworkClientManager.addToInventory: " + e);
                     }
                 }
             }

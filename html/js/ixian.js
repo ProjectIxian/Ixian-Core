@@ -186,7 +186,7 @@ function sendTransaction() {
                 getMyWallet();
                 alert("Transaction successfully sent. txid: " + data["result"]["id"]);
             } else {
-                alert("An error occured while trying to send a transaction: (" + data["error"]["code"] + ") " + data["error"]["message"]);
+                alert("An error occurred while trying to send a transaction: (" + data["error"]["code"] + ") " + data["error"]["message"]);
             }
         });
 

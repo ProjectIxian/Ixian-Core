@@ -206,7 +206,7 @@ namespace IXICore.Inventory
             }
             catch (Exception e)
             {
-                Logging.error("Exception occured in processInventoryItem: {0}", e);
+                Logging.error("Exception occurred in processInventoryItem: {0}", e);
                 pii.processed = true;
             }
 

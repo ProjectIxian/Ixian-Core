@@ -66,7 +66,7 @@ namespace IXICore
         ///  Saves block header to local storage
         /// </summary>
         /// <param name="block_header">Block header to save</param>
-        /// <exception cref="Exception">Exception occured while saving block header.</exception>
+        /// <exception cref="Exception">Exception occurred while saving block header.</exception>
         public static bool saveBlockHeader(BlockHeader block_header)
         {
             if(stopped)
@@ -128,7 +128,7 @@ namespace IXICore
                 }
                 catch (Exception e)
                 {
-                    Logging.error("Exception occured while saving block header: {0}", e);
+                    Logging.error("Exception occurred while saving block header: {0}", e);
                     return false;
                 }
 
@@ -214,7 +214,7 @@ namespace IXICore
                 }
                 catch (Exception e)
                 {
-                    Logging.error("Exception occured while trying to get block header #{0}: {1}", block_num, e);
+                    Logging.error("Exception occurred while trying to get block header #{0}: {1}", block_num, e);
                 }
 
                 return block_header;
@@ -329,7 +329,7 @@ namespace IXICore
                 }
                 catch (Exception e)
                 {
-                    Logging.error("Exception occured while trying to get last block header: {0}", e);
+                    Logging.error("Exception occurred while trying to get last block header: {0}", e);
                 }
                 if (block_header != null)
                 {
@@ -383,7 +383,7 @@ namespace IXICore
             }
             catch (Exception e)
             {
-                Logging.error("Exception occured while reading from blockheader storage file: " + e);
+                Logging.error("Exception occurred while reading from blockheader storage file: " + e);
                 deleteStorageFile(db_path);
                 return false;
             }
@@ -433,7 +433,7 @@ namespace IXICore
         ///  Truncates database to specified block header number. All block headers after it will be deleted.
         /// </summary>
         /// <param name="block_num">Block height of the block header to truncate to.</param>
-        /// <exception cref="Exception">Exception occured while trying to get block header.</exception>
+        /// <exception cref="Exception">Exception occurred while trying to get block header.</exception>
         public static void removeAllBlocksAfter(ulong block_num)
         {
             lock (lockObject)
@@ -482,7 +482,7 @@ namespace IXICore
                     }
                     catch (Exception e)
                     {
-                        Logging.error("Exception occured while trying to truncate block header database to #{0}: {1}", block_num, e);
+                        Logging.error("Exception occurred while trying to truncate block header database to #{0}: {1}", block_num, e);
                     }
 
                     fs.Close();

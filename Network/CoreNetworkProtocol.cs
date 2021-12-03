@@ -394,7 +394,7 @@ namespace IXICore
             catch (Exception e)
             {
                 // Disconnect the node in case of any reading errors
-                Logging.warn("Hello: Exception occured in Hello Message {0}", e.ToString());
+                Logging.warn("Hello: Exception occurred in Hello Message {0}", e.ToString());
                 sendBye(endpoint, ProtocolByeCode.deprecated, "Something went wrong during hello, make sure you're running the latest version of Ixian DLT.", "");
                 return false;
             }

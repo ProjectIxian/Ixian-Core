@@ -60,9 +60,9 @@ namespace IXICore
         ///  If the address bytes are given directly, the nonce value may be omitted.
         /// </remarks>
         /// <param name="public_key_or_address">Byte value of the address or of the wallet's public key. See Remarks.</param>
-        /// <param name="nonce">If the value given for address bytes is a public key, this field is required to specify with actual address to generate.</param>
+        /// <param name="address_nonce">If the value given for address bytes is a public key, this field is required to specify with actual address to generate.</param>
         /// <param name="verify_checksum">If true, the given address will be verified for the correct checksum.</param>
-        public Address(byte[] public_key_or_address, byte[] nonce = null, bool verify_checksum = true)
+        public Address(byte[] public_key_or_address, byte[] address_nonce = null, bool verify_checksum = true)
         {
             version = 0;
 
@@ -81,7 +81,7 @@ namespace IXICore
                 }
             }
 
-            this.nonce = nonce;
+            nonce = address_nonce;
 
             if(version == 0)
             {
@@ -95,7 +95,7 @@ namespace IXICore
             }
         }
 
-        private void constructAddress_v0(byte[] public_key_or_address, byte[] nonce, bool verify_checksum)
+        private void constructAddress_v0(byte[] public_key_or_address, byte[] address_nonce, bool verify_checksum)
         {
             byte[] base_address = null;
             if (public_key_or_address.Length == 36)
@@ -125,7 +125,7 @@ namespace IXICore
                 base_address = raw_address;
             }
 
-            if (nonce == null || (nonce.Length == 1 && nonce[0] == 0))
+            if (address_nonce == null || (address_nonce.Length == 1 && address_nonce[0] == 0))
             {
                 address = base_address;
             }
@@ -134,9 +134,9 @@ namespace IXICore
                 byte[] raw_address = new byte[36];
                 raw_address[0] = 0; // version
 
-                byte[] tmp_address = new byte[base_address.Length + nonce.Length];
+                byte[] tmp_address = new byte[base_address.Length + address_nonce.Length];
                 Array.Copy(base_address, tmp_address, base_address.Length);
-                Array.Copy(nonce, 0, tmp_address, base_address.Length, nonce.Length);
+                Array.Copy(address_nonce, 0, tmp_address, base_address.Length, address_nonce.Length);
 
                 byte[] hashed_pub_key = Crypto.sha512quTrunc(tmp_address, 0, tmp_address.Length, 32);
                 Array.Copy(hashed_pub_key, 0, raw_address, 1, hashed_pub_key.Length);
@@ -148,7 +148,7 @@ namespace IXICore
             }
         }
 
-        private void constructAddress_v1(byte[] public_key_or_address, byte[] nonce, bool verify_checksum)
+        private void constructAddress_v1(byte[] public_key_or_address, byte[] address_nonce, bool verify_checksum)
         {
             byte[] base_address = null;
             if (public_key_or_address.Length == 48)
@@ -173,7 +173,7 @@ namespace IXICore
                 base_address = raw_address;
             }
 
-            if (nonce == null || (nonce.Length == 1 && nonce[0] == 0))
+            if (address_nonce == null || (address_nonce.Length == 1 && address_nonce[0] == 0))
             {
                 address = base_address;
             }else
@@ -181,9 +181,9 @@ namespace IXICore
                 byte[] raw_address = new byte[48];
                 raw_address[0] = 1; // version
 
-                byte[] tmp_address = new byte[base_address.Length + nonce.Length];
+                byte[] tmp_address = new byte[base_address.Length + address_nonce.Length];
                 Array.Copy(base_address, tmp_address, base_address.Length);
-                Array.Copy(nonce, 0, tmp_address, base_address.Length, nonce.Length);
+                Array.Copy(address_nonce, 0, tmp_address, base_address.Length, address_nonce.Length);
 
                 byte[] hashed_pub_key = Crypto.sha512sqTrunc(tmp_address, 5, 0, 44); // TODO TODO offset 5 is likely incorrect, we'll need v2 address with this fixed
                 Array.Copy(hashed_pub_key, 0, raw_address, 1, hashed_pub_key.Length);

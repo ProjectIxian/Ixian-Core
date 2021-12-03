@@ -531,14 +531,14 @@ namespace IXICore
                 }
                 catch (Exception e)
                 {
-                    Logging.error("Exception occured while generating keepalive: " + e);
+                    Logging.error("Exception occurred while generating keepalive: " + e);
                 }
             }
         }
 
         // Called when receiving a keepalive network message. The PresenceList will update the appropriate entry based on the timestamp.
         // Returns TRUE if it updated an entry in the PL
-        // Sets the out address parameter to be the KA wallet's address or null if an error occured
+        // Sets the out address parameter to be the KA wallet's address or null if an error occurred
         public static bool receiveKeepAlive(byte[] bytes, out byte[] wallet, out long last_seen, out byte[] device_id, RemoteEndpoint endpoint)
         {
             wallet = null;
@@ -681,7 +681,7 @@ namespace IXICore
             }
             catch(Exception e)
             {
-                Logging.error("Exception occured in receiveKeepAlive: " + e);
+                Logging.error("Exception occurred in receiveKeepAlive: " + e);
                 return false;
             }
 
@@ -742,7 +742,7 @@ namespace IXICore
                             catch (Exception e)
                             {
                                 // Ignore this entry for now
-                                Logging.error("Exception occured in PL performCleanup: " + e);
+                                Logging.error("Exception occurred in PL performCleanup: " + e);
                                 continue;
                             }
                         }
@@ -809,7 +809,7 @@ namespace IXICore
             }
             catch(Exception e)
             {
-                Logging.error("Exception occured in getPresenceByAddress: {0}", e);
+                Logging.error("Exception occurred in getPresenceByAddress: {0}", e);
                 return null;
             }
         }

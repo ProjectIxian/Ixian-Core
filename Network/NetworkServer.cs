@@ -90,7 +90,7 @@ namespace IXICore.Network
             nod.listenAddress = new IPEndPoint(IPAddress.Any, IxianHandler.publicPort);
             netControllerThread.Start(nod);
 
-            Logging.info(string.Format("Public network node address: {0} port {1}", IxianHandler.publicIP, IxianHandler.publicPort));
+            Logging.info("Public network node address: {0} port {1}", IxianHandler.publicIP, IxianHandler.publicPort);
 
         }
 
@@ -186,13 +186,13 @@ namespace IXICore.Network
                 }
                 catch (Exception e)
                 {
-                    Logging.error(string.Format("Exception starting server: {0}", e.ToString()));
+                    Logging.error("Exception starting server: {0}", e.ToString());
                     return;
                 }
             }
             else
             {
-                Logging.error(String.Format("NetworkServer.networkOpsLoop called with incorrect data object. Expected 'NetOpsData', got '{0}'", data.GetType().ToString()));
+                Logging.error("NetworkServer.networkOpsLoop called with incorrect data object. Expected 'NetOpsData', got '{0}'", data.GetType().ToString());
                 return;
             }
             // housekeeping tasks
@@ -204,7 +204,7 @@ namespace IXICore.Network
                     handleDisconnectedClients();
                 }catch(Exception e)
                 {
-                    Logging.error("Fatal exception occured in NetworkServer.networkOpsLoop: " + e);
+                    Logging.error("Fatal exception occurred in NetworkServer.networkOpsLoop: " + e);
                 }
                 // Use a blocking mechanism
                 try
@@ -220,7 +220,7 @@ namespace IXICore.Network
                 {
                     if (continueRunning)
                     {
-                        Logging.error("Exception occured in network server while trying to accept socket connection.");
+                        Logging.error("Exception occurred in NetworkServer while trying to accept socket connection.");
                         restartNetworkOperations();
                     }
                     return;
@@ -333,7 +333,7 @@ namespace IXICore.Network
                 }
             }catch(Exception e)
             {
-                Logging.error("Exception occured in NetworkServer.broadcastEventData: " + e);
+                Logging.error("Exception occurred in NetworkServer.broadcastEventData: " + e);
             }
 
             return result;
@@ -355,8 +355,7 @@ namespace IXICore.Network
                 return false;
             }
 
-            Logging.info(String.Format(">>>> Preparing to forward to {0}",
-                Base58Check.Base58CheckEncoding.EncodePlain(address)));
+            Logging.info(">>>> Preparing to forward to {0}", Base58Check.Base58CheckEncoding.EncodePlain(address));
 
             QueueMessage queue_message = RemoteEndpoint.getQueueMessage(code, message, null);
             lock (connectedClients)
@@ -396,7 +395,7 @@ namespace IXICore.Network
         /// <returns>True, if the message was delivered.</returns>
         public static bool forwardMessage(ProtocolMessageCode code, byte[] message, byte[] exclude_address = null)
         {
-            Logging.info(String.Format(">>>> Preparing to forward to everyone"));
+            Logging.info(">>>> Preparing to forward to everyone");
 
             QueueMessage queue_message = RemoteEndpoint.getQueueMessage(code, message, null);
             lock (connectedClients)
@@ -478,7 +477,7 @@ namespace IXICore.Network
                         }
                         catch (Exception e)
                         {
-                            Logging.warn(string.Format("NetworkServer->getConnectedClients: {0}", e.ToString()));
+                            Logging.warn("Exception in NetworkServer->getConnectedClients: {0}", e.ToString());
                         }
                     }
                 }
@@ -692,7 +691,7 @@ namespace IXICore.Network
                         client.addInventoryItem(item);
                     }catch (Exception e)
                     {
-                        Logging.error("Exception occured in NetworkServer.addToInventory: " + e);
+                        Logging.error("Exception occurred in NetworkServer.addToInventory: " + e);
                     }
                 }
             }

@@ -590,7 +590,7 @@ namespace IXICore.Network
             }
             catch(Exception e)
             {
-                Logging.error("Exception occured in sendInventory: " + e);
+                Logging.error("Exception occurred in sendInventory: " + e);
             }
         }
 
@@ -696,7 +696,7 @@ namespace IXICore.Network
                 {
                     state = RemoteEndpointState.Closed;
                     running = false;
-                    Logging.error("Exception occured for client {0} in parseLoopRE: {1} ", getFullAddress(), e);
+                    Logging.error("Exception occurred for client {0} in parseLoopRE: {1} ", getFullAddress(), e);
                 }
             }
         }
@@ -1214,7 +1214,7 @@ namespace IXICore.Network
                         }
                         else if (cur_data_len > expected_data_len)
                         {
-                            throw new Exception(string.Format("Unhandled edge case occured in RemoteEndPoint:readSocketData for node {0}", getFullAddress()));
+                            throw new Exception(string.Format("Unhandled edge case occurred in RemoteEndPoint:readSocketData for node {0}", getFullAddress()));
                         }
                         bytes_to_read = expected_data_len - cur_data_len;
                         if (bytes_to_read > 8000)

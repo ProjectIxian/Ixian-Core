@@ -64,7 +64,7 @@ namespace IXICore.SpixiBot
             }
             catch (Exception e)
             {
-                Logging.error("Exception occured while trying to construct SpixiBotAction from bytes: " + e);
+                Logging.error("Exception occurred while trying to construct SpixiBotAction from bytes: " + e);
             }
         }
 

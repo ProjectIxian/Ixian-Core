@@ -55,7 +55,7 @@ namespace IXICore
             }
             catch (Exception e)
             {
-                Logging.error("Exception occured while trying to construct SpixiAppData from bytes: " + e);
+                Logging.error("Exception occurred while trying to construct SpixiAppData from bytes: " + e);
             }
         }
 

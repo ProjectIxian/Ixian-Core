@@ -242,20 +242,20 @@ namespace IXICore
 
             if (kp == null)
             {
-                Logging.error("An error occured generating new key pair, unable to derive key.");
+                Logging.error("An error occurred generating new key pair. Unable to derive key.");
                 return null;
             }
 
             if (!IXICore.CryptoManager.lib.testKeys(Encoding.Unicode.GetBytes("TEST TEST"), kp))
             {
-                Logging.error("An error occured while testing the newly generated keypair, unable to produce a valid address.");
+                Logging.error("An error occurred while testing the newly generated keypair. Unable to produce a valid address.");
                 return null;
             }
             Address addr = new Address(kp.publicKeyBytes);
 
             if (addr.address == null)
             {
-                Logging.error("An error occured generating new key pair, unable to produce a valid address.");
+                Logging.error("An error occurred while generating new key pair. Unable to produce a valid address.");
                 return null;
             }
             lock (myKeys)
@@ -278,7 +278,7 @@ namespace IXICore
                         }
                         else
                         {
-                            Logging.error("An error occured while writing wallet file.");
+                            Logging.error("An error occurred while writing wallet file.");
                             return null;
                         }
                     }

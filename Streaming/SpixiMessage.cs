@@ -104,7 +104,7 @@ namespace IXICore
             }
             catch (Exception e)
             {
-                Logging.error("Exception occured while trying to construct SpixiMessage from bytes: " + e);
+                Logging.error("Exception occurred while trying to construct SpixiMessage from bytes: " + e);
                 type = 0;
                 data = null;
                 channel = 0;

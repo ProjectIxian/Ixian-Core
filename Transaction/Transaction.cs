@@ -823,7 +823,7 @@ namespace IXICore
             }
             catch (Exception e)
             {
-                Logging.error("Exception occured while trying to construct Transaction from bytes: " + e);
+                Logging.error("Exception occurred while trying to construct Transaction from bytes: " + e);
                 throw;
             }
         }
@@ -938,7 +938,7 @@ namespace IXICore
             }
             catch (Exception e)
             {
-                Logging.error("Exception occured while trying to construct Transaction from bytes: " + e);
+                Logging.error("Exception occurred while trying to construct Transaction from bytes: " + e);
                 throw;
             }
         }
@@ -1854,7 +1854,7 @@ namespace IXICore
                     catch (Exception e)
                     {
                         // early EOL or strange data error
-                        Logging.error("Exception occured in getChangeMultisigWalletData for txid {0}: {1}", txIdV8ToLegacy(id), e);
+                        Logging.error("Exception occurred in getChangeMultisigWalletData for txid {0}: {1}", txIdV8ToLegacy(id), e);
                         return null;
                     }
                 }

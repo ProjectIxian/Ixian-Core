@@ -738,7 +738,7 @@ namespace IXICore.Meta
                 }
                 catch (Exception e)
                 {
-                    Logging.error("Exception occured in Activity storage thread loop: " + e);
+                    Logging.error("Exception occurred in Activity storage thread loop: " + e);
                     if (message_found)
                     {
                         active_message.retryCount += 1;

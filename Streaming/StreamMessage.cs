@@ -150,7 +150,7 @@ namespace IXICore
             }
             catch (Exception e)
             {
-                Logging.error("Exception occured while trying to construct StreamMessage from bytes: " + e);
+                Logging.error("Exception occurred while trying to construct StreamMessage from bytes: " + e);
             }
         }
 
@@ -200,7 +200,7 @@ namespace IXICore
             }
             catch (Exception e)
             {
-                Logging.error("Exception occured while trying to construct StreamMessage from bytes: " + e);
+                Logging.error("Exception occurred while trying to construct StreamMessage from bytes: " + e);
             }
         }
 

@@ -198,17 +198,17 @@ namespace IXICore
                 catch (Exception e)
                 {
                     context.Response.ContentType = "application/json";
-                    JsonError error = new JsonError { code = (int)RPCErrorCode.RPC_INTERNAL_ERROR, message = "Unknown error occured, see log for details." };
+                    JsonError error = new JsonError { code = (int)RPCErrorCode.RPC_INTERNAL_ERROR, message = "Unknown error occurred, see log for details." };
                     sendResponse(context.Response, new JsonResponse { error = error });
-                    Logging.error("Exception occured in API server while processing '{0}'. {1}", context.Request.Url, e);
+                    Logging.error("Exception occurred in API server while processing '{0}'. {1}", context.Request.Url, e);
                 }
             }
             catch (Exception e)
             {
                 context.Response.ContentType = "application/json";
-                JsonError error = new JsonError { code = (int)RPCErrorCode.RPC_INTERNAL_ERROR, message = "Unknown error occured, see log for details." };
+                JsonError error = new JsonError { code = (int)RPCErrorCode.RPC_INTERNAL_ERROR, message = "Unknown error occurred, see log for details." };
                 sendResponse(context.Response, new JsonResponse { error = error });
-                Logging.error("Exception occured in API server. {0}", e);
+                Logging.error("Exception occurred in API server. {0}", e);
             }
         }
 
@@ -766,7 +766,7 @@ namespace IXICore
                 return new JsonResponse { result = transaction.toDictionary(), error = null };
             }
 
-            return new JsonResponse { result = null, error = new JsonError() { code = (int)RPCErrorCode.RPC_INTERNAL_ERROR, message = "An unknown error occured while adding the transaction" } };
+            return new JsonResponse { result = null, error = new JsonError() { code = (int)RPCErrorCode.RPC_INTERNAL_ERROR, message = "An unknown error occurred while adding the transaction" } };
         }
 
         private JsonResponse onCreateRawTransaction(Dictionary<string, object> parameters)
@@ -884,7 +884,7 @@ namespace IXICore
                 return new JsonResponse { result = raw_transaction.toDictionary(), error = null };
             }
 
-            return new JsonResponse { result = null, error = new JsonError() { code = (int)RPCErrorCode.RPC_VERIFY_ERROR, message = "An unknown error occured while adding the transaction" } };
+            return new JsonResponse { result = null, error = new JsonError() { code = (int)RPCErrorCode.RPC_VERIFY_ERROR, message = "An unknown error occurred while adding the transaction" } };
         }
 
         private JsonResponse onCalculateTransactionFee(Dictionary<string, object> parameters)
@@ -1029,7 +1029,7 @@ namespace IXICore
                 Transaction transaction = Transaction.multisigTransaction(fee, toList, from, IxianHandler.getHighestKnownNetworkBlockHeight());
                 if (transaction == null)
                 {
-                    error = new JsonError { code = (int)RPCErrorCode.RPC_INTERNAL_ERROR, message = "An error occured while creating multisig transaction" };
+                    error = new JsonError { code = (int)RPCErrorCode.RPC_INTERNAL_ERROR, message = "An error occurred while creating multisig transaction" };
                     return new JsonResponse { result = null, error = error };
                 }
                 Wallet wallet = IxianHandler.getWallet(from);
@@ -1047,7 +1047,7 @@ namespace IXICore
                     }
                     else
                     {
-                        error = new JsonError { code = (int)RPCErrorCode.RPC_INTERNAL_ERROR, message = "An error occured while creating multisig transaction" };
+                        error = new JsonError { code = (int)RPCErrorCode.RPC_INTERNAL_ERROR, message = "An error occurred while creating multisig transaction" };
                         return new JsonResponse { result = null, error = error };
                     }
                 }
@@ -1374,7 +1374,7 @@ namespace IXICore
             }
             else
             {
-                return new JsonResponse { result = null, error = new JsonError() { code = (int)RPCErrorCode.RPC_WALLET_ERROR, message = "Error occured while generating a new address" } };
+                return new JsonResponse { result = null, error = new JsonError() { code = (int)RPCErrorCode.RPC_WALLET_ERROR, message = "Error occurred while generating a new address" } };
             }
         }
 
@@ -1418,7 +1418,7 @@ namespace IXICore
                 ws = new WalletStorage(file);
                 if (!ws.readWallet(password))
                 {
-                    return new JsonResponse { result = null, error = new JsonError() { code = (int)RPCErrorCode.RPC_WALLET_ERROR, message = "Error occured while reading wallet file - incorrect password or file doesn't exist." } };
+                    return new JsonResponse { result = null, error = new JsonError() { code = (int)RPCErrorCode.RPC_WALLET_ERROR, message = "Error occurred while reading wallet file - incorrect password or file doesn't exist." } };
                 }
 
                 IxianHandler.addWallet(ws);
