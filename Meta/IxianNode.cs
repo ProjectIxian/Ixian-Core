@@ -312,6 +312,10 @@ namespace IXICore.Meta
                     }
                 }
             }
+            if(addresses.Count == 0)
+            {
+                return null;
+            }
             return addresses;
         }
 
