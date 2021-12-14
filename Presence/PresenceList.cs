@@ -838,7 +838,10 @@ namespace IXICore
         // for debugging purposes only, do not use!
         public static List<Presence> getPresences()
         {
-            return presences;
+            lock (presences)
+            {
+                return presences;
+            }
         }
 
         public static PresenceOrderedEnumerator getElectedSignerList(byte[] rnd_bytes, int target_count)
