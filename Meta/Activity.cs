@@ -320,30 +320,7 @@ namespace IXICore.Meta
 
             if(CoreConfig.minActivityBlockHeight > 0)
             {
-                Logging.info("Clearing old Activity entries, please wait...");
-                Logging.flush();
-                lock (storageLock)
-                {
-                    string sql = "select * from `activity` ORDER BY `blockHeight` DESC LIMIT 1;";
-                    try
-                    {
-                        Activity activity = null;
-                        List<Activity> tmpActivityList = sqlConnection.Query<Activity>(sql);
-                        if (tmpActivityList != null && tmpActivityList.Count > 0)
-                        {
-                            activity = tmpActivityList[0];
-                            if(activity.blockHeight > CoreConfig.minActivityBlockHeight)
-                            {
-                                executeSQL("DELETE FROM `activity` WHERE `blockHeight` < ?", activity.blockHeight - CoreConfig.minActivityBlockHeight);
-                                executeSQL("VACUUM;");
-                            }
-                        }
-                    }
-                    catch (Exception e)
-                    {
-                        Logging.error(String.Format("Exception has been thrown while executing SQL Query {0}. Exception message: {1}", sql, e.Message));
-                    }
-                }
+                clearStorage(CoreConfig.minActivityBlockHeight);
             }
             Logging.info("Prepared Activity storage");
 
@@ -353,6 +330,39 @@ namespace IXICore.Meta
         public static void stopStorage()
         {
             running = false;
+        }
+
+        // Clears the activity storage from minActivityBlockHeight upwards
+        public static bool clearStorage(long minActivityBlockHeight = 0)
+        {
+            Logging.info("Clearing old Activity entries, please wait...");
+            Logging.flush();
+
+            lock (storageLock)
+            {
+                string sql = "select * from `activity` ORDER BY `blockHeight` DESC LIMIT 1;";
+                try
+                {
+                    Activity activity = null;
+                    List<Activity> tmpActivityList = sqlConnection.Query<Activity>(sql);
+                    if (tmpActivityList != null && tmpActivityList.Count > 0)
+                    {
+                        activity = tmpActivityList[0];
+                        if (activity.blockHeight > minActivityBlockHeight)
+                        {
+                            executeSQL("DELETE FROM `activity` WHERE `blockHeight` < ?", activity.blockHeight - CoreConfig.minActivityBlockHeight);
+                            executeSQL("VACUUM;");
+                        }
+                    }
+                }
+                catch (Exception e)
+                {
+                    Logging.error(String.Format("Exception has been thrown while executing SQL Query {0}. Exception message: {1}", sql, e.Message));
+                    return false;
+                }
+            }
+
+            return true;
         }
 
         public static List<Activity> getActivitiesByAddress(string address, int fromIndex, int count, bool descending)
