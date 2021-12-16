@@ -835,12 +835,12 @@ namespace IXICore
             }
         }
 
-        // for debugging purposes only, do not use!
+        // Get a copy of all presences
         public static List<Presence> getPresences()
         {
             lock (presences)
             {
-                return presences;
+                return new List<Presence>(presences);
             }
         }
 
