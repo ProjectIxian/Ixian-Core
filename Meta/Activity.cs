@@ -332,8 +332,8 @@ namespace IXICore.Meta
             running = false;
         }
 
-        // Clears the activity storage from minActivityBlockHeight upwards
-        public static bool clearStorage(long minActivityBlockHeight = 0)
+        // Clears the activity storage by keeping only activity of last n block heights as defined by lastBlocksToKeep.
+        public static bool clearStorage(long lastBlocksToKeep = 0)
         {
             Logging.info("Clearing old Activity entries, please wait...");
             Logging.flush();
@@ -348,16 +348,16 @@ namespace IXICore.Meta
                     if (tmpActivityList != null && tmpActivityList.Count > 0)
                     {
                         activity = tmpActivityList[0];
-                        if (activity.blockHeight > minActivityBlockHeight)
+                        if (activity.blockHeight > lastBlocksToKeep)
                         {
-                            executeSQL("DELETE FROM `activity` WHERE `blockHeight` < ?", activity.blockHeight - CoreConfig.minActivityBlockHeight);
+                            executeSQL("DELETE FROM `activity` WHERE `blockHeight` <= ?", activity.blockHeight - lastBlocksToKeep);
                             executeSQL("VACUUM;");
                         }
                     }
                 }
                 catch (Exception e)
                 {
-                    Logging.error(String.Format("Exception has been thrown while executing SQL Query {0}. Exception message: {1}", sql, e.Message));
+                    Logging.error("Exception has been thrown while executing SQL Query {0}. Exception message: {1}", sql, e.Message);
                     return false;
                 }
             }
