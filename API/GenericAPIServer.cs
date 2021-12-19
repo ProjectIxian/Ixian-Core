@@ -1327,15 +1327,32 @@ namespace IXICore
                 wallet = Base58Check.Base58CheckEncoding.DecodePlain((string)parameters["wallet"]);
             }
 
+            string orderBy = "insertedTimestamp";
+            if (parameters.ContainsKey("orderBy"))
+            {
+                string tmpOrderBy = (string)parameters["orderBy"];
+                switch(tmpOrderBy)
+                {
+                    case "insertedTimestamp":
+                        break;
+                    case "timestamp":
+                        orderBy = "timestamp";
+                        break;
+                    case "blockheight":
+                        orderBy = "blockheight";
+                        break;
+                }
+            }
+
             List<Activity> res = null;
 
             if (type == -1)
             {
-                res = ActivityStorage.getActivitiesBySeedHash(IxianHandler.getWalletStorage(wallet).getSeedHash(), Int32.Parse(fromIndex), Int32.Parse(count), descending);
+                res = ActivityStorage.getActivitiesBySeedHash(IxianHandler.getWalletStorage(wallet).getSeedHash(), Int32.Parse(fromIndex), Int32.Parse(count), descending, orderBy);
             }
             else
             {
-                res = ActivityStorage.getActivitiesBySeedHashAndType(IxianHandler.getWalletStorage(wallet).getSeedHash(), (ActivityType)type, Int32.Parse(fromIndex), Int32.Parse(count), descending);
+                res = ActivityStorage.getActivitiesBySeedHashAndType(IxianHandler.getWalletStorage(wallet).getSeedHash(), (ActivityType)type, Int32.Parse(fromIndex), Int32.Parse(count), descending, orderBy);
             }
             return new JsonResponse { result = res, error = error };
 #else

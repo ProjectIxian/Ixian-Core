@@ -397,12 +397,12 @@ namespace IXICore.Meta
             return activity_list;
         }
 
-        public static List<Activity> getActivitiesBySeedHash(byte[] seed_hash, int fromIndex, int count, bool descending)
+        public static List<Activity> getActivitiesBySeedHash(byte[] seed_hash, int fromIndex, int count, bool descending, string orderByField = "insertedTimestamp")
         {
-            string orderBy = " ORDER BY `insertedTimestamp` ASC";
+            string orderBy = " ORDER BY `" + orderByField + "` ASC";
             if (descending)
             {
-                orderBy = " ORDER BY `insertedTimestamp` DESC";
+                orderBy = " ORDER BY `" + orderByField + "` DESC";
             }
 
             if (seed_hash == null)
@@ -429,12 +429,12 @@ namespace IXICore.Meta
             return activity_list;
         }
 
-        public static List<Activity> getActivitiesBySeedHashAndType(byte[] seed_hash, ActivityType type, int fromIndex, int count, bool descending)
+        public static List<Activity> getActivitiesBySeedHashAndType(byte[] seed_hash, ActivityType type, int fromIndex, int count, bool descending, string orderByField = "insertedTimestamp")
         {
-            string orderBy = " ORDER BY `insertedTimestamp` ASC";
+            string orderBy = " ORDER BY `" + orderByField + "` ASC";
             if (descending)
             {
-                orderBy = " ORDER BY `insertedTimestamp` DESC";
+                orderBy = " ORDER BY `" + orderByField + "` DESC";
             }
 
             if (seed_hash == null)
