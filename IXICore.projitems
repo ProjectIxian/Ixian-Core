@@ -54,8 +54,10 @@
     <Compile Include="$(MSBuildThisFileDirectory)Peer\Peer.cs" />
     <Compile Include="$(MSBuildThisFileDirectory)Peer\PeerStorage.cs" />
     <Compile Include="$(MSBuildThisFileDirectory)Platform\NativeMethods.cs" />
+    <Compile Include="$(MSBuildThisFileDirectory)Pow\Argon2id.cs" />
+    <Compile Include="$(MSBuildThisFileDirectory)Pow\MiningUtils.cs" />
     <Compile Include="$(MSBuildThisFileDirectory)Presence\KeepAlive.cs" />
-    <Compile Include="$(MSBuildThisFileDirectory)Block\SignerPowSolution.cs" />
+    <Compile Include="$(MSBuildThisFileDirectory)Pow\SignerPowSolution.cs" />
     <Compile Include="$(MSBuildThisFileDirectory)Presence\Presence.cs" />
     <Compile Include="$(MSBuildThisFileDirectory)Presence\PresenceAddress.cs" />
     <Compile Include="$(MSBuildThisFileDirectory)Presence\PresenceList.cs" />

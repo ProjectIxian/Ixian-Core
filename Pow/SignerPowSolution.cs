@@ -244,35 +244,11 @@ namespace IXICore
             System.Buffer.BlockCopy(solverAddress, 0, p1, blockHash.Length, solverAddress.Length);
 
             byte[] fullnonce = expandNonce(nonce, 234234);
-            byte[] hash = getArgon2idHash(p1, fullnonce);
+            byte[] hash = Argon2id.getHash(p1, fullnonce, 2, 2048, 2);
 
             return hash;
         }
 
-        public static byte[] getArgon2idHash(byte[] data, byte[] salt)
-        {
-            try
-            {
-                byte[] hash = new byte[32];
-                IntPtr data_ptr = Marshal.AllocHGlobal(data.Length);
-                IntPtr salt_ptr = Marshal.AllocHGlobal(salt.Length);
-                Marshal.Copy(data, 0, data_ptr, data.Length);
-                Marshal.Copy(salt, 0, salt_ptr, salt.Length);
-                UIntPtr data_len = (UIntPtr)data.Length;
-                UIntPtr salt_len = (UIntPtr)salt.Length;
-                IntPtr result_ptr = Marshal.AllocHGlobal(32);
-                int result = NativeMethods.argon2id_hash_raw((UInt32)2, (UInt32)2048, (UInt32)2, data_ptr, data_len, salt_ptr, salt_len, result_ptr, (UIntPtr)32);
-                Marshal.Copy(result_ptr, hash, 0, 32);
-                Marshal.FreeHGlobal(data_ptr);
-                Marshal.FreeHGlobal(result_ptr);
-                Marshal.FreeHGlobal(salt_ptr);
-                return hash;
-            }
-            catch (Exception e)
-            {
-                Logging.error("Error during presence list mining: {0}", e.Message);
-                return null;
-            }
-        }
+        
     }
 }

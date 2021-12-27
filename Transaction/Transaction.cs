@@ -61,7 +61,7 @@ namespace IXICore
             /// </remarks>
             Genesis = 3,
             /// <summary>
-            ///  Similar to `Trasaction.Type.Normal`, but requires multiple signatures to spend funds from a 'Multi-Signature' wallet.
+            ///  Similar to `Transaction.Type.Normal`, but requires multiple signatures to spend funds from a 'Multi-Signature' wallet.
             /// </summary>
             MultisigTX = 4,
             /// <summary>
@@ -85,7 +85,7 @@ namespace IXICore
             /// </summary>
             AddSigner = 1,
             /// <summary>
-            ///  A signer is being removed from the Alloewd Signers list.
+            ///  A signer is being removed from the Allowed Signers list.
             /// </summary>
             /// <remarks>
             ///  The signer, who is being removed, can still validate the transaction that removes their address from the list. The change
