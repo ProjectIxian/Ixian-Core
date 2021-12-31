@@ -165,8 +165,8 @@ namespace IXICore.Network
         transactionsChunk2 = 57,
         getTransaction3 = 58,
         inventory2 = 59,
-        getSignerPow = 60,
-        signerPow = 61
+        //getSignerPow = 60,
+        //signerPow = 61
     }
 
     /// <summary>

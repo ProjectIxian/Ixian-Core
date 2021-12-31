@@ -122,7 +122,10 @@ namespace IXICore
         /// Maximum number of transactions in each block that the node will accept. (Used in DLT Node executable.)
         /// </summary>
         public static readonly ulong maximumTransactionsPerBlock = 70200;
-
+        /// <summary>
+        /// Maximum block size in bytes. (Used in DLT Node executable.)
+        /// </summary>
+        public static readonly long maximumBlockSize = 1024000 + (((long) maximumTransactionsPerBlock + 1) * 100); // TODO fine-tune this
         /// <summary>
         /// Initial value for seeding the Transaction SHA512 checksum generator.
         /// </summary>

@@ -57,14 +57,12 @@ namespace IXICore.Inventory
             inventory.Add(InventoryItemTypes.block, new Dictionary<byte[], PendingInventoryItem>(new ByteArrayComparer()));
             inventory.Add(InventoryItemTypes.blockSignature, new Dictionary<byte[], PendingInventoryItem>(new ByteArrayComparer()));
             inventory.Add(InventoryItemTypes.keepAlive, new Dictionary<byte[], PendingInventoryItem>(new ByteArrayComparer()));
-            inventory.Add(InventoryItemTypes.signerPow, new Dictionary<byte[], PendingInventoryItem>(new ByteArrayComparer()));
             inventory.Add(InventoryItemTypes.transaction, new Dictionary<byte[], PendingInventoryItem>(new ByteArrayComparer()));
 
             typeOptions = new Dictionary<InventoryItemTypes, InventoryTypeOptions>();
             typeOptions.Add(InventoryItemTypes.block, new InventoryTypeOptions() { maxRetries = 5, timeout = 5, maxItems = 100 });
             typeOptions.Add(InventoryItemTypes.blockSignature, new InventoryTypeOptions() { maxRetries = 5, timeout = 10, maxItems = 2000 });
             typeOptions.Add(InventoryItemTypes.keepAlive, new InventoryTypeOptions() { maxRetries = 2, timeout = 30, maxItems = 10000 });
-            typeOptions.Add(InventoryItemTypes.signerPow, new InventoryTypeOptions() { maxRetries = 2, timeout = 30, maxItems = 10000 });
             typeOptions.Add(InventoryItemTypes.transaction, new InventoryTypeOptions() { maxRetries = 5, timeout = 200, maxItems = 10000 });
         }
 
@@ -144,9 +142,6 @@ namespace IXICore.Inventory
                     break;
                 case InventoryItemTypes.blockSignature:
                     item = new InventoryItemSignature(bytes);
-                    break;
-                case InventoryItemTypes.signerPow:
-                    item = new InventoryItemSignerPow(bytes);
                     break;
             }
             return item;

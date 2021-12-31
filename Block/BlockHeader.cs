@@ -32,8 +32,8 @@ namespace IXICore
         public static int v7 = 7;
         public static int v8 = 8;
         public static int v9 = 9;
-        public static int v10 = 10;
-        public static int v11 = 11;
+        public static int v10 = 10; // Omega Lock-in
+        public static int v11 = 11; // Omega Full activation
     }
 
     public class SuperBlockSegment

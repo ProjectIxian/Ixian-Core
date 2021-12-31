@@ -311,7 +311,7 @@ namespace IXICore
         /// <summary>
         ///  Currently latest transaction version.
         /// </summary>
-        public static int maxVersion = 6;
+        public static int maxVersion = 7;
 
         /// <summary>
         ///  Sets the transaction's version appropriately, based on the current block version.
@@ -351,7 +351,7 @@ namespace IXICore
             else if (block_version < BlockVer.v8)
             {
                 ver = 5;
-            }else if (block_version < BlockVer.v9)
+            }else if (block_version < BlockVer.v10)
             {
                 ver = 6;
             }

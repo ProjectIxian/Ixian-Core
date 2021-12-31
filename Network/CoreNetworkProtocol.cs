@@ -801,27 +801,6 @@ namespace IXICore
             }
         }
 
-        public static void broadcastGetSignerPow(byte[] address, RemoteEndpoint endpoint)
-        {
-            using (MemoryStream mw = new MemoryStream())
-            {
-                using (BinaryWriter writer = new BinaryWriter(mw))
-                {
-                    writer.WriteIxiVarInt(address.Length);
-                    writer.Write(address);
-
-                    if (endpoint != null && endpoint.isConnected())
-                    {
-                        endpoint.sendData(ProtocolMessageCode.getSignerPow, mw.ToArray(), address);
-                    }
-                    else
-                    {
-                        broadcastProtocolMessageToSingleRandomNode(new char[] { 'M', 'R', 'H' }, ProtocolMessageCode.getSignerPow, mw.ToArray(), 0, null);
-                    }
-                }
-            }
-        }
-
         public static bool addToInventory(char[] types, InventoryItem item, RemoteEndpoint skip_endpoint)
         {
             bool c_result = NetworkClientManager.addToInventory(types, item, skip_endpoint);
@@ -896,28 +875,6 @@ namespace IXICore
                         Logging.warn("Disconnected v0");
                 }
             }
-        }
-
-        public static void broadcastSignerPow(byte[] address, SignerPowSolution signerPow, RemoteEndpoint skipEndpoint = null)
-        {
-            byte[] data = null;
-
-            using (MemoryStream mw = new MemoryStream())
-            {
-                using (BinaryWriter w = new BinaryWriter(mw))
-                {
-                    w.WriteIxiVarInt(address.Length);
-                    w.Write(address);
-
-                    byte[] signerPowBytes = signerPow.getBytes(true);
-                    w.WriteIxiVarInt(signerPowBytes.Length);
-                    w.Write(signerPowBytes);
-                }
-                data = mw.ToArray();
-            }
-
-            // Send this keepalive to all connected non-clients
-            CoreProtocolMessage.broadcastProtocolMessage(new char[] { 'M', 'H', 'W' }, ProtocolMessageCode.signerPow, data, address, skipEndpoint);
         }
     }
 }

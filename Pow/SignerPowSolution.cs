@@ -14,44 +14,52 @@ using IXICore.Meta;
 using IXICore.Utils;
 using System;
 using System.IO;
-using System.Runtime.InteropServices;
 
 namespace IXICore
 {
     public class SignerPowSolution
     {
-        [ThreadStatic] private static byte[] dummyExpandedNonce = null;
-
-        public int version = 1;
         public ulong blockNum;
         public byte[] solution;
-        public byte[] signature;
-        public byte[] checksum; // checksum is not trasmitted over the network
-        public ulong difficulty; // difficulty is not transmitted over the network
 
-        public SignerPowSolution()
+        private byte[] solverAddress = null; // solverAddress is not trasmitted over the network
+        private byte[] _checksum = null;
+        public byte[] checksum { get {
+                if(_checksum == null)
+                {
+                    var targetHeader = IxianHandler.getBlockHeader(blockNum);
+                    _checksum = nonceToHash(solution, targetHeader.blockChecksum, solverAddress);
+                }
+                return _checksum;
+            } } // checksum is not trasmitted over the network
+
+        private ulong _difficulty = 0;
+        public ulong difficulty { get
+            {
+                if(_difficulty == 0)
+                {
+                    _difficulty = hashToDifficulty(checksum);
+                }
+                return _difficulty;
+            } }  // difficulty is not transmitted over the network
+
+        public SignerPowSolution(byte[] solverAddress)
         {
-
+            this.solverAddress = solverAddress;
         }
 
         public SignerPowSolution(SignerPowSolution src)
         {
-            version = src.version;
             blockNum = src.blockNum;
 
             solution = new byte[src.solution.Length];
             Array.Copy(src.solution, solution, solution.Length);
 
-            signature = new byte[src.signature.Length];
-            Array.Copy(src.signature, signature, signature.Length);
-
-            checksum = new byte[src.checksum.Length];
-            Array.Copy(src.checksum, checksum, checksum.Length);
-
-            difficulty = src.difficulty;
+            solverAddress = new byte[src.solverAddress.Length];
+            Array.Copy(src.solverAddress, solverAddress, solverAddress.Length);
         }
 
-        public SignerPowSolution(byte[] bytes)
+        public SignerPowSolution(byte[] bytes, byte[] solverAddress)
         {
             try
             {
@@ -59,18 +67,12 @@ namespace IXICore
                 {
                     using (BinaryReader reader = new BinaryReader(m))
                     {
-                        version = (int)reader.ReadIxiVarInt();
-
                         blockNum = reader.ReadIxiVarUInt();
 
                         int solutionLen = (int)reader.ReadIxiVarUInt();
                         solution = reader.ReadBytes(solutionLen);
 
-                        if (m.Position < m.Length)
-                        {
-                            int sigLen = (int)reader.ReadIxiVarUInt();
-                            signature = reader.ReadBytes(sigLen);
-                        }
+                        this.solverAddress = solverAddress;
                     }
                 }
             }
@@ -81,24 +83,16 @@ namespace IXICore
             }
         }
         // TODO Omega a blockHash should be included so that clients can verify PoW
-        public byte[] getBytes(bool includeSig)
+        public byte[] getBytes()
         {
             using (MemoryStream m = new MemoryStream(640))
             {
                 using (BinaryWriter writer = new BinaryWriter(m))
                 {
-                    writer.WriteIxiVarInt(version);
-
                     writer.WriteIxiVarInt(blockNum);
 
                     writer.WriteIxiVarInt(solution.Length);
                     writer.Write(solution);
-
-                    if(includeSig)
-                    {
-                        writer.WriteIxiVarInt(signature.Length);
-                        writer.Write(signature);
-                    }
 
 #if TRACE_MEMSTREAM_SIZES
                     Logging.info(String.Format("SignerPowSolution::getBytes: {0}", m.Length));
@@ -107,64 +101,6 @@ namespace IXICore
 
                 return m.ToArray();
             }
-        }
-
-
-        public void calculateChecksum()
-        {
-            if (checksum != null)
-            {
-                return;
-            }
-
-            checksum = Crypto.sha512sqTrunc(getBytes(false));
-        }
-
-        public void sign(byte[] privateKey)
-        {
-            if(signature != null)
-            {
-                return;
-            }
-            calculateChecksum();
-
-            signature = CryptoManager.lib.getSignature(checksum, privateKey);
-        }
-
-        public bool verifySignature(byte[] pubKey)
-        {
-            if (signature == null)
-            {
-                return false;
-            }
-            calculateChecksum();
-            // Verify the signature
-            if (CryptoManager.lib.verifySignature(checksum, pubKey, signature) == false)
-            {
-                return false;
-            }
-            return true;
-        }
-
-
-        // Expand a provided nonce up to expand_length bytes by repeating the provided nonce
-        public static byte[] expandNonce(byte[] nonce, int expandLength)
-        {
-            if (dummyExpandedNonce == null)
-            {
-                dummyExpandedNonce = new byte[expandLength];
-            }
-
-            int nonceLength = nonce.Length;
-            int dummyExpandedNonceLength = dummyExpandedNonce.Length;
-
-            // set dummy with nonce
-            for (int i = 0; i < dummyExpandedNonceLength; i++)
-            {
-                dummyExpandedNonce[i] = nonce[i % nonceLength];
-            }
-
-            return dummyExpandedNonce;
         }
 
 
@@ -239,16 +175,12 @@ namespace IXICore
             }
 
             // TODO protect against spamming with invalid nonce/block_num
-            byte[] p1 = new byte[blockHash.Length + solverAddress.Length];
-            System.Buffer.BlockCopy(blockHash, 0, p1, 0, blockHash.Length);
-            System.Buffer.BlockCopy(solverAddress, 0, p1, blockHash.Length, solverAddress.Length);
+            byte[] nonceData = new byte[blockHash.Length + solverAddress.Length + nonce.Length];
+            System.Buffer.BlockCopy(blockHash, 0, nonceData, 0, blockHash.Length);
+            System.Buffer.BlockCopy(solverAddress, 0, nonceData, blockHash.Length, solverAddress.Length);
+            System.Buffer.BlockCopy(nonce, 0, nonceData, blockHash.Length + solverAddress.Length, nonce.Length);
 
-            byte[] fullnonce = expandNonce(nonce, 234234);
-            byte[] hash = Argon2id.getHash(p1, fullnonce, 2, 2048, 2);
-
-            return hash;
+            return Crypto.sha512sq(nonceData, 0, 0);
         }
-
-        
     }
 }

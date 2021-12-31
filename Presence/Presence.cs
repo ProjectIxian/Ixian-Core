@@ -108,7 +108,7 @@ namespace IXICore
                                 int powLen = (int)reader.ReadIxiVarUInt();
                                 if (powLen > 0)
                                 {
-                                    powSolution = new SignerPowSolution(reader.ReadBytes(powLen));
+                                    powSolution = new SignerPowSolution(reader.ReadBytes(powLen), wallet);
                                 }
                             }
                         }
@@ -151,7 +151,7 @@ namespace IXICore
                             int powLen = (int)reader.ReadIxiVarUInt();
                             if (powLen > 0)
                             {
-                                powSolution = new SignerPowSolution(reader.ReadBytes(powLen));
+                                powSolution = new SignerPowSolution(reader.ReadBytes(powLen), wallet);
                             }
                         }
                     }
@@ -237,7 +237,7 @@ namespace IXICore
 
                         if (powSolution != null)
                         {
-                            byte[] powSolutionBytes = powSolution.getBytes(true);
+                            byte[] powSolutionBytes = powSolution.getBytes();
                             writer.WriteIxiVarInt(powSolutionBytes.Length);
                             writer.Write(powSolutionBytes);
                         }
@@ -312,7 +312,7 @@ namespace IXICore
 
                         if(powSolution != null)
                         {
-                            byte[] powSolutionBytes = powSolution.getBytes(true);
+                            byte[] powSolutionBytes = powSolution.getBytes();
                             writer.WriteIxiVarInt(powSolutionBytes.Length);
                             writer.Write(powSolutionBytes);
                         }
@@ -448,7 +448,7 @@ namespace IXICore
             {
                 return true;
             }
-            if (IxianHandler.getLastBlockHeight() - signerPow.blockNum > ConsensusConfig.plPowBlocksValidity)
+            if (signerPow.blockNum + ConsensusConfig.plPowBlocksValidity < IxianHandler.getLastBlockHeight())
             {
                 Logging.warn("Expired pow solution received in verifyPowSolution, verification failed for {0}.", Base58Check.Base58CheckEncoding.EncodePlain(wallet));
                 return false;
@@ -460,14 +460,7 @@ namespace IXICore
                 return false;
             }
 
-            if (!signerPow.verifySignature(pubkey))
-            {
-                Logging.warn("Invalid pow signature received in verifyPowSolution, verification failed for {0}.", Base58Check.Base58CheckEncoding.EncodePlain(wallet));
-                return false;
-            }
             byte[] blockHash = plPowBlock.blockChecksum;
-            byte[] solutionHash = SignerPowSolution.nonceToHash(signerPow.solution, blockHash, wallet);
-            signerPow.difficulty = SignerPowSolution.hashToDifficulty(solutionHash);
                 
             if (signerPow.difficulty < minDifficulty)
             {

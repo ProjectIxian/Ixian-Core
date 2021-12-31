@@ -21,8 +21,7 @@ namespace IXICore.Inventory
         block = 1,
         blockSignature = 2,
         keepAlive = 3,
-        presence = 4, // TODO
-        signerPow = 5
+        presence = 4 // TODO
     }
 
     public class InventoryItem

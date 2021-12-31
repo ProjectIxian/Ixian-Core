@@ -34,7 +34,7 @@ namespace IXICore
         /// <summary>
         /// Latest possible version of the Block structure. New blocks should usually be created with the latest version.
         /// </summary>
-        public static int maxVersion = BlockVer.v9;
+        public static int maxVersion = BlockVer.v10;
 
         /// <summary>
         /// Block height (block number). This is a sequential index in the blockchain which uniquely identifies each block.
@@ -162,6 +162,8 @@ namespace IXICore
         /// </summary>
         public ulong signerDifficulty = 0;
 
+        public ulong txCount = 0;
+
         public Block()
         {
             version = BlockVer.v0;
@@ -285,13 +287,17 @@ namespace IXICore
         ///  This constructor can re-create the block from the given bytestream.
         /// </remarks>
         /// <param name="bytes">Block bytes, usually received from the network.</param>
-        public Block(byte[] bytes)
+        /// <param name="forceV10Structure">Forces V10 Structure even if it's a pre-V10 block.</param>
+        public Block(byte[] bytes, bool forceV10Structure)
         {
             initPITTree();
-            if(bytes[0] < BlockVer.v8)
+            if(forceV10Structure || bytes[0] >= BlockVer.v10)
+            {
+                fromBytesV10(bytes);
+            }else if (bytes[0] < BlockVer.v8)
             {
                 fromBytesLegacy(bytes);
-            }else
+            }else if(bytes[0] < BlockVer.v10)
             {
                 fromBytesV8(bytes);
             }
@@ -486,40 +492,24 @@ namespace IXICore
                         for (int i = 0; i < num_signatures; i++)
                         {
                             int sigLen = (int)reader.ReadIxiVarUInt();
-                            if (version >= BlockVer.v10)
-                            {
-                                BlockSignature sig = null;
-                                if (sigLen > 0)
-                                {
-                                    sig = new BlockSignature(reader.ReadBytes(sigLen), false);
-                                }
+                            byte[] sig = null;
 
-                                if (!containsSignature(new Address(sig.signerAddress)))
-                                {
-                                    signatures.Add(sig);
-                                }
+                            if (sigLen > 0)
+                            {
+                                sig = reader.ReadBytes(sigLen);
                             }
-                            else
+
+                            int sigAddresLen = (int)reader.ReadIxiVarUInt();
+                            byte[] sigAddress = null;
+                            if (sigAddresLen > 0)
                             {
-                                byte[] sig = null;
+                                sigAddress = reader.ReadBytes(sigAddresLen);
+                            }
 
-                                if (sigLen > 0)
-                                {
-                                    sig = reader.ReadBytes(sigLen);
-                                }
-
-                                int sigAddresLen = (int)reader.ReadIxiVarUInt();
-                                byte[] sigAddress = null;
-                                if (sigAddresLen > 0)
-                                {
-                                    sigAddress = reader.ReadBytes(sigAddresLen);
-                                }
-
-                                if (!containsSignature(new Address(sigAddress)))
-                                {
-                                    BlockSignature newSig = new BlockSignature() { signature = sig, signerAddress = sigAddress };
-                                    signatures.Add(newSig);
-                                }
+                            if (!containsSignature(new Address(sigAddress)))
+                            {
+                                BlockSignature newSig = new BlockSignature() { signature = sig, signerAddress = sigAddress };
+                                signatures.Add(newSig);
                             }
                         }
 
@@ -579,7 +569,7 @@ namespace IXICore
                                 blockProposer = reader.ReadBytes(dataLen);
                             }
 
-                            if(version >= BlockVer.v10)
+                            if (version >= BlockVer.v10)
                             {
                                 signerDifficulty = reader.ReadIxiVarUInt();
                             }
@@ -590,6 +580,150 @@ namespace IXICore
                         }
 
                         blockChecksum = calculateChecksum();
+                    }
+                }
+            }
+            catch (Exception e)
+            {
+                Logging.warn("Cannot create block from bytes: {0}", e.ToString());
+                throw;
+            }
+        }
+
+        private void fromBytesV10(byte[] bytes)
+        {
+            try
+            {
+                using (MemoryStream m = new MemoryStream(bytes))
+                {
+                    using (BinaryReader reader = new BinaryReader(m))
+                    {
+                        version = (int)reader.ReadIxiVarUInt();
+
+                        blockNum = reader.ReadIxiVarUInt();
+
+                        if (bytes.Length > ConsensusConfig.maximumBlockSize)
+                        {
+                            throw new Exception("Block #" + blockNum + " size " + bytes.Length + "B is bigger than " + ConsensusConfig.maximumBlockSize + "B.");
+                        }
+
+                        if (version > maxVersion)
+                        {
+                            return;
+                        }
+
+                        int dataLen = (int)reader.ReadIxiVarUInt();
+                        if (dataLen > 0)
+                        {
+                            lastBlockChecksum = reader.ReadBytes(dataLen);
+                        }
+
+                        dataLen = (int)reader.ReadIxiVarUInt();
+                        if (dataLen > 0)
+                        {
+                            signatureFreezeChecksum = reader.ReadBytes(dataLen);
+                        }
+
+                        txCount = reader.ReadIxiVarUInt();
+
+                        dataLen = (int)reader.ReadIxiVarUInt();
+                        if (dataLen > 0)
+                        {
+                            // PIT hash; TODO needs to be handled for headers/PIT/TIV
+                            reader.ReadBytes(dataLen);
+                        }
+
+                        timestamp = (long)reader.ReadIxiVarUInt();
+
+
+                        difficulty = reader.ReadIxiVarUInt();
+
+                        signerDifficulty = reader.ReadIxiVarUInt();
+
+                        lastSuperBlockNum = reader.ReadIxiVarUInt();
+
+                        dataLen = (int)reader.ReadIxiVarUInt();
+                        if (dataLen > 0)
+                        {
+                            lastSuperBlockChecksum = reader.ReadBytes(dataLen);
+                        }
+
+                        int super_block_seg_count = (int)reader.ReadIxiVarUInt();
+                        for (int i = 0; i < super_block_seg_count; i++)
+                        {
+                            ulong seg_block_num = blockNum - (ulong)super_block_seg_count + (ulong)i;
+                            int seg_bc_len = (int)reader.ReadIxiVarUInt();
+                            byte[] seg_bc = null;
+                            if (seg_bc_len > 0)
+                            {
+                                seg_bc = reader.ReadBytes(seg_bc_len);
+                            }
+                            superBlockSegments.Add(seg_block_num, new SuperBlockSegment(seg_block_num, seg_bc));
+                        }
+
+                        dataLen = (int)reader.ReadIxiVarUInt();
+                        if (dataLen > 0)
+                        {
+                            walletStateChecksum = reader.ReadBytes(dataLen);
+                        }
+
+                        long v10HeaderPosition = m.Position;
+
+                        if (m.Position < m.Length)
+                        {
+                            if (txCount > 0)
+                            {
+                                // Get the transaction ids
+                                for (ulong i = 0; i < txCount; i++)
+                                {
+                                    int txid_len = (int)reader.ReadIxiVarUInt();
+                                    byte[] txid = reader.ReadBytes(txid_len);
+                                    if (transactions.Contains(txid))
+                                    {
+                                        // Block contains duplicate txid
+                                        throw new Exception("Block #" + blockNum + " contains duplicate txid");
+                                    }
+                                    transactions.Add(txid);
+                                    transactionPIT.add(txid);
+                                }
+                            }
+
+                            // Get the signatures
+                            int num_signatures = (int)reader.ReadIxiVarUInt();
+
+                            if (num_signatures > ConsensusConfig.maximumBlockSigners * 2)
+                            {
+                                throw new Exception("Block #" + blockNum + " has more than " + (ConsensusConfig.maximumBlockSigners * 2) + " signatures");
+                            }
+
+                            for (int i = 0; i < num_signatures; i++)
+                            {
+                                int sigLen = (int)reader.ReadIxiVarUInt();
+                                BlockSignature sig = null;
+                                if (sigLen > 0)
+                                {
+                                    sig = new BlockSignature(reader.ReadBytes(sigLen), false);
+                                }
+
+                                if (!containsSignature(new Address(sig.signerAddress)))
+                                {
+                                    signatures.Add(sig);
+                                }
+                            }
+                        }
+
+                        if (version >= BlockVer.v10)
+                        {
+                            byte[] bytesWithHashLock = new byte[v10HeaderPosition + ConsensusConfig.ixianChecksumLock.Length];
+                            Array.Copy(ConsensusConfig.ixianChecksumLock, bytesWithHashLock, ConsensusConfig.ixianChecksumLock.Length);
+                            Array.Copy(bytes, 0, bytesWithHashLock, ConsensusConfig.ixianChecksumLock.Length, v10HeaderPosition);
+
+                            blockChecksum = Crypto.sha512sqTrunc(bytesWithHashLock);
+                        }
+                        else
+                        {
+                            blockChecksum = calculateChecksum();
+                        }
                     }
                 }
             }
@@ -616,7 +750,7 @@ namespace IXICore
         /// <param name="include_sb_segments">Includes superblock segments if true.</param>
         /// <param name="frozen_sigs_only">Returns only frozen signatures if true. If false it returns all signatures, if they are still available, otherwise falls back to frozen signatures.</param>
         /// <returns>Byte buffer with the serialized block.</returns>
-        public byte[] getBytes(bool include_sb_segments = true, bool frozen_sigs_only = true)
+        public byte[] getBytes(bool include_sb_segments = true, bool frozen_sigs_only = true, bool for_checksum = false)
         {
             if(compacted)
             {
@@ -624,12 +758,16 @@ namespace IXICore
                 return null;
             }
 
-            if(version < BlockVer.v8)
+            if (version < BlockVer.v8)
             {
                 return getBytesLegacy(include_sb_segments, frozen_sigs_only);
-            }else
+            }
+            else if (version < BlockVer.v10)
             {
                 return getBytesV8(include_sb_segments, frozen_sigs_only);
+            }else
+            {
+                return getBytesV10(include_sb_segments, frozen_sigs_only, for_checksum);
             }
         }
 
@@ -805,26 +943,17 @@ namespace IXICore
                         {
                             BlockSignature signature = tmp_signatures[i];
 
-                            if (version >= BlockVer.v10)
+                            if (signature.signature != null)
                             {
-                                byte[] sigBytes = signature.getBytesForBlock();
-                                writer.WriteIxiVarInt(sigBytes.Length);
-                                writer.Write(sigBytes);
+                                writer.WriteIxiVarInt(signature.signature.Length);
+                                writer.Write(signature.signature);
                             }
                             else
                             {
-                                if (signature.signature != null)
-                                {
-                                    writer.WriteIxiVarInt(signature.signature.Length);
-                                    writer.Write(signature.signature);
-                                }
-                                else
-                                {
-                                    writer.WriteIxiVarInt((int)0);
-                                }
-                                writer.WriteIxiVarInt(signature.signerAddress.Length);
-                                writer.Write(signature.signerAddress);
+                                writer.WriteIxiVarInt((int)0);
                             }
+                            writer.WriteIxiVarInt(signature.signerAddress.Length);
+                            writer.Write(signature.signerAddress);
                         }
                     }
 
@@ -905,6 +1034,135 @@ namespace IXICore
                     {
                         writer.WriteIxiVarInt(signerDifficulty);
                     }
+#if TRACE_MEMSTREAM_SIZES
+                    Logging.info(String.Format("Block::getBytes: {0}", m.Length));
+#endif
+                }
+
+                return m.ToArray();
+            }
+        }
+
+        private byte[] getBytesV10(bool include_sb_segments = true, bool frozen_sigs_only = true, bool for_checksum = false)
+        {
+            using (MemoryStream m = new MemoryStream(5120))
+            {
+                using (BinaryWriter writer = new BinaryWriter(m))
+                {
+                    writer.WriteIxiVarInt(version);
+
+                    writer.WriteIxiVarInt(blockNum);
+
+                    if (lastBlockChecksum != null)
+                    {
+                        writer.WriteIxiVarInt(lastBlockChecksum.Length);
+                        writer.Write(lastBlockChecksum);
+                    }
+                    else
+                    {
+                        writer.WriteIxiVarInt((int)0);
+                    }
+
+                    if (signatureFreezeChecksum != null)
+                    {
+                        writer.WriteIxiVarInt(signatureFreezeChecksum.Length);
+                        writer.Write(signatureFreezeChecksum);
+                    }
+                    else
+                    {
+                        writer.WriteIxiVarInt((int)0);
+                    }
+
+                    // Write the number of transactions
+                    int num_transactions = transactions.Count;
+                    writer.WriteIxiVarInt(num_transactions);
+
+                    writer.WriteIxiVarInt(pitChecksum.Length);
+                    writer.Write(pitChecksum);
+
+
+                    writer.WriteIxiVarInt(timestamp);
+
+                    writer.WriteIxiVarInt(difficulty);
+
+
+                    writer.WriteIxiVarInt(signerDifficulty);
+
+                    writer.WriteIxiVarInt(lastSuperBlockNum);
+
+                    if (lastSuperBlockChecksum != null)
+                    {
+                        writer.WriteIxiVarInt(lastSuperBlockChecksum.Length);
+                        writer.Write(lastSuperBlockChecksum);
+                    }
+                    else
+                    {
+                        writer.WriteIxiVarInt((int)0);
+                    }
+
+                    if (include_sb_segments)
+                    {
+                        writer.WriteIxiVarInt(superBlockSegments.Count);
+                        foreach (var entry in superBlockSegments)
+                        {
+                            writer.WriteIxiVarInt(entry.Value.blockChecksum.Length);
+                            writer.Write(entry.Value.blockChecksum);
+                        }
+                    }
+                    else
+                    {
+                        writer.WriteIxiVarInt((int)0);
+                    }
+
+                    if (walletStateChecksum != null)
+                    {
+                        writer.WriteIxiVarInt(walletStateChecksum.Length);
+                        writer.Write(walletStateChecksum);
+                    }
+                    else
+                    {
+                        writer.WriteIxiVarInt((int)0);
+                    }
+
+                    if (!for_checksum)
+                    {
+                        // Write each txid
+                        foreach (byte[] txid in transactions)
+                        {
+                            writer.WriteIxiVarInt(txid.Length);
+                            writer.Write(txid);
+                        }
+
+                        lock (signatures)
+                        {
+                            List<BlockSignature> tmp_signatures = signatures;
+                            if (frozen_sigs_only && frozenSignatures != null)
+                            {
+                                tmp_signatures = frozenSignatures;
+                            }
+
+                            // Write the number of signatures
+                            int num_signatures = tmp_signatures.Count;
+
+                            if (num_signatures > ConsensusConfig.maximumBlockSigners * 2)
+                            {
+                                num_signatures = ConsensusConfig.maximumBlockSigners * 2;
+                            }
+
+                            writer.WriteIxiVarInt(num_signatures);
+
+                            // Write each signature
+                            for (int i = 0; i < num_signatures; i++)
+                            {
+                                BlockSignature signature = tmp_signatures[i];
+
+                                byte[] sigBytes = signature.getBytesForBlock();
+                                writer.WriteIxiVarInt(sigBytes.Length);
+                                writer.Write(sigBytes);
+                            }
+                        }
+                    }
+
 #if TRACE_MEMSTREAM_SIZES
                     Logging.info(String.Format("Block::getBytes: {0}", m.Length));
 #endif
@@ -997,8 +1255,19 @@ namespace IXICore
                 Logging.error("Trying to calculate checksum on a compacted block {0}", blockNum);
                 return null;
             }
+            if (version >= BlockVer.v10)
+            {
+                byte[] bytes = getBytesV10(false, false, true);
+                byte[] bytesWithHashLock = new byte[bytes.Length + ConsensusConfig.ixianChecksumLock.Length];
+                Array.Copy(ConsensusConfig.ixianChecksumLock, bytesWithHashLock, ConsensusConfig.ixianChecksumLock.Length);
+                Array.Copy(bytes, 0, bytesWithHashLock, ConsensusConfig.ixianChecksumLock.Length, bytes.Length);
 
-            return new BlockHeader(this).calculateChecksum();
+                return Crypto.sha512sqTrunc(bytesWithHashLock);
+            }
+            else
+            {
+                return new BlockHeader(this).calculateChecksum();
+            }
         }
 
         /// <summary>
@@ -1038,13 +1307,9 @@ namespace IXICore
             {
                 if(version >= BlockVer.v10)
                 {
-                    if(sig.powSoluton != null)
-                    {
-                        merged_sigs.AddRange(BitConverter.GetBytes(sig.powSoluton.version));
-                        merged_sigs.AddRange(BitConverter.GetBytes(sig.powSoluton.blockNum));
-                        merged_sigs.AddRange(sig.powSoluton.solution);
-                    }
-                    merged_sigs.AddRange(sig.signerAddress);
+                    byte[] sigBytes = sig.getBytesForBlock();
+                    merged_sigs.AddRange(IxiVarInt.GetIxiVarIntBytes(sigBytes.Length));
+                    merged_sigs.AddRange(sigBytes);
                 }
                 else if(version > BlockVer.v3)
                 {
@@ -1094,27 +1359,34 @@ namespace IXICore
                 return null;
             }
 
-            byte[] myPubKey = IxianHandler.getWalletStorage().getPrimaryPublicKey();
-
-            byte[] private_key = IxianHandler.getWalletStorage().getPrimaryPrivateKey();
-            byte[] signature = CryptoManager.lib.getSignature(blockChecksum, private_key);
-
-            Wallet w = IxianHandler.getWallet(myAddress);
-
-            // TODO Omega powSolution should somehow be tied in with the signature
             BlockSignature newSig = new BlockSignature();
-            newSig.signature = signature;
             newSig.blockNum = blockNum;
             newSig.blockHash = blockChecksum;
-            if (w.publicKey == null)
+            newSig.signerAddress = myAddress;
+
+            if (version < BlockVer.v10 || blockNum == 1)
             {
-                newSig.signerAddress = myPubKey;
-            }
-            else
+                byte[] myPubKey = IxianHandler.getWalletStorage().getPrimaryPublicKey();
+
+                byte[] private_key = IxianHandler.getWalletStorage().getPrimaryPrivateKey();
+                byte[] signature = CryptoManager.lib.getSignature(blockChecksum, private_key);
+
+                Wallet w = IxianHandler.getWallet(myAddress);
+
+                newSig.signature = signature;
+                if (w.publicKey == null)
+                {
+                    newSig.signerAddress = myPubKey;
+                }
+            }else
             {
-                newSig.signerAddress = myAddress;
+                if(powSolution == null)
+                {
+                    Logging.error("Trying to apply signature on block {0} but PoW Signing solution isn't ready yet.", blockNum);
+                    return null;
+                }
+                newSig.powSolution = powSolution;
             }
-            newSig.powSoluton = powSolution;
 
             lock (signatures)
             {
@@ -1180,10 +1452,19 @@ namespace IXICore
                     // Generate an address in case we got the pub key
                     byte[] sigAddress = new Address(sig.signerAddress, null, false).address;
 
-                    if (sigAddress.SequenceEqual(addressToCheck)
-                        && sig.signature.SequenceEqual(sigToCheck.signature))
+                    if (sigAddress.SequenceEqual(addressToCheck))
                     {
-                        return true;
+                        if(sig.powSolution == null && sigToCheck.powSolution == null)
+                        {
+                            return true;
+                        }
+
+                        if (sig.powSolution != null && sigToCheck.powSolution != null
+                            && sig.powSolution.checksum.SequenceEqual(sigToCheck.powSolution.checksum)
+                            && sig.powSolution.solution.SequenceEqual(sigToCheck.powSolution.solution))
+                        {
+                            return true;
+                        }
                     }
                 }
                 return false;
@@ -1379,69 +1660,144 @@ namespace IXICore
                 return false;
             }
 
-            List<byte[]> sig_addresses = new List<byte[]>();
-            List<BlockSignature> safe_sigs = null;
-
-            lock (signatures)
+            if (version < BlockVer.v10 || blockNum == 1)
             {
-                if (signatures.Count == 0)
+                List<byte[]> sig_addresses = new List<byte[]>();
+                List<BlockSignature> safe_sigs = null;
+
+                lock (signatures)
                 {
-                    return false;
-                }
-
-                safe_sigs = new List<BlockSignature>(signatures);
-            }
-
-            foreach (BlockSignature sig in safe_sigs)
-            {
-                byte[] signature = sig.signature;
-                byte[] address = sig.signerAddress;
-
-                byte[] signer_pub_key = getSignerPubKey(address);
-
-                if (signer_pub_key == null)
-                {
-                    // invalid public key
-                    lock (signatures)
+                    if (signatures.Count == 0)
                     {
-                        signatures.Remove(sig);
+                        return false;
                     }
-                    continue;
+
+                    safe_sigs = new List<BlockSignature>(signatures);
                 }
 
-                if (sig_addresses.Find(x => x.SequenceEqual(signer_pub_key)) == null)
+                foreach (BlockSignature sig in safe_sigs)
                 {
-                    sig_addresses.Add(signer_pub_key);
-                }else
-                {
-                    lock (signatures)
-                    {
-                        signatures.Remove(sig);
-                    }
-                    continue;
-                }
+                    byte[] signature = sig.signature;
+                    byte[] address = sig.signerAddress;
 
-                if(local_block != null)
-                {
-                    // If the sig was already verified, don't verify it again
-                    lock (local_block.signatures)
+                    byte[] signer_pub_key = getSignerPubKey(address);
+
+                    if (signer_pub_key == null)
                     {
-                        if (local_block.containsSignature(sig))
+                        // invalid public key
+                        lock (signatures)
                         {
+                            signatures.Remove(sig);
+                        }
+                        continue;
+                    }
+
+                    if (sig_addresses.Find(x => x.SequenceEqual(signer_pub_key)) == null)
+                    {
+                        sig_addresses.Add(signer_pub_key);
+                    }
+                    else
+                    {
+                        lock (signatures)
+                        {
+                            signatures.Remove(sig);
+                        }
+                        continue;
+                    }
+
+                    if (local_block != null)
+                    {
+                        // If the sig was already verified, don't verify it again
+                        lock (local_block.signatures)
+                        {
+                            if (local_block.containsSignature(sig))
+                            {
+                                continue;
+                            }
+                        }
+                    }
+
+                    if (skip_sig_verification == false && verifySignature(signature, signer_pub_key) == false)
+                    {
+                        lock (signatures)
+                        {
+                            signatures.Remove(sig);
+                        }
+                        continue;
+                    }
+                }
+            }else
+            {
+                List<byte[]> sig_addresses = new List<byte[]>();
+                List<BlockSignature> safe_sigs = null;
+
+                lock (signatures)
+                {
+                    if (signatures.Count == 0)
+                    {
+                        return false;
+                    }
+
+                    safe_sigs = new List<BlockSignature>(signatures);
+                }
+
+                foreach (BlockSignature sig in safe_sigs)
+                {
+                    byte[] signature = sig.signature;
+                    byte[] address = sig.signerAddress;
+
+                    if (sig_addresses.Find(x => x.SequenceEqual(address)) == null)
+                    {
+                        sig_addresses.Add(address);
+                    }
+                    else
+                    {
+                        lock (signatures)
+                        {
+                            signatures.Remove(sig);
+                        }
+                        continue;
+                    }
+
+                    if (local_block != null)
+                    {
+                        // If the sig was already verified, don't verify it again
+                        lock (local_block.signatures)
+                        {
+                            if (local_block.containsSignature(sig))
+                            {
+                                continue;
+                            }
+                        }
+                    }
+
+                    if(sig.powSolution == null)
+                    {
+                        lock (signatures)
+                        {
+                            signatures.Remove(sig);
+                        }
+                        continue;
+                    }
+
+                    ulong min_pow_difficulty = 1; // TODO TODO TODO TODO TODO TODO Set this properly
+                    var block_header = IxianHandler.getBlockHeader(sig.powSolution.blockNum);
+                    if (skip_sig_verification == false)
+                    {
+                        if(block_header == null
+                            || block_header.blockNum + ConsensusConfig.plPowBlocksValidity < blockNum
+                            || !SignerPowSolution.verifyNonce(sig.powSolution.solution, block_header.blockChecksum, address, min_pow_difficulty))
+                        {
+                            lock (signatures)
+                            {
+                                signatures.Remove(sig);
+                            }
                             continue;
                         }
                     }
                 }
-
-                if (skip_sig_verification == false && verifySignature(signature, signer_pub_key) == false)
-                {
-                    lock (signatures)
-                    {
-                        signatures.Remove(sig);
-                    }
-                    continue;
-                }
             }
+
 
             lock(signatures)
             { 
@@ -1769,12 +2125,12 @@ namespace IXICore
                 }
                 foreach (BlockSignature sig in sigs)
                 {
-                    if(sig.powSoluton == null)
+                    if(sig.powSolution == null)
                     {
                         totalDiff += 1;
                     }else
                     {
-                        totalDiff += sig.powSoluton.difficulty;
+                        totalDiff += sig.powSolution.difficulty;
                     }
                 }
             }

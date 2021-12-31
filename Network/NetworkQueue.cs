@@ -161,7 +161,6 @@ namespace IXICore.Network
                     case ProtocolMessageCode.getBlockSignatures2:
                     case ProtocolMessageCode.getPIT:
                     case ProtocolMessageCode.getPIT2:
-                    case ProtocolMessageCode.getSignerPow:
 #pragma warning restore CS0618 // Type or member is obsolete
                         found_get_request = true;
                         found_tx_request = true;
@@ -178,7 +177,6 @@ namespace IXICore.Network
                     case ProtocolMessageCode.pitData:
                     case ProtocolMessageCode.pitData2:
                     case ProtocolMessageCode.inventory2:
-                    case ProtocolMessageCode.signerPow:
 #pragma warning restore CS0618 // Type or member is obsolete
                         found_get_request = false;
                         found_tx_request = true;
