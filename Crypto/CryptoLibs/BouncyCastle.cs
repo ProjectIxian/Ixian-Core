@@ -517,5 +517,54 @@ namespace IXICore
             rngCsp.GetBytes(random_data);
             return random_data;
         }
+
+        /// <summary>
+        ///  Computes a SHA3-256 value of the given data. It is possible to calculate the hash for a subset of the input data by
+        ///  using the `offset` and `count` parameters.
+        /// </summary>
+        /// <param name="data">Source data for hashing.</param>
+        /// <param name="offset">Byte offset into the data. Default = 0</param>
+        /// <param name="count">Number of bytes to use in the calculation. Default, 0, means use all available bytes.</param>
+        /// <returns>SHA3-256 hash of the input data.</returns>
+        public byte[] sha3_256(byte[] input, int offset = 0, int count = 0)
+        {
+            if (count == 0)
+            {
+                count = input.Length - offset;
+            }
+
+            var hashAlgorithm = new Org.BouncyCastle.Crypto.Digests.Sha3Digest(256);
+
+            hashAlgorithm.BlockUpdate(input, offset, count);
+
+            byte[] result = new byte[32]; // 256 / 8 = 32
+            hashAlgorithm.DoFinal(result, 0);
+            return result;
+        }
+
+        /// <summary>
+        ///  Computes a SHA3-512 value of the given data. It is possible to calculate the hash for a subset of the input data by
+        ///  using the `offset` and `count` parameters.
+        /// </summary>
+        /// <param name="data">Source data for hashing.</param>
+        /// <param name="offset">Byte offset into the data. Default = 0</param>
+        /// <param name="count">Number of bytes to use in the calculation. Default, 0, means use all available bytes.</param>
+        /// <returns>SHA3-512 hash of the input data.</returns>
+        public byte[] sha3_512(byte[] input, int offset = 0, int count = 0)
+        {
+            if (count == 0)
+            {
+                count = input.Length - offset;
+            }
+
+            var hashAlgorithm = new Org.BouncyCastle.Crypto.Digests.Sha3Digest(512);
+
+            hashAlgorithm.BlockUpdate(input, offset, count);
+
+            byte[] result = new byte[64]; // 512 / 8 = 64
+            hashAlgorithm.DoFinal(result, 0);
+            return result;
+        }
+
     }
 }
