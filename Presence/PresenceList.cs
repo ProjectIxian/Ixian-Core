@@ -17,6 +17,7 @@ using System;
 using System.Collections.Generic;
 using System.IO;
 using System.Linq;
+using System.Numerics;
 using System.Threading;
 
 namespace IXICore
@@ -407,7 +408,7 @@ namespace IXICore
         }*/
 
         // Update a presence from a byte array
-        public static Presence updateFromBytes(byte[] bytes, ulong minDifficulty)
+        public static Presence updateFromBytes(byte[] bytes, BigInteger minDifficulty)
         {
             Presence presence = new Presence(bytes);
 
@@ -507,7 +508,8 @@ namespace IXICore
                         hostName = curNodePresenceAddress.address,
                         nodeType = curNodePresenceAddress.type,
                         timestamp = Clock.getNetworkTimestamp(),
-                        walletAddress = IxianHandler.getWalletStorage().getPrimaryAddress()
+                        walletAddress = IxianHandler.getWalletStorage().getPrimaryAddress(),
+                        powSolution = curNodePresence.powSolution
                     };
                     ka.sign(IxianHandler.getWalletStorage().getPrimaryPrivateKey());
 
@@ -601,7 +603,7 @@ namespace IXICore
                     }
 
 
-                    if(!ka.verifySignature(listEntry.pubkey))
+                    if(!ka.verify(listEntry.pubkey, 1)) // TODO TODO TODO TODO TODO TODO Omega change 1 to actual minDifficulty
                     {
                         Logging.warn("[PL] KEEPALIVE tampering for {0} {1}, incorrect Sig.", Base58Check.Base58CheckEncoding.EncodePlain(listEntry.wallet), ka.hostName);
                         return false;
@@ -643,6 +645,7 @@ namespace IXICore
 
                             // Update the timestamp
                             pa.lastSeenTime = ka.timestamp;
+                            listEntry.powSolution = ka.powSolution;
                             pa.signature = ka.signature;
                             pa.version = ka.version;
                             if (pa.type != ka.nodeType)

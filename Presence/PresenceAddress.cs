@@ -21,7 +21,7 @@ namespace IXICore
     // An object class that describes how to contact the specific node/client
     public class PresenceAddress
     {
-        public int version = 1;
+        public int version = 2;
         public byte[] device; // Device id
         public string address; // IP and port
         public char type;   // M for MasterNode, R for RelayNode, D for Direct ip client, C for normal client
@@ -150,7 +150,7 @@ namespace IXICore
             }
         }
 
-        public bool verifySignature(byte[] wallet, byte[] pub_key)
+        public bool verifySignature(byte[] wallet, byte[] pub_key, SignerPowSolution powSolution)
         {
             if (signature != null)
             {
@@ -182,6 +182,16 @@ namespace IXICore
                             writer.WriteIxiVarInt(lastSeenTime);
                             writer.Write(address);
                             writer.Write(type);
+                            if(powSolution != null)
+                            {
+                                byte[] powSolutionBytes = powSolution.getBytes();
+                                writer.WriteIxiVarInt(powSolutionBytes.Length);
+                                writer.Write(powSolutionBytes);
+                            }
+                            else
+                            {
+                                writer.WriteIxiVarInt(0);
+                            }
 
                             byte[] tmpBytes = m.ToArray();
                             byte[] tmpBytesWithLock = new byte[ConsensusConfig.ixianChecksumLock.Length + tmpBytes.Length];
@@ -203,7 +213,7 @@ namespace IXICore
             return false;
         }
 
-        public KeepAlive getKeepAlive(byte[] walletAddress)
+        public KeepAlive getKeepAlive(byte[] walletAddress, SignerPowSolution powSolution)
         {
             KeepAlive ka = new KeepAlive()
             {
@@ -213,7 +223,8 @@ namespace IXICore
                 signature = signature,
                 timestamp = lastSeenTime,
                 version = version,
-                walletAddress = walletAddress
+                walletAddress = walletAddress,
+                powSolution = powSolution
             };
 
             return ka;

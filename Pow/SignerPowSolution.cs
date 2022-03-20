@@ -14,11 +14,17 @@ using IXICore.Meta;
 using IXICore.Utils;
 using System;
 using System.IO;
+using System.Numerics;
 
 namespace IXICore
 {
     public class SignerPowSolution
     {
+        public static uint minTargetBits = 0x02000000;
+        public static uint maxTargetBits = 0x29FFFFFE;
+
+        private static BigInteger minDifficultyTarget = new BigInteger(Crypto.stringToHash("FFFFFFFFFFFFFFFFFFFFFFFFFFFFFFFFFFFFFFFFFFFFFFFFFFFFFFFFFFFFFFFFFFFFFFFFFFFFFFFFFFFF0000"));
+
         public ulong blockNum;
         public byte[] solution;
 
@@ -28,20 +34,36 @@ namespace IXICore
                 if(_checksum == null)
                 {
                     var targetHeader = IxianHandler.getBlockHeader(blockNum);
-                    _checksum = nonceToHash(solution, targetHeader.blockChecksum, solverAddress);
+                    _checksum = solutionToHash(solution, blockNum, targetHeader.blockChecksum, solverAddress);
                 }
                 return _checksum;
             } } // checksum is not trasmitted over the network
 
-        private ulong _difficulty = 0;
-        public ulong difficulty { get
+        private BigInteger _difficulty = 0;
+        public BigInteger difficulty
+        {
+            get
             {
-                if(_difficulty == 0)
+                if (_difficulty == 0)
                 {
                     _difficulty = hashToDifficulty(checksum);
                 }
                 return _difficulty;
-            } }  // difficulty is not transmitted over the network
+            }
+        }  // difficulty is not transmitted over the network
+
+        private uint _bits = 0;
+        public uint bits
+        {
+            get
+            {
+                if (_bits == 0)
+                {
+                    _bits = hashToBits(checksum);
+                }
+                return _bits;
+            }
+        }  // bits are not transmitted over the network
 
         public SignerPowSolution(byte[] solverAddress)
         {
@@ -82,6 +104,7 @@ namespace IXICore
                 throw;
             }
         }
+
         // TODO Omega a blockHash should be included so that clients can verify PoW
         public byte[] getBytes()
         {
@@ -104,45 +127,112 @@ namespace IXICore
         }
 
 
-        // block hash = 44 bytes
-        // FFFF FFFF FFFF FFFF FFFF FFFF FFFF FFFF FFFF FFFF FFFF FFFF FFFF FFFF FFFF FFFF FFFF FFFF FFFF FFFF FFFF FFFF
-        // difficulty 8 bytes - first byte number of bytes, other 7 bytes should contain MSB
-        public static byte[] difficultyToHash(ulong target, int hashLength = 44)
+        public static byte[] bitsToHash(uint bits, int hashLength = 44)
         {
-            byte[] targetBytes = BitConverter.GetBytes(target);
-            int targetLen = targetBytes[7];
-            byte[] hash = new byte[hashLength];
-            for (int i = 0; i < 7; i++)
+            if (bits < minTargetBits)
             {
-                hash[targetLen + i] = targetBytes[6 - i];
+                throw new ArgumentOutOfRangeException(String.Format("bits can't be lower than minTargetBits: {0} < {1}", bits, minTargetBits));
             }
+            if (bits > maxTargetBits)
+            {
+                throw new ArgumentOutOfRangeException(String.Format("bits can't be higher than maxTargetBits: {0} < {1}", bits, maxTargetBits));
+            }
+            byte[] targetBytes = BitConverter.GetBytes(bits);
+            int firstZeroPos = hashLength - targetBytes[3];
+            byte[] hash = new byte[hashLength];
+            for(int i = 0; i < firstZeroPos; i++)
+            {
+                hash[i] = 0xFF;
+            }
+            hash[firstZeroPos - 3] = (byte)(0xFF - targetBytes[0]);
+            hash[firstZeroPos - 2] = (byte)(0xFF - targetBytes[1]);
+            hash[firstZeroPos - 1] = (byte)(0xFF - targetBytes[2]);
             return hash;
         }
 
-        public static ulong hashToDifficulty(byte[] hashBytes)
+        public static uint hashToBits(byte[] hashBytes, int hashLength = 44)
         {
             int len = hashBytes.Length;
-            int i = 0;
-            while (i < len - 7)
+            int zeroes = 0;
+            while (zeroes < len - 3)
             {
-                if (hashBytes[i] != 0)
+                if (hashBytes[len - 1 - zeroes] != 0)
                 {
                     break;
                 }
-                i++;
+                zeroes++;
             }
-            byte[] targetBytes = new byte[8];
-            for(int j = 0; j < 7; j++)
+            int firstZeroPos = len - zeroes;
+            if(len < hashLength)
             {
-                targetBytes[6 - j] = hashBytes[i + j];
+                zeroes += hashLength - len;
             }
-            targetBytes[7] = (byte)(i);
-            return BitConverter.ToUInt64(targetBytes, 0);
+            byte[] targetBytes = new byte[4];
+            targetBytes[0] = (byte)(0xFF - hashBytes[firstZeroPos - 3]);
+            targetBytes[1] = (byte)(0xFF - hashBytes[firstZeroPos - 2]);
+            targetBytes[2] = (byte)(0xFF - hashBytes[firstZeroPos - 1]);
+            targetBytes[3] = (byte)(zeroes);
+            return BitConverter.ToUInt32(targetBytes, 0);
         }
 
-        public static bool validateHash(byte[] hash, ulong expectedDifficulty)
+        // Returns hash in Little Endian
+        public static byte[] difficultyToHash(BigInteger difficulty, int hashLength = 44)
         {
-            if(hashToDifficulty(hash) >= expectedDifficulty)
+            if (difficulty < 0)
+            {
+                throw new ArgumentOutOfRangeException(String.Format("Difficulty can't be negative: {0}", difficulty));
+            }
+            if (difficulty == 0)
+            {
+                return minDifficultyTarget.ToByteArray();
+            }
+            BigInteger biHash = minDifficultyTarget / difficulty;
+            return biHash.ToByteArray();
+        }
+
+        // Accepts hash in little endian
+        public static BigInteger hashToDifficulty(byte[] hashBytes, int hashLength = 44)
+        {
+            if (hashBytes.Length > hashLength)
+            {
+                throw new OverflowException(String.Format("Hash can't have more than {0} bytes", hashLength));
+            }
+            BigInteger biHashBytes = new BigInteger(hashBytes);
+            if (biHashBytes < 1)
+            {
+                return 0;
+            }
+            if (biHashBytes > minDifficultyTarget)
+            {
+                throw new OverflowException("Hash too large");
+            }
+            BigInteger difficulty = minDifficultyTarget / biHashBytes;
+            return difficulty;
+        }
+
+        public static uint difficultyToBits(BigInteger difficulty, int hashLength = 44)
+        {
+            return hashToBits(difficultyToHash(difficulty, hashLength));
+        }
+
+        public static BigInteger bitsToDifficulty(uint bits, int hashLength = 44)
+        {
+            byte[] hash = bitsToHash(bits, hashLength);
+            return hashToDifficulty(hash);
+        }
+
+        public bool verifySolution(BigInteger minimumDifficulty)
+        {
+            if(difficulty >= minimumDifficulty)
+            {
+                return true;
+            }
+            return false;
+        }
+
+        public static bool validateHash(byte[] hash, BigInteger minimumDifficulty)
+        {
+            if(hashToDifficulty(hash) >= minimumDifficulty)
             {
                 return true;
             }
@@ -150,9 +240,9 @@ namespace IXICore
         }
 
         // Verify nonce
-        public static bool verifyNonce(byte[] nonce, byte[] blockHash, byte[] solverAddress, ulong difficulty)
+        public static bool verifySolution(byte[] solution, ulong blockNum, byte[] blockHash, byte[] solverAddress, BigInteger difficulty)
         {
-            byte[] hash = nonceToHash(nonce, blockHash, solverAddress);
+            byte[] hash = solutionToHash(solution, blockNum, blockHash, solverAddress);
             if(hash == null)
             {
                 return false;
@@ -167,20 +257,22 @@ namespace IXICore
             return false;
         }
 
-        public static byte[] nonceToHash(byte[] nonce, byte[] blockHash, byte[] solverAddress)
+        public static byte[] solutionToHash(byte[] solution, ulong blockNum, byte[] blockHash, byte[] solverAddress)
         {
-            if (nonce == null || nonce.Length < 1 || nonce.Length > 128)
+            if (solution == null || solution.Length < 1 || solution.Length > 64)
             {
                 return null;
             }
-
             // TODO protect against spamming with invalid nonce/block_num
-            byte[] nonceData = new byte[blockHash.Length + solverAddress.Length + nonce.Length];
-            System.Buffer.BlockCopy(blockHash, 0, nonceData, 0, blockHash.Length);
-            System.Buffer.BlockCopy(solverAddress, 0, nonceData, blockHash.Length, solverAddress.Length);
-            System.Buffer.BlockCopy(nonce, 0, nonceData, blockHash.Length + solverAddress.Length, nonce.Length);
+            byte[] blockNumBytes = blockNum.GetIxiVarIntBytes();
+            byte[] challengeData = new byte[blockNumBytes.Length + blockHash.Length + solverAddress.Length + solution.Length];
 
-            return Crypto.sha512sq(nonceData, 0, 0);
+            System.Buffer.BlockCopy(blockNumBytes, 0, challengeData, 0, blockNumBytes.Length);
+            System.Buffer.BlockCopy(blockHash, 0, challengeData, blockNumBytes.Length, blockHash.Length);
+            System.Buffer.BlockCopy(solverAddress, 0, challengeData, blockNumBytes.Length + blockHash.Length, solverAddress.Length); // TODO remove checksum
+            System.Buffer.BlockCopy(solution, 0, challengeData, blockNumBytes.Length + blockHash.Length + solverAddress.Length, solution.Length);
+
+            return Crypto.sha512sqTrunc(challengeData);
         }
     }
 }

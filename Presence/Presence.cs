@@ -15,13 +15,14 @@ using IXICore.Utils;
 using System;
 using System.Collections.Generic;
 using System.IO;
+using System.Numerics;
 
 namespace IXICore
 {
     // The actual presence object, which can contain multiple PresenceAddress objects
     public class Presence
     {
-        public int version = 0;
+        public int version = 1;
         public byte[] wallet;
         public byte[] pubkey;
         public byte[] metadata; 
@@ -341,7 +342,7 @@ namespace IXICore
             return presence_chunks;
         }
 
-        public bool verify(ulong minDifficulty)
+        public bool verify(BigInteger minDifficulty)
         {
             if (wallet.Length > 128 || wallet.Length < 4)
             {
@@ -362,7 +363,7 @@ namespace IXICore
             if(powSolution == null)
             {
                 // do nothing
-            }else if (verifyPowSolution(powSolution, minDifficulty))
+            }else if (verifyPowSolution(powSolution, minDifficulty, wallet))
             {
                 validPowSolution = true;
             }
@@ -423,7 +424,7 @@ namespace IXICore
                     continue;
                 }
 
-                if (!entry.verifySignature(wallet, pubkey))
+                if (!entry.verifySignature(wallet, pubkey, powSolution))
                 {
                     Logging.warn("Invalid presence address received in verifyPresence, signature verification failed for {0}.", Base58Check.Base58CheckEncoding.EncodePlain(wallet));
                     continue;
@@ -441,7 +442,7 @@ namespace IXICore
             return false;
         }
 
-        public bool verifyPowSolution(SignerPowSolution signerPow, ulong minDifficulty)
+        public static bool verifyPowSolution(SignerPowSolution signerPow, BigInteger minDifficulty, byte[] wallet)
         {
             // TODO Omega remove this once blockHash is part of SignerPowSolution
             if(PresenceList.myPresenceType == 'C' || PresenceList.myPresenceType == 'R')

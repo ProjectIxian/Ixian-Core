@@ -32,7 +32,7 @@ namespace IXICore
         public static int v7 = 7;
         public static int v8 = 8;
         public static int v9 = 9;
-        public static int v10 = 10; // Omega Lock-in
+        public static int v10 = 10; // Omega Lock-in (partial activation)
         public static int v11 = 11; // Omega Full activation
     }
 
@@ -138,7 +138,7 @@ namespace IXICore
         /// </summary>
         /// <remarks>
         /// </remarks>
-        public ulong signerDifficulty = 0;
+        public uint signerDifficulty = 0;
 
         /// <summary>
         /// The list of Master Node signatures which enable the Ixian Consensus algorithm.
@@ -220,7 +220,7 @@ namespace IXICore
                 Array.Copy(block.blockProposer, blockProposer, blockProposer.Length);
             }
 
-            signerDifficulty = block.signerDifficulty;
+            signerDifficulty = block.signerBits;
         }
 
         /// <summary>
@@ -326,7 +326,7 @@ namespace IXICore
 
                                 if(version >= BlockVer.v10)
                                 {
-                                    signerDifficulty = reader.ReadUInt64();
+                                    signerDifficulty = reader.ReadUInt32();
                                 }
                             }
                             catch (Exception)

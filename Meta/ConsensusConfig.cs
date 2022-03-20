@@ -69,6 +69,10 @@ namespace IXICore
         ///  The redacted window, together with the block generation inverval specify that blocks should be kept for approximately 7 days.
         /// </remarks>
         private static readonly ulong minRedactedWindowSize_v2 = 20000;
+        /// <remarks>
+        ///  The redacted window, together with the block generation inverval specify that blocks should be kept for approximately 3-4 days.
+        /// </remarks>
+        private static readonly ulong minRedactedWindowSize_v10 = 10000;
         /// <summary>
         /// Nonexistant wallet address which is used in the 'from' fields for PoW and PoS transactions, where currency is generated "from nothing".
         /// </summary>
@@ -92,6 +96,7 @@ namespace IXICore
         /// Amount of signatures (ratio) of consenting signatures vs. available Master Nodes before a block can be accepted.
         /// </summary>
         public static readonly double networkConsensusRatio = 0.75;
+        public static readonly int networkConsensusRatioNew = 75;
 
         /// <summary>
         /// Maximum allowed signers on a single block.
@@ -177,9 +182,13 @@ namespace IXICore
             {
                 return minRedactedWindowSize_v0;
             }
-            if (block_version >= 2)
+            if (block_version < BlockVer.v10)
             {
                 return minRedactedWindowSize_v2;
+            }
+            if (block_version >= BlockVer.v10)
+            {
+                return minRedactedWindowSize_v10;
             }
             return minRedactedWindowSize;
         }
