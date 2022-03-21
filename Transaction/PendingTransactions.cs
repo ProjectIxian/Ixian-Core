@@ -66,7 +66,7 @@ namespace IXICore
                 foreach (var entry in txs)
                 {
                     Transaction tx = entry.transaction;
-                    if (primary_address == null || (new Address(tx.pubKey)).address.SequenceEqual(primary_address))
+                    if (primary_address == null || (new Address(tx.pubKey)).addressNoChecksum.SequenceEqual(primary_address))
                     {
                         amount += tx.amount + tx.fee;
                     }

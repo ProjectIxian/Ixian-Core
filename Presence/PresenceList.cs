@@ -803,7 +803,7 @@ namespace IXICore
 
             try
             {
-                byte[] address = (new Address(address_or_pubkey)).address;
+                byte[] address = (new Address(address_or_pubkey)).addressNoChecksum;
 
                 lock (presences)
                 {

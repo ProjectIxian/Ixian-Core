@@ -292,7 +292,7 @@ namespace IXICore.Meta
             return false;
         }
 
-        public static Dictionary<byte[], List<byte[]>> extractMyAddressesFromAddressList(SortedDictionary<byte[], IxiNumber> addressList, bool useSeedHashAsKey = true)
+        public static Dictionary<byte[], List<byte[]>> extractMyAddressesFromAddressList(SortedDictionary<Address, IxiNumber> addressList, bool useSeedHashAsKey = true)
         {
             Dictionary<byte[], List<byte[]>> addresses = new Dictionary<byte[], List<byte[]>>();
             lock (wallets)

@@ -249,7 +249,7 @@ namespace IXICore
                 }
 
                 // Check the address and pubkey and disconnect on mismatch
-                if (!addr.SequenceEqual((new Address(pubkey)).address))
+                if (!addr.SequenceEqual((new Address(pubkey)).addressNoChecksum))
                 {
                     Logging.warn("Hello: Pubkey and address do not match.");
                     sendBye(endpoint, ProtocolByeCode.authFailed, "Pubkey and address do not match.", "", true);
@@ -733,7 +733,7 @@ namespace IXICore
             Cuckoo filter = new Cuckoo(my_addresses.Count());
             foreach(var addr in my_addresses)
             {
-                filter.Add(addr.address);
+                filter.Add(addr.addressNoChecksum);
             }
             byte[] filter_data = filter.getFilterBytes();
             byte[] event_data = NetworkEvents.prepareEventMessageData(NetworkEvents.Type.transactionFrom, filter_data);

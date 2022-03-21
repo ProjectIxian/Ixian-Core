@@ -81,6 +81,7 @@
     <Compile Include="$(MSBuildThisFileDirectory)Transaction\Transaction.cs" />
     <Compile Include="$(MSBuildThisFileDirectory)Transaction\TransactionInclusion.cs" />
     <Compile Include="$(MSBuildThisFileDirectory)UPnP\UPnP.cs" />
+    <Compile Include="$(MSBuildThisFileDirectory)Utils\AddressComparer.cs" />
     <Compile Include="$(MSBuildThisFileDirectory)Utils\Base58CheckEncoding.cs" />
     <Compile Include="$(MSBuildThisFileDirectory)Utils\BitWriter.cs" />
     <Compile Include="$(MSBuildThisFileDirectory)Utils\ByteArrayComparer.cs" />

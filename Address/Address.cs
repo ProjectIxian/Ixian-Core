@@ -11,7 +11,6 @@
 // MIT License for more details.
 
 using System;
-using System.Collections.Generic;
 using System.Linq;
 
 namespace IXICore
@@ -32,25 +31,36 @@ namespace IXICore
         /// <summary>
         /// Version of the Ixian Address.
         /// </summary>
-        public int version = 0;
+        public int version { get; private set; } = 0;
+
+        private byte[] _addressWithChecksum = null;
         /// <summary>
-        ///  Byte value of the address.
+        ///  Byte value of the address with checksum.
         /// </summary>
-        /// <remarks>
-        ///  It is not recommended to manipulate this directly, but the field is exposed because some DLT components rely on 
-        /// </remarks>
-        public byte[] address;
+        public byte[] addressWithChecksum
+        {
+            get
+            {
+                if (_addressWithChecksum == null)
+                {
+                    _addressWithChecksum = getAddressWithChecksum();
+                }
+                return _addressWithChecksum;
+            }
+        }
+
+
+        /// <summary>
+        ///  Byte value of the address without checksum.
+        /// </summary>
+        public byte[] addressNoChecksum { get; private set; } = null;
+
         /// <summary>
         ///  Address nonce value. Applicable only for v1 and above.
         /// </summary>
-        public byte[] nonce;
+        public byte[] nonce { get; private set; }
 
-
-        public Address()
-        {
-            address = null;
-            nonce = null;
-        }
+        public byte[] pubKey { get; private set; }
 
         /// <summary>
         ///  Constructs an Ixian address with the given byte value or alternatively from the given public key using a nonce value.
@@ -59,140 +69,246 @@ namespace IXICore
         ///  The address can be constructed either directly from the address byte value, or indirectly via a public key and a nonce value.
         ///  If the address bytes are given directly, the nonce value may be omitted.
         /// </remarks>
-        /// <param name="public_key_or_address">Byte value of the address or of the wallet's public key. See Remarks.</param>
-        /// <param name="address_nonce">If the value given for address bytes is a public key, this field is required to specify with actual address to generate.</param>
-        /// <param name="verify_checksum">If true, the given address will be verified for the correct checksum.</param>
-        public Address(byte[] public_key_or_address, byte[] address_nonce = null, bool verify_checksum = true)
+        /// <param name="publicKeyOrAddress">Byte value of the address or of the wallet's public key. See Remarks.</param>
+        /// <param name="addressNonce">If the value given for address bytes is a public key, this field is required to specify with actual address to generate.</param>
+        public Address(byte[] publicKeyOrAddress, byte[] addressNonce = null, bool verifyChecksum = true)
         {
             version = 0;
 
-            if (public_key_or_address == null)
+            if (publicKeyOrAddress == null)
             {
-                throw new Exception("Cannot construct address, public_key_or_address is null");
+                throw new Exception("Cannot construct address, publicKeyOrAddress is null");
             }
             else
             {
-                if (public_key_or_address.Length == 523)
+                if (publicKeyOrAddress.Length == 523)
                 {
                     version = 0;
-                }else
+                }
+                else
                 {
-                    version = public_key_or_address[0];
+                    version = publicKeyOrAddress[0];
                 }
             }
 
-            nonce = address_nonce;
+            nonce = addressNonce;
+            if (publicKeyOrAddress.Length == 33
+                || publicKeyOrAddress.Length == 45)
+            {
+                // address without checksum, do nothing
+            }
+            else if (publicKeyOrAddress.Length == 36
+               || publicKeyOrAddress.Length == 48)
+            {
+                // address with checksum, do nothing
+            }
+            else if (publicKeyOrAddress.Length > 48 && publicKeyOrAddress.Length < 1024)
+            {
+                // save pubkey
+                pubKey = publicKeyOrAddress;
+            }
+            else
+            {
+                throw new Exception("Cannot construct address, invalid length");
+            }
 
-            if(version == 0)
+            switch(version)
             {
-                constructAddress_v0(public_key_or_address, nonce, verify_checksum);
-            }else if(version == 1)
-            {
-                constructAddress_v1(public_key_or_address, nonce, verify_checksum);
-            }else
-            {
-                throw new Exception("Cannot construct address, unknown address version");
+                case 0:
+                    addressNoChecksum = constructAddress_v0(publicKeyOrAddress, nonce, verifyChecksum);
+                    break;
+                case 1:
+                    addressNoChecksum = constructAddress_v1(publicKeyOrAddress, nonce, verifyChecksum);
+                    break;
+                case 2:
+                    addressNoChecksum = constructAddress_v2(publicKeyOrAddress, nonce, verifyChecksum);
+                    break;
+                default:
+                    throw new Exception("Cannot construct address, unknown address version");
             }
         }
 
-        private void constructAddress_v0(byte[] public_key_or_address, byte[] address_nonce, bool verify_checksum)
+        private byte[] constructAddress_v0(byte[] publicKeyOrAddress, byte[] addressNonce, bool verifyChecksum)
         {
-            byte[] base_address = null;
-            if (public_key_or_address.Length == 36)
+            byte[] baseAddress;
+            if (publicKeyOrAddress.Length == 33)
             {
-                base_address = public_key_or_address;
-                if(verify_checksum && !validateChecksum(base_address))
+                baseAddress = publicKeyOrAddress;
+            }
+            else if (publicKeyOrAddress.Length == 36)
+            {
+                baseAddress = publicKeyOrAddress;
+                if (verifyChecksum && !validateChecksum(baseAddress))
                 {
                     throw new Exception("Invalid address was specified (checksum error).");
                 }
+                // strip checksum
+                baseAddress = new byte[publicKeyOrAddress.Length - 3];
+                Array.Copy(publicKeyOrAddress, baseAddress, baseAddress.Length);
             }
             else
             {
-                byte[] raw_address = new byte[36];
-                raw_address[0] = 0; // version
-
-                int public_key_offset = 5;
-                if (public_key_or_address.Length == 523)
-                {
-                    public_key_offset = 0;
-                }
-                byte[] hashed_pub_key = Crypto.sha512quTrunc(public_key_or_address, public_key_offset, 0, 32);
-                Array.Copy(hashed_pub_key, 0, raw_address, 1, hashed_pub_key.Length);
-
-                byte[] checksum = Crypto.sha512sqTrunc(raw_address, 0, 33, 3);
-                Array.Copy(checksum, 0, raw_address, 33, 3);
-
-                base_address = raw_address;
+                baseAddress = getAddressFromPublicKey_v0(publicKeyOrAddress);
             }
 
-            if (address_nonce == null || (address_nonce.Length == 1 && address_nonce[0] == 0))
+            if (addressNonce == null || (addressNonce.Length == 1 && addressNonce[0] == 0))
             {
-                address = base_address;
+                return baseAddress;
             }
             else
             {
-                byte[] raw_address = new byte[36];
+                byte[] raw_address = new byte[33];
                 raw_address[0] = 0; // version
 
-                byte[] tmp_address = new byte[base_address.Length + address_nonce.Length];
-                Array.Copy(base_address, tmp_address, base_address.Length);
-                Array.Copy(address_nonce, 0, tmp_address, base_address.Length, address_nonce.Length);
+                byte[] tmp_address = new byte[baseAddress.Length + 3 + addressNonce.Length];
+                Array.Copy(baseAddress, tmp_address, baseAddress.Length);
+
+                byte[] checksum = Crypto.sha512sqTrunc(baseAddress, 0, 0, 3);
+                Array.Copy(checksum, 0, tmp_address, baseAddress.Length, 3);
+
+                Array.Copy(addressNonce, 0, tmp_address, baseAddress.Length + 3, addressNonce.Length);
 
                 byte[] hashed_pub_key = Crypto.sha512quTrunc(tmp_address, 0, tmp_address.Length, 32);
                 Array.Copy(hashed_pub_key, 0, raw_address, 1, hashed_pub_key.Length);
 
-                byte[] checksum = Crypto.sha512sqTrunc(raw_address, 0, 33, 3);
-                Array.Copy(checksum, 0, raw_address, 33, 3);
-
-                address = raw_address;
+                return raw_address;
             }
         }
 
-        private void constructAddress_v1(byte[] public_key_or_address, byte[] address_nonce, bool verify_checksum)
+        private byte[] constructAddress_v1(byte[] publicKeyOrAddress, byte[] addressNonce, bool verifyChecksum)
         {
-            byte[] base_address = null;
-            if (public_key_or_address.Length == 48)
+            byte[] baseAddress;
+            if (publicKeyOrAddress.Length == 45)
             {
-                base_address = public_key_or_address;
-                if (verify_checksum && !validateChecksum(base_address))
+                baseAddress = publicKeyOrAddress;
+            }
+            else if (publicKeyOrAddress.Length == 48)
+            {
+                if (verifyChecksum && !validateChecksum(publicKeyOrAddress))
                 {
                     throw new Exception("Invalid address was specified (checksum error).");
                 }
+                // strip checksum
+                baseAddress = new byte[publicKeyOrAddress.Length - 3];
+                Array.Copy(publicKeyOrAddress, baseAddress, baseAddress.Length);
             }
             else
             {
-                byte[] raw_address = new byte[48];
-                raw_address[0] = 1; // version
-
-                byte[] hashed_pub_key = Crypto.sha512sqTrunc(public_key_or_address, 1, 0, 44);
-                Array.Copy(hashed_pub_key, 0, raw_address, 1, hashed_pub_key.Length);
-
-                byte[] checksum = Crypto.sha512sqTrunc(raw_address, 0, 45, 3);
-                Array.Copy(checksum, 0, raw_address, 45, 3);
-
-                base_address = raw_address;
+                baseAddress = getAddressFromPublicKey_v1(publicKeyOrAddress);
             }
 
-            if (address_nonce == null || (address_nonce.Length == 1 && address_nonce[0] == 0))
+            if (addressNonce == null || (addressNonce.Length == 1 && addressNonce[0] == 0))
             {
-                address = base_address;
-            }else
+                return baseAddress;
+            }
+            else
             {
-                byte[] raw_address = new byte[48];
+                byte[] raw_address = new byte[45];
                 raw_address[0] = 1; // version
 
-                byte[] tmp_address = new byte[base_address.Length + address_nonce.Length];
-                Array.Copy(base_address, tmp_address, base_address.Length);
-                Array.Copy(address_nonce, 0, tmp_address, base_address.Length, address_nonce.Length);
+                byte[] tmp_address = new byte[baseAddress.Length + 3 + addressNonce.Length];
+                Array.Copy(baseAddress, tmp_address, baseAddress.Length);
+
+                byte[] checksum = Crypto.sha512sqTrunc(baseAddress, 0, 0, 3);
+                Array.Copy(checksum, 0, tmp_address, baseAddress.Length, 3);
+
+                Array.Copy(addressNonce, 0, tmp_address, baseAddress.Length + 3, addressNonce.Length);
 
                 byte[] hashed_pub_key = Crypto.sha512sqTrunc(tmp_address, 5, 0, 44); // TODO TODO offset 5 is likely incorrect, we'll need v2 address with this fixed
                 Array.Copy(hashed_pub_key, 0, raw_address, 1, hashed_pub_key.Length);
 
-                byte[] checksum = Crypto.sha512sqTrunc(raw_address, 0, 45, 3);
-                Array.Copy(checksum, 0, raw_address, 45, 3);
-
-                address = raw_address;
+                return raw_address;
             }
+        }
+        private byte[] constructAddress_v2(byte[] publicKeyOrAddress, byte[] addressNonce, bool verifyChecksum)
+        {
+            byte[] baseAddress;
+            if (publicKeyOrAddress.Length == 45)
+            {
+                baseAddress = publicKeyOrAddress;
+            }
+            else if (publicKeyOrAddress.Length == 48)
+            {
+                if (verifyChecksum && !validateChecksum(publicKeyOrAddress))
+                {
+                    throw new Exception("Invalid address was specified (checksum error).");
+                }
+                // strip checksum
+                baseAddress = new byte[publicKeyOrAddress.Length - 3];
+                Array.Copy(publicKeyOrAddress, baseAddress, baseAddress.Length);
+            }
+            else
+            {
+                baseAddress = getAddressFromPublicKey_v2(publicKeyOrAddress);
+            }
+
+            if (addressNonce == null || (addressNonce.Length == 1 && addressNonce[0] == 0))
+            {
+                return baseAddress;
+            }
+            else
+            {
+                byte[] raw_address = new byte[45];
+                raw_address[0] = 2; // version
+
+                byte[] tmp_address = new byte[baseAddress.Length + addressNonce.Length];
+                Array.Copy(baseAddress, tmp_address, baseAddress.Length);
+
+                Array.Copy(addressNonce, 0, tmp_address, baseAddress.Length, addressNonce.Length);
+
+                byte[] hashed_pub_key = Crypto.sha512sqTrunc(tmp_address, 0, 0, 44); // TODO TODO make sure this is correct
+                Array.Copy(hashed_pub_key, 0, raw_address, 1, hashed_pub_key.Length);
+
+                return raw_address;
+            }
+        }
+
+        private byte[] getAddressFromPublicKey_v0(byte[] publicKey)
+        {
+            byte[] address = new byte[33];
+            address[0] = 0; // version
+
+            int public_key_offset = 5;
+            if (publicKey.Length == 523)
+            {
+                public_key_offset = 0;
+            }
+            byte[] hashed_pub_key = Crypto.sha512quTrunc(publicKey, public_key_offset, 0, 32);
+            Array.Copy(hashed_pub_key, 0, address, 1, hashed_pub_key.Length);
+
+            return address;
+        }
+
+        private byte[] getAddressFromPublicKey_v1(byte[] publicKey)
+        {
+            byte[] address = new byte[45];
+            address[0] = 1; // version
+
+            byte[] hashed_pub_key = Crypto.sha512sqTrunc(publicKey, 1, 0, 44);
+            Array.Copy(hashed_pub_key, 0, address, 1, hashed_pub_key.Length);
+
+            return address;
+        }
+
+        private byte[] getAddressFromPublicKey_v2(byte[] publicKey)
+        {
+            byte[] address = new byte[45];
+            address[0] = 2; // version
+            // TODO TODO make sure this is correct
+            byte[] hashed_pub_key = Crypto.sha512sqTrunc(publicKey, 1, 0, 44);
+            Array.Copy(hashed_pub_key, 0, address, 1, hashed_pub_key.Length);
+
+            return address;
+        }
+
+        private byte[] getAddressWithChecksum()
+        {
+            byte[] address = new byte[addressNoChecksum.Length + 3];
+            Array.Copy(addressNoChecksum, address, addressNoChecksum.Length);
+
+            byte[] checksum = Crypto.sha512sqTrunc(addressNoChecksum, 0, 0, 3);
+            Array.Copy(checksum, 0, address, addressNoChecksum.Length, 3);
+            return address;
         }
 
         /// <summary>
@@ -201,7 +317,7 @@ namespace IXICore
         /// <returns>Textual representation of the wallet.</returns>
         public override string ToString()
         {
-            return Base58Check.Base58CheckEncoding.EncodePlain(address);
+            return Base58Check.Base58CheckEncoding.EncodePlain(addressWithChecksum);
         }
 
         /// <summary>
@@ -218,7 +334,7 @@ namespace IXICore
             try
             {
                 // Check the address length
-                if (address.Length < 4 || address.Length > 128)
+                if (address.Length < 36 || address.Length > 48)
                 {
                     return false;
                 }
@@ -233,7 +349,7 @@ namespace IXICore
                     return true;
                 }
             }
-            catch(Exception)
+            catch (Exception)
             {
                 // If any exception occurs, the checksum is invalid
                 return false;
@@ -243,6 +359,28 @@ namespace IXICore
             return false;
         }
 
+        public static bool validateAddress(byte[] address)
+        {
+            // Check the address length
+            if (address.Length < 33 || address.Length > 48)
+            {
+                return false;
+            }
+            int version = address[0];
+            if(version < 0 || version > 2)
+            {
+                return false;
+            }
+            return true;
+        }
 
+        public byte[] getInputBytes()
+        {
+            if (pubKey != null)
+            {
+                return pubKey;
+            }
+            return addressNoChecksum;
+        }
     }
 }

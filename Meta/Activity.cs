@@ -71,7 +71,7 @@ namespace IXICore.Meta
     public class Activity
     {
         private string _id = null;
-        private SortedDictionary<byte[], IxiNumber> _cachedToListArray = new SortedDictionary<byte[], IxiNumber>(new ByteArrayComparer());
+        private SortedDictionary<Address, IxiNumber> _cachedToListArray = new SortedDictionary<Address, IxiNumber>(new AddressComparer());
 
         public byte[] seedHash { get; set; }
         public string wallet { get; set; }
@@ -105,7 +105,7 @@ namespace IXICore.Meta
             this.txid = txid;
         }
 
-        public Activity(byte[] seed_hash, string wallet, string from, SortedDictionary<byte[], IxiNumber> to_list, int type, byte[] data, string value, long timestamp, int status, ulong block_height, string txid)
+        public Activity(byte[] seed_hash, string wallet, string from, SortedDictionary<Address, IxiNumber> to_list, int type, byte[] data, string value, long timestamp, int status, ulong block_height, string txid)
         {
             this.seedHash = seed_hash;
             this.wallet = wallet;
@@ -133,10 +133,10 @@ namespace IXICore.Meta
                     }
                     raw_data.AddRange(Encoding.UTF8.GetBytes(wallet));
                     raw_data.AddRange(Encoding.UTF8.GetBytes(from));
-                    SortedDictionary<byte[], IxiNumber> tmp_to_list = getToListAsArray();
+                    SortedDictionary<Address, IxiNumber> tmp_to_list = getToListAsArray();
                     foreach (var entry in tmp_to_list)
                     {
-                        raw_data.AddRange(entry.Key);
+                        raw_data.AddRange(entry.Key.addressNoChecksum);
                         raw_data.AddRange(entry.Value.getAmount().ToByteArray());
                     }
                     raw_data.AddRange(BitConverter.GetBytes(type));
@@ -158,7 +158,7 @@ namespace IXICore.Meta
             }
         }
 
-        public SortedDictionary<byte[], IxiNumber> getToListAsArray()
+        public SortedDictionary<Address, IxiNumber> getToListAsArray()
         {
             if(_cachedToListArray.Count > 0)
             {
@@ -181,19 +181,19 @@ namespace IXICore.Meta
                 }
                 byte[] address = Base58Check.Base58CheckEncoding.DecodePlain(split_to[0]);
                 IxiNumber amount = new IxiNumber(new BigInteger(Convert.FromBase64String(split_to[1])));
-                _cachedToListArray.AddOrReplace(address, amount);
+                _cachedToListArray.AddOrReplace(new Address(address), amount);
             }
 
             return _cachedToListArray;
         }
 
-        public bool setToListArray(SortedDictionary<byte[], IxiNumber> to_list)
+        public bool setToListArray(SortedDictionary<Address, IxiNumber> to_list)
         {
             _cachedToListArray = to_list;
             toList = "";
             foreach (var to in _cachedToListArray)
             {
-                toList = string.Format("{0}||{1}:{2}", toList, Base58Check.Base58CheckEncoding.EncodePlain(to.Key), Convert.ToBase64String(to.Value.getAmount().ToByteArray()));
+                toList = string.Format("{0}||{1}:{2}", toList, Base58Check.Base58CheckEncoding.EncodePlain(to.Key.addressNoChecksum), Convert.ToBase64String(to.Value.getAmount().ToByteArray()));
             }
 
             return true;

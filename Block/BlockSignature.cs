@@ -22,7 +22,7 @@ namespace IXICore
         public ulong blockNum;
         public byte[] blockHash;
         public byte[] signature;
-        public byte[] signerAddress;
+        public Address signerAddress;
         public SignerPowSolution powSolution;
 
         public BlockSignature()
@@ -46,8 +46,8 @@ namespace IXICore
                 Array.Copy(src.signature, signature, signature.Length);
             }
 
-            signerAddress = new byte[src.signerAddress.Length];
-            Array.Copy(src.signerAddress, signerAddress, signerAddress.Length);
+            byte[] address = src.signerAddress.getInputBytes();
+            signerAddress = new Address(address, null, false);
 
             if (src.powSolution != null)
             {
@@ -72,12 +72,12 @@ namespace IXICore
                         }
 
                         int signerAddressLen = (int)reader.ReadIxiVarUInt();
-                        signerAddress = reader.ReadBytes(signerAddressLen);
+                        signerAddress = new Address(reader.ReadBytes(signerAddressLen));
 
                         int powSolutionLen = (int)reader.ReadIxiVarUInt();
                         if (powSolutionLen > 0)
                         {
-                            powSolution = new SignerPowSolution(reader.ReadBytes(powSolutionLen), signerAddress);
+                            powSolution = new SignerPowSolution(reader.ReadBytes(powSolutionLen), signerAddress.addressNoChecksum);
                         }
 
                         int signatureLen = (int)reader.ReadIxiVarUInt();
@@ -101,8 +101,9 @@ namespace IXICore
             {
                 using (BinaryWriter writer = new BinaryWriter(m))
                 {
-                    writer.WriteIxiVarInt(signerAddress.Length);
-                    writer.Write(signerAddress);
+                    byte[] address = signerAddress.getInputBytes();
+                    writer.WriteIxiVarInt(address.Length);
+                    writer.Write(address);
 
                     if (powSolution != null)
                     {
@@ -145,10 +146,11 @@ namespace IXICore
                     writer.WriteIxiVarInt(blockHash.Length);
                     writer.Write(blockHash);
 
-                    writer.WriteIxiVarInt(signerAddress.Length);
-                    writer.Write(signerAddress);
+                    byte[] address = signerAddress.getInputBytes();
+                    writer.WriteIxiVarInt(address.Length);
+                    writer.Write(address);
 
-                    if(powSolution != null)
+                    if (powSolution != null)
                     {
                         byte[] powSolutionBytes = powSolution.getBytes();
                         writer.WriteIxiVarInt(powSolutionBytes.Length);

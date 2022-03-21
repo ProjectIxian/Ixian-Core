@@ -980,7 +980,7 @@ namespace IXICore
 
             IxiNumber amount = 0;
             IxiNumber fee = ConsensusConfig.transactionPrice;
-            SortedDictionary<byte[], IxiNumber> toList = new SortedDictionary<byte[], IxiNumber>(new ByteArrayComparer());
+            SortedDictionary<Address, IxiNumber> toList = new SortedDictionary<Address, IxiNumber>(new AddressComparer());
             string[] to_split = ((string)parameters["to"]).Split('-');
             if (to_split.Length > 0)
             {
@@ -1002,7 +1002,7 @@ namespace IXICore
                         break;
                     }
                     amount += singleToAmount;
-                    toList.Add(single_to_address, singleToAmount);
+                    toList.Add(new Address(single_to_address), singleToAmount);
                 }
             }
             if (parameters.ContainsKey("fee") && ((string)parameters["fee"]).Length > 0)
@@ -1076,7 +1076,7 @@ namespace IXICore
             }
             string signer = (string)parameters["signer"];
 
-            byte[] signer_address = new Address(Base58Check.Base58CheckEncoding.DecodePlain(signer)).address;
+            byte[] signer_address = new Address(Base58Check.Base58CheckEncoding.DecodePlain(signer)).addressNoChecksum;
             IxiNumber fee = ConsensusConfig.transactionPrice;
 
             Transaction transaction = Transaction.multisigAddKeyTransaction(signer_address, fee, destWallet, IxianHandler.getHighestKnownNetworkBlockHeight());
@@ -1110,7 +1110,7 @@ namespace IXICore
             }
             string signer = (string)parameters["signer"];
 
-            byte[] signer_address = new Address(Base58Check.Base58CheckEncoding.DecodePlain(signer)).address;
+            byte[] signer_address = new Address(Base58Check.Base58CheckEncoding.DecodePlain(signer)).addressNoChecksum;
 
             IxiNumber fee = ConsensusConfig.transactionPrice;
 
@@ -1196,7 +1196,7 @@ namespace IXICore
 
             foreach (Address addr in address_list)
             {
-                address_balance_list.Add(addr.ToString(), IxianHandler.getWalletBalance(addr.address).ToString());
+                address_balance_list.Add(addr.ToString(), IxianHandler.getWalletBalance(addr.addressNoChecksum).ToString());
             }
 
             return new JsonResponse { result = address_balance_list, error = error };
@@ -1678,7 +1678,7 @@ namespace IXICore
             }
 
             IxiNumber to_amount = 0;
-            SortedDictionary<byte[], IxiNumber> toList = new SortedDictionary<byte[], IxiNumber>(new ByteArrayComparer());
+            SortedDictionary<Address, IxiNumber> toList = new SortedDictionary<Address, IxiNumber>(new AddressComparer());
             string[] to_split = ((string)parameters["to"]).Split('-');
             if (to_split.Length > 0)
             {
@@ -1696,7 +1696,7 @@ namespace IXICore
                         return new JsonResponse { result = null, error = new JsonError() { code = (int)RPCErrorCode.RPC_INVALID_PARAMS, message = "Invalid to amount was specified" } };
                     }
                     to_amount += singleToAmount;
-                    toList.Add(single_to_address, singleToAmount);
+                    toList.Add(new Address(single_to_address), singleToAmount);
                 }
             }
 
@@ -1761,7 +1761,7 @@ namespace IXICore
                 // fee is taken from the first specified address
                 byte[] first_address = fromList.Keys.First();
                 fromList[first_address] = fromList[first_address] + transaction.fee;
-                if (fromList[first_address] > IxianHandler.getWalletBalance((new Address(transaction.pubKey, first_address)).address))
+                if (fromList[first_address] > IxianHandler.getWalletBalance((new Address(transaction.pubKey, first_address)).addressNoChecksum))
                 {
                     return new JsonResponse { result = null, error = new JsonError() { code = (int)RPCErrorCode.RPC_WALLET_INSUFFICIENT_FUNDS, message = "Balance is too low" } };
                 }

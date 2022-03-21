@@ -120,7 +120,7 @@ namespace IXICore.SpixiBot
                         byte[] contact_bytes = reader.ReadBytes(contact_len);
 
                         BotContact bc = new BotContact(contact_bytes, saveNickAsString);
-                        byte[] address = new Address(bc.publicKey).address;
+                        byte[] address = new Address(bc.publicKey).addressNoChecksum;
                         contacts.AddOrReplace(address, bc);
                     }
                 }
@@ -256,7 +256,7 @@ namespace IXICore.SpixiBot
         {
             lock (contacts)
             {
-                byte[] address = new Address(user.publicKey).address;
+                byte[] address = new Address(user.publicKey).addressNoChecksum;
                 if(!contacts.ContainsKey(address))
                 {
                     contactsList.Add(address);

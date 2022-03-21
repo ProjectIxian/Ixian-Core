@@ -18,7 +18,7 @@ using System.Linq;
 
 namespace IXICore
 {
-    public class AddressComparer : IComparer<byte[]>
+    public class PresenceByteArrayComparer : IComparer<byte[]>
     {
         public int Compare(byte[] x, byte[] y)
         {
@@ -53,7 +53,7 @@ namespace IXICore
                 throw new ArgumentException("Selector must be of shorter or equal length to address.");
             }
             SelectorIndexes = selector;
-            Addresses = new SortedDictionary<byte[], string[]>(new AddressComparer());
+            Addresses = new SortedDictionary<byte[], string[]>(new PresenceByteArrayComparer());
             //
             List<HashSet<string>> RepetitionsIP = new List<HashSet<string>>();
             // Please note:
