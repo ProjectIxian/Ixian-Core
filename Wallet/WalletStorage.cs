@@ -44,8 +44,8 @@ namespace IXICore
 
         protected byte[] privateKey = null;
         protected byte[] publicKey = null;
-        protected byte[] address = null;
-        protected byte[] lastAddress = null;
+        protected Address address = null;
+        protected Address lastAddress = null;
 
         protected bool walletLoaded = false;
 
@@ -56,7 +56,7 @@ namespace IXICore
             filename = file_name;
         }
 
-        public byte[] getPrimaryAddress()
+        public Address getPrimaryAddress()
         {
             return address;
         }
@@ -71,14 +71,11 @@ namespace IXICore
             return publicKey;
         }
 
-        public byte[] getLastAddress()
+        public Address getLastAddress()
         {
             // TODO TODO TODO TODO TODO improve if possible for v3 wallets
             // Also you have to take into account what happens when loading from file and the difference between v1 and v2 wallets (key related)
-            lock (myAddresses)
-            {
-                return lastAddress;
-            }
+            return lastAddress;
         }
 
         public byte[] getSeedHash()
@@ -92,18 +89,18 @@ namespace IXICore
             return filename;
         }
 
-        public IxiNumber getMyTotalBalance(byte[] primary_address)
+        public IxiNumber getMyTotalBalance(Address primary_address)
         {
             IxiNumber balance = 0;
             lock (myAddresses)
             {
                 foreach (var entry in myAddresses)
                 {
-                    if (primary_address != null && !entry.Value.keyPair.addressBytes.SequenceEqual(primary_address))
+                    if (primary_address != null && !entry.Value.keyPair.addressBytes.SequenceEqual(primary_address.addressNoChecksum))
                     {
                         continue;
                     }
-                    IxiNumber amount = IxianHandler.getWalletBalance(entry.Key);
+                    IxiNumber amount = IxianHandler.getWalletBalance(new Address(entry.Key));
                     if (amount == 0)
                     {
                         continue;
@@ -169,7 +166,7 @@ namespace IXICore
                     {
                         AddressData ad = new AddressData() { nonce = kp.lastNonceBytes, keyPair = kp };
                         myAddresses.Add(new_address.addressNoChecksum, ad);
-                        lastAddress = new_address.addressNoChecksum;
+                        lastAddress = new_address;
                     }
                 }
 
@@ -211,7 +208,7 @@ namespace IXICore
                     {
                         AddressData ad = new AddressData() { nonce = kp.lastNonceBytes, keyPair = kp };
                         myAddresses.Add(new_address.addressNoChecksum, ad);
-                        lastAddress = new_address.addressNoChecksum;
+                        lastAddress = new_address;
                     }
                 }
 
@@ -288,35 +285,35 @@ namespace IXICore
             return kp;
         }
 
-        public IxianKeyPair getKeyPair(byte[] address)
+        public IxianKeyPair getKeyPair(Address address)
         {
             lock (myKeys)
             {
-                if (myKeys.ContainsKey(address))
+                if (myKeys.ContainsKey(address.addressNoChecksum))
                 {
-                    return myKeys[address];
+                    return myKeys[address.addressNoChecksum];
                 }
                 return null;
             }
         }
 
-        public AddressData getAddress(byte[] address)
+        public AddressData getAddress(Address address)
         {
             lock (myAddresses)
             {
-                if (myAddresses.ContainsKey(address))
+                if (myAddresses.ContainsKey(address.addressNoChecksum))
                 {
-                    return myAddresses[address];
+                    return myAddresses[address.addressNoChecksum];
                 }
             }
             return null;
         }
 
-        public bool isMyAddress(byte[] address)
+        public bool isMyAddress(Address address)
         {
             lock (myAddresses)
             {
-                if (myAddresses.ContainsKey(address))
+                if (myAddresses.ContainsKey(address.addressNoChecksum))
                 {
                     return true;
                 }
@@ -324,7 +321,7 @@ namespace IXICore
             return false;
         }
 
-        public List<byte[]> extractMyAddressesFromAddressList(SortedDictionary<Address, IxiNumber> address_list)
+        public List<byte[]> extractMyAddressesFromAddressList(SortedDictionary<Address, Transaction.ToEntry> address_list)
         {
             lock (myAddresses)
             {
@@ -360,18 +357,18 @@ namespace IXICore
             }
         }
 
-        public SortedDictionary<byte[], IxiNumber> generateFromListFromAddress(byte[] from_address, IxiNumber total_amount_with_fee, bool full_pubkey = false)
+        public SortedDictionary<byte[], IxiNumber> generateFromListFromAddress(Address from_address, IxiNumber total_amount_with_fee, bool full_pubkey = false)
         {
             lock (myAddresses)
             {
                 SortedDictionary<byte[], IxiNumber> tmp_from_list = new SortedDictionary<byte[], IxiNumber>(new ByteArrayComparer());
                 if (full_pubkey)
                 {
-                    if (!myAddresses.ContainsKey(from_address))
+                    if (!myAddresses.ContainsKey(from_address.addressNoChecksum))
                     {
                         return null;
                     }
-                    AddressData ad = myAddresses[from_address];
+                    AddressData ad = myAddresses[from_address.addressNoChecksum];
                     tmp_from_list.Add(ad.nonce, total_amount_with_fee);
                 }
                 else
@@ -382,7 +379,7 @@ namespace IXICore
             }
         }
 
-        public SortedDictionary<byte[], IxiNumber> generateFromList(byte[] primary_address, IxiNumber total_amount_with_fee, List<Address> skip_addresses, List<Transaction> pending_transactions)
+        public SortedDictionary<byte[], IxiNumber> generateFromList(Address primary_address, IxiNumber total_amount_with_fee, List<Address> skip_addresses, List<Transaction> pending_transactions)
         {
             // TODO TODO TODO TODO  this won't work well once wallet v3 is activated
             lock (myAddresses)
@@ -390,7 +387,7 @@ namespace IXICore
                 Dictionary<byte[], IxiNumber> tmp_from_list = new Dictionary<byte[], IxiNumber>(new ByteArrayComparer());
                 foreach (var entry in myAddresses)
                 {
-                    if(!entry.Value.keyPair.addressBytes.SequenceEqual(primary_address))
+                    if(!entry.Value.keyPair.addressBytes.SequenceEqual(primary_address.addressNoChecksum))
                     {
                         continue;
                     }
@@ -400,7 +397,7 @@ namespace IXICore
                         continue;
                     }
 
-                    Wallet wallet = IxianHandler.getWallet(entry.Key);
+                    Wallet wallet = IxianHandler.getWallet(new Address(entry.Key));
                     if(wallet.type != WalletType.Normal)
                     {
                         continue;
@@ -577,25 +574,25 @@ namespace IXICore
                 return false;
             }
 
-            Address addr = new Address(publicKey);
-            lastAddress = address = addr.addressNoChecksum;
+            Address addr = new Address(new Address(publicKey).addressNoChecksum);
+            lastAddress = address = addr;
 
-            masterSeed = address;
-            seedHash = address;
+            masterSeed = address.addressWithChecksum;
+            seedHash = address.addressWithChecksum;
             derivedMasterSeed = masterSeed;
 
             IxianKeyPair kp = new IxianKeyPair();
             kp.privateKeyBytes = privateKey;
             kp.publicKeyBytes = publicKey;
-            kp.addressBytes = address;
+            kp.addressBytes = address.addressNoChecksum;
             lock (myKeys)
             {
-                myKeys.Add(address, kp);
+                myKeys.Add(address.addressNoChecksum, kp);
             }
             lock (myAddresses)
             {
                 AddressData ad = new AddressData() { nonce = new byte[1] { 0 }, keyPair = kp };
-                myAddresses.Add(address, ad);
+                myAddresses.Add(address.addressNoChecksum, ad);
 
                 if (last_nonce_bytes != null)
                 {
@@ -691,12 +688,12 @@ namespace IXICore
                 {
                     return false;
                 }
-                byte[] tmp_address = (new Address(dec_public_key)).addressNoChecksum;
+                Address tmp_address = new Address(new Address(dec_public_key).addressNoChecksum);
 
                 IxianKeyPair kp = new IxianKeyPair();
                 kp.privateKeyBytes = dec_private_key;
                 kp.publicKeyBytes = dec_public_key;
-                kp.addressBytes = tmp_address;
+                kp.addressBytes = tmp_address.addressNoChecksum;
                 if (enc_nonce != null)
                 {
                     kp.lastNonceBytes = CryptoManager.lib.decryptWithPassword(enc_nonce, password, true);
@@ -722,12 +719,12 @@ namespace IXICore
 
                 lock (myKeys)
                 {
-                    myKeys.Add(tmp_address, kp);
+                    myKeys.Add(tmp_address.addressNoChecksum, kp);
                 }
                 lock (myAddresses)
                 {
                     AddressData ad = new AddressData() { nonce = new byte[1] { 0 }, keyPair = kp };
-                    myAddresses.Add(tmp_address, ad);
+                    myAddresses.Add(tmp_address.addressNoChecksum, ad);
                 }
             }
 
@@ -1117,21 +1114,21 @@ namespace IXICore
             publicKey = kp.publicKeyBytes;
             baseNonce = Crypto.sha512sqTrunc(privateKey, publicKey.Length, 64);
 
-            Address addr = new Address(publicKey);
-            lastAddress = address = addr.addressNoChecksum;
+            Address addr = new Address(new Address(publicKey).addressNoChecksum);
+            lastAddress = address = addr;
 
-            masterSeed = address;
-            seedHash = address;
+            masterSeed = address.addressWithChecksum;
+            seedHash = address.addressWithChecksum;
             derivedMasterSeed = masterSeed;
 
-            kp.addressBytes = address;
+            kp.addressBytes = address.addressNoChecksum;
 
-            myKeys.Add(address, kp);
-            myAddresses.Add(address, new AddressData() { keyPair = kp, nonce = new byte[1] { 0 } });
+            myKeys.Add(address.addressNoChecksum, kp);
+            myAddresses.Add(address.addressNoChecksum, new AddressData() { keyPair = kp, nonce = new byte[1] { 0 } });
 
 
-            Logging.info(String.Format("Public Key: {0}", Crypto.hashToString(publicKey)));
-            Logging.info(String.Format("Public Node Address: {0}", Base58Check.Base58CheckEncoding.EncodePlain(address)));
+            Logging.info("Public Key: {0}", Crypto.hashToString(publicKey));
+            Logging.info("Public Node Address: {0}", address.ToString());
 
             // Wait for any pending log messages to be written
             Logging.flush();
@@ -1139,7 +1136,7 @@ namespace IXICore
             Console.WriteLine();
             Console.Write("Your IXIAN address is ");
             Console.ForegroundColor = ConsoleColor.Green;
-            Console.WriteLine(Base58Check.Base58CheckEncoding.EncodePlain(address));
+            Console.WriteLine(address.ToString());
             Console.ResetColor();
             Console.WriteLine();
 
@@ -1165,7 +1162,7 @@ namespace IXICore
                 for (int i = 0; i < 100; i++)
                 {
                     Address new_address = generateNewAddress(primary_address, last_nonce, false, false);
-                    if(IxianHandler.getWalletBalance(new_address.addressNoChecksum) > 0)
+                    if(IxianHandler.getWalletBalance(new_address) > 0)
                     {
                         new_address_found = true;
                         for(int j = 0; j <= i; j++)

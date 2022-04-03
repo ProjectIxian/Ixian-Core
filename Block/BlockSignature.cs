@@ -77,7 +77,7 @@ namespace IXICore
                         int powSolutionLen = (int)reader.ReadIxiVarUInt();
                         if (powSolutionLen > 0)
                         {
-                            powSolution = new SignerPowSolution(reader.ReadBytes(powSolutionLen), signerAddress.addressNoChecksum);
+                            powSolution = new SignerPowSolution(reader.ReadBytes(powSolutionLen), signerAddress);
                         }
 
                         int signatureLen = (int)reader.ReadIxiVarUInt();

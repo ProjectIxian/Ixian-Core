@@ -26,7 +26,7 @@ namespace IXICore
         /// <summary>
         ///  Ixian Wallet address associated with the peer.
         /// </summary>
-        public byte[] walletAddress;
+        public Address walletAddress;
         /// <summary>
         /// Timestamp of the last time the peer has been seen on the network.
         /// </summary>
@@ -49,7 +49,7 @@ namespace IXICore
         /// </summary>
         public long blacklisted;
 
-        public Peer(string iHostname, byte[] iWalletAddress, long iLastSeen, long iLastConnectAttempt, long iLastConnected, int iRating)
+        public Peer(string iHostname, Address iWalletAddress, long iLastSeen, long iLastConnectAttempt, long iLastConnected, int iRating)
         {
             hostname = iHostname;
             walletAddress = iWalletAddress;

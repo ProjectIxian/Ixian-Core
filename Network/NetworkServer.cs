@@ -370,7 +370,7 @@ namespace IXICore.Network
                     if(!endpoint.isConnected())
                         continue;
 
-                    byte[] client_wallet = endpoint.presence.wallet;
+                    byte[] client_wallet = endpoint.presence.wallet.addressNoChecksum;
 
                     if (client_wallet != null && address.SequenceEqual(client_wallet))
                     {
@@ -406,7 +406,7 @@ namespace IXICore.Network
                     if (endpoint.presence == null)
                         continue;
 
-                    byte[] client_wallet = endpoint.presence.wallet;
+                    byte[] client_wallet = endpoint.presence.wallet.addressNoChecksum;
 
                     if (client_wallet != null)
                     {

@@ -163,9 +163,12 @@ namespace IXICore
 
             lastSuperBlockNum = block.lastSuperBlockNum;
 
-            foreach (var entry in block.superBlockSegments)
+            if(block.superBlockSegments != null)
             {
-                superBlockSegments.Add(entry.Key, new SuperBlockSegment(entry.Key, entry.Value.blockChecksum));
+                foreach (var entry in block.superBlockSegments)
+                {
+                    superBlockSegments.Add(entry.Key, new SuperBlockSegment(entry.Key, entry.Value.blockChecksum));
+                }
             }
 
             if (block.version < BlockVer.v6)

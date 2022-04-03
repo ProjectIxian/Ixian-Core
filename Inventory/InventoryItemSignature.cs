@@ -20,16 +20,16 @@ namespace IXICore.Inventory
     {
         public ulong blockNum;
         public byte[] blockHash;
-        public byte[] address;
+        public Address address;
 
-        public InventoryItemSignature(byte[] address, ulong blockNum, byte[] blockHash)
+        public InventoryItemSignature(Address address, ulong blockNum, byte[] blockHash)
         {
             type = InventoryItemTypes.blockSignature;
             this.address = address;
             this.blockNum = blockNum;
             this.blockHash = blockHash;
 
-            hash = getHash(address, blockHash);
+            hash = getHash(address.addressNoChecksum, blockHash);
         }
 
         public InventoryItemSignature(byte[] bytes)
@@ -41,14 +41,14 @@ namespace IXICore.Inventory
                     type = (InventoryItemTypes)reader.ReadIxiVarInt();
 
                     int address_len = (int)reader.ReadIxiVarUInt();
-                    address = reader.ReadBytes(address_len);
+                    address = new Address(reader.ReadBytes(address_len));
 
                     blockNum = reader.ReadIxiVarUInt();
 
                     int block_hash_len = (int)reader.ReadIxiVarUInt();
                     blockHash = reader.ReadBytes(block_hash_len);
 
-                    hash = getHash(address, blockHash);
+                    hash = getHash(address.addressNoChecksum, blockHash);
                 }
             }
         }
@@ -61,8 +61,8 @@ namespace IXICore.Inventory
                 {
                     writer.WriteIxiVarInt((int)type);
 
-                    writer.WriteIxiVarInt(address.Length);
-                    writer.Write(address);
+                    writer.WriteIxiVarInt(address.addressNoChecksum.Length);
+                    writer.Write(address.addressNoChecksum);
 
                     writer.WriteIxiVarInt(blockNum);
 

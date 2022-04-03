@@ -61,7 +61,7 @@ namespace IXICore.Network
         /// <param name="port">Port on which to connect</param>
         /// <param name="wallet_address">Expected wallet address of the remote server we are connecting to.</param>
         /// <returns>True, if the connection was successful.</returns>
-        public bool connectToServer(string hostname, int port, byte[] wallet_address)
+        public bool connectToServer(string hostname, int port, Address wallet_address)
         {
             if (fullyStopped)
             {

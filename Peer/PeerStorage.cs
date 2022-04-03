@@ -43,7 +43,7 @@ namespace IXICore
             initialConnectionCount = 0;
         }
 
-        public static bool addPeerToPeerList(string hostname, byte[] walletAddress, long last_seen, long last_connect_attempt, long last_connected, int rating, bool storePeersFile = true)
+        public static bool addPeerToPeerList(string hostname, Address walletAddress, long last_seen, long last_connect_attempt, long last_connected, int rating, bool storePeersFile = true)
         {
             if(!validateHostname(hostname))
             {
@@ -69,7 +69,7 @@ namespace IXICore
 
                 if (walletAddress != null)
                 {
-                    peerList.RemoveAll(x => x.walletAddress != null && x.walletAddress.SequenceEqual(walletAddress));
+                    peerList.RemoveAll(x => x.walletAddress != null && x.walletAddress.addressNoChecksum.SequenceEqual(walletAddress.addressNoChecksum));
                 }
 
                 peerList.Add(p);
@@ -188,7 +188,7 @@ namespace IXICore
                         {
                             continue;
                         }
-                        tw.WriteLine(p.hostname + ";" + Base58Check.Base58CheckEncoding.EncodePlain(p.walletAddress) + ";" + p.lastSeen + ";" + p.lastConnectAttempt + ";" + p.lastConnected + ";" + p.rating);
+                        tw.WriteLine(p.hostname + ";" + p.walletAddress.ToString() + ";" + p.lastSeen + ";" + p.lastConnectAttempt + ";" + p.lastConnected + ";" + p.rating);
                     }
                     tw.Flush();
                     tw.Close();
@@ -218,12 +218,19 @@ namespace IXICore
                     foreach (string ip in ips)
                     {
                         string[] split_hostname = ip.Split(';');
-                        if (split_hostname.Length == 6)
+                        try
                         {
-                            addPeerToPeerList(split_hostname[0], Base58Check.Base58CheckEncoding.DecodePlain(split_hostname[1]), Int64.Parse(split_hostname[2]), Int64.Parse(split_hostname[3]), Int64.Parse(split_hostname[4]), Int32.Parse(split_hostname[5]), false);
-                        }else if (split_hostname.Length == 2)
+                            if (split_hostname.Length == 6)
+                            {
+                                addPeerToPeerList(split_hostname[0], new Address(Base58Check.Base58CheckEncoding.DecodePlain(split_hostname[1])), Int64.Parse(split_hostname[2]), Int64.Parse(split_hostname[3]), Int64.Parse(split_hostname[4]), Int32.Parse(split_hostname[5]), false);
+                            }
+                            else if (split_hostname.Length == 2)
+                            {
+                                addPeerToPeerList(split_hostname[0], new Address(Base58Check.Base58CheckEncoding.DecodePlain(split_hostname[1])), 0, 0, 0, 0, false);
+                            }
+                        }catch(Exception)
                         {
-                            addPeerToPeerList(split_hostname[0], Base58Check.Base58CheckEncoding.DecodePlain(split_hostname[1]), 0, 0, 0, 0, false);
+
                         }
                     }
                 }
@@ -296,11 +303,11 @@ namespace IXICore
             }
         }
 
-        public static void blacklist(byte[] wallet)
+        public static void blacklist(Address wallet)
         {
             lock (peerList)
             {
-                Peer p = peerList.Find(x => x.walletAddress != null && x.walletAddress.SequenceEqual(wallet));
+                Peer p = peerList.Find(x => x.walletAddress != null && x.walletAddress.addressNoChecksum.SequenceEqual(wallet.addressNoChecksum));
                 if (p == null)
                 {
                     return;
@@ -318,9 +325,9 @@ namespace IXICore
             return false;
         }
 
-        public static bool isBlacklisted(byte[] wallet_address)
+        public static bool isBlacklisted(Address wallet_address)
         {
-            if (peerList.Find(x => x.blacklisted != 0 && x.walletAddress != null && x.walletAddress.SequenceEqual(wallet_address)) != null)
+            if (peerList.Find(x => x.blacklisted != 0 && x.walletAddress != null && x.walletAddress.addressNoChecksum.SequenceEqual(wallet_address.addressNoChecksum)) != null)
             {
                 return true;
             }
@@ -341,11 +348,11 @@ namespace IXICore
             }
         }
 
-        public static bool removeFromBlacklist(byte[] wallet_address)
+        public static bool removeFromBlacklist(Address wallet_address)
         {
             lock (peerList)
             {
-                Peer p = peerList.Find(x => x.blacklisted != 0 && x.walletAddress != null && x.walletAddress.SequenceEqual(wallet_address));
+                Peer p = peerList.Find(x => x.blacklisted != 0 && x.walletAddress != null && x.walletAddress.addressNoChecksum.SequenceEqual(wallet_address.addressNoChecksum));
                 if (p != null)
                 {
                     p.blacklisted = 0;

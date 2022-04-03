@@ -19,10 +19,10 @@ namespace IXICore.Inventory
     public class InventoryItemKeepAlive : InventoryItem
     {
         public long lastSeen;
-        public byte[] address;
+        public Address address;
         public byte[] deviceId;
 
-        public InventoryItemKeepAlive(byte[] hash, long lastSeen, byte[] address, byte[] deviceId)
+        public InventoryItemKeepAlive(byte[] hash, long lastSeen, Address address, byte[] deviceId)
         {
             type = InventoryItemTypes.keepAlive;
             this.hash = hash;
@@ -45,7 +45,7 @@ namespace IXICore.Inventory
                     lastSeen = reader.ReadIxiVarInt();
 
                     int address_len = (int)reader.ReadIxiVarUInt();
-                    address = reader.ReadBytes(address_len);
+                    address = new Address(reader.ReadBytes(address_len));
 
                     int device_id_len = (int)reader.ReadIxiVarUInt();
                     deviceId = reader.ReadBytes(device_id_len);
@@ -66,8 +66,8 @@ namespace IXICore.Inventory
 
                     writer.WriteIxiVarInt(lastSeen);
 
-                    writer.WriteIxiVarInt(address.Length);
-                    writer.Write(address);
+                    writer.WriteIxiVarInt(address.addressNoChecksum.Length);
+                    writer.Write(address.addressNoChecksum);
 
                     writer.WriteIxiVarInt(deviceId.Length);
                     writer.Write(deviceId);

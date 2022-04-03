@@ -27,11 +27,11 @@ namespace IXICore
 
     public class Wallet
     {
-        public byte[] id;
+        public Address id;
         public IxiNumber balance;
         public WalletType type;
         public byte requiredSigs;
-        public byte[][] allowedSigners;
+        public List<Address> allowedSigners;
         public byte[] data;
         public byte[] publicKey;
 
@@ -40,7 +40,7 @@ namespace IXICore
             get
             {
                 if (allowedSigners == null) return 0;
-                return (byte)allowedSigners.Length;
+                return (byte)allowedSigners.Count;
             }
         }
 
@@ -56,7 +56,7 @@ namespace IXICore
             publicKey = null;
         }
 
-        public Wallet(byte[] w_id, IxiNumber w_balance)
+        public Wallet(Address w_id, IxiNumber w_balance)
         {
             id = w_id;
             balance = w_balance;
@@ -75,11 +75,12 @@ namespace IXICore
             requiredSigs = wallet.requiredSigs;
             if (wallet.allowedSigners != null)
             {
-                allowedSigners = new byte[wallet.allowedSigners.Length][];
-                for (int i = 0; i < wallet.allowedSigners.Length; i++)
+                allowedSigners = new List<Address>();
+                for (int i = 0; i < wallet.allowedSigners.Count; i++)
                 {
-                    allowedSigners[i] = new byte[wallet.allowedSigners[i].Length];
-                    Array.Copy(wallet.allowedSigners[i], allowedSigners[i], allowedSigners[i].Length);
+                    var allowedSigner = new byte[wallet.allowedSigners[i].addressNoChecksum.Length];
+                    Array.Copy(wallet.allowedSigners[i].addressNoChecksum, allowedSigner, allowedSigners[i].addressNoChecksum.Length);
+                    allowedSigners.Add(new Address(allowedSigner));
                 }
             }
             data = wallet.data;
@@ -95,7 +96,7 @@ namespace IXICore
                     try
                     {
                         int idLen = reader.ReadInt32();
-                        id = reader.ReadBytes(idLen);
+                        id = new Address(reader.ReadBytes(idLen));
                         string balance_str = reader.ReadString();
                         balance = new IxiNumber(balance_str);
 
@@ -110,11 +111,11 @@ namespace IXICore
                         byte num_allowed_sigs = reader.ReadByte();
                         if (num_allowed_sigs > 0)
                         {
-                            allowedSigners = new byte[num_allowed_sigs][];
+                            allowedSigners = new List<Address>();
                             for (int i = 0; i < num_allowed_sigs; i++)
                             {
                                 int signerLen = reader.ReadInt32();
-                                allowedSigners[i] = reader.ReadBytes(signerLen);
+                                allowedSigners.Add(new Address(reader.ReadBytes(signerLen)));
                             }
                         }
                         else
@@ -155,8 +156,8 @@ namespace IXICore
         {
             try
             {
-                writer.Write(id.Length);
-                writer.Write(id);
+                writer.Write(id.addressNoChecksum.Length);
+                writer.Write(id.addressNoChecksum);
                 writer.Write(balance.ToString());
 
                 if (data != null)
@@ -173,11 +174,11 @@ namespace IXICore
                 writer.Write(requiredSigs);
                 if (allowedSigners != null)
                 {
-                    writer.Write((byte)allowedSigners.Length);
-                    for (int i = 0; i < allowedSigners.Length; i++)
+                    writer.Write((byte)allowedSigners.Count);
+                    for (int i = 0; i < allowedSigners.Count; i++)
                     {
-                        writer.Write(allowedSigners[i].Length);
-                        writer.Write(allowedSigners[i]);
+                        writer.Write(allowedSigners[i].addressNoChecksum.Length);
+                        writer.Write(allowedSigners[i].addressNoChecksum);
                     }
                 }
                 else
@@ -205,7 +206,7 @@ namespace IXICore
         {
             List<byte> rawData = new List<byte>();
 
-            rawData.AddRange(id);
+            rawData.AddRange(id.addressWithChecksum);
             rawData.AddRange(Encoding.UTF8.GetBytes(balance.ToString()));
 
             if (data != null)
@@ -225,7 +226,7 @@ namespace IXICore
             {
                 foreach (var entry in allowedSigners)
                 {
-                    rawData.AddRange(entry);
+                    rawData.AddRange(entry.addressWithChecksum);
                 }
             }
             if (block_version <= 2)
@@ -238,54 +239,35 @@ namespace IXICore
             }
         }
 
-        public bool isValidSigner(byte[] address)
+        public bool isValidSigner(Address address)
         {
-            if (address.SequenceEqual(id)) return true;
+            if (address.addressNoChecksum.SequenceEqual(id.addressNoChecksum)) return true;
             if (allowedSigners != null)
             {
-                foreach (var accepted_pubkey in allowedSigners)
+                foreach (var accepted_signer in allowedSigners)
                 {
-                    if (address.SequenceEqual(accepted_pubkey)) return true;
+                    if (address.addressNoChecksum.SequenceEqual(accepted_signer.addressNoChecksum)) return true;
                 }
             }
             return false;
         }
 
-        public void addValidSigner(byte[] address)
+        public void addValidSigner(Address address)
         {
             if (isValidSigner(address)) return;
-            byte[][] tmp = null;
-            int pos = 0;
-            if (allowedSigners != null)
+            if (allowedSigners == null)
             {
-                tmp = new byte[allowedSigners.Length + 1][];
-                for (int i = 0; i < allowedSigners.Length; i++)
-                {
-                    tmp[i] = allowedSigners[i];
-                }
-                pos = allowedSigners.Length;
+                allowedSigners = new List<Address>();
             }
-            else
-            {
-                tmp = new byte[1][];
-            }
-            tmp[pos] = address;
-            allowedSigners = tmp;
+
+            allowedSigners.Add(address);
         }
 
-        public void delValidSigner(byte[] address)
+        public void delValidSigner(Address address)
         {
             if (!isValidSigner(address)) return;
-            if (id.SequenceEqual(address)) return; // can't remove self
-            byte[][] tmp = new byte[allowedSigners.Length - 1][];
-            int idx = 0;
-            foreach (var allowed_signer in allowedSigners)
-            {
-                if (allowed_signer.SequenceEqual(address)) continue;
-                tmp[idx] = allowed_signer;
-                idx++;
-            }
-            allowedSigners = tmp;
+            if (id.addressNoChecksum.SequenceEqual(address.addressNoChecksum)) return; // can't remove self
+            allowedSigners.RemoveAll(x => x.addressNoChecksum.SequenceEqual(address.addressNoChecksum));
         }
 
         /// <summary>

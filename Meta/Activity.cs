@@ -105,7 +105,7 @@ namespace IXICore.Meta
             this.txid = txid;
         }
 
-        public Activity(byte[] seed_hash, string wallet, string from, SortedDictionary<Address, IxiNumber> to_list, int type, byte[] data, string value, long timestamp, int status, ulong block_height, string txid)
+        public Activity(byte[] seed_hash, string wallet, string from, SortedDictionary<Address, Transaction.ToEntry> to_list, int type, byte[] data, string value, long timestamp, int status, ulong block_height, string txid)
         {
             this.seedHash = seed_hash;
             this.wallet = wallet;
@@ -136,7 +136,7 @@ namespace IXICore.Meta
                     SortedDictionary<Address, IxiNumber> tmp_to_list = getToListAsArray();
                     foreach (var entry in tmp_to_list)
                     {
-                        raw_data.AddRange(entry.Key.addressNoChecksum);
+                        raw_data.AddRange(entry.Key.addressWithChecksum);
                         raw_data.AddRange(entry.Value.getAmount().ToByteArray());
                     }
                     raw_data.AddRange(BitConverter.GetBytes(type));
@@ -187,13 +187,15 @@ namespace IXICore.Meta
             return _cachedToListArray;
         }
 
-        public bool setToListArray(SortedDictionary<Address, IxiNumber> to_list)
+        public bool setToListArray(SortedDictionary<Address, Transaction.ToEntry> to_list)
         {
-            _cachedToListArray = to_list;
+            _cachedToListArray.Clear();
+
             toList = "";
-            foreach (var to in _cachedToListArray)
+            foreach (var to in to_list)
             {
-                toList = string.Format("{0}||{1}:{2}", toList, Base58Check.Base58CheckEncoding.EncodePlain(to.Key.addressNoChecksum), Convert.ToBase64String(to.Value.getAmount().ToByteArray()));
+                toList = string.Format("{0}||{1}:{2}", toList, to.Key.ToString(), Convert.ToBase64String(to.Value.amount.getAmount().ToByteArray()));
+                _cachedToListArray.AddOrReplace(to.Key, to.Value.amount);
             }
 
             return true;

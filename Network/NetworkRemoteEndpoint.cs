@@ -104,7 +104,7 @@ namespace IXICore.Network
 
         private List<long> requestedMessageIds = new List<long>();
 
-        public byte[] serverWalletAddress = null;
+        public Address serverWalletAddress = null;
         public byte[] serverPubKey = null;
 
         public byte[] challenge = null;

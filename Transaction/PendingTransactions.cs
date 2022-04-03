@@ -57,7 +57,7 @@ namespace IXICore
             }
         }
 
-        public static IxiNumber getPendingSendingTransactionsAmount(byte[] primary_address)
+        public static IxiNumber getPendingSendingTransactionsAmount(Address primary_address)
         {
             IxiNumber amount = 0;
             lock (pendingTransactions)
@@ -66,7 +66,7 @@ namespace IXICore
                 foreach (var entry in txs)
                 {
                     Transaction tx = entry.transaction;
-                    if (primary_address == null || (new Address(tx.pubKey)).addressNoChecksum.SequenceEqual(primary_address))
+                    if (primary_address == null || (new Address(tx.pubKey)).addressNoChecksum.SequenceEqual(primary_address.addressNoChecksum))
                     {
                         amount += tx.amount + tx.fee;
                     }
@@ -91,16 +91,16 @@ namespace IXICore
             }
         }
 
-        public static void increaseReceivedCount(byte[] txid, byte[] address)
+        public static void increaseReceivedCount(byte[] txid, Address address)
         {
             lock (pendingTransactions)
             {
                 PendingTransaction pending = pendingTransactions.Find(x => x.transaction.id.SequenceEqual(txid));
                 if (pending != null)
                 {
-                    if(pending.confirmedNodeList.Find(x => x.SequenceEqual(address)) == null)
+                    if(pending.confirmedNodeList.Find(x => x.SequenceEqual(address.addressNoChecksum)) == null)
                     {
-                        pending.confirmedNodeList.Add(address);
+                        pending.confirmedNodeList.Add(address.addressNoChecksum);
                     }
                 }
             }

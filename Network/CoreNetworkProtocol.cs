@@ -189,13 +189,13 @@ namespace IXICore
                 }
 
                 int addrLen = (int)reader.ReadIxiVarUInt();
-                byte[] addr = reader.ReadBytes(addrLen);
                 if (addrLen > 70)
                 {
-                    Logging.error("Hello: Invalid address from {0} - {1}.", endpoint.getFullAddress(true), Base58Check.Base58CheckEncoding.EncodePlain(addr));
+                    Logging.error("Hello: Invalid address from {0}.", endpoint.getFullAddress(true));
                     sendBye(endpoint, ProtocolByeCode.rejected, "Invalid address", "", true);
                     return false;
                 }
+                Address addr = new Address(reader.ReadBytes(addrLen));
 
                 bool test_net = reader.ReadBoolean();
                 char node_type = reader.ReadChar();
@@ -249,7 +249,7 @@ namespace IXICore
                 }
 
                 // Check the address and pubkey and disconnect on mismatch
-                if (!addr.SequenceEqual((new Address(pubkey)).addressNoChecksum))
+                if (!addr.addressNoChecksum.SequenceEqual(new Address(pubkey).addressNoChecksum))
                 {
                     Logging.warn("Hello: Pubkey and address do not match.");
                     sendBye(endpoint, ProtocolByeCode.authFailed, "Pubkey and address do not match.", "", true);
@@ -260,7 +260,7 @@ namespace IXICore
 
                 if (PeerStorage.isBlacklisted(addr) || PeerStorage.isBlacklisted(endpoint.getFullAddress(true)))
                 {
-                    Logging.warn("Hello: Connected node is blacklisted ({0} - {1}).", endpoint.getFullAddress(true), Base58Check.Base58CheckEncoding.EncodePlain(addr));
+                    Logging.warn("Hello: Connected node is blacklisted ({0} - {1}).", endpoint.getFullAddress(true), addr.ToString());
                     sendBye(endpoint, ProtocolByeCode.rejected, "Blacklisted", "", true);
                     return false;
                 }
@@ -325,7 +325,7 @@ namespace IXICore
 
 
                     // Check the address and local address and disconnect on mismatch
-                    if (endpoint.serverWalletAddress != null && !addr.SequenceEqual(endpoint.serverWalletAddress))
+                    if (endpoint.serverWalletAddress != null && !addr.addressNoChecksum.SequenceEqual(endpoint.serverWalletAddress.addressNoChecksum))
                     {
                         Logging.warn("Hello: Local address mismatch, possible Man-in-the-middle attack.");
                         sendBye(endpoint, ProtocolByeCode.addressMismatch, "Local address mismatch.", "", true);
@@ -429,7 +429,7 @@ namespace IXICore
                     writer.WriteIxiVarInt(6);
 
                     // Send the public node address
-                    byte[] address = IxianHandler.getWalletStorage().getPrimaryAddress();
+                    byte[] address = IxianHandler.getWalletStorage().getPrimaryAddress().addressWithChecksum;
                     writer.WriteIxiVarInt(address.Length);
                     writer.Write(address);
 

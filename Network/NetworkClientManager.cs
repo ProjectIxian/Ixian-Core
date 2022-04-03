@@ -55,10 +55,10 @@ namespace IXICore.Network
             // Now add the seed nodes to the list
             foreach (string[] addr in CoreNetworkUtils.getSeedNodes(IxianHandler.networkType))
             {
-                byte[] wallet_addr = null;
+                Address wallet_addr = null;
                 if(addr[1] != null)
                 {
-                    wallet_addr = Base58Check.Base58CheckEncoding.DecodePlain(addr[1]);
+                    wallet_addr = new Address(Base58Check.Base58CheckEncoding.DecodePlain(addr[1]));
                 }
                 PeerStorage.addPeerToPeerList(addr[0], wallet_addr, Clock.getTimestamp(), 0, 1, 0, false);
             }
@@ -169,7 +169,7 @@ namespace IXICore.Network
         }
 
         // Connects to a specified node, with the syntax host:port
-        public static bool connectTo(string host, byte[] wallet_address)
+        public static bool connectTo(string host, Address wallet_address)
         {
             if (host == null || host.Length < 3)
             {

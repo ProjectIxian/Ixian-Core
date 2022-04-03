@@ -28,12 +28,12 @@ namespace IXICore
         public ulong blockNum;
         public byte[] solution;
 
-        private byte[] solverAddress = null; // solverAddress is not trasmitted over the network
+        private Address solverAddress = null; // solverAddress is not trasmitted over the network
         private byte[] _checksum = null;
         public byte[] checksum { get {
                 if(_checksum == null)
                 {
-                    var targetHeader = IxianHandler.getBlockHeader(blockNum);
+                    var targetHeader = IxianHandler.getBlockHeader(blockNum, false);
                     _checksum = solutionToHash(solution, blockNum, targetHeader.blockChecksum, solverAddress);
                 }
                 return _checksum;
@@ -65,7 +65,7 @@ namespace IXICore
             }
         }  // bits are not transmitted over the network
 
-        public SignerPowSolution(byte[] solverAddress)
+        public SignerPowSolution(Address solverAddress)
         {
             this.solverAddress = solverAddress;
         }
@@ -77,11 +77,12 @@ namespace IXICore
             solution = new byte[src.solution.Length];
             Array.Copy(src.solution, solution, solution.Length);
 
-            solverAddress = new byte[src.solverAddress.Length];
-            Array.Copy(src.solverAddress, solverAddress, solverAddress.Length);
+            byte[] solverAddressBytes = new byte[src.solverAddress.addressNoChecksum.Length];
+            Array.Copy(src.solverAddress.addressNoChecksum, solverAddressBytes, solverAddressBytes.Length);
+            solverAddress = new Address(solverAddressBytes);
         }
 
-        public SignerPowSolution(byte[] bytes, byte[] solverAddress)
+        public SignerPowSolution(byte[] bytes, Address solverAddress)
         {
             try
             {
@@ -182,9 +183,9 @@ namespace IXICore
             {
                 throw new ArgumentOutOfRangeException(String.Format("Difficulty can't be negative: {0}", difficulty));
             }
-            if (difficulty == 0)
+            if (difficulty < 1)
             {
-                return minDifficultyTarget.ToByteArray();
+                difficulty = 1;
             }
             BigInteger biHash = minDifficultyTarget / difficulty;
             return biHash.ToByteArray();
@@ -198,7 +199,7 @@ namespace IXICore
                 throw new OverflowException(String.Format("Hash can't have more than {0} bytes", hashLength));
             }
             BigInteger biHashBytes = new BigInteger(hashBytes);
-            if (biHashBytes < 1)
+            if (biHashBytes < 0)
             {
                 return 0;
             }
@@ -240,7 +241,7 @@ namespace IXICore
         }
 
         // Verify nonce
-        public static bool verifySolution(byte[] solution, ulong blockNum, byte[] blockHash, byte[] solverAddress, BigInteger difficulty)
+        public static bool verifySolution(byte[] solution, ulong blockNum, byte[] blockHash, Address solverAddress, BigInteger difficulty)
         {
             byte[] hash = solutionToHash(solution, blockNum, blockHash, solverAddress);
             if(hash == null)
@@ -257,7 +258,7 @@ namespace IXICore
             return false;
         }
 
-        public static byte[] solutionToHash(byte[] solution, ulong blockNum, byte[] blockHash, byte[] solverAddress)
+        public static byte[] solutionToHash(byte[] solution, ulong blockNum, byte[] blockHash, Address solverAddress)
         {
             if (solution == null || solution.Length < 1 || solution.Length > 64)
             {
@@ -265,14 +266,14 @@ namespace IXICore
             }
             // TODO protect against spamming with invalid nonce/block_num
             byte[] blockNumBytes = blockNum.GetIxiVarIntBytes();
-            byte[] challengeData = new byte[blockNumBytes.Length + blockHash.Length + solverAddress.Length + solution.Length];
+            byte[] challengeData = new byte[blockNumBytes.Length + blockHash.Length + solverAddress.addressNoChecksum.Length + solution.Length];
 
             System.Buffer.BlockCopy(blockNumBytes, 0, challengeData, 0, blockNumBytes.Length);
             System.Buffer.BlockCopy(blockHash, 0, challengeData, blockNumBytes.Length, blockHash.Length);
-            System.Buffer.BlockCopy(solverAddress, 0, challengeData, blockNumBytes.Length + blockHash.Length, solverAddress.Length); // TODO remove checksum
-            System.Buffer.BlockCopy(solution, 0, challengeData, blockNumBytes.Length + blockHash.Length + solverAddress.Length, solution.Length);
+            System.Buffer.BlockCopy(solverAddress.addressNoChecksum, 0, challengeData, blockNumBytes.Length + blockHash.Length, solverAddress.addressNoChecksum.Length);
+            System.Buffer.BlockCopy(solution, 0, challengeData, blockNumBytes.Length + blockHash.Length + solverAddress.addressNoChecksum.Length, solution.Length);
 
-            return Crypto.sha512sqTrunc(challengeData);
+            return CryptoManager.lib.sha3_512sqTrunc(challengeData);
         }
     }
 }

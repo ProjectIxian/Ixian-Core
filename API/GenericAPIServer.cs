@@ -945,7 +945,7 @@ namespace IXICore
 
             IxiNumber fee = ConsensusConfig.transactionPrice;
 
-            Transaction transaction = Transaction.multisigAddTxSignature(orig_txid, fee, destWallet, IxianHandler.getHighestKnownNetworkBlockHeight());
+            Transaction transaction = Transaction.multisigAddTxSignature(orig_txid, fee, new Address(destWallet), IxianHandler.getHighestKnownNetworkBlockHeight());
             if (IxianHandler.addTransaction(transaction, true))
             {
                 PendingTransactions.addPendingLocalTransaction(transaction);
@@ -980,7 +980,7 @@ namespace IXICore
 
             IxiNumber amount = 0;
             IxiNumber fee = ConsensusConfig.transactionPrice;
-            SortedDictionary<Address, IxiNumber> toList = new SortedDictionary<Address, IxiNumber>(new AddressComparer());
+            SortedDictionary<Address, Transaction.ToEntry> toList = new SortedDictionary<Address, Transaction.ToEntry>(new AddressComparer());
             string[] to_split = ((string)parameters["to"]).Split('-');
             if (to_split.Length > 0)
             {
@@ -1002,7 +1002,8 @@ namespace IXICore
                         break;
                     }
                     amount += singleToAmount;
-                    toList.Add(new Address(single_to_address), singleToAmount);
+                    Transaction.ToEntry toEntry = new Transaction.ToEntry(Transaction.getExpectedVersion(IxianHandler.getLastBlockVersion()), singleToAmount, null, null);
+                    toList.Add(new Address(single_to_address), toEntry);
                 }
             }
             if (parameters.ContainsKey("fee") && ((string)parameters["fee"]).Length > 0)
@@ -1017,7 +1018,7 @@ namespace IXICore
                 return new JsonResponse { result = null, error = error };
             }
 
-            byte[] from = Base58Check.Base58CheckEncoding.DecodePlain((string)parameters["from"]);
+            Address from = new Address(Base58Check.Base58CheckEncoding.DecodePlain((string)parameters["from"]));
             if (IxianHandler.getWallet(from).type != WalletType.Multisig)
             {
                 error = new JsonError { code = (int)RPCErrorCode.RPC_WALLET_ERROR, message = "The specified 'from' wallet is not a multisig wallet." };
@@ -1068,7 +1069,7 @@ namespace IXICore
             {
                 return new JsonResponse { result = null, error = new JsonError() { code = (int)RPCErrorCode.RPC_INVALID_PARAMS, message = "Parameter 'wallet' is missing." } };
             }
-            byte[] destWallet = Base58Check.Base58CheckEncoding.DecodePlain((string)parameters["wallet"]);
+            Address destWallet = new Address(Base58Check.Base58CheckEncoding.DecodePlain((string)parameters["wallet"]));
 
             if (!parameters.ContainsKey("signer"))
             {
@@ -1076,7 +1077,7 @@ namespace IXICore
             }
             string signer = (string)parameters["signer"];
 
-            byte[] signer_address = new Address(Base58Check.Base58CheckEncoding.DecodePlain(signer)).addressNoChecksum;
+            Address signer_address = new Address(Base58Check.Base58CheckEncoding.DecodePlain(signer));
             IxiNumber fee = ConsensusConfig.transactionPrice;
 
             Transaction transaction = Transaction.multisigAddKeyTransaction(signer_address, fee, destWallet, IxianHandler.getHighestKnownNetworkBlockHeight());
@@ -1102,7 +1103,7 @@ namespace IXICore
             {
                 return new JsonResponse { result = null, error = new JsonError() { code = (int)RPCErrorCode.RPC_INVALID_PARAMS, message = "Parameter 'wallet' is missing." } };
             }
-            byte[] destWallet = Base58Check.Base58CheckEncoding.DecodePlain((string)parameters["wallet"]);
+            Address destWallet = new Address(Base58Check.Base58CheckEncoding.DecodePlain((string)parameters["wallet"]));
 
             if (!parameters.ContainsKey("signer"))
             {
@@ -1110,7 +1111,7 @@ namespace IXICore
             }
             string signer = (string)parameters["signer"];
 
-            byte[] signer_address = new Address(Base58Check.Base58CheckEncoding.DecodePlain(signer)).addressNoChecksum;
+            Address signer_address = new Address(Base58Check.Base58CheckEncoding.DecodePlain(signer));
 
             IxiNumber fee = ConsensusConfig.transactionPrice;
 
@@ -1137,7 +1138,7 @@ namespace IXICore
             {
                 return new JsonResponse { result = null, error = new JsonError() { code = (int)RPCErrorCode.RPC_INVALID_PARAMS, message = "Parameter 'wallet' is missing." } };
             }
-            byte[] destWallet = Base58Check.Base58CheckEncoding.DecodePlain((string)parameters["wallet"]);
+            Address destWallet = new Address(Base58Check.Base58CheckEncoding.DecodePlain((string)parameters["wallet"]));
 
             if (!parameters.ContainsKey("sigs"))
             {
@@ -1166,10 +1167,10 @@ namespace IXICore
 
         private JsonResponse onGetTotalBalance(Dictionary<string, object> parameters)
         {
-            byte[] wallet = null;
+            Address wallet = null;
             if (parameters.ContainsKey("wallet"))
             {
-                wallet = Base58Check.Base58CheckEncoding.DecodePlain((string)parameters["wallet"]);
+                wallet = new Address(Base58Check.Base58CheckEncoding.DecodePlain((string)parameters["wallet"]));
             }
 
             IxiNumber balance = IxianHandler.getWalletStorage(wallet).getMyTotalBalance(IxianHandler.getWalletStorage(wallet).getPrimaryAddress());
@@ -1183,10 +1184,10 @@ namespace IXICore
         {
             JsonError error = null;
 
-            byte[] wallet = null;
+            Address wallet = null;
             if (parameters.ContainsKey("wallet"))
             {
-                wallet = Base58Check.Base58CheckEncoding.DecodePlain((string)parameters["wallet"]);
+                wallet = new Address(Base58Check.Base58CheckEncoding.DecodePlain((string)parameters["wallet"]));
             }
 
             // Show own address, balance and blockchain synchronization status
@@ -1196,7 +1197,7 @@ namespace IXICore
 
             foreach (Address addr in address_list)
             {
-                address_balance_list.Add(addr.ToString(), IxianHandler.getWalletBalance(addr.addressNoChecksum).ToString());
+                address_balance_list.Add(addr.ToString(), IxianHandler.getWalletBalance(addr).ToString());
             }
 
             return new JsonResponse { result = address_balance_list, error = error };
@@ -1206,10 +1207,10 @@ namespace IXICore
         {
             JsonError error = null;
 
-            byte[] wallet = null;
+            Address wallet = null;
             if (parameters.ContainsKey("wallet"))
             {
-                wallet = Base58Check.Base58CheckEncoding.DecodePlain((string)parameters["wallet"]);
+                wallet = new Address(Base58Check.Base58CheckEncoding.DecodePlain((string)parameters["wallet"]));
             }
 
             return new JsonResponse { result = Crypto.hashToString(IxianHandler.getWalletStorage(wallet).getPrimaryPublicKey()), error = error };
@@ -1321,10 +1322,10 @@ namespace IXICore
                 descending = true;
             }
 
-            byte[] wallet = null;
+            Address wallet = null;
             if (parameters.ContainsKey("wallet"))
             {
-                wallet = Base58Check.Base58CheckEncoding.DecodePlain((string)parameters["wallet"]);
+                wallet = new Address(Base58Check.Base58CheckEncoding.DecodePlain((string)parameters["wallet"]));
             }
 
             string orderBy = "insertedTimestamp";
@@ -1362,10 +1363,10 @@ namespace IXICore
 
         private JsonResponse onGenerateNewAddress(Dictionary<string, object> parameters)
         {
-            byte[] wallet_address = null;
+            Address wallet_address = null;
             if (parameters.ContainsKey("wallet"))
             {
-                wallet_address = Base58Check.Base58CheckEncoding.DecodePlain((string)parameters["wallet"]);
+                wallet_address = new Address(Base58Check.Base58CheckEncoding.DecodePlain((string)parameters["wallet"]));
             }
 
             string base_address_str = null;
@@ -1374,17 +1375,17 @@ namespace IXICore
                 base_address_str = (string)parameters["address"];
             }
 
-            byte[] base_address;
+            Address base_address;
             if (base_address_str == null)
             {
                 base_address = IxianHandler.getWalletStorage(wallet_address).getPrimaryAddress();
             }
             else
             {
-                base_address = Base58Check.Base58CheckEncoding.DecodePlain(base_address_str);
+                base_address = new Address(Base58Check.Base58CheckEncoding.DecodePlain(base_address_str));
             }
 
-            Address new_address = IxianHandler.getWalletStorage(wallet_address).generateNewAddress(new Address(base_address), null);
+            Address new_address = IxianHandler.getWalletStorage(wallet_address).generateNewAddress(base_address, null);
             if (new_address != null)
             {
                 return new JsonResponse { result = new_address.ToString(), error = null };
@@ -1397,20 +1398,20 @@ namespace IXICore
 
         private JsonResponse onGetWalletBackup(Dictionary<string, object> parameters)
         {
-            byte[] wallet = null;
+            Address wallet = null;
             if (parameters.ContainsKey("wallet"))
             {
-                wallet = Base58Check.Base58CheckEncoding.DecodePlain((string)parameters["wallet"]);
+                wallet = new Address(Base58Check.Base58CheckEncoding.DecodePlain((string)parameters["wallet"]));
             }
             return new JsonResponse { result = "IXIHEX" + Crypto.hashToString(IxianHandler.getWalletStorage(wallet).getRawWallet()), error = null };
         }
 
         private JsonResponse onGetViewingWallet(Dictionary<string, object> parameters)
         {
-            byte[] wallet = null;
+            Address wallet = null;
             if (parameters.ContainsKey("wallet"))
             {
-                wallet = Base58Check.Base58CheckEncoding.DecodePlain((string)parameters["wallet"]);
+                wallet = new Address(Base58Check.Base58CheckEncoding.DecodePlain((string)parameters["wallet"]));
             }
             return new JsonResponse { result = "IXIHEX" + Crypto.hashToString(IxianHandler.getWalletStorage(wallet).getRawViewingWallet()), error = null };
         }
@@ -1442,7 +1443,7 @@ namespace IXICore
                 ws.scanForLostAddresses();
             }
 
-            return new JsonResponse { result = Base58Check.Base58CheckEncoding.EncodePlain(ws.getPrimaryAddress()), error = null };
+            return new JsonResponse { result = ws.getPrimaryAddress().ToString(), error = null };
         }
 
         private JsonResponse onUnloadWallet(Dictionary<string, object> parameters)
@@ -1452,7 +1453,7 @@ namespace IXICore
                 return new JsonResponse { result = null, error = new JsonError() { code = (int)RPCErrorCode.RPC_INVALID_PARAMS, message = "Missing parameter 'wallet'." } };
             }
 
-            byte[] wallet = Base58Check.Base58CheckEncoding.DecodePlain((string)parameters["wallet"]);
+            Address wallet = new Address(Base58Check.Base58CheckEncoding.DecodePlain((string)parameters["wallet"]));
             if (IxianHandler.removeWallet(wallet))
             {
                 return new JsonResponse { result = "OK", error = null };
@@ -1466,10 +1467,10 @@ namespace IXICore
         // Signs message or hash
         private JsonResponse onSign(Dictionary<string, object> parameters)
         {
-            byte[] wallet = null;
+            Address wallet = null;
             if (parameters.ContainsKey("wallet"))
             {
-                wallet = Base58Check.Base58CheckEncoding.DecodePlain((string)parameters["wallet"]);
+                wallet = new Address(Base58Check.Base58CheckEncoding.DecodePlain((string)parameters["wallet"]));
             }
 
 
@@ -1578,7 +1579,7 @@ namespace IXICore
             }
             if (parameters.ContainsKey("wallet"))
             {
-                byte[] address = Base58Check.Base58CheckEncoding.DecodePlain((string)parameters["wallet"]);
+                Address address = new Address(Base58Check.Base58CheckEncoding.DecodePlain((string)parameters["wallet"]));
                 PeerStorage.blacklist(address);
             }
             return new JsonResponse { result = "OK", error = null };
@@ -1596,7 +1597,7 @@ namespace IXICore
             {
                 return new JsonResponse { result = null, error = new JsonError() { code = (int)RPCErrorCode.RPC_INVALID_PARAMS, message = "Missing parameter 'wallet'" } };
             }
-            byte[] address = Base58Check.Base58CheckEncoding.DecodePlain((string)parameters["wallet"]);
+            Address address = new Address(Base58Check.Base58CheckEncoding.DecodePlain((string)parameters["wallet"]));
             Presence p = PresenceList.getPresenceByAddress(address);
             if(p != null)
             {
@@ -1622,22 +1623,22 @@ namespace IXICore
                 }
             }
 
-            byte[] walletAddress = null;
+            Address walletAddress = null;
             if (parameters.ContainsKey("wallet"))
             {
-                walletAddress = Base58Check.Base58CheckEncoding.DecodePlain((string)parameters["wallet"]);
+                walletAddress = new Address(Base58Check.Base58CheckEncoding.DecodePlain((string)parameters["wallet"]));
             }
 
             WalletStorage ws = IxianHandler.getWalletStorage(walletAddress);
 
-            byte[] primary_address_bytes = null;
+            Address primary_address = null;
             if (!parameters.ContainsKey("primaryAddress"))
             {
-                primary_address_bytes = ws.getPrimaryAddress();
+                primary_address = ws.getPrimaryAddress();
             }
             else
             {
-                primary_address_bytes = Base58Check.Base58CheckEncoding.DecodePlain((string)parameters["primaryAddress"]);
+                primary_address = new Address(Base58Check.Base58CheckEncoding.DecodePlain((string)parameters["primaryAddress"]));
             }
 
             SortedDictionary<byte[], IxiNumber> fromList = new SortedDictionary<byte[], IxiNumber>(new ByteArrayComparer());
@@ -1649,7 +1650,7 @@ namespace IXICore
                     foreach (string single_from in from_split)
                     {
                         string[] single_from_split = single_from.Split('_');
-                        byte[] single_from_address = Base58Check.Base58CheckEncoding.DecodePlain(single_from_split[0]);
+                        Address single_from_address = new Address(Base58Check.Base58CheckEncoding.DecodePlain(single_from_split[0]));
                         if (!ws.isMyAddress(single_from_address))
                         {
                             return new JsonResponse { result = null, error = new JsonError() { code = (int)RPCErrorCode.RPC_INVALID_ADDRESS_OR_KEY, message = "Invalid from address was specified" } };
@@ -1678,7 +1679,7 @@ namespace IXICore
             }
 
             IxiNumber to_amount = 0;
-            SortedDictionary<Address, IxiNumber> toList = new SortedDictionary<Address, IxiNumber>(new AddressComparer());
+            SortedDictionary<Address, Transaction.ToEntry> toList = new SortedDictionary<Address, Transaction.ToEntry>(new AddressComparer());
             string[] to_split = ((string)parameters["to"]).Split('-');
             if (to_split.Length > 0)
             {
@@ -1696,7 +1697,8 @@ namespace IXICore
                         return new JsonResponse { result = null, error = new JsonError() { code = (int)RPCErrorCode.RPC_INVALID_PARAMS, message = "Invalid to amount was specified" } };
                     }
                     to_amount += singleToAmount;
-                    toList.Add(new Address(single_to_address), singleToAmount);
+                    Transaction.ToEntry toEntry = new Transaction.ToEntry(Transaction.getExpectedVersion(IxianHandler.getLastBlockVersion()), singleToAmount, null, null);
+                    toList.Add(new Address(single_to_address), toEntry);
                 }
             }
 
@@ -1711,14 +1713,14 @@ namespace IXICore
                 return new JsonResponse { result = null, error = new JsonError() { code = (int)RPCErrorCode.RPC_INVALID_PARAMS, message = "Invalid to amount was specified" } };
             }
 
-            byte[] pubKey = ws.getKeyPair(primary_address_bytes).publicKeyBytes;
+            byte[] pubKey = ws.getKeyPair(primary_address).publicKeyBytes;
 
             // Check if this wallet's public key is already in the WalletState
-            Wallet mywallet = IxianHandler.getWallet(primary_address_bytes);
+            Wallet mywallet = IxianHandler.getWallet(primary_address);
             if (mywallet.publicKey != null && mywallet.publicKey.SequenceEqual(pubKey))
             {
                 // Walletstate public key matches, we don't need to send the public key in the transaction
-                pubKey = primary_address_bytes;
+                pubKey = primary_address.addressNoChecksum;
             }
 
             bool adjust_amount = false;
@@ -1726,7 +1728,7 @@ namespace IXICore
             {
                 lock (PendingTransactions.pendingTransactions)
                 {
-                    fromList = ws.generateFromList(primary_address_bytes, to_amount + fee, toList.Keys.ToList(), PendingTransactions.pendingTransactions.Select(x => x.transaction).ToList());
+                    fromList = ws.generateFromList(primary_address, to_amount + fee, toList.Keys.ToList(), PendingTransactions.pendingTransactions.Select(x => x.transaction).ToList());
                 }
                 adjust_amount = true;
             }
@@ -1736,7 +1738,7 @@ namespace IXICore
                 return new JsonResponse { result = null, error = new JsonError() { code = (int)RPCErrorCode.RPC_VERIFY_ERROR, message = "From list is empty" } };
             }
 
-            Transaction transaction = new Transaction((int)Transaction.Type.Normal, fee, toList, fromList, null, pubKey, IxianHandler.getHighestKnownNetworkBlockHeight(), -1, sign_transaction);
+            Transaction transaction = new Transaction((int)Transaction.Type.Normal, fee, toList, fromList, pubKey, IxianHandler.getHighestKnownNetworkBlockHeight(), -1, sign_transaction);
             //Logging.info(String.Format("Intial transaction size: {0}.", transaction.getBytes().Length));
             //Logging.info(String.Format("Intial transaction set fee: {0}.", transaction.fee));
             if (adjust_amount) //true only if automatically generating from address
@@ -1747,13 +1749,13 @@ namespace IXICore
                     total_tx_fee = transaction.fee;
                     lock (PendingTransactions.pendingTransactions)
                     {
-                        fromList = ws.generateFromList(primary_address_bytes, to_amount + total_tx_fee, toList.Keys.ToList(), PendingTransactions.pendingTransactions.Select(x => x.transaction).ToList());
+                        fromList = ws.generateFromList(primary_address, to_amount + total_tx_fee, toList.Keys.ToList(), PendingTransactions.pendingTransactions.Select(x => x.transaction).ToList());
                     }
                     if (fromList == null || fromList.Count == 0)
                     {
                         return new JsonResponse { result = null, error = new JsonError() { code = (int)RPCErrorCode.RPC_VERIFY_ERROR, message = "From list is empty" } };
                     }
-                    transaction = new Transaction((int)Transaction.Type.Normal, fee, toList, fromList, null, pubKey, IxianHandler.getHighestKnownNetworkBlockHeight(), -1, sign_transaction);
+                    transaction = new Transaction((int)Transaction.Type.Normal, fee, toList, fromList, pubKey, IxianHandler.getHighestKnownNetworkBlockHeight(), -1, sign_transaction);
                 }
             }
             else if (auto_fee) // true if user specified both a valid from address and the parameter autofee=true
@@ -1761,11 +1763,11 @@ namespace IXICore
                 // fee is taken from the first specified address
                 byte[] first_address = fromList.Keys.First();
                 fromList[first_address] = fromList[first_address] + transaction.fee;
-                if (fromList[first_address] > IxianHandler.getWalletBalance((new Address(transaction.pubKey, first_address)).addressNoChecksum))
+                if (fromList[first_address] > IxianHandler.getWalletBalance(new Address(transaction.pubKey, first_address)))
                 {
                     return new JsonResponse { result = null, error = new JsonError() { code = (int)RPCErrorCode.RPC_WALLET_INSUFFICIENT_FUNDS, message = "Balance is too low" } };
                 }
-                transaction = new Transaction((int)Transaction.Type.Normal, fee, toList, fromList, null, pubKey, IxianHandler.getHighestKnownNetworkBlockHeight(), -1, sign_transaction);
+                transaction = new Transaction((int)Transaction.Type.Normal, fee, toList, fromList, pubKey, IxianHandler.getHighestKnownNetworkBlockHeight(), -1, sign_transaction);
             }
             //Logging.info(String.Format("Transaction size after automatic adjustments: {0}.", transaction.getBytes().Length));
             //Logging.info(String.Format("Transaction fee after automatic adjustments: {0}.", transaction.fee));
@@ -1776,7 +1778,7 @@ namespace IXICore
             {
                 return new JsonResponse { result = null, error = new JsonError() { code = (int)RPCErrorCode.RPC_VERIFY_ERROR, message = "From amounts (incl. fee) do not match to amounts. If you haven't accounted for the transaction fee in the from amounts, use the parameter 'autofee' to have the node do it automatically." } };
             }
-            if (to_amount + transaction.fee > ws.getMyTotalBalance(primary_address_bytes))
+            if (to_amount + transaction.fee > ws.getMyTotalBalance(primary_address))
             {
                 return new JsonResponse { result = null, error = new JsonError() { code = (int)RPCErrorCode.RPC_WALLET_INSUFFICIENT_FUNDS, message = "Balance is too low" } };
             }

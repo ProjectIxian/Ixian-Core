@@ -150,7 +150,7 @@ namespace IXICore
             }
         }
 
-        public bool verifySignature(byte[] wallet, byte[] pub_key, SignerPowSolution powSolution)
+        public bool verifySignature(Address wallet, byte[] pub_key, SignerPowSolution powSolution)
         {
             if (signature != null)
             {
@@ -163,8 +163,8 @@ namespace IXICore
                         {
                             // TODO remove this section after upgrade to Presence v2
                             writer.Write(version);
-                            writer.Write(wallet.Length);
-                            writer.Write(wallet);
+                            writer.Write(wallet.addressWithChecksum.Length);
+                            writer.Write(wallet.addressWithChecksum);
                             writer.Write(new System.Guid(device).ToString());
                             writer.Write(lastSeenTime);
                             writer.Write(address);
@@ -175,8 +175,8 @@ namespace IXICore
                         else
                         {
                             writer.WriteIxiVarInt(version);
-                            writer.WriteIxiVarInt(wallet.Length);
-                            writer.Write(wallet);
+                            writer.WriteIxiVarInt(wallet.addressNoChecksum.Length);
+                            writer.Write(wallet.addressNoChecksum);
                             writer.WriteIxiVarInt(device.Length);
                             writer.Write(device);
                             writer.WriteIxiVarInt(lastSeenTime);
@@ -197,7 +197,7 @@ namespace IXICore
                             byte[] tmpBytesWithLock = new byte[ConsensusConfig.ixianChecksumLock.Length + tmpBytes.Length];
                             Array.Copy(ConsensusConfig.ixianChecksumLock, tmpBytesWithLock, ConsensusConfig.ixianChecksumLock.Length);
                             Array.Copy(tmpBytes, 0, tmpBytesWithLock, ConsensusConfig.ixianChecksumLock.Length, tmpBytes.Length);
-                            data_to_verify = Crypto.sha512sq(tmpBytesWithLock);
+                            data_to_verify = CryptoManager.lib.sha3_512sqTrunc(tmpBytesWithLock);
                         }
                     }
 
@@ -213,7 +213,7 @@ namespace IXICore
             return false;
         }
 
-        public KeepAlive getKeepAlive(byte[] walletAddress, SignerPowSolution powSolution)
+        public KeepAlive getKeepAlive(Address walletAddress, SignerPowSolution powSolution)
         {
             KeepAlive ka = new KeepAlive()
             {

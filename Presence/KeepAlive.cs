@@ -22,7 +22,7 @@ namespace IXICore
     public class KeepAlive
     {
         public int version = 2;
-        public byte[] walletAddress = null;
+        public Address walletAddress = null;
         public byte[] deviceId = null;
         public long timestamp = 0;
         public string hostName = null;
@@ -71,8 +71,8 @@ namespace IXICore
                 {
                     writer.Write(1); // version
 
-                    writer.Write(walletAddress.Length);
-                    writer.Write(walletAddress);
+                    writer.Write(walletAddress.addressWithChecksum.Length);
+                    writer.Write(walletAddress.addressWithChecksum);
 
                     writer.Write(new System.Guid(deviceId).ToString());
 
@@ -110,8 +110,8 @@ namespace IXICore
                 {
                     writer.WriteIxiVarInt(2); // version
 
-                    writer.WriteIxiVarInt(walletAddress.Length);
-                    writer.Write(walletAddress);
+                    writer.WriteIxiVarInt(walletAddress.addressNoChecksum.Length);
+                    writer.Write(walletAddress.addressNoChecksum);
 
                     writer.WriteIxiVarInt(deviceId.Length);
                     writer.Write(deviceId);
@@ -159,7 +159,7 @@ namespace IXICore
                         version = reader.ReadInt32();
 
                         int walletLen = reader.ReadInt32();
-                        walletAddress = reader.ReadBytes(walletLen);
+                        walletAddress = new Address(reader.ReadBytes(walletLen));
 
                         string device_id_str = reader.ReadString();
                         deviceId = System.Guid.Parse(device_id_str).ToByteArray();
@@ -195,11 +195,11 @@ namespace IXICore
                         version = (int)reader.ReadIxiVarInt();
 
                         int walletLen = (int)reader.ReadIxiVarUInt();
-                        walletAddress = reader.ReadBytes(walletLen);
+                        walletAddress = new Address(reader.ReadBytes(walletLen));
 
                         int deviceid_len = (int)reader.ReadIxiVarUInt();
                         deviceId = reader.ReadBytes(deviceid_len);
-                        timestamp = reader.ReadIxiVarInt();
+                        timestamp = (long)reader.ReadIxiVarUInt();
                         hostName = reader.ReadString();
 
                         nodeType = reader.ReadChar();
@@ -240,7 +240,7 @@ namespace IXICore
                 byte[] tmpBytesWithLock = new byte[ConsensusConfig.ixianChecksumLock.Length + tmpBytes.Length];
                 Array.Copy(ConsensusConfig.ixianChecksumLock, tmpBytesWithLock, ConsensusConfig.ixianChecksumLock.Length);
                 Array.Copy(tmpBytes, 0, tmpBytesWithLock, ConsensusConfig.ixianChecksumLock.Length, tmpBytes.Length);
-                checksum = Crypto.sha512sq(tmpBytesWithLock);
+                checksum = CryptoManager.lib.sha3_512sqTrunc(tmpBytesWithLock);
             }
         }
 
@@ -263,14 +263,14 @@ namespace IXICore
             }
             else if (!Presence.verifyPowSolution(powSolution, minDifficulty, walletAddress))
             {
-                Logging.warn("Invalid pow solution received in verifyPresence, verification failed for {0}.", Base58Check.Base58CheckEncoding.EncodePlain(walletAddress));
+                Logging.warn("Invalid pow solution received in verifyPresence, verification failed for {0}.", walletAddress.ToString());
                 powSolution = null;
                 return false;
             }
 
             if (!verifySignature(pubKey))
             {
-                Logging.warn("[PL] KEEPALIVE tampering for {0} {1}, incorrect Sig.", Base58Check.Base58CheckEncoding.EncodePlain(walletAddress), hostName);
+                Logging.warn("[PL] KEEPALIVE tampering for {0} {1}, incorrect Sig.", walletAddress.ToString(), hostName);
                 return false;
             }
 

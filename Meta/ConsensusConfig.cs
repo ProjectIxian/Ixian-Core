@@ -76,7 +76,7 @@ namespace IXICore
         /// <summary>
         /// Nonexistant wallet address which is used in the 'from' fields for PoW and PoS transactions, where currency is generated "from nothing".
         /// </summary>
-        public static readonly byte[] ixianInfiniMineAddress = Base58Check.Base58CheckEncoding.DecodePlain("1ixianinfinimine234234234234234234234234234242HP");
+        public static readonly Address ixianInfiniMineAddress = new Address(Base58Check.Base58CheckEncoding.DecodePlain("1ixianinfinimine234234234234234234234234234242HP"));
         /// <summary>
         /// Default security (in bits) of the generated RSA wallet keys.
         /// </summary>
@@ -101,7 +101,9 @@ namespace IXICore
         /// <summary>
         /// Maximum allowed signers on a single block.
         /// </summary>
-        public static readonly int maximumBlockSigners = 1000;
+        public static readonly int maximumBlockSigners = 1000; // TODO TODO Omega - discard sigs that have lower difficulty than the new sig, when it is received
+
+        public static readonly int minBlockSignerPowDifficulty = 10;
 
         /// <summary>
         /// Minimum funds a wallet must have before it is allowed to participate in the block consensus algorithm. (used in DLT Node executable).
@@ -118,7 +120,7 @@ namespace IXICore
         /// <summary>
         /// Address of the Ixian foundation wallet, which is used to fund development of the Ixian technology stack. (Used in DLT Node executable.)
         /// </summary>
-        public static readonly byte[] foundationAddress = Base58Check.Base58CheckEncoding.DecodePlain("153xXfVi1sznPcRqJur8tutgrZecNVYGSzetp47bQvRfNuDix"); // Foundation wallet address
+        public static readonly Address foundationAddress = new Address(Base58Check.Base58CheckEncoding.DecodePlain("153xXfVi1sznPcRqJur8tutgrZecNVYGSzetp47bQvRfNuDix")); // Foundation wallet address
         /// <summary>
         /// Initial price for relaying a kilobyte of data through an S2 node. (Used in S2 Node executable.)
         /// </summary>
@@ -160,7 +162,8 @@ namespace IXICore
         /// <summary>
         /// Min. number of seconds that the PL PoW will be calculated for.
         /// </summary>
-        public static readonly long plPowMinCalculationTime = 600; // 600 seconds = 10 mins
+        public static readonly long plPowMinCalculationTime = 600; // 600 seconds = 10 mins TOOD TODO Omega, maybe remove this and replace it with block time instead
+        public static readonly ulong plPowMinCalculationBlockTime = 20; // 600 seconds = 20 blocks
 
         /// <summary>
         /// Number of blocks after how many to re-calculate the PL PoW since last solution.
@@ -227,7 +230,7 @@ namespace IXICore
                 pow_reward = 576;
                 pow_reward *= 100000000;
             }
-            else if (blockNum < 105120000) // final reward
+            else if (blockNum < miningExpirationBlockHeight) // final reward
             {
                 pow_reward = 18;
                 pow_reward *= 100000000;
