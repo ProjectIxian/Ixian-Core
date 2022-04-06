@@ -45,18 +45,14 @@ namespace IXICore
         {
         }
 
-        private byte[] rsaKeyToBytes(RSACryptoServiceProvider rsaKey, bool includePrivateParameters, bool skip_header)
+        private byte[] rsaKeyToBytes(RSACryptoServiceProvider rsaKey, bool includePrivateParameters, int version)
         {
             List<byte> bytes = new List<byte>();
 
             RSAParameters rsaParams = rsaKey.ExportParameters(includePrivateParameters);
 
-            // TODO TODO TODO TODO TODO skip header can be later removed after the upgrade/hard fork
-            if (!skip_header)
-            {
-                bytes.Add((byte)1); // add version
-                bytes.AddRange(BitConverter.GetBytes((int)0)); // prepend pub key version
-            }
+            bytes.Add((byte)version); // add version
+            bytes.AddRange(BitConverter.GetBytes((int)0)); // prepend pub key version
 
             bytes.AddRange(BitConverter.GetBytes(rsaParams.Modulus.Length));
             bytes.AddRange(rsaParams.Modulus);
@@ -190,14 +186,14 @@ namespace IXICore
         }
 
         // Generates keys for RSA signing
-        public IxianKeyPair generateKeys(int keySize, bool skip_header = false)
+        public IxianKeyPair generateKeys(int keySize, int version)
         {
             try
             {
                 IxianKeyPair kp = new IxianKeyPair();
                 RSACryptoServiceProvider rsa = new RSACryptoServiceProvider(keySize);
-                kp.privateKeyBytes = rsaKeyToBytes(rsa, true, skip_header);
-                kp.publicKeyBytes = rsaKeyToBytes(rsa, false, skip_header);
+                kp.privateKeyBytes = rsaKeyToBytes(rsa, true, version);
+                kp.publicKeyBytes = rsaKeyToBytes(rsa, false, version);
 
                 byte[] plain = Encoding.UTF8.GetBytes("Plain text string");
                 if (!testKeys(plain, kp))
@@ -478,7 +474,7 @@ namespace IXICore
             return outData;
         }
 
-        public byte[] generateChildKey(byte[] parentKey, int seed = 0)
+        public byte[] generateChildKey(byte[] parentKey, int version, int seed = 0)
         {
             RSACryptoServiceProvider origRsa = rsaKeyFromBytes(parentKey);
             if(origRsa.PublicOnly)
@@ -511,7 +507,7 @@ namespace IXICore
             AsymmetricCipherKeyPair keyPair = keyGen.GenerateKeyPair();
             //
             RSACryptoServiceProvider newRsa = (RSACryptoServiceProvider)DotNetUtilities.ToRSA((RsaPrivateCrtKeyParameters)keyPair.Private);
-            return rsaKeyToBytes(newRsa, true, false);
+            return rsaKeyToBytes(newRsa, true, version);
         }
 
         public byte[] getSecureRandomBytes(int length)

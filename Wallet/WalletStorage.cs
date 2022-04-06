@@ -118,11 +118,14 @@ namespace IXICore
             {
                 new_address = generateNewAddress_v0(key_primary_address, last_nonce, add_to_pool);
             }
-            else
+            else if(walletVersion < 5)
             {
                 new_address = generateNewAddress_v1(key_primary_address, last_nonce, add_to_pool);
+            }else
+            {
+                new_address = generateNewAddress_v5(key_primary_address, last_nonce, add_to_pool);
             }
-            if(new_address != null)
+            if (new_address != null)
             {
                 if (write_to_file)
                 {
@@ -198,6 +201,48 @@ namespace IXICore
                     new_nonce.AddRange(last_nonce);
                 }
                 byte[] new_nonce_bytes = Crypto.sha512sqTrunc(new_nonce.ToArray(), 0, 0, 16);
+
+                Address new_address = new Address(key_primary_address.addressNoChecksum, new_nonce_bytes);
+
+                if (add_to_pool)
+                {
+                    kp.lastNonceBytes = new_nonce_bytes;
+                    lock (myAddresses)
+                    {
+                        AddressData ad = new AddressData() { nonce = kp.lastNonceBytes, keyPair = kp };
+                        myAddresses.Add(new_address.addressNoChecksum, ad);
+                        lastAddress = new_address;
+                    }
+                }
+
+                return new_address;
+            }
+        }
+
+        public Address generateNewAddress_v5(Address key_primary_address, byte[] last_nonce, bool add_to_pool = true)
+        {
+            lock (myKeys)
+            {
+                if (!myKeys.ContainsKey(key_primary_address.addressNoChecksum))
+                {
+                    return null;
+                }
+
+                IxianKeyPair kp = myKeys[key_primary_address.addressNoChecksum];
+
+                byte[] base_nonce = baseNonce;
+
+                if (last_nonce == null)
+                {
+                    last_nonce = kp.lastNonceBytes;
+                }
+
+                List<byte> new_nonce = base_nonce.ToList();
+                if (last_nonce != null)
+                {
+                    new_nonce.AddRange(last_nonce);
+                }
+                byte[] new_nonce_bytes = CryptoManager.lib.sha3_512sqTrunc(new_nonce.ToArray(), 0, 0, 16);
 
                 Address new_address = new Address(key_primary_address.addressNoChecksum, new_nonce_bytes);
 
@@ -742,6 +787,142 @@ namespace IXICore
             return true;
         }
 
+        protected bool readWallet_v5(BinaryReader reader, string password, bool verify_only = false)
+        {
+            char type = reader.ReadChar();
+            if (type == 'v')
+            {
+                viewingWallet = true;
+            }
+
+            // Read the encrypted keys
+            byte[] b_privateKey = null;
+            byte[] b_baseNonce = null;
+            if (viewingWallet)
+            {
+                int b_baseNonceLength = reader.ReadInt32();
+                b_baseNonce = reader.ReadBytes(b_baseNonceLength);
+            }
+            else
+            {
+                int b_privateKeyLength = reader.ReadInt32();
+                b_privateKey = reader.ReadBytes(b_privateKeyLength);
+            }
+
+            int b_publicKeyLength = reader.ReadInt32();
+            byte[] b_publicKey = reader.ReadBytes(b_publicKeyLength);
+
+            byte[] last_nonce_bytes = null;
+            byte[] b_last_nonce = null;
+            if (reader.BaseStream.Position < reader.BaseStream.Length)
+            {
+                int b_last_nonceLength = reader.ReadInt32();
+                b_last_nonce = reader.ReadBytes(b_last_nonceLength);
+            }
+
+
+            try
+            {
+                // Decrypt
+                // Suppress decryption errors in console output
+                bool console_output = Logging.consoleOutput;
+                Logging.consoleOutput = false;
+                byte[] private_key = null;
+                byte[] base_nonce = null;
+                if (viewingWallet)
+                {
+                    base_nonce = CryptoManager.lib.decryptWithPassword(b_baseNonce, password, false);
+                    Logging.flush();
+                    Logging.consoleOutput = console_output;
+                    if (base_nonce == null)
+                    {
+                        Logging.error("Unable to decrypt wallet, an incorrect password was used.");
+                        return false;
+                    }
+                }
+                else
+                {
+                    private_key = CryptoManager.lib.decryptWithPassword(b_privateKey, password, false);
+                    Logging.flush();
+                    Logging.consoleOutput = console_output;
+                    if (private_key == null)
+                    {
+                        Logging.error("Unable to decrypt wallet, an incorrect password was used.");
+                        return false;
+                    }
+                }
+                byte[] public_key = CryptoManager.lib.decryptWithPassword(b_publicKey, password, false);
+                if (public_key == null)
+                {
+                    Logging.error("Unable to decrypt wallet, file is probably corrupted.");
+                    return false;
+                }
+                if (b_last_nonce != null)
+                {
+                    last_nonce_bytes = CryptoManager.lib.decryptWithPassword(b_last_nonce, password, false);
+                    if (last_nonce_bytes == null)
+                    {
+                        Logging.error("Unable to decrypt wallet, file is probably corrupted.");
+                        return false;
+                    }
+                }
+                if (verify_only)
+                {
+                    return true;
+                }
+                privateKey = private_key;
+                baseNonce = base_nonce;
+                publicKey = public_key;
+                if (baseNonce == null)
+                {
+                    baseNonce = CryptoManager.lib.sha3_512sqTrunc(privateKey, publicKey.Length, 64);
+                }
+                walletPassword = password;
+            }
+            catch (Exception)
+            {
+                Logging.error(string.Format("Unable to decrypt wallet, an incorrect password was used."));
+                return false;
+            }
+
+            Address addr = new Address(new Address(publicKey).addressNoChecksum);
+            lastAddress = address = addr;
+
+            masterSeed = address.addressWithChecksum;
+            seedHash = address.addressWithChecksum;
+            derivedMasterSeed = masterSeed;
+
+            IxianKeyPair kp = new IxianKeyPair();
+            kp.privateKeyBytes = privateKey;
+            kp.publicKeyBytes = publicKey;
+            kp.addressBytes = address.addressNoChecksum;
+            lock (myKeys)
+            {
+                myKeys.Add(address.addressNoChecksum, kp);
+            }
+            lock (myAddresses)
+            {
+                AddressData ad = new AddressData() { nonce = new byte[1] { 0 }, keyPair = kp };
+                myAddresses.Add(address.addressNoChecksum, ad);
+
+                if (last_nonce_bytes != null)
+                {
+                    bool last_address_found = false;
+                    while (last_address_found == false)
+                    {
+                        if (kp.lastNonceBytes != null && last_nonce_bytes.SequenceEqual(kp.lastNonceBytes))
+                        {
+                            last_address_found = true;
+                        }
+                        else
+                        {
+                            generateNewAddress(addr, null, true, false);
+                        }
+                    }
+                }
+            }
+            return true;
+        }
         public bool walletExists()
         {
             if (File.Exists(filename))
@@ -794,6 +975,10 @@ namespace IXICore
                 else if (wallet_version == 3)
                 {
                     success = readWallet_v3(reader, password, true);
+                }
+                else if (wallet_version == 5)
+                {
+                    success = readWallet_v5(reader, password, true);
                 }
                 else
                 {
@@ -856,6 +1041,10 @@ namespace IXICore
                 {
                     success = readWallet_v3(reader, password);
                 }
+                else if (walletVersion == 5)
+                {
+                    success = readWallet_v5(reader, password);
+                }
                 else
                 {
                     Logging.error("Unknown wallet version {0}", walletVersion);
@@ -904,6 +1093,10 @@ namespace IXICore
             if (walletVersion == 3)
             {
                 return writeWallet_v3(walletPassword);
+            }
+            if (walletVersion == 5)
+            {
+                return writeWallet_v5(walletPassword);
             }
             return false;
         }
@@ -1053,6 +1246,72 @@ namespace IXICore
             return true;
         }
 
+        protected bool writeWallet_v5(string password)
+        {
+            if (password.Length < 10)
+                return false;
+
+            // Encrypt data first
+            byte[] b_privateKey = null;
+            if (privateKey != null)
+            {
+                b_privateKey = CryptoManager.lib.encryptWithPassword(privateKey, password, false);
+            }
+            byte[] b_baseNonce = CryptoManager.lib.encryptWithPassword(baseNonce, password, false);
+            byte[] b_publicKey = CryptoManager.lib.encryptWithPassword(publicKey, password, false);
+
+            BinaryWriter writer;
+            try
+            {
+                writer = new BinaryWriter(new FileStream(filename, FileMode.Create));
+            }
+            catch (Exception e)
+            {
+                Logging.error("Cannot create wallet file. {0}", e.Message);
+                return false;
+            }
+
+            try
+            {
+                writer.Write(walletVersion);
+                if (viewingWallet)
+                {
+                    writer.Write('v');
+                    // Write the base nonce
+                    writer.Write(b_baseNonce.Length);
+                    writer.Write(b_baseNonce);
+                }
+                else
+                {
+                    writer.Write('f');
+                    // Write the address keypair
+                    writer.Write(b_privateKey.Length);
+                    writer.Write(b_privateKey);
+                }
+
+                writer.Write(b_publicKey.Length);
+                writer.Write(b_publicKey);
+
+                if (myKeys.First().Value.lastNonceBytes != null)
+                {
+                    byte[] b_last_nonce = CryptoManager.lib.encryptWithPassword(myKeys.First().Value.lastNonceBytes, password, false);
+                    writer.Write(b_last_nonce.Length);
+                    writer.Write(b_last_nonce);
+                }
+
+            }
+
+            catch (Exception e)
+            {
+                Logging.error("Cannot write to wallet file. {0}", e.Message);
+                return false;
+            }
+
+            writer.Close();
+
+            return true;
+        }
+
         // Deletes the wallet file if it exists
         public bool deleteWallet()
         {
@@ -1096,13 +1355,13 @@ namespace IXICore
 
             Logging.flush();
 
-            walletVersion = 2;
+            walletVersion = 5;
             walletPassword = password;
 
             Logging.log(LogSeverity.info, "Generating primary wallet keys, this may take a while, please wait...");
 
             //IxianKeyPair kp = generateNewKeyPair(false);
-            IxianKeyPair kp = CryptoManager.lib.generateKeys(ConsensusConfig.defaultRsaKeySize);
+            IxianKeyPair kp = CryptoManager.lib.generateKeys(ConsensusConfig.defaultRsaKeySize, 2);
 
             if (kp == null)
             {
@@ -1112,7 +1371,7 @@ namespace IXICore
 
             privateKey = kp.privateKeyBytes;
             publicKey = kp.publicKeyBytes;
-            baseNonce = Crypto.sha512sqTrunc(privateKey, publicKey.Length, 64);
+            baseNonce = CryptoManager.lib.sha3_512sqTrunc(privateKey, publicKey.Length, 64);
 
             Address addr = new Address(new Address(publicKey).addressNoChecksum);
             lastAddress = address = addr;

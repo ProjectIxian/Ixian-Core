@@ -214,7 +214,7 @@ namespace IXICore
 
                 Array.Copy(addressNonce, 0, tmp_address, baseAddress.Length + 3, addressNonce.Length);
 
-                byte[] hashed_pub_key = Crypto.sha512sqTrunc(tmp_address, 5, 0, 44); // TODO TODO offset 5 is likely incorrect, we'll need v2 address with this fixed
+                byte[] hashed_pub_key = Crypto.sha512sqTrunc(tmp_address, 5, 0, 44);
                 Array.Copy(hashed_pub_key, 0, raw_address, 1, hashed_pub_key.Length);
 
                 return raw_address;

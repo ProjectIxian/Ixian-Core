@@ -58,7 +58,7 @@ namespace IXICore
         /// <param name="keySize">Size of the new RSA key, in bits.</param>
         /// <param name="skip_header">Legacy parameter to allow generating older Ixian keys.</param>
         /// <returns>A new RSA key pair and associated Ixian data.</returns>
-        IxianKeyPair generateKeys(int keySize, bool skip_header = false);
+        IxianKeyPair generateKeys(int keySize, int version);
 
         /// <summary>
         ///  Generates a cryptographic signature for the input data, using the provided private key in the Ixian serialized format.
@@ -178,7 +178,7 @@ namespace IXICore
         /// <param name="parentKey">RSA private key in Ixian serialized format.</param>
         /// <param name="seed">A unique seed value.</param>
         /// <returns>A new RSA key in Ixian serialized format.</returns>
-        byte[] generateChildKey(byte[] parentKey, int seed = 0);
+        byte[] generateChildKey(byte[] parentKey, int version, int seed);
 
         /// <summary>
         ///  Verifies that the provided Ixian key pair are valid, working RSA keys. Both encryption and signing are tested and the 
@@ -255,10 +255,10 @@ namespace IXICore
             _cryptoLib = crypto_lib;
         }
 
-        public IxianKeyPair generateKeys(int keySize, bool skip_header = false)
+        public IxianKeyPair generateKeys(int keySize, int addressVersion)
         {
             Trace.Assert(_cryptoLib != null);
-            return _cryptoLib.generateKeys(keySize, skip_header);
+            return _cryptoLib.generateKeys(keySize, addressVersion);
         }
 
         public byte[] getSignature(byte[] input, byte[] privateKey)
@@ -311,9 +311,9 @@ namespace IXICore
             return _cryptoLib.decryptWithChacha(input, key);
         }
 
-        public byte[] generateChildKey(byte[] parentKey, int seed = 0)
+        public byte[] generateChildKey(byte[] parentKey, int version, int seed)
         {
-            return _cryptoLib.generateChildKey(parentKey, seed);
+            return _cryptoLib.generateChildKey(parentKey, version, seed);
         }
 
         public bool testKeys(byte[] plaintext, IxianKeyPair kp)
