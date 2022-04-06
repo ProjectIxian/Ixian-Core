@@ -79,7 +79,7 @@ namespace IXICore
                 for (int i = 0; i < wallet.allowedSigners.Count; i++)
                 {
                     var allowedSigner = new byte[wallet.allowedSigners[i].addressNoChecksum.Length];
-                    Array.Copy(wallet.allowedSigners[i].addressNoChecksum, allowedSigner, allowedSigners[i].addressNoChecksum.Length);
+                    Array.Copy(wallet.allowedSigners[i].addressNoChecksum, allowedSigner, wallet.allowedSigners[i].addressNoChecksum.Length);
                     allowedSigners.Add(new Address(allowedSigner));
                 }
             }
