@@ -1316,7 +1316,7 @@ namespace IXICore
             {
                 if(version >= BlockVer.v10)
                 {
-                    byte[] sigBytes = sig.getBytesForBlock();
+                    byte[] sigBytes = sig.getBytesForBlock(false);
                     merged_sigs.AddRange(IxiVarInt.GetIxiVarIntBytes(sigBytes.Length));
                     merged_sigs.AddRange(sigBytes);
                 }
@@ -1370,7 +1370,7 @@ namespace IXICore
             if (sig != null)
             {
                 if(powSolution == null
-                    || (powSolution != null && powSolution.difficulty < sig.powSolution.difficulty))
+                    || (powSolution != null && powSolution.difficulty <= sig.powSolution.difficulty))
                 {
                     return null;
                 }
@@ -1397,7 +1397,17 @@ namespace IXICore
             {
                 if(powSolution == null)
                 {
-                    Logging.error("Trying to apply signature on block {0} but PoW Signing solution isn't ready yet.", blockNum);
+                    Logging.warn("Trying to apply signature on block #{0} but PoW Signing solution isn't ready yet.", blockNum);
+                    return null;
+                }
+                if(powSolution.blockNum + ConsensusConfig.plPowBlocksValidity < blockNum)
+                {
+                    Logging.warn("Trying to apply signature on block #{0} but PoW Signing solution is too old {1} < {2}.", blockNum, powSolution.blockNum + ConsensusConfig.plPowBlocksValidity, blockNum);
+                    return null;
+                }
+                if (powSolution.difficulty < IxianHandler.getMinSignerPowDifficulty(blockNum))
+                {
+                    Logging.warn("Trying to apply signature on block #{0} but difficulty of PoW Signing solution is too small {1} < {2}.", blockNum, powSolution.difficulty, IxianHandler.getMinSignerPowDifficulty(blockNum));
                     return null;
                 }
                 newSig.powSolution = powSolution;
@@ -1497,7 +1507,7 @@ namespace IXICore
                         }
 
                         if (sig.powSolution != null && sigToCheck.powSolution != null
-                            && sig.powSolution.checksum.SequenceEqual(sigToCheck.powSolution.checksum)
+                            && sig.powSolution.blockNum == sigToCheck.powSolution.blockNum
                             && sig.powSolution.solution.SequenceEqual(sigToCheck.powSolution.solution))
                         {
                             return true;
@@ -1536,11 +1546,10 @@ namespace IXICore
                     if (localSig != null)
                     {
                         if (localSig.powSolution == null
-                            || (localSig.powSolution != null && localSig.powSolution.difficulty < sig.powSolution.difficulty))
+                            || (localSig.powSolution != null && localSig.powSolution.difficulty >= sig.powSolution.difficulty))
                         {
                             continue;
                         }
-                        signatures.Remove(localSig);
                     }
 
                     if (PresenceList.getPresenceByAddress(sig.signerAddress) == null)
@@ -1559,6 +1568,10 @@ namespace IXICore
                     }
 
                     count++;
+                    if(localSig != null)
+                    {
+                        signatures.Remove(localSig);
+                    }
                     signatures.Add(sig);
                     added_signatures.Add(sig);
                 }
@@ -1588,18 +1601,18 @@ namespace IXICore
             {
                 if (sig.powSolution == null)
                 {
-                    Logging.info("VerifySig: powSolution == null");
+                    Logging.error("VerifySig: powSolution == null");
                     return false;
                 }
 
                 BigInteger minPowDifficulty = IxianHandler.getMinSignerPowDifficulty(blockNum);
-                var blockHeader = IxianHandler.getBlockHeader(sig.powSolution.blockNum, false);
+                var blockHeader = IxianHandler.getBlockHeader(sig.powSolution.blockNum);
                 if (blockHeader == null
                     || blockHeader.blockNum >= blockNum
                     || blockHeader.blockNum + ConsensusConfig.plPowBlocksValidity < blockNum
                     || !sig.powSolution.verifySolution(minPowDifficulty))
                 {
-                    Logging.info("VerifySig: invalid solution");
+                    Logging.error("VerifySig: invalid solution");
                     return false;
                 }
 
@@ -1610,7 +1623,7 @@ namespace IXICore
 
             if (!CryptoManager.lib.verifySignature(dataToVerify, publicKey, sig.signature))
             {
-                Logging.info("VerifySig: invalid sig");
+                Logging.error("VerifySig: invalid sig");
                 return false;
             }
             return true;
@@ -1643,11 +1656,14 @@ namespace IXICore
                     {
                         return false;
                     }
-                    signatures.Remove(local_sig);
                 }
                 byte[] pub_key = getSignerPubKey(sig.signerAddress);
                 if (pub_key != null && verifySignature(sig, pub_key))
                 {
+                    if(local_sig != null)
+                    {
+                        signatures.Remove(local_sig);
+                    }
                     signatures.Add(sig);
                     return true;
                 }

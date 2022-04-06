@@ -449,7 +449,7 @@ namespace IXICore
                 Logging.warn("Expired pow solution received in verifyPowSolution, verification failed for {0}.", wallet.ToString());
                 return false;
             }
-            BlockHeader plPowBlock = IxianHandler.getBlockHeader(signerPow.blockNum, false);
+            BlockHeader plPowBlock = IxianHandler.getBlockHeader(signerPow.blockNum);
             if (plPowBlock == null)
             {
                 Logging.warn("No block for PL pow solution found in verifyPowSolution, verification failed for {0}.", wallet.ToString());

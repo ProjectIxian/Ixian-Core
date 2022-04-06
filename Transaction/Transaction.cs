@@ -1063,6 +1063,7 @@ namespace IXICore
                             }
                             IxiNumber singleAmount = reader.ReadIxiNumber();
                             amount += singleAmount;
+                            reader.ReadIxiVarInt(); // TODO TODO Omega v11?
                             fromList.Add(address, singleAmount);
                         }
                         fee = amount;
@@ -1390,6 +1391,7 @@ namespace IXICore
                         writer.WriteIxiVarInt(entry.Key.Length);
                         writer.Write(entry.Key);
                         writer.WriteIxiNumber(entry.Value);
+                        writer.WriteIxiVarInt((int)0); // TODO TODO Omega v11?
                     }
 
                     writer.WriteIxiVarInt(toList.Count);

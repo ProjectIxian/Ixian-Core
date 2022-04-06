@@ -95,7 +95,7 @@ namespace IXICore
             }
         }
 
-        public byte[] getBytesForBlock()
+        public byte[] getBytesForBlock(bool includeSignature = true)
         {
             using (MemoryStream m = new MemoryStream(1152))
             {
@@ -116,7 +116,7 @@ namespace IXICore
                         writer.WriteIxiVarInt(0);
                     }
 
-                    if(signature != null)
+                    if(signature != null && includeSignature)
                     {
                         writer.WriteIxiVarInt(signature.Length);
                         writer.Write(signature);

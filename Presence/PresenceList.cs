@@ -603,7 +603,7 @@ namespace IXICore
                     }
 
 
-                    if(!ka.verify(listEntry.pubkey, IxianHandler.getMinSignerPowDifficulty(IxianHandler.getLastBlockHeight())))
+                    if(!ka.verify(listEntry.pubkey, IxianHandler.getMinSignerPowDifficulty(IxianHandler.getLastBlockHeight() + 1)))
                     {
                         Logging.warn("[PL] KEEPALIVE tampering for {0} {1}, incorrect Sig.", listEntry.wallet.ToString(), ka.hostName);
                         return false;

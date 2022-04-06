@@ -33,7 +33,7 @@ namespace IXICore
         public byte[] checksum { get {
                 if(_checksum == null)
                 {
-                    var targetHeader = IxianHandler.getBlockHeader(blockNum, false);
+                    var targetHeader = IxianHandler.getBlockHeader(blockNum);
                     _checksum = solutionToHash(solution, blockNum, targetHeader.blockChecksum, solverAddress);
                 }
                 return _checksum;
