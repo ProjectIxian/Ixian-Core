@@ -1,4 +1,4 @@
-﻿// Copyright (C) 2017-2020 Ixian OU
+﻿// Copyright (C) 2017-2022 Ixian OU
 // This file is part of Ixian Core - www.github.com/ProjectIxian/Ixian-Core
 //
 // Ixian Core is free software: you can redistribute it and/or modify
@@ -114,14 +114,15 @@ namespace IXICore
         public Address generateNewAddress(Address key_primary_address, byte[] last_nonce, bool add_to_pool = true, bool write_to_file = true)
         {
             Address new_address = null;
-            if(walletVersion < 2)
+            if (walletVersion < 2)
             {
                 new_address = generateNewAddress_v0(key_primary_address, last_nonce, add_to_pool);
             }
-            else if(walletVersion < 5)
+            else if (walletVersion < 5)
             {
                 new_address = generateNewAddress_v1(key_primary_address, last_nonce, add_to_pool);
-            }else
+            }
+            else
             {
                 new_address = generateNewAddress_v5(key_primary_address, last_nonce, add_to_pool);
             }
@@ -378,7 +379,7 @@ namespace IXICore
                         found_address_list.Add(entry.Key.addressNoChecksum);
                     }
                 }
-                if(found_address_list.Count > 0)
+                if (found_address_list.Count > 0)
                 {
                     return found_address_list;
                 }
@@ -432,7 +433,7 @@ namespace IXICore
                 Dictionary<byte[], IxiNumber> tmp_from_list = new Dictionary<byte[], IxiNumber>(new ByteArrayComparer());
                 foreach (var entry in myAddresses)
                 {
-                    if(!entry.Value.keyPair.addressBytes.SequenceEqual(primary_address.addressNoChecksum))
+                    if (!entry.Value.keyPair.addressBytes.SequenceEqual(primary_address.addressNoChecksum))
                     {
                         continue;
                     }
@@ -443,13 +444,13 @@ namespace IXICore
                     }
 
                     Wallet wallet = IxianHandler.getWallet(new Address(entry.Key));
-                    if(wallet.type != WalletType.Normal)
+                    if (wallet.type != WalletType.Normal)
                     {
                         continue;
                     }
 
                     IxiNumber amount = wallet.balance;
-                    if(amount == 0)
+                    if (amount == 0)
                     {
                         continue;
                     }
@@ -468,13 +469,13 @@ namespace IXICore
                     if (pending_transactions != null)
                     {
                         var tmp_pending_froms = pending_transactions.FindAll(x => x.fromList.ContainsKey(entry.Key));
-                        foreach(var pending_from in tmp_pending_froms)
+                        foreach (var pending_from in tmp_pending_froms)
                         {
                             balance -= pending_from.fromList[entry.Key];
                         }
                     }
 
-                    if(balance <= 0)
+                    if (balance <= 0)
                     {
                         continue;
                     }
@@ -500,9 +501,9 @@ namespace IXICore
 
         public byte[] getNonceFromAddress(byte[] address)
         {
-            foreach(var addr in myAddresses)
+            foreach (var addr in myAddresses)
             {
-                if(addr.Key.SequenceEqual(address))
+                if (addr.Key.SequenceEqual(address))
                 {
                     return addr.Value.nonce;
                 }
@@ -517,7 +518,7 @@ namespace IXICore
             if (walletVersion == 4)
             {
                 char type = reader.ReadChar();
-                if(type == 'v')
+                if (type == 'v')
                 {
                     viewingWallet = true;
                 }
@@ -567,7 +568,8 @@ namespace IXICore
                         Logging.error("Unable to decrypt wallet, an incorrect password was used.");
                         return false;
                     }
-                }else
+                }
+                else
                 {
                     private_key = CryptoManager.lib.decryptWithPassword(b_privateKey, password, false);
                     Logging.flush();
@@ -602,7 +604,7 @@ namespace IXICore
                 publicKey = public_key;
                 if (baseNonce == null)
                 {
-                    if(walletVersion < 2)
+                    if (walletVersion < 2)
                     {
                         baseNonce = Crypto.sha512quTrunc(privateKey, publicKey.Length, 64);
                     }
@@ -787,101 +789,80 @@ namespace IXICore
             return true;
         }
 
-        protected bool readWallet_v5(BinaryReader reader, string password, bool verify_only = false)
+        protected bool readWallet_v5(byte[] walletBytes, string password, bool verify_only = false)
         {
-            char type = reader.ReadChar();
-            if (type == 'v')
-            {
-                viewingWallet = true;
-            }
-
-            // Read the encrypted keys
-            byte[] b_privateKey = null;
-            byte[] b_baseNonce = null;
-            if (viewingWallet)
-            {
-                int b_baseNonceLength = reader.ReadInt32();
-                b_baseNonce = reader.ReadBytes(b_baseNonceLength);
-            }
-            else
-            {
-                int b_privateKeyLength = reader.ReadInt32();
-                b_privateKey = reader.ReadBytes(b_privateKeyLength);
-            }
-
-            int b_publicKeyLength = reader.ReadInt32();
-            byte[] b_publicKey = reader.ReadBytes(b_publicKeyLength);
-
-            byte[] last_nonce_bytes = null;
-            byte[] b_last_nonce = null;
-            if (reader.BaseStream.Position < reader.BaseStream.Length)
-            {
-                int b_last_nonceLength = reader.ReadInt32();
-                b_last_nonce = reader.ReadBytes(b_last_nonceLength);
-            }
-
-
+            byte[] lastNonce = null;
             try
             {
-                // Decrypt
                 // Suppress decryption errors in console output
                 bool console_output = Logging.consoleOutput;
                 Logging.consoleOutput = false;
-                byte[] private_key = null;
-                byte[] base_nonce = null;
-                if (viewingWallet)
+
+                byte[] decryptedWalletBytes = CryptoManager.lib.decryptWithPassword(walletBytes, password, true);
+
+                byte[] privateKey = null;
+                byte[] baseNonce = null;
+                byte[] publicKey = null;
+                using (MemoryStream m = new MemoryStream(decryptedWalletBytes))
                 {
-                    base_nonce = CryptoManager.lib.decryptWithPassword(b_baseNonce, password, false);
-                    Logging.flush();
-                    Logging.consoleOutput = console_output;
-                    if (base_nonce == null)
+                    using (BinaryReader reader = new BinaryReader(m))
                     {
-                        Logging.error("Unable to decrypt wallet, an incorrect password was used.");
-                        return false;
+                        char type = reader.ReadChar();
+                        if (type == 'v')
+                        {
+                            viewingWallet = true;
+                        }
+
+                        if (viewingWallet)
+                        {
+                            int baseNonceLength = reader.ReadInt32();
+                            baseNonce = reader.ReadBytes(baseNonceLength);
+                        }
+                        else
+                        {
+                            int privateKeyLength = reader.ReadInt32();
+                            privateKey = reader.ReadBytes(privateKeyLength);
+                        }
+
+                        int publicKeyLength = reader.ReadInt32();
+                        publicKey = reader.ReadBytes(publicKeyLength);
+
+                        int lastNonceLength = reader.ReadInt32();
+                        if (lastNonceLength > 0)
+                        {
+                            lastNonce = reader.ReadBytes(lastNonceLength);
+                        }
                     }
                 }
-                else
+                Logging.flush();
+                Logging.consoleOutput = console_output;
+                if (privateKey == null && baseNonce == null)
                 {
-                    private_key = CryptoManager.lib.decryptWithPassword(b_privateKey, password, false);
-                    Logging.flush();
-                    Logging.consoleOutput = console_output;
-                    if (private_key == null)
-                    {
-                        Logging.error("Unable to decrypt wallet, an incorrect password was used.");
-                        return false;
-                    }
+                    Logging.error("Unable to decrypt wallet, an incorrect password was used.");
+                    return false;
                 }
-                byte[] public_key = CryptoManager.lib.decryptWithPassword(b_publicKey, password, false);
-                if (public_key == null)
+                if (baseNonce == null)
+                {
+                    baseNonce = CryptoManager.lib.sha3_512sqTrunc(privateKey);
+                }
+                if (publicKey == null)
                 {
                     Logging.error("Unable to decrypt wallet, file is probably corrupted.");
                     return false;
                 }
-                if (b_last_nonce != null)
-                {
-                    last_nonce_bytes = CryptoManager.lib.decryptWithPassword(b_last_nonce, password, false);
-                    if (last_nonce_bytes == null)
-                    {
-                        Logging.error("Unable to decrypt wallet, file is probably corrupted.");
-                        return false;
-                    }
-                }
+
                 if (verify_only)
                 {
                     return true;
                 }
-                privateKey = private_key;
-                baseNonce = base_nonce;
-                publicKey = public_key;
-                if (baseNonce == null)
-                {
-                    baseNonce = CryptoManager.lib.sha3_512sqTrunc(privateKey, publicKey.Length, 64);
-                }
+                this.baseNonce = baseNonce;
+                this.privateKey = privateKey;
+                this.publicKey = publicKey;
                 walletPassword = password;
             }
             catch (Exception)
             {
-                Logging.error(string.Format("Unable to decrypt wallet, an incorrect password was used."));
+                Logging.error("Unable to decrypt wallet, an incorrect password was used.");
                 return false;
             }
 
@@ -905,14 +886,14 @@ namespace IXICore
                 AddressData ad = new AddressData() { nonce = new byte[1] { 0 }, keyPair = kp };
                 myAddresses.Add(address.addressNoChecksum, ad);
 
-                if (last_nonce_bytes != null)
+                if (lastNonce != null)
                 {
-                    bool last_address_found = false;
-                    while (last_address_found == false)
+                    bool lastAddressFound = false;
+                    while (lastAddressFound == false)
                     {
-                        if (kp.lastNonceBytes != null && last_nonce_bytes.SequenceEqual(kp.lastNonceBytes))
+                        if (kp.lastNonceBytes != null && lastNonce.SequenceEqual(kp.lastNonceBytes))
                         {
-                            last_address_found = true;
+                            lastAddressFound = true;
                         }
                         else
                         {
@@ -935,7 +916,7 @@ namespace IXICore
         public void convertWalletFromIxiHex(string file_name)
         {
             string wallet_string = File.ReadAllText(file_name);
-            
+
             if (wallet_string.Take(6).SequenceEqual("IXIHEX"))
             {
                 Logging.info("Converting wallet from IXIHEX to binary");
@@ -978,7 +959,8 @@ namespace IXICore
                 }
                 else if (wallet_version == 5)
                 {
-                    success = readWallet_v5(reader, password, true);
+                    byte[] encryptedWalletBytes = reader.ReadBytes((int)(reader.BaseStream.Length - reader.BaseStream.Position));
+                    success = readWallet_v5(encryptedWalletBytes, password, true);
                 }
                 else
                 {
@@ -1043,7 +1025,8 @@ namespace IXICore
                 }
                 else if (walletVersion == 5)
                 {
-                    success = readWallet_v5(reader, password);
+                    byte[] encryptedWalletBytes = reader.ReadBytes((int)(reader.BaseStream.Length - reader.BaseStream.Position));
+                    success = readWallet_v5(encryptedWalletBytes, password);
                 }
                 else
                 {
@@ -1131,7 +1114,7 @@ namespace IXICore
             {
                 // TODO Omega - automatically upgrade to wallet v4
                 writer.Write(walletVersion);
-                if(walletVersion == 4)
+                if (walletVersion == 4)
                 {
                     if (viewingWallet)
                     {
@@ -1147,7 +1130,8 @@ namespace IXICore
                         writer.Write(b_privateKey.Length);
                         writer.Write(b_privateKey);
                     }
-                }else
+                }
+                else
                 {
                     writer.Write(b_privateKey.Length);
                     writer.Write(b_privateKey);
@@ -1251,64 +1235,64 @@ namespace IXICore
             if (password.Length < 10)
                 return false;
 
-            // Encrypt data first
-            byte[] b_privateKey = null;
-            if (privateKey != null)
-            {
-                b_privateKey = CryptoManager.lib.encryptWithPassword(privateKey, password, false);
-            }
-            byte[] b_baseNonce = CryptoManager.lib.encryptWithPassword(baseNonce, password, false);
-            byte[] b_publicKey = CryptoManager.lib.encryptWithPassword(publicKey, password, false);
-
-            BinaryWriter writer;
+            BinaryWriter walletFileWriter;
             try
             {
-                writer = new BinaryWriter(new FileStream(filename, FileMode.Create));
+                walletFileWriter = new BinaryWriter(new FileStream(filename, FileMode.Create));
             }
             catch (Exception e)
             {
                 Logging.error("Cannot create wallet file. {0}", e.Message);
                 return false;
             }
-
             try
             {
-                writer.Write(walletVersion);
-                if (viewingWallet)
+                using (MemoryStream m = new MemoryStream())
                 {
-                    writer.Write('v');
-                    // Write the base nonce
-                    writer.Write(b_baseNonce.Length);
-                    writer.Write(b_baseNonce);
-                }
-                else
-                {
-                    writer.Write('f');
-                    // Write the address keypair
-                    writer.Write(b_privateKey.Length);
-                    writer.Write(b_privateKey);
-                }
+                    using (BinaryWriter writer = new BinaryWriter(m))
+                    {
+                        if (viewingWallet)
+                        {
+                            writer.Write('v');
+                            // Write the base nonce
+                            writer.Write(baseNonce.Length);
+                            writer.Write(baseNonce);
+                        }
+                        else
+                        {
+                            writer.Write('f');
+                            // Write the address keypair
+                            writer.Write(privateKey.Length);
+                            writer.Write(privateKey);
+                        }
 
-                writer.Write(b_publicKey.Length);
-                writer.Write(b_publicKey);
+                        writer.Write(publicKey.Length);
+                        writer.Write(publicKey);
 
-                if (myKeys.First().Value.lastNonceBytes != null)
-                {
-                    byte[] b_last_nonce = CryptoManager.lib.encryptWithPassword(myKeys.First().Value.lastNonceBytes, password, false);
-                    writer.Write(b_last_nonce.Length);
-                    writer.Write(b_last_nonce);
+                        var lastNonceBytes = myKeys.First().Value.lastNonceBytes;
+                        if (lastNonceBytes != null)
+                        {
+                            writer.Write(lastNonceBytes.Length);
+                            writer.Write(lastNonceBytes);
+                        }
+                        else
+                        {
+                            writer.Write(0);
+                        }
+
+                    }
+
+                    var encryptedWalletBytes = CryptoManager.lib.encryptWithPassword(m.ToArray(), password, true);
+                    walletFileWriter.Write(walletVersion);
+                    walletFileWriter.Write(encryptedWalletBytes);
                 }
-
             }
-
             catch (Exception e)
             {
                 Logging.error("Cannot write to wallet file. {0}", e.Message);
                 return false;
             }
-
-            writer.Close();
-
+            walletFileWriter.Close();
             return true;
         }
 
@@ -1347,7 +1331,7 @@ namespace IXICore
         // Generate a new wallet with matching private/public key pairs
         public bool generateWallet(string password)
         {
-            if(walletLoaded)
+            if (walletLoaded)
             {
                 Logging.error("Can't generate wallet, wallet already loaded.");
                 return false;
@@ -1371,7 +1355,7 @@ namespace IXICore
 
             privateKey = kp.privateKeyBytes;
             publicKey = kp.publicKeyBytes;
-            baseNonce = CryptoManager.lib.sha3_512sqTrunc(privateKey, publicKey.Length, 64);
+            baseNonce = CryptoManager.lib.sha3_512sqTrunc(privateKey);
 
             Address addr = new Address(new Address(publicKey).addressNoChecksum);
             lastAddress = address = addr;
@@ -1414,17 +1398,17 @@ namespace IXICore
         public void scanForLostAddresses()
         {
             bool new_address_found = false;
-            foreach(var key in myKeys)
+            foreach (var key in myKeys)
             {
                 Address primary_address = new Address(key.Value.addressBytes);
                 byte[] last_nonce = key.Value.lastNonceBytes;
                 for (int i = 0; i < 100; i++)
                 {
                     Address new_address = generateNewAddress(primary_address, last_nonce, false, false);
-                    if(IxianHandler.getWalletBalance(new_address) > 0)
+                    if (IxianHandler.getWalletBalance(new_address) > 0)
                     {
                         new_address_found = true;
-                        for(int j = 0; j <= i; j++)
+                        for (int j = 0; j <= i; j++)
                         {
                             generateNewAddress(primary_address, null, true, false);
                         }
@@ -1446,7 +1430,7 @@ namespace IXICore
 
         public byte[] getRawViewingWallet()
         {
-            if(walletVersion != 2 && walletVersion != 4)
+            if (walletVersion != 2 && walletVersion != 4)
             {
                 throw new Exception("Cannot generate raw viewing wallet for wallet version " + walletVersion + ", v2 or v4 required.");
             }
@@ -1464,7 +1448,7 @@ namespace IXICore
                 {
                     try
                     {
-                        w.Write(4);
+                        w.Write(5);
                         w.Write('v');
 
                         // Write the address keypair
@@ -1499,7 +1483,7 @@ namespace IXICore
 
         public bool isValidPassword(string password)
         {
-            if(password != null && password.Length > 0 && password == walletPassword)
+            if (password != null && password.Length > 0 && password == walletPassword)
             {
                 return true;
             }
