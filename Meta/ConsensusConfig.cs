@@ -132,7 +132,7 @@ namespace IXICore
         /// <summary>
         /// Maximum block size in bytes. (Used in DLT Node executable.)
         /// </summary>
-        public static readonly long maximumBlockSize = 1024000 + (((long) maximumTransactionsPerBlock + 1) * 100); // TODO fine-tune this
+        public static readonly long maximumBlockSize = 1024000 + (((long)maximumTransactionsPerBlock + 1) * 100); // TODO fine-tune this
         /// <summary>
         /// Initial value for seeding the Transaction SHA512 checksum generator.
         /// </summary>
@@ -162,13 +162,18 @@ namespace IXICore
         /// <summary>
         /// Min. number of seconds that the PL PoW will be calculated for.
         /// </summary>
-        public static readonly long plPowMinCalculationTime = 600; // 600 seconds = 10 mins TOOD TODO Omega, maybe remove this and replace it with block time instead
-        public static readonly ulong plPowMinCalculationBlockTime = 20; // 600 seconds = 20 blocks
+        public static readonly ulong plPowMinCalculationBlockTime = 20; // 20 blocks = 10 mins
+        public static readonly long plPowMinCalculationTime = (long)plPowMinCalculationBlockTime * blockGenerationInterval;
 
         /// <summary>
         /// Number of blocks after how many to re-calculate the PL PoW since last solution.
         /// </summary>
         public static readonly ulong plPowCalculationInterval = 40; // 40 blocks = approx. 20 mins
+
+        /// <summary>
+        /// Number of blocks after how many the signing and mining rewards become available for spending.
+        /// </summary>
+        public static readonly ulong rewardMaturity = 100; // 100 blocks
 
         /// <summary>
         ///  Retrieves the lenght of the redacted window based on the block version in use.
@@ -252,7 +257,7 @@ namespace IXICore
             {
                 reward = current_supply * new IxiNumber("0.1") / new IxiNumber("100000000"); // approximation of 2*60*24*365*100
             }
-            else if(target_block_num < 1802000)
+            else if (target_block_num < 1802000)
             {
                 reward = current_supply * new IxiNumber("5") / new IxiNumber("100000000"); // approximation of 2*60*24*365*100
             }
@@ -264,14 +269,15 @@ namespace IXICore
             {
                 reward = 288;
             }
-            else if(target_block_num < 12614400)
+            else if (target_block_num < 12614400)
             {
                 reward = 144;
             }
             else if (target_block_num < 15768000)
             {
                 reward = 72;
-            }else
+            }
+            else
             {
                 reward = 36; // 36 per block after block num > 15768000 (12 years)
             }

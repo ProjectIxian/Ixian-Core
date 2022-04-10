@@ -200,7 +200,7 @@ namespace IXICore
                 transactions.Add(txid);
                 if (version < BlockVer.v8)
                 {
-                    transactionPIT.add(UTF8Encoding.UTF8.GetBytes(Transaction.txIdV8ToLegacy(txid)));
+                    transactionPIT.add(UTF8Encoding.UTF8.GetBytes(Transaction.getTxIdString(txid)));
                 }
                 else
                 {
@@ -792,7 +792,7 @@ namespace IXICore
                     // Write each wallet
                     foreach (byte[] txid in transactions)
                     {
-                        writer.Write(Transaction.txIdV8ToLegacy(txid));
+                        writer.Write(Transaction.getTxIdString(txid));
                     }
 
                     lock (signatures)
@@ -1239,7 +1239,7 @@ namespace IXICore
                 transactions.Add(txid);
                 if (version < BlockVer.v8)
                 {
-                    transactionPIT.add(UTF8Encoding.UTF8.GetBytes(Transaction.txIdV8ToLegacy(txid)));
+                    transactionPIT.add(UTF8Encoding.UTF8.GetBytes(Transaction.getTxIdString(txid)));
                 }else
                 {
                     transactionPIT.add(txid);

@@ -1247,45 +1247,9 @@ namespace IXICore
             }
             try
             {
-                using (MemoryStream m = new MemoryStream())
-                {
-                    using (BinaryWriter writer = new BinaryWriter(m))
-                    {
-                        if (viewingWallet)
-                        {
-                            writer.Write('v');
-                            // Write the base nonce
-                            writer.Write(baseNonce.Length);
-                            writer.Write(baseNonce);
-                        }
-                        else
-                        {
-                            writer.Write('f');
-                            // Write the address keypair
-                            writer.Write(privateKey.Length);
-                            writer.Write(privateKey);
-                        }
-
-                        writer.Write(publicKey.Length);
-                        writer.Write(publicKey);
-
-                        var lastNonceBytes = myKeys.First().Value.lastNonceBytes;
-                        if (lastNonceBytes != null)
-                        {
-                            writer.Write(lastNonceBytes.Length);
-                            writer.Write(lastNonceBytes);
-                        }
-                        else
-                        {
-                            writer.Write(0);
-                        }
-
-                    }
-
-                    var encryptedWalletBytes = CryptoManager.lib.encryptWithPassword(m.ToArray(), password, true);
-                    walletFileWriter.Write(walletVersion);
-                    walletFileWriter.Write(encryptedWalletBytes);
-                }
+                var encryptedWalletBytes = getWalletBytes_v5(password, viewingWallet);
+                walletFileWriter.Write(walletVersion);
+                walletFileWriter.Write(encryptedWalletBytes);
             }
             catch (Exception e)
             {
@@ -1294,6 +1258,47 @@ namespace IXICore
             }
             walletFileWriter.Close();
             return true;
+        }
+
+        private byte[] getWalletBytes_v5(string password, bool viewingWallet)
+        {
+            using (MemoryStream m = new MemoryStream())
+            {
+                using (BinaryWriter writer = new BinaryWriter(m))
+                {
+                    if (viewingWallet)
+                    {
+                        writer.Write('v');
+                        // Write the base nonce
+                        writer.Write(baseNonce.Length);
+                        writer.Write(baseNonce);
+                    }
+                    else
+                    {
+                        writer.Write('f');
+                        // Write the address keypair
+                        writer.Write(privateKey.Length);
+                        writer.Write(privateKey);
+                    }
+
+                    writer.Write(publicKey.Length);
+                    writer.Write(publicKey);
+
+                    var lastNonceBytes = myKeys.First().Value.lastNonceBytes;
+                    if (lastNonceBytes != null)
+                    {
+                        writer.Write(lastNonceBytes.Length);
+                        writer.Write(lastNonceBytes);
+                    }
+                    else
+                    {
+                        writer.Write(0);
+                    }
+
+                }
+
+                return CryptoManager.lib.encryptWithPassword(m.ToArray(), password, true);
+            }
         }
 
         // Deletes the wallet file if it exists
@@ -1430,7 +1435,7 @@ namespace IXICore
 
         public byte[] getRawViewingWallet()
         {
-            if (walletVersion != 2 && walletVersion != 4)
+            if (walletVersion != 2 && walletVersion < 4)
             {
                 throw new Exception("Cannot generate raw viewing wallet for wallet version " + walletVersion + ", v2 or v4 required.");
             }
@@ -1438,41 +1443,47 @@ namespace IXICore
             if (password.Length < 10)
                 return null;
 
-            // Encrypt data first
-            byte[] b_baseNonce = CryptoManager.lib.encryptWithPassword(baseNonce, password, false);
-            byte[] b_publicKey = CryptoManager.lib.encryptWithPassword(publicKey, password, false);
-
-            using (MemoryStream m = new MemoryStream())
+            if (walletVersion == 5)
             {
-                using (BinaryWriter w = new BinaryWriter(m))
+                return getWalletBytes_v5(password, true);
+            }else
+            {
+                // Encrypt data first
+                byte[] b_baseNonce = CryptoManager.lib.encryptWithPassword(baseNonce, password, false);
+                byte[] b_publicKey = CryptoManager.lib.encryptWithPassword(publicKey, password, false);
+
+                using (MemoryStream m = new MemoryStream())
                 {
-                    try
+                    using (BinaryWriter w = new BinaryWriter(m))
                     {
-                        w.Write(5);
-                        w.Write('v');
-
-                        // Write the address keypair
-                        w.Write(b_baseNonce.Length);
-                        w.Write(b_baseNonce);
-
-                        w.Write(b_publicKey.Length);
-                        w.Write(b_publicKey);
-
-                        if (myKeys.First().Value.lastNonceBytes != null)
+                        try
                         {
-                            byte[] b_last_nonce = CryptoManager.lib.encryptWithPassword(myKeys.First().Value.lastNonceBytes, password, false);
-                            w.Write(b_last_nonce.Length);
-                            w.Write(b_last_nonce);
-                        }
+                            w.Write(4);
+                            w.Write('v');
 
+                            // Write the address keypair
+                            w.Write(b_baseNonce.Length);
+                            w.Write(b_baseNonce);
+
+                            w.Write(b_publicKey.Length);
+                            w.Write(b_publicKey);
+
+                            if (myKeys.First().Value.lastNonceBytes != null)
+                            {
+                                byte[] b_last_nonce = CryptoManager.lib.encryptWithPassword(myKeys.First().Value.lastNonceBytes, password, false);
+                                w.Write(b_last_nonce.Length);
+                                w.Write(b_last_nonce);
+                            }
+
+                        }
+                        catch (Exception e)
+                        {
+                            Logging.error("Cannot write to wallet file. {0}", e.Message);
+                            return null;
+                        }
                     }
-                    catch (Exception e)
-                    {
-                        Logging.error("Cannot write to wallet file. {0}", e.Message);
-                        return null;
-                    }
+                    return m.ToArray();
                 }
-                return m.ToArray();
             }
         }
 

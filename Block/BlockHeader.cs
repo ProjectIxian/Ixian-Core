@@ -374,7 +374,7 @@ namespace IXICore
                         // Write each wallet
                         foreach (byte[] txid in transactions)
                         {
-                            writer.Write(Transaction.txIdV8ToLegacy(txid));
+                            writer.Write(Transaction.getTxIdString(txid));
                         }
                     }else
                     {
@@ -477,7 +477,7 @@ namespace IXICore
                 StringBuilder merged_txids = new StringBuilder();
                 foreach (byte[] txid in transactions)
                 {
-                    merged_txids.Append(Transaction.txIdV8ToLegacy(txid));
+                    merged_txids.Append(Transaction.getTxIdString(txid));
                 }
 
                 rawData.AddRange(Encoding.UTF8.GetBytes(merged_txids.ToString()));

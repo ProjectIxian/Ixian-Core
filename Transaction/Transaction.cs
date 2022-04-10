@@ -36,6 +36,33 @@ namespace IXICore
     /// </remarks>
     public class Transaction
     {
+        public class PoWSolution
+        {
+            public ulong blockNum { get; private set; } = 0;
+            public byte[] nonce { get; private set; } = null;
+
+            public PoWSolution(byte[] bytes, int txVersion)
+            {
+                using (MemoryStream m = new MemoryStream(bytes))
+                {
+                    using (BinaryReader reader = new BinaryReader(m))
+                    {
+                        if (txVersion >= 7)
+                        {
+                            blockNum = reader.ReadIxiVarUInt();
+                            int nonce_bytes_len = (int)reader.ReadIxiVarUInt();
+                            nonce = reader.ReadBytes(nonce_bytes_len);
+                        }
+                        else
+                        {
+                            blockNum = reader.ReadUInt64();
+                            nonce = Crypto.stringToHash(reader.ReadString());
+                        }
+                    }
+                }
+            }
+        }
+
         public class ToEntry
         {
             private int txVersion = 0;
@@ -403,6 +430,23 @@ namespace IXICore
         ///  Currently latest transaction version.
         /// </summary>
         public static int maxVersion = 7;
+
+        private PoWSolution _powSolution = null;
+        public PoWSolution powSolution
+        {
+            get
+            {
+                if (_powSolution != null)
+                {
+                    return _powSolution;
+                }
+                if (type == (int)Transaction.Type.PoWSolution)
+                {
+                    _powSolution = new PoWSolution(toList.First().Value.data, version);
+                }
+                return _powSolution;
+            }
+        }
 
         /// <summary>
         ///  Sets the transaction's version appropriately, based on the current block version.
@@ -791,7 +835,7 @@ namespace IXICore
             }
         }
 
-        public void fromBytesLegacy(byte[] bytes, bool include_applied = false)
+        private void fromBytesLegacy(byte[] bytes, bool include_applied = false)
         {
             try
             {
@@ -922,7 +966,7 @@ namespace IXICore
                 throw;
             }
         }
-        public void fromBytesV6(byte[] bytes, bool include_applied = false)
+        private void fromBytesV6(byte[] bytes, bool include_applied = false)
         {
             try
             {
@@ -1028,7 +1072,7 @@ namespace IXICore
             }
         }
 
-        public void fromBytesV7(byte[] bytes, bool include_applied = false)
+        private void fromBytesV7(byte[] bytes, bool include_applied = false)
         {
             try
             {
@@ -1516,7 +1560,7 @@ namespace IXICore
 
             if(signature == null || pubkey == null)
             {
-                Logging.warn("Signature or pubkey for received txid {0} was null, verification failed.", txIdV8ToLegacy(id));
+                Logging.warn("Signature or pubkey for received txid {0} was null, verification failed.", getTxIdString());
                 return false;
             }
 
@@ -1648,7 +1692,7 @@ namespace IXICore
             rawData.AddRange(ConsensusConfig.ixianChecksumLock);
             if (transaction.version < 5)
             {
-                rawData.AddRange(Encoding.UTF8.GetBytes(txIdV8ToLegacy(transaction.id)));
+                rawData.AddRange(Encoding.UTF8.GetBytes(transaction.getTxIdString()));
             }
             rawData.AddRange(BitConverter.GetBytes(transaction.type));
             rawData.AddRange(Encoding.UTF8.GetBytes(transaction.amount.ToString()));
@@ -2117,14 +2161,14 @@ namespace IXICore
                                     signerNonce = signer_nonce
                                 };
                             default:
-                                Logging.warn("Invalid MultisigWalletChangeType for a multisig change transaction {{ {0} }}.", txIdV8ToLegacy(id));
+                                Logging.warn("Invalid MultisigWalletChangeType for a multisig change transaction {{ {0} }}.", getTxIdString());
                                 return null;
                         }
                     }
                     catch (Exception e)
                     {
                         // early EOL or strange data error
-                        Logging.error("Exception occurred in getChangeMultisigWalletData for txid {0}: {1}", txIdV8ToLegacy(id), e);
+                        Logging.error("Exception occurred in getChangeMultisigWalletData for txid {0}: {1}", getTxIdString(), e);
                         return null;
                     }
                 }
@@ -2147,7 +2191,7 @@ namespace IXICore
             }
             else
             {
-                Logging.info(String.Format("Transaction {{ {0} }} is not a multisig transaction, so MultisigData cannot be retrieved.", txIdV8ToLegacy(id)));
+                Logging.info(String.Format("Transaction {{ {0} }} is not a multisig transaction, so MultisigData cannot be retrieved.", getTxIdString()));
                 return null;
             }
         }
@@ -2406,7 +2450,7 @@ namespace IXICore
         public Dictionary<string, object> toDictionary()
         {
             Dictionary<string, object> tDic = new Dictionary<string, object>();
-            tDic.Add("id", txIdV8ToLegacy(id));
+            tDic.Add("id", getTxIdString());
             tDic.Add("version", version);
             tDic.Add("blockHeight", blockHeight.ToString());
             tDic.Add("nonce", nonce.ToString());
@@ -2490,8 +2534,14 @@ namespace IXICore
             return b_txid;
         }
 
-        public static string txIdV8ToLegacy(byte[] txid)
+        public string getTxIdString()
         {
+            return getTxIdString(id);
+        }
+
+        public static string getTxIdString(byte[] txid)
+        {
+            // TODO Omega - this needs to be updated after rocksdb and when other parts of code isn't relying on it anymore
             string s_txid;
             var type_ret = IxiVarInt.GetIxiVarUInt(txid, 0);
             int type = (int)type_ret.num;

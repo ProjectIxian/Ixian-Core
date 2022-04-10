@@ -233,7 +233,7 @@ namespace IXICore
                                 byte[] txid = null;
                                 if(bh.version < BlockVer.v8)
                                 {
-                                    txid = UTF8Encoding.UTF8.GetBytes(Transaction.txIdV8ToLegacy(tx.id));
+                                    txid = UTF8Encoding.UTF8.GetBytes(tx.getTxIdString());
                                 }else
                                 {
                                     txid = tx.id;
