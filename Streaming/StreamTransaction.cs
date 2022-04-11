@@ -35,7 +35,7 @@ namespace IXICore
                     messageID = reader.ReadBytes(msg_id_len);
 
                     int tx_len = reader.ReadInt32();
-                    transaction = new Transaction(reader.ReadBytes(tx_len));
+                    transaction = new Transaction(reader.ReadBytes(tx_len), false, true);
                 }
             }
         }
@@ -49,7 +49,7 @@ namespace IXICore
                     writer.Write(messageID.Length);
                     writer.Write(messageID);
 
-                    byte[] tx_bytes = transaction.getBytes();
+                    byte[] tx_bytes = transaction.getBytes(true, true);
                     writer.Write(tx_bytes.Length);
                     writer.Write(tx_bytes);
                 }

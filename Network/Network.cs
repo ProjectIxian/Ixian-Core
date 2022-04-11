@@ -87,17 +87,17 @@ namespace IXICore.Network
         hello = 0,
         helloData = 1,
         bye = 2,
-        [Obsolete("Use getBlock3 instead")]
-        getBlock = 3,
+        //[Obsolete("Use getBlock3 instead")]
+        //getBlock = 3,
+        [Obsolete("Use getTransactions2 instead")]
         blockData = 4,
         [Obsolete("Use inventory instead")]
         blockHeight = 5,
         getKeepAlives = 6,
         keepAlivesChunk = 7,
-        //[Obsolete("Use getTransactions2 instead")]
-        //getTransactions = 8,
-        //[Obsolete("Use getTransaction3 instead")]
-        //getTransaction = 9,
+        transactionData2 = 8,
+        blockData2 = 9,
+        [Obsolete("Use transactionData2 instead")]
         transactionData = 10,
         [Obsolete("Use getSignatures2 instead")]
         getSignatures = 11,

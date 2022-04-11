@@ -754,7 +754,7 @@ namespace IXICore
         /// <param name="include_sb_segments">Includes superblock segments if true.</param>
         /// <param name="frozen_sigs_only">Returns only frozen signatures if true. If false it returns all signatures, if they are still available, otherwise falls back to frozen signatures.</param>
         /// <returns>Byte buffer with the serialized block.</returns>
-        public byte[] getBytes(bool include_sb_segments = true, bool frozen_sigs_only = true, bool for_checksum = false)
+        public byte[] getBytes(bool include_sb_segments = true, bool frozen_sigs_only = true, bool forceV10Structure = false)
         {
             if(compacted)
             {
@@ -762,17 +762,19 @@ namespace IXICore
                 return null;
             }
 
-            if (version < BlockVer.v8)
+            if(forceV10Structure || version >= BlockVer.v10)
+            {
+                return getBytesV10(include_sb_segments, frozen_sigs_only, false);
+            }
+            else if (version < BlockVer.v8)
             {
                 return getBytesLegacy(include_sb_segments, frozen_sigs_only);
             }
             else if (version < BlockVer.v10)
             {
                 return getBytesV8(include_sb_segments, frozen_sigs_only);
-            }else
-            {
-                return getBytesV10(include_sb_segments, frozen_sigs_only, for_checksum);
             }
+            return null;
         }
 
         private byte[] getBytesLegacy(bool include_sb_segments = true, bool frozen_sigs_only = true)
@@ -1322,7 +1324,7 @@ namespace IXICore
                 }
                 else if(version > BlockVer.v3)
                 {
-                    merged_sigs.AddRange(sig.signerAddress.addressWithChecksum);
+                    merged_sigs.AddRange(sig.signerAddress.getInputBytes());
                 }
                 else
                 {

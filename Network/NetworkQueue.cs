@@ -94,7 +94,8 @@ namespace IXICore.Network
 
         private static byte[] extractHelperData(ProtocolMessageCode code, byte[] data)
         {
-            if (code == ProtocolMessageCode.blockData)
+            if (code == ProtocolMessageCode.blockData
+                || code == ProtocolMessageCode.blockData2)
             {
                 return data.Take(8).ToArray();
             }
@@ -151,7 +152,6 @@ namespace IXICore.Network
 #pragma warning disable CS0618 // Type or member is obsolete
                     case ProtocolMessageCode.getTransaction3:
                     case ProtocolMessageCode.getTransactions2:
-                    case ProtocolMessageCode.getBlock:
                     case ProtocolMessageCode.getBlock2:
                     case ProtocolMessageCode.getBlock3:
                     case ProtocolMessageCode.getBlockHeaders:
@@ -170,10 +170,12 @@ namespace IXICore.Network
                     case ProtocolMessageCode.transactionsChunk:
                     case ProtocolMessageCode.transactionsChunk2:
                     case ProtocolMessageCode.transactionData:
+                    case ProtocolMessageCode.transactionData2:
                     case ProtocolMessageCode.blockTransactionsChunk:
                     case ProtocolMessageCode.blockHeaders:
                     case ProtocolMessageCode.blockHeaders2:
                     case ProtocolMessageCode.blockData:
+                    case ProtocolMessageCode.blockData2:
                     case ProtocolMessageCode.pitData:
                     case ProtocolMessageCode.pitData2:
                     case ProtocolMessageCode.inventory2:
@@ -235,12 +237,12 @@ namespace IXICore.Network
 #pragma warning disable CS0618 // Type or member is obsolete
                             case ProtocolMessageCode.getTransaction3:
                             case ProtocolMessageCode.getTransactions2:
-                            case ProtocolMessageCode.getBlock:
                             case ProtocolMessageCode.getBlock2:
                             case ProtocolMessageCode.getBlock3:
                             case ProtocolMessageCode.getBlockHeaders:
                             case ProtocolMessageCode.getBlockHeaders2:
                             case ProtocolMessageCode.blockData:
+                            case ProtocolMessageCode.blockData2:
                             case ProtocolMessageCode.getSignatures:
                             case ProtocolMessageCode.getSignatures2:
                             case ProtocolMessageCode.getBlockSignatures2:

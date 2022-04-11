@@ -633,6 +633,7 @@ namespace IXICore.Network
                         switch (active_message.code)
                         {
                             case ProtocolMessageCode.blockData:
+                            case ProtocolMessageCode.blockData2:
                                 int ver = (int)active_message.data.GetIxiVarInt(0).num;
                                 if (ver <= BlockVer.v7)
                                 {
@@ -890,6 +891,7 @@ namespace IXICore.Network
                 case ProtocolMessageCode.transactionsChunk2:
                 case ProtocolMessageCode.blockTransactionsChunk:
                 case ProtocolMessageCode.transactionData:
+                case ProtocolMessageCode.transactionData2:
                     lock (sendQueueMessagesLowPriority)
                     {
                         addMessageToSendQueue(sendQueueMessagesLowPriority, message);

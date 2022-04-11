@@ -815,7 +815,7 @@ namespace IXICore
             }
             else
             {
-                return new JsonResponse { result = Crypto.hashToString(transaction.getBytes()), error = null };
+                return new JsonResponse { result = Crypto.hashToString(transaction.getBytes(true, true)), error = null };
             }
         }
 
@@ -832,7 +832,7 @@ namespace IXICore
 
             string raw_transaction_hex = (string)parameters["transaction"];
 
-            Transaction raw_transaction = new Transaction(Crypto.stringToHash(raw_transaction_hex));
+            Transaction raw_transaction = new Transaction(Crypto.stringToHash(raw_transaction_hex), false, true);
             return new JsonResponse { result = raw_transaction.toDictionary(), error = null };
         }
 
@@ -851,9 +851,9 @@ namespace IXICore
 
             string raw_transaction_hex = (string)parameters["transaction"];
 
-            Transaction raw_transaction = new Transaction(Crypto.stringToHash(raw_transaction_hex));
+            Transaction raw_transaction = new Transaction(Crypto.stringToHash(raw_transaction_hex), false, true);
             raw_transaction.signature = raw_transaction.getSignature(raw_transaction.checksum);
-            return new JsonResponse { result = Crypto.hashToString(raw_transaction.getBytes()), error = null };
+            return new JsonResponse { result = Crypto.hashToString(raw_transaction.getBytes(true, true)), error = null };
         }
 
         private JsonResponse onSendRawTransaction(Dictionary<string, object> parameters)
@@ -876,7 +876,7 @@ namespace IXICore
 
             string raw_transaction_hex = (string)parameters["transaction"];
 
-            Transaction raw_transaction = new Transaction(Crypto.stringToHash(raw_transaction_hex));
+            Transaction raw_transaction = new Transaction(Crypto.stringToHash(raw_transaction_hex), false, true);
 
             if (IxianHandler.addTransaction(raw_transaction, true))
             {

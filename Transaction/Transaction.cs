@@ -819,19 +819,20 @@ namespace IXICore
         ///  Constructs a transaction object from the serialized transaction data. See also `getBytes()`.
         /// </summary>
         /// <param name="bytes">Byte-field with the serialized transaction</param>
-        /// <param name="include_applied">Whether to include the 'applied' flag when reading the transaction data.</param>
-        public Transaction(byte[] bytes, bool include_applied = false)
+        /// <param name="includeApplied">Whether to include the 'applied' flag when reading the transaction data.</param>
+        public Transaction(byte[] bytes, bool includeApplied = false, bool forceV7Structure = false)
         {
-            if (bytes[0] < 6)
+            if (forceV7Structure || bytes[0] >= 7)
             {
-                fromBytesLegacy(bytes, include_applied);
+                fromBytesV7(bytes, includeApplied);
+            }
+            else if (bytes[0] < 6)
+            {
+                fromBytesLegacy(bytes, includeApplied);
             }
             else if(bytes[0] == 6)
             {
-                fromBytesV6(bytes, include_applied);
-            }else
-            {
-                fromBytesV7(bytes, include_applied);
+                fromBytesV6(bytes, includeApplied);
             }
         }
 
@@ -1176,19 +1177,21 @@ namespace IXICore
         ///  Serializes the transaction object for transmission and returns a byte-field. See also the constructor `Transaction(byte[])`.
         /// </summary>
         /// <returns>Byte-field with the serialized transaction, suiteable for network transmission.</returns>
-        public byte[] getBytes(bool include_applied = true)
+        public byte[] getBytes(bool include_applied = true, bool forceV7Structure = false)
         {
-            if (version < 6)
+            if (forceV7Structure || version >= 7)
+            {
+                return getBytesV7(include_applied);
+            }
+            else if (version < 6)
             {
                 return getBytesLegacy(include_applied);
             }
             else if(version == 6)
             {
                 return getBytesV6(include_applied);
-            }else
-            {
-                return getBytesV7(include_applied);
             }
+            return null;
         }
 
         private byte[] getBytesLegacy(bool include_applied = false)
@@ -1510,8 +1513,8 @@ namespace IXICore
         /// <returns>True if both objects represent the same Ixian transaction.</returns>
         public bool equals(Transaction tx)
         {
-            byte[] a1 = getBytes(false);
-            byte[] a2 = tx.getBytes(false);
+            byte[] a1 = getBytes(false, true);
+            byte[] a2 = tx.getBytes(false, true);
 
             return a1.SequenceEqual(a2);
         }
