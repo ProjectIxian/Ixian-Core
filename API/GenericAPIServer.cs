@@ -1479,7 +1479,7 @@ namespace IXICore
             if (parameters.ContainsKey("message"))
             {
                 string message = (string)parameters["message"];
-                byte[] hash = Crypto.sha512sqTrunc(UTF8Encoding.UTF8.GetBytes(message));
+                byte[] hash = CryptoManager.lib.sha3_512sqTrunc(UTF8Encoding.UTF8.GetBytes(message));
                 signature = Crypto.hashToString(CryptoManager.lib.getSignature(hash, IxianHandler.getWalletStorage(wallet).getPrimaryPrivateKey()));
 
             }else if (parameters.ContainsKey("hash"))
@@ -1515,7 +1515,7 @@ namespace IXICore
             if (parameters.ContainsKey("message"))
             {
                 string message = (string)parameters["message"];
-                byte[] hash = Crypto.sha512sqTrunc(UTF8Encoding.UTF8.GetBytes(message));
+                byte[] hash = CryptoManager.lib.sha3_512sqTrunc(UTF8Encoding.UTF8.GetBytes(message));
                 sigOk = CryptoManager.lib.verifySignature(hash, publicKey, signature);
 
             }

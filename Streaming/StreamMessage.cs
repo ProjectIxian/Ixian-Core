@@ -423,6 +423,7 @@ namespace IXICore
 
         public byte[] calculateChecksum()
         {
+            // TODO TODO Omega upgrade to sha3
             return Crypto.sha512(getBytes(true));
         }
 

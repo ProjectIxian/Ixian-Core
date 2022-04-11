@@ -78,7 +78,7 @@ namespace IXICore.Inventory
             byte[] address_block_hash = new byte[address.Length + block_hash.Length];
             Array.Copy(address, address_block_hash, address.Length);
             Array.Copy(block_hash, 0, address_block_hash, address.Length, block_hash.Length);
-            return Crypto.sha512sqTrunc(address_block_hash);
+            return CryptoManager.lib.sha3_512sqTrunc(address_block_hash);
         }
     }
 }

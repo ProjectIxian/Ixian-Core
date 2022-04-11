@@ -229,13 +229,16 @@ namespace IXICore
                     rawData.AddRange(entry.addressWithChecksum);
                 }
             }
-            if (block_version <= 2)
+            if (block_version <= BlockVer.v2)
             {
                 return Crypto.sha512quTrunc(rawData.ToArray());
             }
-            else
+            else if(block_version < BlockVer.v10)
             {
                 return Crypto.sha512sqTrunc(rawData.ToArray(), 0, 0, 64);
+            }else
+            {
+                return CryptoManager.lib.sha3_512sqTrunc(rawData.ToArray(), 0, 0, 64);
             }
         }
 

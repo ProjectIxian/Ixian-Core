@@ -173,6 +173,7 @@ namespace IXICore
                     Array.Copy(d, 0, indata, idx, d.Length);
                     idx += d.Length;
                 }
+                // TODO TODO Omega upgrade to sha3
                 cn.hash = Crypto.sha512sqTrunc(indata, 0, indata.Length, hashLength);
             } else if (cn.childNodes != null)
             {
@@ -187,6 +188,7 @@ namespace IXICore
                     Array.Copy(n.Value.hash, 0, indata, idx * hashLength, n.Value.hash.Length);
                     idx += 1;
                 }
+                // TODO TODO Omega upgrade to sha3
                 cn.hash = Crypto.sha512sqTrunc(indata, 0, indata.Length, hashLength);
             }
         }
