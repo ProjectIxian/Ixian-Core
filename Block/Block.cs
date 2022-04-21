@@ -1309,7 +1309,13 @@ namespace IXICore
                     sortedSigs = new List<BlockSignature>(signatures);
                 }
             }
-            sortedSigs.Sort((x, y) => _ByteArrayComparer.Compare(x.signerAddress.addressNoChecksum, y.signerAddress.addressNoChecksum));
+            if(version >= BlockVer.v10)
+            {
+                sortedSigs = sortedSigs.OrderBy(x => x.powSolution.difficulty, Comparer<BigInteger>.Default).ThenBy(x => x.signerAddress.addressNoChecksum, new ByteArrayComparer()).ToList();
+            }else
+            {
+                sortedSigs.Sort((x, y) => _ByteArrayComparer.Compare(x.signerAddress.addressNoChecksum, y.signerAddress.addressNoChecksum));
+            }
 
             // Merge the sorted signatures
             List<byte> merged_sigs = new List<byte>();

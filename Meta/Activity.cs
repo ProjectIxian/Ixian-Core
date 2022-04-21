@@ -105,7 +105,7 @@ namespace IXICore.Meta
             this.txid = txid;
         }
 
-        public Activity(byte[] seed_hash, string wallet, string from, SortedDictionary<Address, Transaction.ToEntry> to_list, int type, byte[] data, string value, long timestamp, int status, ulong block_height, string txid)
+        public Activity(byte[] seed_hash, string wallet, string from, IDictionary<Address, Transaction.ToEntry> to_list, int type, byte[] data, string value, long timestamp, int status, ulong block_height, string txid)
         {
             this.seedHash = seed_hash;
             this.wallet = wallet;
@@ -187,7 +187,7 @@ namespace IXICore.Meta
             return _cachedToListArray;
         }
 
-        public bool setToListArray(SortedDictionary<Address, Transaction.ToEntry> to_list)
+        public bool setToListArray(IDictionary<Address, Transaction.ToEntry> to_list)
         {
             _cachedToListArray.Clear();
 

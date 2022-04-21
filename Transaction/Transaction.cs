@@ -371,7 +371,7 @@ namespace IXICore
         ///  The address can either be a wallet address or a nonce value which was used to generate the address. If the value
         ///  is a nonce value, then the public key, `pubKey`, for the transaction must be specified.
         /// </remarks>
-        public SortedDictionary<byte[], IxiNumber> fromList = new SortedDictionary<byte[], IxiNumber>(new ByteArrayComparer());
+        public IDictionary<byte[], IxiNumber> fromList = new Dictionary<byte[], IxiNumber>(new ByteArrayComparer());
         /// <summary>
         ///  Destination wallets where the funds will be deposited. Each address specifies the amount of Ixi being deposited to it.
         /// </summary>
@@ -379,7 +379,7 @@ namespace IXICore
         ///  The sum of all amounts must be equal to `amount`, otherwise the transaction is invalid. Destination wallets can belong to
         ///  different signing keys.
         /// </remarks>
-        public SortedDictionary<Address, ToEntry> toList = new SortedDictionary<Address, ToEntry>(new AddressComparer());
+        public IDictionary<Address, ToEntry> toList = new Dictionary<Address, ToEntry>(new AddressComparer());
 
         /// <summary>
         ///  Block number when the transaction was generated.
@@ -616,7 +616,7 @@ namespace IXICore
         /// <param name="tx_blockHeight">Block number when the transaction was generated.</param>
         /// <param name="tx_nonce">Unique nonce value for the transaction.</param>
         /// <param name="tx_timestamp">Timestamp (unich epoch) when the transaction was generated.</param>
-        public Transaction(int tx_type, IxiNumber tx_feePerKb, SortedDictionary<Address, ToEntry> tx_toList, Address tx_from, byte[] tx_pubKey, ulong tx_blockHeight, int tx_nonce = -1, long tx_timestamp = 0)
+        public Transaction(int tx_type, IxiNumber tx_feePerKb, IDictionary<Address, ToEntry> tx_toList, Address tx_from, byte[] tx_pubKey, ulong tx_blockHeight, int tx_nonce = -1, long tx_timestamp = 0)
         {
             setVersion();
 
@@ -696,7 +696,7 @@ namespace IXICore
         /// <param name="tx_blockHeight">Block number when the transaction was generated.</param>
         /// <param name="tx_nonce">Unique nonce value for the transaction.</param>
         /// <param name="sign_transaction">True if the signature should be calculated, false if the signature will be calculated later</param>
-        public Transaction(int tx_type, IxiNumber tx_feePerKb, SortedDictionary<Address, ToEntry> tx_toList, SortedDictionary<byte[], IxiNumber> tx_fromList, byte[] tx_pubKey, ulong tx_blockHeight, int tx_nonce = -1, bool sign_transaction = true)
+        public Transaction(int tx_type, IxiNumber tx_feePerKb, IDictionary<Address, ToEntry> tx_toList, IDictionary<byte[], IxiNumber> tx_fromList, byte[] tx_pubKey, ulong tx_blockHeight, int tx_nonce = -1, bool sign_transaction = true)
         {
             setVersion();
 
@@ -757,7 +757,7 @@ namespace IXICore
             amount = new IxiNumber(tx_transaction.amount.getAmount());
             fee = new IxiNumber(tx_transaction.fee.getAmount());
 
-            toList = new SortedDictionary<Address, ToEntry>(new AddressComparer());
+            toList = new Dictionary<Address, ToEntry>(new AddressComparer());
 
             foreach (var entry in tx_transaction.toList)
             {
@@ -775,7 +775,7 @@ namespace IXICore
                 toList.Add(new Address(address), toEntry);
             }
 
-            fromList = new SortedDictionary<byte[], IxiNumber>(new ByteArrayComparer());
+            fromList = new Dictionary<byte[], IxiNumber>(new ByteArrayComparer());
 
             foreach (var entry in tx_transaction.fromList)
             {
@@ -1109,6 +1109,7 @@ namespace IXICore
                             IxiNumber singleAmount = reader.ReadIxiNumber();
                             amount += singleAmount;
                             reader.ReadIxiVarInt(); // TODO TODO Omega v11?
+                            reader.ReadIxiVarInt(); // TODO TODO Omega v11?
                             fromList.Add(address, singleAmount);
                         }
                         fee = amount;
@@ -1144,16 +1145,16 @@ namespace IXICore
 
                         nonce = (int)reader.ReadIxiVarInt();
 
-                        int sigLen = (int)reader.ReadIxiVarUInt();
-                        if (sigLen > 0)
-                        {
-                            signature = reader.ReadBytes(sigLen);
-                        }
-
                         int pkLen = (int)reader.ReadIxiVarUInt();
                         if (pkLen > 0)
                         {
                             pubKey = reader.ReadBytes(pkLen);
+                        }
+
+                        int sigLen = (int)reader.ReadIxiVarUInt();
+                        if (sigLen > 0)
+                        {
+                            signature = reader.ReadBytes(sigLen);
                         }
 
                         ulong tmp_applied = reader.ReadIxiVarUInt();
@@ -1439,8 +1440,11 @@ namespace IXICore
                         writer.Write(entry.Key);
                         writer.WriteIxiNumber(entry.Value);
                         writer.WriteIxiVarInt((int)0); // TODO TODO Omega v11?
+                        if (!for_checksum)
+                        {
+                            writer.WriteIxiVarInt((int)0); // TODO TODO Omega v11?
+                        }
                     }
-
                     writer.WriteIxiVarInt(toList.Count);
                     foreach (var entry in toList)
                     {
@@ -1474,6 +1478,10 @@ namespace IXICore
                     writer.WriteIxiVarInt(timeStamp);
                     writer.WriteIxiVarInt(nonce);
 
+                    // TODO TODO Omega - change this to addressNoChecksum if forChecksum is true?
+                    writer.WriteIxiVarInt(pubKey.Length);
+                    writer.Write(pubKey);
+
                     if (!for_checksum)
                     {
                         if (signature != null)
@@ -1485,9 +1493,6 @@ namespace IXICore
                         {
                             writer.WriteIxiVarInt((int)0);
                         }
-
-                        writer.WriteIxiVarInt(pubKey.Length);
-                        writer.Write(pubKey);
 
                         if (include_applied)
                         {

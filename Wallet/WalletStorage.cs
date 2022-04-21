@@ -367,7 +367,7 @@ namespace IXICore
             return false;
         }
 
-        public List<byte[]> extractMyAddressesFromAddressList(SortedDictionary<Address, Transaction.ToEntry> address_list)
+        public List<byte[]> extractMyAddressesFromAddressList(IDictionary<Address, Transaction.ToEntry> address_list)
         {
             lock (myAddresses)
             {
@@ -820,6 +820,8 @@ namespace IXICore
                         }
                         else
                         {
+                            int baseNonceLength = reader.ReadInt32();
+                            baseNonce = reader.ReadBytes(baseNonceLength);
                             int privateKeyLength = reader.ReadInt32();
                             privateKey = reader.ReadBytes(privateKeyLength);
                         }
@@ -1276,6 +1278,9 @@ namespace IXICore
                     else
                     {
                         writer.Write('f');
+                        // Write the base nonce
+                        writer.Write(baseNonce.Length);
+                        writer.Write(baseNonce);
                         // Write the address keypair
                         writer.Write(privateKey.Length);
                         writer.Write(privateKey);
@@ -1360,7 +1365,7 @@ namespace IXICore
 
             privateKey = kp.privateKeyBytes;
             publicKey = kp.publicKeyBytes;
-            baseNonce = CryptoManager.lib.sha3_512sqTrunc(privateKey);
+            baseNonce = CryptoManager.lib.getSecureRandomBytes(16); //.sha3_512sqTrunc(privateKey); TODO TODO Omega; make sure that this is valid
 
             Address addr = new Address(new Address(publicKey).addressNoChecksum);
             lastAddress = address = addr;

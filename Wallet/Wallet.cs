@@ -198,7 +198,7 @@ namespace IXICore
             }
             catch (Exception ex)
             {
-                Logging.error(String.Format("Error while serializing wallet: {0}", ex.Message));
+                Logging.error("Error while serializing wallet: {0}", ex.Message);
             }
         }
 
@@ -206,7 +206,14 @@ namespace IXICore
         {
             List<byte> rawData = new List<byte>();
 
-            rawData.AddRange(id.addressWithChecksum);
+            if (block_version >= BlockVer.v10)
+            {
+                rawData.AddRange(id.addressNoChecksum);
+            }
+            else
+            {
+                rawData.AddRange(id.addressWithChecksum);
+            }
             rawData.AddRange(Encoding.UTF8.GetBytes(balance.ToString()));
 
             if (data != null)
@@ -226,7 +233,13 @@ namespace IXICore
             {
                 foreach (var entry in allowedSigners)
                 {
-                    rawData.AddRange(entry.addressWithChecksum);
+                    if(block_version >= BlockVer.v10)
+                    {
+                        rawData.AddRange(entry.addressNoChecksum);
+                    }else
+                    {
+                        rawData.AddRange(entry.addressWithChecksum);
+                    }
                 }
             }
             if (block_version <= BlockVer.v2)
@@ -279,6 +292,7 @@ namespace IXICore
         /// <returns>True, if the Wallet may be safely deleted from WalletState.</returns>
         public bool isEmptyWallet()
         {
+            // TODO TODO Omega - delete 0 balance MS wallet?
             return (balance.getAmount() == 0 // if wallets have any balance they may not be deleted
                 && type == WalletType.Normal  // Multisig wallets may not be deleted
                 );
