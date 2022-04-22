@@ -765,13 +765,18 @@ namespace IXICore
                 Array.Copy(entry.Key.addressNoChecksum, address, address.Length);
 
                 byte[] copiedData = null;
+                byte[] copiedDataChecksum = null;
                 if (entry.Value.data != null)
                 {
                     copiedData = new byte[entry.Value.data.Length];
                     Array.Copy(entry.Value.data, copiedData, copiedData.Length);
+                } else if(entry.Value.dataChecksum != null)
+                {
+                    copiedDataChecksum = new byte[entry.Value.dataChecksum.Length];
+                    Array.Copy(entry.Value.dataChecksum, copiedDataChecksum, copiedDataChecksum.Length);
                 }
 
-                ToEntry toEntry = new ToEntry(version, new IxiNumber(entry.Value.amount.getAmount()), copiedData);
+                ToEntry toEntry = new ToEntry(version, new IxiNumber(entry.Value.amount.getAmount()), copiedData, copiedDataChecksum);
                 toList.Add(new Address(address), toEntry);
             }
 
@@ -1895,9 +1900,8 @@ namespace IXICore
 #if TRACE_MEMSTREAM_SIZES
                         Logging.info(String.Format("Transaction::AddMultisigOrig: {0}", ms.Length));
 #endif
-
-                    toList.First().Value.data = ms.ToArray();
                 }
+                toList.First().Value.data = ms.ToArray();
             }
         }
 
@@ -1927,9 +1931,8 @@ namespace IXICore
 #if TRACE_MEMSTREAM_SIZES
                         Logging.info(String.Format("Transaction::AddMultisigChWallet: {0}", ms.Length));
 #endif
-
-                    toList.First().Value.data = ms.ToArray();
                 }
+                toList.First().Value.data = ms.ToArray();
             }
         }
 
@@ -1957,9 +1960,8 @@ namespace IXICore
 #if TRACE_MEMSTREAM_SIZES
                         Logging.info(String.Format("Transaction::AddMultisigChReqSigs: {0}", ms.Length));
 #endif
-
-                    toList.First().Value.data = ms.ToArray();
                 }
+                toList.First().Value.data = ms.ToArray();
             }
         }
 
@@ -2001,10 +2003,6 @@ namespace IXICore
                         if (signer_pub_key_len < 36 || signer_pub_key_len > 2500)
                         {
                             Logging.warn(String.Format("Multisig transaction: Invalid signer pub key length stored in data: {0}", signer_pub_key_len));
-                            return null;
-                        }
-                        if (signer_pub_key_len == 0)
-                        {
                             return null;
                         }
                         byte[] signer_pub_key = rd.ReadBytes(signer_pub_key_len);
@@ -2189,7 +2187,8 @@ namespace IXICore
         /// <returns>A multisig data object, if found, or null.</returns>
         public object GetMultisigData()
         {
-            if (type == (int)Transaction.Type.MultisigTX || type == (int)Transaction.Type.MultisigAddTxSignature)
+            if (type == (int)Transaction.Type.MultisigTX
+                || type == (int)Transaction.Type.MultisigAddTxSignature)
             {
                 return getMultisigTxData();
             }

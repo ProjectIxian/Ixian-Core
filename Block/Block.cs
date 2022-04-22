@@ -1309,8 +1309,9 @@ namespace IXICore
                     sortedSigs = new List<BlockSignature>(signatures);
                 }
             }
-            if(version >= BlockVer.v10)
+            if(version >= BlockVer.v10 && blockNum != 1)
             {
+                // TODO TODO Omega - detect and skip first v10 block
                 sortedSigs = sortedSigs.OrderBy(x => x.powSolution.difficulty, Comparer<BigInteger>.Default).ThenBy(x => x.signerAddress.addressNoChecksum, new ByteArrayComparer()).ToList();
             }else
             {
