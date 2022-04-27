@@ -20,10 +20,10 @@ namespace IXICore
 {
     public class SignerPowSolution
     {
-        public static uint minTargetBits = 0x02000000;
-        public static uint maxTargetBits = 0x29FFFFFE;
+        public static readonly ulong minTargetBits = 0x0200000000000000;
+        public static readonly ulong maxTargetBits = 0x39FFFFFFFFFFFFFE;
 
-        private static BigInteger minDifficultyTarget = new BigInteger(Crypto.stringToHash("FFFFFFFFFFFFFFFFFFFFFFFFFFFFFFFFFFFFFFFFFFFFFFFFFFFFFFFFFFFFFFFFFFFFFFFFFFFFFFFFFFFF0000"));
+        private static readonly BigInteger minDifficultyTarget = new BigInteger(Crypto.stringToHash("FFFFFFFFFFFFFFFFFFFFFFFFFFFFFFFFFFFFFFFFFFFFFFFFFFFFFFFFFFFFFFFFFFFFFFFFFFFFFFFFFFFFFFFFFFFFFFFFFFFFFFFFFFFFFFFFFFFFFFFFFFFF0000"));
 
         public ulong blockNum;
         public byte[] solution;
@@ -52,8 +52,8 @@ namespace IXICore
             }
         }  // difficulty is not transmitted over the network
 
-        private uint _bits = 0;
-        public uint bits
+        private ulong _bits = 0;
+        public ulong bits
         {
             get
             {
@@ -128,7 +128,7 @@ namespace IXICore
         }
 
 
-        public static byte[] bitsToHash(uint bits, int hashLength = 44)
+        public static byte[] bitsToHash(ulong bits, int hashLength = 64)
         {
             if (bits < minTargetBits)
             {
@@ -139,23 +139,27 @@ namespace IXICore
                 throw new ArgumentOutOfRangeException(String.Format("bits can't be higher than maxTargetBits: {0} < {1}", bits, maxTargetBits));
             }
             byte[] targetBytes = BitConverter.GetBytes(bits);
-            int firstZeroPos = hashLength - targetBytes[3];
+            int firstZeroPos = hashLength - targetBytes[7];
             byte[] hash = new byte[hashLength];
             for(int i = 0; i < firstZeroPos; i++)
             {
                 hash[i] = 0xFF;
             }
-            hash[firstZeroPos - 3] = (byte)(0xFF - targetBytes[0]);
-            hash[firstZeroPos - 2] = (byte)(0xFF - targetBytes[1]);
-            hash[firstZeroPos - 1] = (byte)(0xFF - targetBytes[2]);
+            hash[firstZeroPos - 7] = (byte)(0xFF - targetBytes[0]);
+            hash[firstZeroPos - 6] = (byte)(0xFF - targetBytes[1]);
+            hash[firstZeroPos - 5] = (byte)(0xFF - targetBytes[2]);
+            hash[firstZeroPos - 4] = (byte)(0xFF - targetBytes[3]);
+            hash[firstZeroPos - 3] = (byte)(0xFF - targetBytes[4]);
+            hash[firstZeroPos - 2] = (byte)(0xFF - targetBytes[5]);
+            hash[firstZeroPos - 1] = (byte)(0xFF - targetBytes[6]);
             return hash;
         }
 
-        public static uint hashToBits(byte[] hashBytes, int hashLength = 44)
+        public static ulong hashToBits(byte[] hashBytes, int hashLength = 64)
         {
             int len = hashBytes.Length;
             int zeroes = 0;
-            while (zeroes < len - 3)
+            while (zeroes < len - 7)
             {
                 if (hashBytes[len - 1 - zeroes] != 0)
                 {
@@ -168,16 +172,20 @@ namespace IXICore
             {
                 zeroes += hashLength - len;
             }
-            byte[] targetBytes = new byte[4];
-            targetBytes[0] = (byte)(0xFF - hashBytes[firstZeroPos - 3]);
-            targetBytes[1] = (byte)(0xFF - hashBytes[firstZeroPos - 2]);
-            targetBytes[2] = (byte)(0xFF - hashBytes[firstZeroPos - 1]);
-            targetBytes[3] = (byte)(zeroes);
-            return BitConverter.ToUInt32(targetBytes, 0);
+            byte[] targetBytes = new byte[8];
+            targetBytes[0] = (byte)(0xFF - hashBytes[firstZeroPos - 7]);
+            targetBytes[1] = (byte)(0xFF - hashBytes[firstZeroPos - 6]);
+            targetBytes[2] = (byte)(0xFF - hashBytes[firstZeroPos - 5]);
+            targetBytes[3] = (byte)(0xFF - hashBytes[firstZeroPos - 4]);
+            targetBytes[4] = (byte)(0xFF - hashBytes[firstZeroPos - 3]);
+            targetBytes[5] = (byte)(0xFF - hashBytes[firstZeroPos - 2]);
+            targetBytes[6] = (byte)(0xFF - hashBytes[firstZeroPos - 1]);
+            targetBytes[7] = (byte)zeroes;
+            return BitConverter.ToUInt64(targetBytes, 0);
         }
 
         // Returns hash in Little Endian
-        public static byte[] difficultyToHash(BigInteger difficulty, int hashLength = 44)
+        public static byte[] difficultyToHash(BigInteger difficulty, int hashLength = 64)
         {
             if (difficulty < 0)
             {
@@ -192,7 +200,7 @@ namespace IXICore
         }
 
         // Accepts hash in little endian
-        public static BigInteger hashToDifficulty(byte[] hashBytes, int hashLength = 44)
+        public static BigInteger hashToDifficulty(byte[] hashBytes, int hashLength = 64)
         {
             if (hashBytes.Length > hashLength)
             {
@@ -211,12 +219,12 @@ namespace IXICore
             return difficulty;
         }
 
-        public static uint difficultyToBits(BigInteger difficulty, int hashLength = 44)
+        public static ulong difficultyToBits(BigInteger difficulty, int hashLength = 64)
         {
             return hashToBits(difficultyToHash(difficulty, hashLength));
         }
 
-        public static BigInteger bitsToDifficulty(uint bits, int hashLength = 44)
+        public static BigInteger bitsToDifficulty(ulong bits, int hashLength = 64)
         {
             byte[] hash = bitsToHash(bits, hashLength);
             return hashToDifficulty(hash);
@@ -273,7 +281,7 @@ namespace IXICore
             System.Buffer.BlockCopy(solverAddress.addressNoChecksum, 0, challengeData, blockNumBytes.Length + blockHash.Length, solverAddress.addressNoChecksum.Length);
             System.Buffer.BlockCopy(solution, 0, challengeData, blockNumBytes.Length + blockHash.Length + solverAddress.addressNoChecksum.Length, solution.Length);
 
-            return CryptoManager.lib.sha3_512sqTrunc(challengeData);
+            return CryptoManager.lib.sha3_512sq(challengeData);
         }
     }
 }

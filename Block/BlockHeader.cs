@@ -138,7 +138,7 @@ namespace IXICore
         /// </summary>
         /// <remarks>
         /// </remarks>
-        public uint signerDifficulty = 0;
+        public ulong signerDifficulty = 0;
 
         /// <summary>
         /// The list of Master Node signatures which enable the Ixian Consensus algorithm.

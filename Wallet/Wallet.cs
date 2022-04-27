@@ -251,7 +251,7 @@ namespace IXICore
                 return Crypto.sha512sqTrunc(rawData.ToArray(), 0, 0, 64);
             }else
             {
-                return CryptoManager.lib.sha3_512sqTrunc(rawData.ToArray(), 0, 0, 64);
+                return CryptoManager.lib.sha3_512sq(rawData.ToArray());
             }
         }
 

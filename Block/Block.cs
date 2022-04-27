@@ -161,7 +161,7 @@ namespace IXICore
         /// <summary>
         ///  Ixian Hybrid PoW difficulty value.
         /// </summary>
-        public uint signerBits = 0;
+        public ulong signerBits = 0;
 
         public ulong txCount = 0;
 
@@ -625,7 +625,7 @@ namespace IXICore
                         dataLen = (int)reader.ReadIxiVarUInt();
                         if (dataLen > 0)
                         {
-                            // PIT hash; TODO needs to be handled for headers/PIT/TIV
+                            // TODO TODO Omega, PIT hash; TODO needs to be handled for headers/PIT/TIV
                             reader.ReadBytes(dataLen);
                         }
 
@@ -636,12 +636,10 @@ namespace IXICore
 
                         if(blockNum == 1)
                         {
-                            signerBits = reader.ReadUInt32();
-                        }
-
-                        if (blockNum % ConsensusConfig.superblockInterval == 0)
+                            signerBits = reader.ReadUInt64();
+                        }else if (blockNum % ConsensusConfig.superblockInterval == 0)
                         {
-                            signerBits = reader.ReadUInt32();
+                            signerBits = reader.ReadUInt64();
 
                             lastSuperBlockNum = reader.ReadIxiVarUInt();
 
@@ -671,7 +669,7 @@ namespace IXICore
                             walletStateChecksum = reader.ReadBytes(dataLen);
                         }
 
-                        long v10HeaderPosition = m.Position;
+                        int v10HeaderPosition = (int) m.Position;
 
                         if (m.Position < m.Length)
                         {
@@ -718,11 +716,7 @@ namespace IXICore
 
                         if (version >= BlockVer.v10)
                         {
-                            byte[] bytesWithHashLock = new byte[v10HeaderPosition + ConsensusConfig.ixianChecksumLock.Length];
-                            Array.Copy(ConsensusConfig.ixianChecksumLock, bytesWithHashLock, ConsensusConfig.ixianChecksumLock.Length);
-                            Array.Copy(bytes, 0, bytesWithHashLock, ConsensusConfig.ixianChecksumLock.Length, v10HeaderPosition);
-
-                            blockChecksum = CryptoManager.lib.sha3_512sqTrunc(bytesWithHashLock);
+                            blockChecksum = CryptoManager.lib.sha3_512sq(bytes, 0, v10HeaderPosition);
                         }
                         else
                         {
@@ -1081,9 +1075,15 @@ namespace IXICore
                     int num_transactions = transactions.Count;
                     writer.WriteIxiVarInt(num_transactions);
 
-                    writer.WriteIxiVarInt(pitChecksum.Length);
-                    writer.Write(pitChecksum);
-
+                    if (pitChecksum != null)
+                    {
+                        writer.WriteIxiVarInt(pitChecksum.Length);
+                        writer.Write(pitChecksum);
+                    }
+                    else
+                    {
+                        writer.WriteIxiVarInt((int)0);
+                    }
 
                     writer.WriteIxiVarInt(timestamp);
 
@@ -1092,23 +1092,14 @@ namespace IXICore
                     if(blockNum == 1)
                     {
                         writer.Write(signerBits);
-                    }
-
-                    if (lastSuperBlockChecksum != null)
+                    } else if (lastSuperBlockChecksum != null)
                     {
                         writer.Write(signerBits);
 
                         writer.WriteIxiVarInt(lastSuperBlockNum);
 
-                        if (lastSuperBlockChecksum != null)
-                        {
-                            writer.WriteIxiVarInt(lastSuperBlockChecksum.Length);
-                            writer.Write(lastSuperBlockChecksum);
-                        }
-                        else
-                        {
-                            writer.WriteIxiVarInt((int)0);
-                        }
+                        writer.WriteIxiVarInt(lastSuperBlockChecksum.Length);
+                        writer.Write(lastSuperBlockChecksum);
 
                         if (include_sb_segments)
                         {
@@ -1125,15 +1116,8 @@ namespace IXICore
                         }
                     }
 
-                    if (walletStateChecksum != null)
-                    {
-                        writer.WriteIxiVarInt(walletStateChecksum.Length);
-                        writer.Write(walletStateChecksum);
-                    }
-                    else
-                    {
-                        writer.WriteIxiVarInt((int)0);
-                    }
+                    writer.WriteIxiVarInt(walletStateChecksum.Length);
+                    writer.Write(walletStateChecksum);
 
                     if (!for_checksum)
                     {
@@ -1269,11 +1253,7 @@ namespace IXICore
             if (version >= BlockVer.v10)
             {
                 byte[] bytes = getBytesV10(true, false, true);
-                byte[] bytesWithHashLock = new byte[bytes.Length + ConsensusConfig.ixianChecksumLock.Length];
-                Array.Copy(ConsensusConfig.ixianChecksumLock, bytesWithHashLock, ConsensusConfig.ixianChecksumLock.Length);
-                Array.Copy(bytes, 0, bytesWithHashLock, ConsensusConfig.ixianChecksumLock.Length, bytes.Length);
-
-                return CryptoManager.lib.sha3_512sqTrunc(bytesWithHashLock);
+                return CryptoManager.lib.sha3_512sq(bytes);
             }
             else
             {
@@ -1349,7 +1329,7 @@ namespace IXICore
                 checksum = Crypto.sha512sqTrunc(merged_sigs.ToArray());
             }else
             {
-                checksum = CryptoManager.lib.sha3_512sqTrunc(merged_sigs.ToArray());
+                checksum = CryptoManager.lib.sha3_512sq(merged_sigs.ToArray());
             }
             return checksum;
         }
