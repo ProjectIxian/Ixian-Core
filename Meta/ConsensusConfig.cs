@@ -103,7 +103,7 @@ namespace IXICore
         /// </summary>
         public static readonly int maximumBlockSigners = 1000; // TODO TODO Omega - discard sigs that have lower difficulty than the new sig, when it is received
 
-        public static readonly int minBlockSignerPowDifficulty = 10;
+        public static readonly IxiNumber minBlockSignerPowDifficulty = 1000000;
 
         /// <summary>
         /// Minimum funds a wallet must have before it is allowed to participate in the block consensus algorithm. (used in DLT Node executable).
@@ -173,7 +173,7 @@ namespace IXICore
         /// <summary>
         /// Number of blocks after how many the signing and mining rewards become available for spending.
         /// </summary>
-        public static readonly ulong rewardMaturity = plPowBlocksValidity * 2;
+        public static readonly ulong rewardMaturity = plPowBlocksValidity * 8;
 
         /// <summary>
         ///  Retrieves the lenght of the redacted window based on the block version in use.
