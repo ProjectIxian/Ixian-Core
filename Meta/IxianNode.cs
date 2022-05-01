@@ -54,7 +54,7 @@ namespace IXICore.Meta
         public virtual void receivedTransactionInclusionVerificationResponse(byte[] txid, bool verified) { }
         public virtual void receivedBlockHeader(BlockHeader block_header, bool verified) { }
 
-        public abstract BigInteger getMinSignerPowDifficulty(ulong blockNum);
+        public abstract IxiNumber getMinSignerPowDifficulty(ulong blockNum);
     }
 
     public static class IxianHandler
@@ -213,7 +213,7 @@ namespace IXICore.Meta
             handlerClass.shutdown();
         }
 
-        public static BigInteger getMinSignerPowDifficulty(ulong blockNum)
+        public static IxiNumber getMinSignerPowDifficulty(ulong blockNum)
         {
             verifyHandler();
             return handlerClass.getMinSignerPowDifficulty(blockNum);

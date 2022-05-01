@@ -255,7 +255,7 @@ namespace IXICore
             signature = CryptoManager.lib.getSignature(checksum, privateKey);
         }
 
-        public bool verify(byte[] pubKey, BigInteger minDifficulty)
+        public bool verify(byte[] pubKey, IxiNumber minDifficulty)
         {
             if (powSolution == null)
             {

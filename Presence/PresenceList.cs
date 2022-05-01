@@ -408,7 +408,7 @@ namespace IXICore
         }*/
 
         // Update a presence from a byte array
-        public static Presence updateFromBytes(byte[] bytes, BigInteger minDifficulty)
+        public static Presence updateFromBytes(byte[] bytes, IxiNumber minDifficulty)
         {
             Presence presence = new Presence(bytes);
 

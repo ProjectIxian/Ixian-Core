@@ -17,7 +17,7 @@ using System.Numerics;
 namespace IXICore
 {
     // An object representing an amount of IXI coins, complete with decimal support. Can handle very large amounts.
-    public class IxiNumber
+    public class IxiNumber : IComparable<IxiNumber>
     {
         // A divisor corresponding to 8 decimals as per WhitePaper
         private static BigInteger divisor = 100000000;
@@ -480,6 +480,11 @@ namespace IXICore
             Console.WriteLine("div: " + (num1 / num3).ToString());
             Console.WriteLine("mul: " + (num1 * num3).ToString());
             Console.WriteLine("");
+        }
+
+        public int CompareTo(IxiNumber other)
+        {
+            return getAmount().CompareTo(other.getAmount());
         }
     }
 }

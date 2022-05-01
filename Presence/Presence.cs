@@ -342,7 +342,7 @@ namespace IXICore
             return presence_chunks;
         }
 
-        public bool verify(BigInteger minDifficulty)
+        public bool verify(IxiNumber minDifficulty)
         {
             if (pubkey == null || pubkey.Length < 32 || pubkey.Length > 2500)
             {
@@ -437,7 +437,7 @@ namespace IXICore
             return false;
         }
 
-        public static bool verifyPowSolution(SignerPowSolution signerPow, BigInteger minDifficulty, Address wallet)
+        public static bool verifyPowSolution(SignerPowSolution signerPow, IxiNumber minDifficulty, Address wallet)
         {
             // TODO Omega remove this once blockHash is part of SignerPowSolution
             if(PresenceList.myPresenceType == 'C' || PresenceList.myPresenceType == 'R')

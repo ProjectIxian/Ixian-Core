@@ -64,7 +64,7 @@ namespace IXICore
         public List<BlockSignature> frozenSignatures { get; private set; } = null;
 
         private int signatureCount = 0; // used only when block is compacted
-        private BigInteger totalSignerDifficulty = 0; // used only when block is compacted
+        private IxiNumber totalSignerDifficulty = 0; // used only when block is compacted
 
         /// <summary>
         /// Block version.
@@ -1292,7 +1292,7 @@ namespace IXICore
             if(version >= BlockVer.v10 && blockNum != 1)
             {
                 // TODO TODO Omega - detect and skip first v10 block
-                sortedSigs = sortedSigs.OrderBy(x => x.powSolution.difficulty, Comparer<BigInteger>.Default).ThenBy(x => x.signerAddress.addressNoChecksum, new ByteArrayComparer()).ToList();
+                sortedSigs = sortedSigs.OrderBy(x => x.powSolution.difficulty, Comparer<IxiNumber>.Default).ThenBy(x => x.signerAddress.addressNoChecksum, new ByteArrayComparer()).ToList();
             }else
             {
                 sortedSigs.Sort((x, y) => _ByteArrayComparer.Compare(x.signerAddress.addressNoChecksum, y.signerAddress.addressNoChecksum));
@@ -1594,7 +1594,7 @@ namespace IXICore
                     return false;
                 }
 
-                BigInteger minPowDifficulty = IxianHandler.getMinSignerPowDifficulty(blockNum);
+                IxiNumber minPowDifficulty = IxianHandler.getMinSignerPowDifficulty(blockNum);
                 var blockHeader = IxianHandler.getBlockHeader(sig.powSolution.blockNum);
                 if (blockHeader == null
                     || blockHeader.blockNum >= blockNum
@@ -1904,7 +1904,7 @@ namespace IXICore
         /// </remarks>
         /// <param name="convert_pubkeys">True if public key signatures should be converted back to their respective Ixian Wallet addresses.</param>
         /// <returns>List of Ixian wallets which have signed this block.</returns>
-        public List<(Address address, BigInteger difficulty)> getSignaturesWalletAddressesWithDifficulty()
+        public List<(Address address, IxiNumber difficulty)> getSignaturesWalletAddressesWithDifficulty()
         {
             if (compacted)
             {
@@ -1912,7 +1912,7 @@ namespace IXICore
                 return null;
             }
 
-            List<(Address address, BigInteger difficulty)> result = new List<(Address, BigInteger)>();
+            List<(Address address, IxiNumber difficulty)> result = new List<(Address, IxiNumber)>();
 
             lock (signatures)
             {
@@ -1931,7 +1931,7 @@ namespace IXICore
                     result.Add((merged_signature.signerAddress, merged_signature.powSolution.difficulty));
                 }
                 //result.Sort((x, y) => Comparer<BigInteger>.Default.Compare(x.difficulty, y.difficulty));
-                result = result.OrderBy(x => x.difficulty, Comparer<BigInteger>.Default).ThenBy(x => x.address.addressNoChecksum, new ByteArrayComparer()).ToList();
+                result = result.OrderBy(x => x.difficulty, Comparer<IxiNumber>.Default).ThenBy(x => x.address.addressNoChecksum, new ByteArrayComparer()).ToList();
             }
             return result;
         }
@@ -2092,14 +2092,14 @@ namespace IXICore
             }
         }
 
-        public BigInteger getTotalSignerDifficulty()
+        public IxiNumber getTotalSignerDifficulty()
         {
             if (compacted)
             {
                 return totalSignerDifficulty;
             }
 
-            BigInteger totalDiff = 0;
+            IxiNumber totalDiff = 0;
             lock (signatures)
             {
                 var sigs = signatures;
