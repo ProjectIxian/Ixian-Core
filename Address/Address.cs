@@ -374,11 +374,15 @@ namespace IXICore
             return true;
         }
 
-        public byte[] getInputBytes()
+        public byte[] getInputBytes(bool useAddressWithChecksum = false)
         {
             if (pubKey != null)
             {
                 return pubKey;
+            }
+            if (useAddressWithChecksum)
+            {
+                return addressWithChecksum;
             }
             return addressNoChecksum;
         }

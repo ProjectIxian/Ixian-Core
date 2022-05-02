@@ -823,7 +823,7 @@ namespace IXICore
                             {
                                 writer.Write((int)0);
                             }
-                            var signerAddress = signature.signerAddress.getInputBytes();
+                            var signerAddress = signature.signerAddress.getInputBytes(true);
                             writer.Write(signerAddress.Length);
                             writer.Write(signerAddress);
                         }
@@ -953,7 +953,7 @@ namespace IXICore
                             {
                                 writer.WriteIxiVarInt((int)0);
                             }
-                            var signerAddress = signature.signerAddress.getInputBytes();
+                            var signerAddress = signature.signerAddress.getInputBytes(true);
                             writer.WriteIxiVarInt(signerAddress.Length);
                             writer.Write(signerAddress);
                         }
@@ -1295,43 +1295,50 @@ namespace IXICore
                 sortedSigs = sortedSigs.OrderBy(x => x.powSolution.difficulty, Comparer<IxiNumber>.Default).ThenBy(x => x.signerAddress.addressNoChecksum, new ByteArrayComparer()).ToList();
             }else
             {
-                sortedSigs.Sort((x, y) => _ByteArrayComparer.Compare(x.signerAddress.addressNoChecksum, y.signerAddress.addressNoChecksum));
+                sortedSigs.Sort((x, y) => _ByteArrayComparer.Compare(x.signerAddress.getInputBytes(true), y.signerAddress.getInputBytes(true)));
             }
 
             // Merge the sorted signatures
-            List<byte> merged_sigs = new List<byte>();
-            merged_sigs.AddRange(BitConverter.GetBytes(blockNum));
-            foreach (BlockSignature sig in sortedSigs)
+            using (MemoryStream m = new MemoryStream(64000))
             {
-                if(version >= BlockVer.v10)
+                using (BinaryWriter writer = new BinaryWriter(m))
                 {
-                    byte[] sigBytes = sig.getBytesForBlock(false);
-                    merged_sigs.AddRange(IxiVarInt.GetIxiVarIntBytes(sigBytes.Length));
-                    merged_sigs.AddRange(sigBytes);
+                    writer.Write(BitConverter.GetBytes(blockNum));
+                    foreach (BlockSignature sig in sortedSigs)
+                    {
+                        if (version >= BlockVer.v10)
+                        {
+                            byte[] sigBytes = sig.getBytesForBlock(false);
+                            writer.WriteIxiVarInt(sigBytes.Length);
+                            writer.Write(sigBytes);
+                        }
+                        else if (version > BlockVer.v3)
+                        {
+                            writer.Write(sig.signerAddress.getInputBytes(true));
+                        }
+                        else
+                        {
+                            writer.Write(sig.signature);
+                        }
+                    }
                 }
-                else if(version > BlockVer.v3)
+
+                // Generate a checksum from the merged sorted signatures
+                byte[] checksum = null;
+                if (version <= BlockVer.v2)
                 {
-                    merged_sigs.AddRange(sig.signerAddress.getInputBytes());
+                    checksum = Crypto.sha512quTrunc(m.ToArray());
+                }
+                else if (version < BlockVer.v10)
+                {
+                    checksum = Crypto.sha512sqTrunc(m.ToArray());
                 }
                 else
                 {
-                    merged_sigs.AddRange(sig.signature);
+                    checksum = CryptoManager.lib.sha3_512sq(m.ToArray());
                 }
+                return checksum;
             }
-
-            // Generate a checksum from the merged sorted signatures
-            byte[] checksum = null;
-            if (version <= BlockVer.v2)
-            {
-                checksum = Crypto.sha512quTrunc(merged_sigs.ToArray());
-            }else if(version < BlockVer.v10)
-            {
-                checksum = Crypto.sha512sqTrunc(merged_sigs.ToArray());
-            }else
-            {
-                checksum = CryptoManager.lib.sha3_512sq(merged_sigs.ToArray());
-            }
-            return checksum;
         }
 
         /// <summary>
@@ -1928,7 +1935,14 @@ namespace IXICore
                 foreach (BlockSignature merged_signature in tmp_sigs)
                 {
                     // Add the address to the list
-                    result.Add((merged_signature.signerAddress, merged_signature.powSolution.difficulty));
+                    if(merged_signature.powSolution != null)
+                    {
+                        result.Add((merged_signature.signerAddress, merged_signature.powSolution.difficulty));
+                    }
+                    else
+                    {
+                        result.Add((merged_signature.signerAddress, 1));
+                    }
                 }
                 //result.Sort((x, y) => Comparer<BigInteger>.Default.Compare(x.difficulty, y.difficulty));
                 result = result.OrderBy(x => x.difficulty, Comparer<IxiNumber>.Default).ThenBy(x => x.address.addressNoChecksum, new ByteArrayComparer()).ToList();

@@ -56,7 +56,7 @@ namespace IXICore
                         else
                         {
                             blockNum = reader.ReadUInt64();
-                            nonce = Crypto.stringToHash(reader.ReadString());
+                            nonce = UTF8Encoding.UTF8.GetBytes(reader.ReadString());
                         }
                     }
                 }
