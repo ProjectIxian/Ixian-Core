@@ -980,7 +980,7 @@ namespace IXICore
 
             IxiNumber amount = 0;
             IxiNumber fee = ConsensusConfig.transactionPrice;
-            SortedDictionary<Address, Transaction.ToEntry> toList = new SortedDictionary<Address, Transaction.ToEntry>(new AddressComparer());
+            Dictionary<Address, Transaction.ToEntry> toList = new Dictionary<Address, Transaction.ToEntry>(new AddressComparer());
             string[] to_split = ((string)parameters["to"]).Split('-');
             if (to_split.Length > 0)
             {
