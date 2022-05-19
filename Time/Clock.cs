@@ -14,7 +14,6 @@ using System;
 
 namespace IXICore
 {
-    // TODO TODO TODO all clock functions that output seconds should be cached
     public class Clock
     {
         /// <summary>

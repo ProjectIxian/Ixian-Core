@@ -204,16 +204,14 @@ namespace IXICore
 
         public byte[] calculateChecksum(int block_version)
         {
-            List<byte> rawData = new List<byte>();
-
             if (block_version >= BlockVer.v10)
             {
-                rawData.AddRange(id.addressNoChecksum);
+                return CryptoManager.lib.sha3_512sq(getBytes());
             }
-            else
-            {
-                rawData.AddRange(id.addressWithChecksum);
-            }
+
+            List<byte> rawData = new List<byte>();
+
+            rawData.AddRange(id.addressWithChecksum);
             rawData.AddRange(Encoding.UTF8.GetBytes(balance.ToString()));
 
             if (data != null)
@@ -233,25 +231,16 @@ namespace IXICore
             {
                 foreach (var entry in allowedSigners)
                 {
-                    if(block_version >= BlockVer.v10)
-                    {
-                        rawData.AddRange(entry.addressNoChecksum);
-                    }else
-                    {
-                        rawData.AddRange(entry.addressWithChecksum);
-                    }
+                    rawData.AddRange(entry.addressWithChecksum);
                 }
             }
             if (block_version <= BlockVer.v2)
             {
                 return Crypto.sha512quTrunc(rawData.ToArray());
             }
-            else if(block_version < BlockVer.v10)
+            else // if(block_version < BlockVer.v10)
             {
                 return Crypto.sha512sqTrunc(rawData.ToArray(), 0, 0, 64);
-            }else
-            {
-                return CryptoManager.lib.sha3_512sq(rawData.ToArray());
             }
         }
 

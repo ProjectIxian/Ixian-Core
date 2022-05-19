@@ -71,7 +71,7 @@ namespace IXICore.Meta
     public class Activity
     {
         private string _id = null;
-        private SortedDictionary<Address, IxiNumber> _cachedToListArray = new SortedDictionary<Address, IxiNumber>(new AddressComparer());
+        private Dictionary<Address, IxiNumber> _cachedToListArray = new Dictionary<Address, IxiNumber>(new AddressComparer());
 
         public byte[] seedHash { get; set; }
         public string wallet { get; set; }
@@ -133,7 +133,7 @@ namespace IXICore.Meta
                     }
                     raw_data.AddRange(Encoding.UTF8.GetBytes(wallet));
                     raw_data.AddRange(Encoding.UTF8.GetBytes(from));
-                    SortedDictionary<Address, IxiNumber> tmp_to_list = getToListAsArray();
+                    Dictionary<Address, IxiNumber> tmp_to_list = getToListAsArray();
                     foreach (var entry in tmp_to_list)
                     {
                         raw_data.AddRange(entry.Key.addressWithChecksum);
@@ -158,7 +158,7 @@ namespace IXICore.Meta
             }
         }
 
-        public SortedDictionary<Address, IxiNumber> getToListAsArray()
+        public Dictionary<Address, IxiNumber> getToListAsArray()
         {
             if(_cachedToListArray.Count > 0)
             {

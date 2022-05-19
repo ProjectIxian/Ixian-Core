@@ -256,7 +256,7 @@ namespace IXICore
 
                 Array.Copy(addressNonce, 0, tmp_address, baseAddress.Length, addressNonce.Length);
 
-                byte[] hashed_pub_key = CryptoManager.lib.sha3_512sqTrunc(tmp_address, 0, 0, 44); // TODO TODO Omega make sure this is correct
+                byte[] hashed_pub_key = CryptoManager.lib.sha3_512sqTrunc(tmp_address, 0, 0, 44);
                 Array.Copy(hashed_pub_key, 0, raw_address, 1, hashed_pub_key.Length);
 
                 return raw_address;
@@ -294,8 +294,8 @@ namespace IXICore
         {
             byte[] address = new byte[45];
             address[0] = 2; // version
-            // TODO TODO Omega make sure this is correct
-            byte[] hashed_pub_key = CryptoManager.lib.sha3_512sqTrunc(publicKey, 1, 0, 44);
+
+            byte[] hashed_pub_key = CryptoManager.lib.sha3_512sqTrunc(publicKey, 0, 0, 44);
             Array.Copy(hashed_pub_key, 0, address, 1, hashed_pub_key.Length);
 
             return address;

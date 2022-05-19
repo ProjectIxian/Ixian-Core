@@ -57,6 +57,10 @@ namespace IXICore
 
         public BlockSignature(byte[] bytes, bool bytesFromBroadcast)
         {
+            if (bytes.Length > 2048)
+            {
+                throw new Exception("Signature length is bigger than 2048B.");
+            }
             try
             {
                 using (MemoryStream m = new MemoryStream(bytes))

@@ -1046,7 +1046,7 @@ namespace IXICore
                         int crcLen = (int)reader.ReadIxiVarInt();
                         if (crcLen > 0)
                         {
-                            checksum = reader.ReadBytes(crcLen); // TODO TODO TODO not necessary, can be removed with tx v7
+                            checksum = reader.ReadBytes(crcLen);
                         }
 
                         int sigLen = (int)reader.ReadIxiVarInt();
@@ -1380,7 +1380,7 @@ namespace IXICore
 
                     if (checksum != null)
                     {
-                        writer.WriteIxiVarInt(checksum.Length); // TODO TODO TODO not necessary, can be removed with tx v7
+                        writer.WriteIxiVarInt(checksum.Length);
                         writer.Write(checksum);
                     }
                     else
@@ -2287,7 +2287,7 @@ namespace IXICore
         /// <param name="tx_from">Multisig wallet where the funds should be withdrawn.</param>
         /// <param name="tx_blockHeight">Blockheight at which the transaction is generated.</param>
         /// <returns>Generated transaction object.</returns>
-        public static Transaction multisigTransaction(IxiNumber tx_fee, SortedDictionary<Address, ToEntry> tx_to_list, Address tx_from, ulong tx_blockHeight)
+        public static Transaction multisigTransaction(IxiNumber tx_fee, Dictionary<Address, ToEntry> tx_to_list, Address tx_from, ulong tx_blockHeight)
         {
             Transaction t = new Transaction((int)Transaction.Type.MultisigTX, tx_fee, tx_to_list, tx_from, tx_from.pubKey, tx_blockHeight);
 
@@ -2493,7 +2493,7 @@ namespace IXICore
                 {
                     data = Crypto.hashToString(entry.Value.data);
                 }
-                toListDic.Add(entry.Key.ToString(), new string[] { entry.Value.ToString(), data });
+                toListDic.Add(entry.Key.ToString(), new string[] { entry.Value.amount.ToString(), data });
             }
             tDic.Add("to", toListDic);
 

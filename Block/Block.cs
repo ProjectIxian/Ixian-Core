@@ -517,7 +517,7 @@ namespace IXICore
                         int dataLen = (int)reader.ReadIxiVarUInt();
                         if (dataLen > 0)
                         {
-                            blockChecksum = reader.ReadBytes(dataLen); // TODO TODO TODO not necessary, can be removed with block v10
+                            blockChecksum = reader.ReadBytes(dataLen);
                         }
 
                         dataLen = (int)reader.ReadIxiVarUInt();
@@ -609,12 +609,20 @@ namespace IXICore
                         }
 
                         int dataLen = (int)reader.ReadIxiVarUInt();
+                        if (dataLen > 64)
+                        {
+                            throw new Exception("Block #" + blockNum + " lastBlockChecksum len " + dataLen + "B is bigger than 64B.");
+                        }
                         if (dataLen > 0)
                         {
                             lastBlockChecksum = reader.ReadBytes(dataLen);
                         }
 
                         dataLen = (int)reader.ReadIxiVarUInt();
+                        if (dataLen > 64)
+                        {
+                            throw new Exception("Block #" + blockNum + " signatureFreezeChecksum len " + dataLen + "B is bigger than 64B.");
+                        }
                         if (dataLen > 0)
                         {
                             signatureFreezeChecksum = reader.ReadBytes(dataLen);
@@ -623,6 +631,10 @@ namespace IXICore
                         txCount = reader.ReadIxiVarUInt();
 
                         dataLen = (int)reader.ReadIxiVarUInt();
+                        if (dataLen > 64)
+                        {
+                            throw new Exception("Block #" + blockNum + " pit/merkle hash len " + dataLen + "B is bigger than 64B.");
+                        }
                         if (dataLen > 0)
                         {
                             // TODO TODO Omega, PIT hash; TODO needs to be handled for headers/PIT/TIV
@@ -644,6 +656,10 @@ namespace IXICore
                             lastSuperBlockNum = reader.ReadIxiVarUInt();
 
                             dataLen = (int)reader.ReadIxiVarUInt();
+                            if (dataLen > 64)
+                            {
+                                throw new Exception("Block #" + blockNum + " lastSuperBlockChecksum len " + dataLen + "B is bigger than 64B.");
+                            }
                             if (dataLen > 0)
                             {
                                 lastSuperBlockChecksum = reader.ReadBytes(dataLen);
@@ -654,6 +670,10 @@ namespace IXICore
                             {
                                 ulong seg_block_num = blockNum - (ulong)super_block_seg_count + (ulong)i;
                                 int seg_bc_len = (int)reader.ReadIxiVarUInt();
+                                if (seg_bc_len > 64)
+                                {
+                                    throw new Exception("Block #" + blockNum + " seg_bc len " + dataLen + "B is bigger than 64B.");
+                                }
                                 byte[] seg_bc = null;
                                 if (seg_bc_len > 0)
                                 {
@@ -664,6 +684,10 @@ namespace IXICore
                         }
 
                         dataLen = (int)reader.ReadIxiVarUInt();
+                        if (dataLen > 64)
+                        {
+                            throw new Exception("Block #" + blockNum + " walletStateChecksum len " + dataLen + "B is bigger than 64B.");
+                        }
                         if (dataLen > 0)
                         {
                             walletStateChecksum = reader.ReadBytes(dataLen);
@@ -673,23 +697,6 @@ namespace IXICore
 
                         if (m.Position < m.Length)
                         {
-                            if (txCount > 0)
-                            {
-                                // Get the transaction ids
-                                for (ulong i = 0; i < txCount; i++)
-                                {
-                                    int txid_len = (int)reader.ReadIxiVarUInt();
-                                    byte[] txid = reader.ReadBytes(txid_len);
-                                    if (transactions.Contains(txid))
-                                    {
-                                        // Block contains duplicate txid
-                                        throw new Exception("Block #" + blockNum + " contains duplicate txid");
-                                    }
-                                    transactions.Add(txid);
-                                    transactionPIT.add(txid);
-                                }
-                            }
-
                             // Get the signatures
                             int num_signatures = (int)reader.ReadIxiVarUInt();
 
@@ -701,15 +708,35 @@ namespace IXICore
                             for (int i = 0; i < num_signatures; i++)
                             {
                                 int sigLen = (int)reader.ReadIxiVarUInt();
-                                BlockSignature sig = null;
-                                if (sigLen > 0)
-                                {
-                                    sig = new BlockSignature(reader.ReadBytes(sigLen), false);
-                                }
+                                BlockSignature sig = new BlockSignature(reader.ReadBytes(sigLen), false);
 
                                 if (!containsSignature(sig.signerAddress))
                                 {
                                     signatures.Add(sig);
+                                }
+                            }
+                        }
+
+                        if (m.Position < m.Length)
+                        {
+                            if (txCount > 0)
+                            {
+                                // Get the transaction ids
+                                for (ulong i = 0; i < txCount; i++)
+                                {
+                                    int txid_len = (int)reader.ReadIxiVarUInt();
+                                    if (txid_len > 128)
+                                    {
+                                        throw new Exception("Block #" + blockNum + " txid len " + dataLen + "B is bigger than 128B.");
+                                    }
+                                    byte[] txid = reader.ReadBytes(txid_len);
+                                    if (transactions.Contains(txid))
+                                    {
+                                        // Block contains duplicate txid
+                                        throw new Exception("Block #" + blockNum + " contains duplicate txid");
+                                    }
+                                    transactions.Add(txid);
+                                    transactionPIT.add(txid);
                                 }
                             }
                         }
@@ -959,7 +986,7 @@ namespace IXICore
                         }
                     }
 
-                    writer.WriteIxiVarInt(blockChecksum.Length); // TODO TODO TODO can be removed with v10
+                    writer.WriteIxiVarInt(blockChecksum.Length);
                     writer.Write(blockChecksum);
 
                     if (lastBlockChecksum != null)
@@ -1121,13 +1148,6 @@ namespace IXICore
 
                     if (!for_checksum)
                     {
-                        // Write each txid
-                        foreach (byte[] txid in transactions)
-                        {
-                            writer.WriteIxiVarInt(txid.Length);
-                            writer.Write(txid);
-                        }
-
                         lock (signatures)
                         {
                             List<BlockSignature> tmp_signatures = signatures;
@@ -1155,6 +1175,13 @@ namespace IXICore
                                 writer.WriteIxiVarInt(sigBytes.Length);
                                 writer.Write(sigBytes);
                             }
+                        }
+
+                        // Write each txid
+                        foreach (byte[] txid in transactions)
+                        {
+                            writer.WriteIxiVarInt(txid.Length);
+                            writer.Write(txid);
                         }
                     }
 

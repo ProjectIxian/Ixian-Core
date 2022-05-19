@@ -36,6 +36,7 @@ namespace IXICore.Utils
             int value = key.addressNoChecksum.Length;
             if (value >= 4)
             {
+                // TODO TODO TODO Omega probably needs legacy handling
                 return BitConverter.ToInt32(key.addressNoChecksum, value - 4); // take last 4 bytes
             }
             foreach (var b in key.addressNoChecksum)
