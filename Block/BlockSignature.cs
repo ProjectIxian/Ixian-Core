@@ -22,7 +22,7 @@ namespace IXICore
         public ulong blockNum;
         public byte[] blockHash;
         public byte[] signature;
-        public Address signerAddress;
+        public Address recipientPubKeyOrAddress;
         public SignerPowSolution powSolution;
 
         public BlockSignature()
@@ -46,8 +46,8 @@ namespace IXICore
                 Array.Copy(src.signature, signature, signature.Length);
             }
 
-            byte[] address = src.signerAddress.getInputBytes();
-            signerAddress = new Address(address, null, false);
+            byte[] address = src.recipientPubKeyOrAddress.getInputBytes();
+            recipientPubKeyOrAddress = new Address(address, null, false);
 
             if (src.powSolution != null)
             {
@@ -76,12 +76,12 @@ namespace IXICore
                         }
 
                         int signerAddressLen = (int)reader.ReadIxiVarUInt();
-                        signerAddress = new Address(reader.ReadBytes(signerAddressLen));
+                        recipientPubKeyOrAddress = new Address(reader.ReadBytes(signerAddressLen));
 
                         int powSolutionLen = (int)reader.ReadIxiVarUInt();
                         if (powSolutionLen > 0)
                         {
-                            powSolution = new SignerPowSolution(reader.ReadBytes(powSolutionLen), signerAddress);
+                            powSolution = new SignerPowSolution(reader.ReadBytes(powSolutionLen), recipientPubKeyOrAddress);
                         }
 
                         int signatureLen = (int)reader.ReadIxiVarUInt();
@@ -105,7 +105,7 @@ namespace IXICore
             {
                 using (BinaryWriter writer = new BinaryWriter(m))
                 {
-                    byte[] address = signerAddress.getInputBytes();
+                    byte[] address = recipientPubKeyOrAddress.getInputBytes();
                     writer.WriteIxiVarInt(address.Length);
                     writer.Write(address);
 
@@ -150,7 +150,7 @@ namespace IXICore
                     writer.WriteIxiVarInt(blockHash.Length);
                     writer.Write(blockHash);
 
-                    byte[] address = signerAddress.getInputBytes();
+                    byte[] address = recipientPubKeyOrAddress.getInputBytes();
                     writer.WriteIxiVarInt(address.Length);
                     writer.Write(address);
 

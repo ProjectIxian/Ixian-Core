@@ -14,7 +14,6 @@ using IXICore.Meta;
 using IXICore.Utils;
 using System;
 using System.IO;
-using System.Numerics;
 
 namespace IXICore
 {
@@ -25,14 +24,16 @@ namespace IXICore
 
         public ulong blockNum;
         public byte[] solution;
+        public byte[] signingPubKey;
+        public IxianKeyPair keyPair { private get; set; } // keyPair is not trasmitted over the network
 
-        private Address solverAddress = null; // solverAddress is not trasmitted over the network
+        private Address recipientAddress = null; // solverAddress is not trasmitted over the network
         private byte[] _checksum = null;
         public byte[] checksum { get {
                 if(_checksum == null)
                 {
                     var targetHeader = IxianHandler.getBlockHeader(blockNum);
-                    _checksum = solutionToHash(solution, blockNum, targetHeader.blockChecksum, solverAddress);
+                    _checksum = solutionToHash(solution, blockNum, targetHeader.blockChecksum, recipientAddress, signingPubKey);
                 }
                 return _checksum;
             } } // checksum is not trasmitted over the network
@@ -63,9 +64,9 @@ namespace IXICore
             }
         }  // bits are not transmitted over the network
 
-        public SignerPowSolution(Address solverAddress)
+        public SignerPowSolution(Address recipientAddress)
         {
-            this.solverAddress = solverAddress;
+            this.recipientAddress = recipientAddress;
         }
 
         public SignerPowSolution(SignerPowSolution src)
@@ -75,12 +76,23 @@ namespace IXICore
             solution = new byte[src.solution.Length];
             Array.Copy(src.solution, solution, solution.Length);
 
-            byte[] solverAddressBytes = new byte[src.solverAddress.addressNoChecksum.Length];
-            Array.Copy(src.solverAddress.addressNoChecksum, solverAddressBytes, solverAddressBytes.Length);
-            solverAddress = new Address(solverAddressBytes);
+            byte[] signingPubKeyBytes = new byte[src.signingPubKey.Length];
+            Array.Copy(src.signingPubKey, signingPubKeyBytes, signingPubKeyBytes.Length);
+            signingPubKey = signingPubKeyBytes;
+
+            byte[] recipientAddressBytes = new byte[src.recipientAddress.addressNoChecksum.Length];
+            Array.Copy(src.recipientAddress.addressNoChecksum, recipientAddressBytes, recipientAddressBytes.Length);
+            recipientAddress = new Address(recipientAddressBytes);
+
+            keyPair = src.keyPair;
         }
 
-        public SignerPowSolution(byte[] bytes, Address solverAddress)
+        public byte[] sign(byte[] bytesToSign)
+        {
+            return CryptoManager.lib.getSignature(CryptoManager.lib.sha3_512sq(bytesToSign), keyPair.privateKeyBytes);
+        }
+
+        public SignerPowSolution(byte[] bytes, Address recipientAddress)
         {
             try
             {
@@ -93,7 +105,10 @@ namespace IXICore
                         int solutionLen = (int)reader.ReadIxiVarUInt();
                         solution = reader.ReadBytes(solutionLen);
 
-                        this.solverAddress = solverAddress;
+                        int signingPubKeyLen = (int)reader.ReadIxiVarUInt();
+                        signingPubKey = reader.ReadBytes(signingPubKeyLen);
+
+                        this.recipientAddress = recipientAddress;
                     }
                 }
             }
@@ -116,6 +131,8 @@ namespace IXICore
                     writer.WriteIxiVarInt(solution.Length);
                     writer.Write(solution);
 
+                    writer.WriteIxiVarInt(signingPubKey.Length);
+                    writer.Write(signingPubKey);
 #if TRACE_MEMSTREAM_SIZES
                     Logging.info(String.Format("SignerPowSolution::getBytes: {0}", m.Length));
 #endif
@@ -230,9 +247,9 @@ namespace IXICore
         }
 
         // Verify nonce
-        public static bool verifySolution(byte[] solution, ulong blockNum, byte[] blockHash, Address solverAddress, IxiNumber difficulty)
+        public static bool verifySolution(byte[] solution, ulong blockNum, byte[] blockHash, Address recipientAddress, byte[] signingPubKey, IxiNumber difficulty)
         {
-            byte[] hash = solutionToHash(solution, blockNum, blockHash, solverAddress);
+            byte[] hash = solutionToHash(solution, blockNum, blockHash, recipientAddress, signingPubKey);
             if(hash == null)
             {
                 return false;
@@ -247,20 +264,28 @@ namespace IXICore
             return false;
         }
 
-        public static byte[] solutionToHash(byte[] solution, ulong blockNum, byte[] blockHash, Address solverAddress)
+        public static byte[] solutionToHash(byte[] solution, ulong blockNum, byte[] blockHash, Address recipientAddress, byte[] signingPubKey)
         {
             if (solution == null || solution.Length < 1 || solution.Length > 64)
             {
                 return null;
             }
+
+            byte[] signingPubKeyHash = signingPubKey;
+            if(signingPubKey.Length > 64)
+            {
+                signingPubKeyHash = CryptoManager.lib.sha3_512sq(signingPubKey);
+            }
+
             // TODO protect against spamming with invalid nonce/block_num
             byte[] blockNumBytes = blockNum.GetIxiVarIntBytes();
-            byte[] challengeData = new byte[blockNumBytes.Length + blockHash.Length + solverAddress.addressNoChecksum.Length + solution.Length];
-
+            byte[] challengeData = new byte[blockNumBytes.Length + blockHash.Length + recipientAddress.addressNoChecksum.Length + signingPubKeyHash.Length + solution.Length];
+            
             System.Buffer.BlockCopy(blockNumBytes, 0, challengeData, 0, blockNumBytes.Length);
             System.Buffer.BlockCopy(blockHash, 0, challengeData, blockNumBytes.Length, blockHash.Length);
-            System.Buffer.BlockCopy(solverAddress.addressNoChecksum, 0, challengeData, blockNumBytes.Length + blockHash.Length, solverAddress.addressNoChecksum.Length);
-            System.Buffer.BlockCopy(solution, 0, challengeData, blockNumBytes.Length + blockHash.Length + solverAddress.addressNoChecksum.Length, solution.Length);
+            System.Buffer.BlockCopy(recipientAddress.addressNoChecksum, 0, challengeData, blockNumBytes.Length + blockHash.Length, recipientAddress.addressNoChecksum.Length);
+            System.Buffer.BlockCopy(signingPubKeyHash, 0, challengeData, blockNumBytes.Length + blockHash.Length + recipientAddress.addressNoChecksum.Length, signingPubKeyHash.Length);
+            System.Buffer.BlockCopy(solution, 0, challengeData, blockNumBytes.Length + blockHash.Length + recipientAddress.addressNoChecksum.Length + signingPubKeyHash.Length, solution.Length);
 
             return CryptoManager.lib.sha3_512sq(challengeData);
         }

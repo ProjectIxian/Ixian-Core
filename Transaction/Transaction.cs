@@ -2287,7 +2287,7 @@ namespace IXICore
         /// <param name="tx_from">Multisig wallet where the funds should be withdrawn.</param>
         /// <param name="tx_blockHeight">Blockheight at which the transaction is generated.</param>
         /// <returns>Generated transaction object.</returns>
-        public static Transaction multisigTransaction(IxiNumber tx_fee, Dictionary<Address, ToEntry> tx_to_list, Address tx_from, ulong tx_blockHeight)
+        public static Transaction multisigTransaction(IxiNumber tx_fee, IDictionary<Address, ToEntry> tx_to_list, Address tx_from, ulong tx_blockHeight)
         {
             Transaction t = new Transaction((int)Transaction.Type.MultisigTX, tx_fee, tx_to_list, tx_from, tx_from.pubKey, tx_blockHeight);
 
