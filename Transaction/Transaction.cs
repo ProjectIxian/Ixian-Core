@@ -1146,7 +1146,6 @@ namespace IXICore
                             toList.Add(new Address(address), toEntry);
                         }
                         amount -= fee;
-                        timeStamp = (long)reader.ReadIxiVarUInt();
 
                         nonce = (int)reader.ReadIxiVarInt();
 
@@ -1166,6 +1165,11 @@ namespace IXICore
                         if (include_applied)
                         {
                             applied = tmp_applied;
+                        }
+
+                        if (version < 7)
+                        {
+                            timeStamp = (long)reader.ReadIxiVarUInt();
                         }
 
                         generateChecksums();
@@ -1432,6 +1436,11 @@ namespace IXICore
             {
                 using (BinaryWriter writer = new BinaryWriter(m))
                 {
+                    if(for_checksum)
+                    {
+                        writer.Write(ConsensusConfig.ixianChecksumLock);
+                    }
+
                     writer.WriteIxiVarInt(version);
 
                     writer.WriteIxiVarInt(type);
@@ -1480,7 +1489,6 @@ namespace IXICore
                         }
                     }
 
-                    writer.WriteIxiVarInt(timeStamp);
                     writer.WriteIxiVarInt(nonce);
 
                     // TODO TODO Omega - change this to addressNoChecksum if forChecksum is true?
@@ -1508,6 +1516,12 @@ namespace IXICore
                             writer.WriteIxiVarInt((ulong)0);
                         }
                     }
+
+                    if (version < 7)
+                    {
+                        writer.WriteIxiVarInt(timeStamp);
+                    }
+
 #if TRACE_MEMSTREAM_SIZES
                     Logging.info(String.Format("Transaction::getBytes: {0}", m.Length));
 #endif
