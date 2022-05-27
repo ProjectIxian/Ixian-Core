@@ -84,10 +84,13 @@ namespace IXICore
                             powSolution = new SignerPowSolution(reader.ReadBytes(powSolutionLen), recipientPubKeyOrAddress);
                         }
 
-                        int signatureLen = (int)reader.ReadIxiVarUInt();
-                        if (signatureLen > 0)
+                        if (m.Position < m.Length)
                         {
-                            signature = reader.ReadBytes(signatureLen);
+                            int signatureLen = (int)reader.ReadIxiVarUInt();
+                            if (signatureLen > 0)
+                            {
+                                signature = reader.ReadBytes(signatureLen);
+                            }
                         }
                     }
                 }
@@ -124,10 +127,6 @@ namespace IXICore
                     {
                         writer.WriteIxiVarInt(signature.Length);
                         writer.Write(signature);
-                    }
-                    else
-                    {
-                        writer.WriteIxiVarInt(0);
                     }
 
 #if TRACE_MEMSTREAM_SIZES
@@ -168,10 +167,6 @@ namespace IXICore
                     {
                         writer.WriteIxiVarInt(signature.Length);
                         writer.Write(signature);
-                    }
-                    else
-                    {
-                        writer.WriteIxiVarInt(0);
                     }
 
 #if TRACE_MEMSTREAM_SIZES

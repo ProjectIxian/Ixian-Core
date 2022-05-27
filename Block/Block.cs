@@ -1319,8 +1319,9 @@ namespace IXICore
             if(version >= BlockVer.v10 && blockNum != 1)
             {
                 // TODO TODO Omega - detect and skip first v10 block
-                sortedSigs = sortedSigs.OrderBy(x => x.powSolution.difficulty, Comparer<IxiNumber>.Default).ThenBy(x => x.recipientPubKeyOrAddress.addressNoChecksum, new ByteArrayComparer()).ToList();
-            }else
+                //sortedSigs = sortedSigs.OrderBy(x => x.powSolution.difficulty, Comparer<IxiNumber>.Default).ThenBy(x => x.recipientPubKeyOrAddress.addressNoChecksum, new ByteArrayComparer()).ToList();
+            }
+            else
             {
                 sortedSigs.Sort((x, y) => _ByteArrayComparer.Compare(x.recipientPubKeyOrAddress.getInputBytes(true), y.recipientPubKeyOrAddress.getInputBytes(true)));
             }
@@ -1972,7 +1973,7 @@ namespace IXICore
                     }
                 }
                 //result.Sort((x, y) => Comparer<BigInteger>.Default.Compare(x.difficulty, y.difficulty));
-                result = result.OrderBy(x => x.difficulty, Comparer<IxiNumber>.Default).ThenBy(x => x.address.addressNoChecksum, new ByteArrayComparer()).ToList();
+                //result = result.OrderBy(x => x.difficulty, Comparer<IxiNumber>.Default).ThenBy(x => x.address.addressNoChecksum, new ByteArrayComparer()).ToList();
             }
             return result;
         }
