@@ -104,7 +104,7 @@ namespace IXICore
 
         public byte[] getBytesForBlock(bool includeSignature = true)
         {
-            using (MemoryStream m = new MemoryStream(1152))
+            using (MemoryStream m = new MemoryStream(1200))
             {
                 using (BinaryWriter writer = new BinaryWriter(m))
                 {

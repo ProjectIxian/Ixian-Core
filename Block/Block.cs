@@ -1327,7 +1327,7 @@ namespace IXICore
             }
 
             // Merge the sorted signatures
-            using (MemoryStream m = new MemoryStream(64000))
+            using (MemoryStream m = new MemoryStream(1536000))
             {
                 using (BinaryWriter writer = new BinaryWriter(m))
                 {
