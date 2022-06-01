@@ -1316,7 +1316,7 @@ namespace IXICore
                     sortedSigs = new List<BlockSignature>(signatures);
                 }
             }
-            if(version >= BlockVer.v10 && blockNum != 1)
+            if (blockNum != 1 && version >= BlockVer.v10 && IxianHandler.getBlockHeader(blockNum - 1).version >= BlockVer.v10)
             {
                 // TODO TODO Omega - detect and skip first v10 block
                 //sortedSigs = sortedSigs.OrderBy(x => x.powSolution.difficulty, Comparer<IxiNumber>.Default).ThenBy(x => x.recipientPubKeyOrAddress.addressNoChecksum, new ByteArrayComparer()).ToList();
@@ -1622,7 +1622,7 @@ namespace IXICore
         public bool verifySignature(BlockSignature sig)
         {
             byte[] dataToVerify = blockChecksum;
-            if (version >= BlockVer.v10 && blockNum != 1)
+            if (blockNum != 1 && version >= BlockVer.v10 && IxianHandler.getBlockHeader(blockNum - 1).version >= BlockVer.v10)
             {
                 if (sig.powSolution == null)
                 {
@@ -1648,7 +1648,7 @@ namespace IXICore
             }
 
             byte[] publicKey = null;
-            if (version >= BlockVer.v10 && blockNum != 1)
+            if (blockNum != 1 && version >= BlockVer.v10 && IxianHandler.getBlockHeader(blockNum - 1).version >= BlockVer.v10)
             {
                 publicKey = sig.powSolution.signingPubKey;
             }else
@@ -1972,7 +1972,10 @@ namespace IXICore
                         result.Add((merged_signature.recipientPubKeyOrAddress, 1));
                     }
                 }
-                //result.Sort((x, y) => Comparer<BigInteger>.Default.Compare(x.difficulty, y.difficulty));
+                if (version < BlockVer.v10)
+                {
+                    result.Sort((x, y) => _ByteArrayComparer.Compare(x.address.addressNoChecksum, y.address.addressNoChecksum));
+                }
                 //result = result.OrderBy(x => x.difficulty, Comparer<IxiNumber>.Default).ThenBy(x => x.address.addressNoChecksum, new ByteArrayComparer()).ToList();
             }
             return result;

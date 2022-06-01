@@ -89,7 +89,7 @@ namespace IXICore.Network
         bye = 2,
         //[Obsolete("Use getBlock3 instead")]
         //getBlock = 3,
-        [Obsolete("Use getTransactions2 instead")]
+        [Obsolete("Use blockData2 instead")]
         blockData = 4,
         [Obsolete("Use inventory instead")]
         blockHeight = 5,
@@ -105,7 +105,7 @@ namespace IXICore.Network
         signaturesChunk = 12,
         blockSignature2 = 13,
         getBlockSignatures2 = 14,
-        [Obsolete("Use transactionsChunk2 instead")]
+        [Obsolete("Use transactionsChunk3 instead")]
         transactionsChunk = 15,
         getSignatures2 = 16,
         signaturesChunk2 = 17,
@@ -134,7 +134,7 @@ namespace IXICore.Network
         [Obsolete("Use getPresence2 instead")]
         getPresence = 35,
         getPresence2 = 36,
-        [Obsolete("Use transactionsChunk instead")]
+        [Obsolete("Use transactionsChunk3 instead")]
         blockTransactionsChunk = 37, // deprecated
         getUnappliedTransactions = 38,
         extend = 39,
@@ -162,11 +162,11 @@ namespace IXICore.Network
         walletState = 54,
         getBlock3 = 55,
         getTransactions2 = 56,
+        [Obsolete("Use transactionsChunk3 instead")]
         transactionsChunk2 = 57,
         getTransaction3 = 58,
         inventory2 = 59,
-        //getSignerPow = 60,
-        //signerPow = 61
+        transactionsChunk3 = 60
     }
 
     /// <summary>

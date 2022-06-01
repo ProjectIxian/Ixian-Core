@@ -169,6 +169,7 @@ namespace IXICore.Network
 #pragma warning disable CS0618 // Type or member is obsolete
                     case ProtocolMessageCode.transactionsChunk:
                     case ProtocolMessageCode.transactionsChunk2:
+                    case ProtocolMessageCode.transactionsChunk3:
                     case ProtocolMessageCode.transactionData:
                     case ProtocolMessageCode.transactionData2:
                     case ProtocolMessageCode.blockTransactionsChunk:

@@ -135,8 +135,8 @@ namespace IXICore
             string ret = "ERR";
             try
             {
-                BigInteger p1 = BigInteger.Divide(amount, divisor);
-                BigInteger p2 = BigInteger.Remainder(amount, divisor);
+                BigInteger p2;
+                BigInteger p1 = BigInteger.DivRem(amount, divisor, out p2);
                 string second_part = p2.ToString("D");
 
                 // Check for and add leading 0s
@@ -161,7 +161,7 @@ namespace IXICore
 
         public override bool Equals(object obj)
         {
-            if(obj is IxiNumber)
+            if (obj is IxiNumber)
             {
                 return this == (IxiNumber)obj;
             }
@@ -257,7 +257,7 @@ namespace IXICore
         {
             return new IxiNumber(value);
         }
-
+        /*
         public static bool operator ==(IxiNumber a, long b)
         {
             bool status = false;
@@ -267,7 +267,7 @@ namespace IXICore
                 status = true;
             }
             return status;
-        }
+        }*/
 
         public static bool operator ==(IxiNumber a, IxiNumber b)
         {
@@ -278,7 +278,7 @@ namespace IXICore
             }
             return status;
         }
-
+        /*
         public static bool operator !=(IxiNumber a, long b)
         {
             bool status = false;
@@ -288,7 +288,7 @@ namespace IXICore
                 status = true;
             }
             return status;
-        }
+        }*/
 
         public static bool operator !=(IxiNumber a, IxiNumber b)
         {
@@ -299,7 +299,7 @@ namespace IXICore
             }
             return status;
         }
-
+        /*
         public static bool operator >(IxiNumber a, long b)
         {
             bool status = false;
@@ -343,7 +343,7 @@ namespace IXICore
             }
             return status;
         }
-
+        */
         public static bool operator >(IxiNumber a, IxiNumber b)
         {
             bool status = false;

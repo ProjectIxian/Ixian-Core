@@ -15,13 +15,12 @@ using IXICore.Utils;
 using System;
 using System.IO;
 using System.Linq;
-using System.Numerics;
 
 namespace IXICore
 {
     public class KeepAlive
     {
-        public int version = 2;
+        public int version = 1;
         public Address walletAddress = null;
         public byte[] deviceId = null;
         public long timestamp = 0;
@@ -80,9 +79,6 @@ namespace IXICore
                     writer.Write(timestamp);
 
                     writer.Write(hostName);
-                    writer.Write(nodeType);
-
-                    writer.Write(nodeType);
                     writer.Write(nodeType);
 
                     if (!forChecksum)

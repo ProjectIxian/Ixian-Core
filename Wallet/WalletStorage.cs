@@ -1355,7 +1355,7 @@ namespace IXICore
             Logging.log(LogSeverity.info, "Generating primary wallet keys, this may take a while, please wait...");
 
             //IxianKeyPair kp = generateNewKeyPair(false);
-            IxianKeyPair kp = CryptoManager.lib.generateKeys(ConsensusConfig.defaultRsaKeySize, 2);
+            IxianKeyPair kp = CryptoManager.lib.generateKeys(ConsensusConfig.defaultRsaKeySize, 1);
 
             if (kp == null)
             {

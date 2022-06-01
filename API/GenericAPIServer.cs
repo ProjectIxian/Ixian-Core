@@ -1738,7 +1738,7 @@ namespace IXICore
                 return new JsonResponse { result = null, error = new JsonError() { code = (int)RPCErrorCode.RPC_VERIFY_ERROR, message = "From list is empty" } };
             }
 
-            Transaction transaction = new Transaction((int)Transaction.Type.Normal, fee, toList, fromList, pubKey, IxianHandler.getHighestKnownNetworkBlockHeight(), -1, sign_transaction);
+            Transaction transaction = new Transaction((int)Transaction.Type.Normal, fee, toList, fromList, new Address(pubKey), IxianHandler.getHighestKnownNetworkBlockHeight(), -1, sign_transaction);
             //Logging.info(String.Format("Intial transaction size: {0}.", transaction.getBytes().Length));
             //Logging.info(String.Format("Intial transaction set fee: {0}.", transaction.fee));
             if (adjust_amount) //true only if automatically generating from address
@@ -1755,7 +1755,7 @@ namespace IXICore
                     {
                         return new JsonResponse { result = null, error = new JsonError() { code = (int)RPCErrorCode.RPC_VERIFY_ERROR, message = "From list is empty" } };
                     }
-                    transaction = new Transaction((int)Transaction.Type.Normal, fee, toList, fromList, pubKey, IxianHandler.getHighestKnownNetworkBlockHeight(), -1, sign_transaction);
+                    transaction = new Transaction((int)Transaction.Type.Normal, fee, toList, fromList, new Address(pubKey), IxianHandler.getHighestKnownNetworkBlockHeight(), -1, sign_transaction);
                 }
             }
             else if (auto_fee) // true if user specified both a valid from address and the parameter autofee=true
@@ -1763,11 +1763,11 @@ namespace IXICore
                 // fee is taken from the first specified address
                 byte[] first_address = fromList.Keys.First();
                 fromList[first_address] = fromList[first_address] + transaction.fee;
-                if (fromList[first_address] > IxianHandler.getWalletBalance(new Address(transaction.pubKey, first_address)))
+                if (fromList[first_address] > IxianHandler.getWalletBalance(new Address(transaction.pubKey.addressNoChecksum, first_address)))
                 {
                     return new JsonResponse { result = null, error = new JsonError() { code = (int)RPCErrorCode.RPC_WALLET_INSUFFICIENT_FUNDS, message = "Balance is too low" } };
                 }
-                transaction = new Transaction((int)Transaction.Type.Normal, fee, toList, fromList, pubKey, IxianHandler.getHighestKnownNetworkBlockHeight(), -1, sign_transaction);
+                transaction = new Transaction((int)Transaction.Type.Normal, fee, toList, fromList, new Address(pubKey), IxianHandler.getHighestKnownNetworkBlockHeight(), -1, sign_transaction);
             }
             //Logging.info(String.Format("Transaction size after automatic adjustments: {0}.", transaction.getBytes().Length));
             //Logging.info(String.Format("Transaction fee after automatic adjustments: {0}.", transaction.fee));

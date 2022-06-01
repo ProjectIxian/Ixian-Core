@@ -15,14 +15,13 @@ using IXICore.Utils;
 using System;
 using System.Collections.Generic;
 using System.IO;
-using System.Numerics;
 
 namespace IXICore
 {
     // The actual presence object, which can contain multiple PresenceAddress objects
     public class Presence
     {
-        public int version = 1;
+        public int version = 0;
         public Address wallet;
         public byte[] pubkey;
         public byte[] metadata; 

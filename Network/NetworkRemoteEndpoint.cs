@@ -662,6 +662,7 @@ namespace IXICore.Network
                                 break;
 
                             case ProtocolMessageCode.transactionsChunk2:
+                            case ProtocolMessageCode.transactionsChunk3:
                                 if (msg_id == (long)last_bh + 1)
                                 {
                                     priority = MessagePriority.medium;
@@ -889,6 +890,7 @@ namespace IXICore.Network
 
                 case ProtocolMessageCode.transactionsChunk:
                 case ProtocolMessageCode.transactionsChunk2:
+                case ProtocolMessageCode.transactionsChunk3:
                 case ProtocolMessageCode.blockTransactionsChunk:
                 case ProtocolMessageCode.transactionData:
                 case ProtocolMessageCode.transactionData2:

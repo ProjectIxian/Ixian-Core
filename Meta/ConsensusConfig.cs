@@ -110,9 +110,13 @@ namespace IXICore
         /// </summary>
         public static readonly IxiNumber minimumMasterNodeFunds = new IxiNumber("2000");
         /// <summary>
-        /// Transaction fee per kilobyte. Total transaction size is used. (Used in DLT Node executable.)
+        /// Transaction fee per kilobyte. Total transaction size is used. (Used in DLT Node executable.) TODO Omega - make it configurable
         /// </summary>
         public static readonly IxiNumber transactionPrice = new IxiNumber("0.00005000");
+        /// <summary>
+        /// Transaction Dust LImit. Recipient value cannot be lower than this number. TODO Omega - make it configurable
+        /// </summary>
+        public static readonly IxiNumber transactionDustLimit = new IxiNumber("0.01000000");
         /// <summary>
         /// Amount of transaction fees, in percent, that are deposited into the foundation wallet, which funds the development of Ixian technology. (Used in DLT Node executable.)
         /// </summary>
