@@ -1484,8 +1484,8 @@ namespace IXICore
 
                     if (pubKey != null)
                     {
-                        writer.WriteIxiVarInt(pubKey.pubKey.Length);
-                        writer.Write(pubKey.pubKey);
+                        writer.WriteIxiVarInt(pubKey.getInputBytes().Length);
+                        writer.Write(pubKey.getInputBytes());
                     }else
                     {
                         writer.WriteIxiVarInt((int)0);
