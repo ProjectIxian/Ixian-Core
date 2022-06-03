@@ -103,7 +103,7 @@ namespace IXICore
         /// </summary>
         public static readonly int maximumBlockSigners = 1000; // TODO TODO Omega - discard sigs that have lower difficulty than the new sig, when it is received
 
-        public static readonly IxiNumber minBlockSignerPowDifficulty = 1000000;
+        public static readonly IxiNumber minBlockSignerPowDifficulty = 10000000;
 
         /// <summary>
         /// Minimum funds a wallet must have before it is allowed to participate in the block consensus algorithm. (used in DLT Node executable).
@@ -114,7 +114,7 @@ namespace IXICore
         /// </summary>
         public static readonly IxiNumber transactionPrice = new IxiNumber("0.00005000");
         /// <summary>
-        /// Transaction Dust LImit. Recipient value cannot be lower than this number. TODO Omega - make it configurable
+        /// Transaction Dust Limit. Recipient value cannot be lower than this number. TODO Omega - make it configurable
         /// </summary>
         public static readonly IxiNumber transactionDustLimit = new IxiNumber("0.01000000");
         /// <summary>
