@@ -849,7 +849,7 @@ namespace IXICore
         {
             lock (presences)
             {
-                int address_len = 36; // This is set to the minimum wallet length
+                int address_len = 33; // This is set to the minimum wallet length
                 byte[] selector = PresenceOrderedEnumerator.GenerateSelectorFromRandom(rnd_bytes.Take(address_len).ToArray());
                 var sorted_presences = presences.FindAll(x => x.addresses.Find(y => y.type == 'M' || y.type == 'H') != null).OrderBy(x => x.wallet.addressNoChecksum, new ByteArrayComparer());
                 return new PresenceOrderedEnumerator(sorted_presences, address_len, selector, target_count);
