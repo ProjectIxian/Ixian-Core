@@ -128,6 +128,19 @@ namespace IXICore
             }
         }
 
+        public Address(string base58EncodedAddress)
+        {
+            byte[] address = Base58Check.Base58CheckEncoding.DecodePlain(base58EncodedAddress);
+            if (!validateChecksum(address))
+            {
+                throw new Exception(String.Format("Invalid address was specified (checksum error) {0}.", base58EncodedAddress));
+            }
+            // strip checksum
+            addressNoChecksum = new byte[address.Length - 3];
+            Array.Copy(address, addressNoChecksum, addressNoChecksum.Length);
+
+        }
+
         private byte[] constructAddress_v0(byte[] publicKeyOrAddress, byte[] addressNonce, bool verifyChecksum)
         {
             byte[] baseAddress;
@@ -318,6 +331,11 @@ namespace IXICore
         public override string ToString()
         {
             return Base58Check.Base58CheckEncoding.EncodePlain(addressWithChecksum);
+        }
+
+        public bool SequenceEqual(Address address)
+        {
+            return addressNoChecksum.SequenceEqual(address.addressNoChecksum);
         }
 
         /// <summary>

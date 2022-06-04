@@ -56,7 +56,17 @@ namespace IXICore
                         else
                         {
                             blockNum = reader.ReadUInt64();
-                            nonce = UTF8Encoding.UTF8.GetBytes(reader.ReadString());
+
+                            int blockVersion = IxianHandler.getBlockHeader(blockNum).version;
+
+                            if (blockVersion >= BlockVer.v2)
+                            {
+                                nonce = Crypto.stringToHash(reader.ReadString());
+                            }
+                            else
+                            {
+                                nonce = UTF8Encoding.UTF8.GetBytes(reader.ReadString());
+                            }
                         }
                     }
                 }

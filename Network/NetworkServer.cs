@@ -347,7 +347,7 @@ namespace IXICore.Network
         /// <param name="code">Type of the network message to send</param>
         /// <param name="message">Byte-field with the required data, as specified by `code`.</param>
         /// <returns>True, if the message was delivered.</returns>
-        public static bool forwardMessage(byte[] address, ProtocolMessageCode code, byte[] message)
+        public static bool forwardMessage(Address address, ProtocolMessageCode code, byte[] message)
         {
             if (address == null)
             {
@@ -355,7 +355,7 @@ namespace IXICore.Network
                 return false;
             }
 
-            Logging.info(">>>> Preparing to forward to {0}", Base58Check.Base58CheckEncoding.EncodePlain(address));
+            Logging.info(">>>> Preparing to forward to {0}", address.ToString());
 
             QueueMessage queue_message = RemoteEndpoint.getQueueMessage(code, message, null);
             lock (connectedClients)
@@ -370,7 +370,7 @@ namespace IXICore.Network
                     if(!endpoint.isConnected())
                         continue;
 
-                    byte[] client_wallet = endpoint.presence.wallet.addressNoChecksum;
+                    Address client_wallet = endpoint.presence.wallet;
 
                     if (client_wallet != null && address.SequenceEqual(client_wallet))
                     {

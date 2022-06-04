@@ -42,9 +42,9 @@ namespace IXICore
         public int version { get; private set; } = 0;                 // Stream Message version
 
         public StreamMessageCode type;          // Stream Message type
-        public byte[] realSender = null;        // Used by group chat bots, isn't transmitted to the network
-        public byte[] sender = null;            // Sender wallet
-        public byte[] recipient = null;         // Recipient wallet 
+        public Address realSender = null;        // Used by group chat bots, isn't transmitted to the network
+        public Address sender = null;            // Sender wallet
+        public Address recipient = null;         // Recipient wallet 
 
         private byte[] transaction = null;       // Unsigned transaction - obsolete, will be removed with v1
         public byte[] data = null;              // Actual message data, encrypted or decrypted
@@ -111,11 +111,11 @@ namespace IXICore
 
                         int sender_length = reader.ReadInt32();
                         if (sender_length > 0)
-                            sender = reader.ReadBytes(sender_length);
+                            sender = new Address(reader.ReadBytes(sender_length));
 
                         int recipient_length = reader.ReadInt32();
                         if (recipient_length > 0)
-                            recipient = reader.ReadBytes(recipient_length);
+                            recipient = new Address(reader.ReadBytes(recipient_length));
 
                         int data_length = reader.ReadInt32();
                         if (data_length > 0)
@@ -178,11 +178,11 @@ namespace IXICore
 
                         int sender_length = (int)reader.ReadIxiVarUInt();
                         if (sender_length > 0)
-                            sender = reader.ReadBytes(sender_length);
+                            sender = new Address(reader.ReadBytes(sender_length));
 
                         int recipient_length = (int)reader.ReadIxiVarUInt();
                         if (recipient_length > 0)
-                            recipient = reader.ReadBytes(recipient_length);
+                            recipient = new Address(reader.ReadBytes(recipient_length));
 
                         int data_length = (int)reader.ReadIxiVarUInt();
                         if (data_length > 0)
@@ -235,8 +235,8 @@ namespace IXICore
                     // Write the sender
                     if (sender != null)
                     {
-                        writer.Write(sender.Length);
-                        writer.Write(sender);
+                        writer.Write(sender.addressWithChecksum.Length);
+                        writer.Write(sender.addressWithChecksum);
                     }
                     else
                     {
@@ -247,8 +247,8 @@ namespace IXICore
                     // Write the recipient
                     if (recipient != null)
                     {
-                        writer.Write(recipient.Length);
-                        writer.Write(recipient);
+                        writer.Write(recipient.addressWithChecksum.Length);
+                        writer.Write(recipient.addressWithChecksum);
                     }
                     else
                     {
@@ -334,8 +334,8 @@ namespace IXICore
                     // Write the sender
                     if (sender != null)
                     {
-                        writer.WriteIxiVarInt(sender.Length);
-                        writer.Write(sender);
+                        writer.WriteIxiVarInt(sender.addressWithChecksum.Length);
+                        writer.Write(sender.addressWithChecksum);
                     }
                     else
                     {
@@ -346,8 +346,8 @@ namespace IXICore
                     // Write the recipient
                     if (recipient != null)
                     {
-                        writer.WriteIxiVarInt(recipient.Length);
-                        writer.Write(recipient);
+                        writer.WriteIxiVarInt(recipient.addressWithChecksum.Length);
+                        writer.Write(recipient.addressWithChecksum);
                     }
                     else
                     {

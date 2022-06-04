@@ -15,15 +15,14 @@ using IXICore.Utils;
 using System;
 using System.Collections.Generic;
 using System.IO;
-using System.Linq;
 
 namespace IXICore.SpixiBot
 {
     // TODO use a database for storing users. For now a workaround of last 500 users only will be stored due to memory constraints
     public class BotUsers
     {
-        public Dictionary<byte[], BotContact> contacts = new Dictionary<byte[], BotContact>(new ByteArrayComparer());
-        public List<byte[]> contactsList = new List<byte[]>();
+        public Dictionary<Address, BotContact> contacts = new Dictionary<Address, BotContact>(new AddressComparer());
+        public List<Address> contactsList = new List<Address>();
 
         string contactsPath = "contacts.ixi";
         string avatarPath = "Avatars";
@@ -120,7 +119,7 @@ namespace IXICore.SpixiBot
                         byte[] contact_bytes = reader.ReadBytes(contact_len);
 
                         BotContact bc = new BotContact(contact_bytes, saveNickAsString);
-                        byte[] address = new Address(bc.publicKey).addressNoChecksum;
+                        Address address = new Address(bc.publicKey);
                         contacts.AddOrReplace(address, bc);
                     }
                 }
@@ -134,7 +133,7 @@ namespace IXICore.SpixiBot
             }
         }
 
-        public bool hasUser(byte[] address)
+        public bool hasUser(Address address)
         {
             lock (contacts)
             {
@@ -146,7 +145,7 @@ namespace IXICore.SpixiBot
             return false;
         }
 
-        public BotContact getUser(byte[] address)
+        public BotContact getUser(Address address)
         {
             lock(contacts)
             {
@@ -158,7 +157,7 @@ namespace IXICore.SpixiBot
             return null;
         }
 
-        public bool delUser(byte[] address)
+        public bool delUser(Address address)
         {
             lock (contacts)
             {
@@ -173,7 +172,7 @@ namespace IXICore.SpixiBot
             return true;
         }
 
-        public bool setPubKey(byte[] address, byte[] pub_key, bool limit = true)
+        public bool setPubKey(Address address, byte[] pub_key, bool limit = true)
         {
             lock (contacts)
             {
@@ -193,7 +192,7 @@ namespace IXICore.SpixiBot
             return true;
         }
 
-        public bool setAvatar(byte[] address, byte[] avatar_message)
+        public bool setAvatar(Address address, byte[] avatar_message)
         {
             if(avatarPath == null)
             {
@@ -205,7 +204,7 @@ namespace IXICore.SpixiBot
                 {
                     return false;
                 }
-                string path = Path.Combine(avatarPath, Base58Check.Base58CheckEncoding.EncodePlain(address) + ".raw");
+                string path = Path.Combine(avatarPath, address.ToString() + ".raw");
                 if (avatar_message != null)
                 {
                     File.WriteAllBytes(path, avatar_message);
@@ -224,7 +223,7 @@ namespace IXICore.SpixiBot
             return true;
         }
 
-        public bool setNick(byte[] address, byte[] nick)
+        public bool setNick(Address address, byte[] nick)
         {
             lock (contacts)
             {
@@ -238,7 +237,7 @@ namespace IXICore.SpixiBot
             return true;
         }
 
-        public bool setRole(byte[] address, int role)
+        public bool setRole(Address address, int role)
         {
             lock (contacts)
             {
@@ -256,7 +255,7 @@ namespace IXICore.SpixiBot
         {
             lock (contacts)
             {
-                byte[] address = new Address(user.publicKey).addressNoChecksum;
+                Address address = new Address(user.publicKey);
                 if(!contacts.ContainsKey(address))
                 {
                     contactsList.Add(address);
@@ -272,7 +271,7 @@ namespace IXICore.SpixiBot
             }
         }
 
-        public string getAvatarPath(byte[] address)
+        public string getAvatarPath(Address address)
         {
             if (avatarPath == null)
             {
@@ -283,7 +282,7 @@ namespace IXICore.SpixiBot
             {
                 return null;
             }
-            string path = Path.Combine(avatarPath, Base58Check.Base58CheckEncoding.EncodePlain(address) + ".raw");
+            string path = Path.Combine(avatarPath, address.ToString() + ".raw");
             if (!File.Exists(path))
             {
                 return null;
