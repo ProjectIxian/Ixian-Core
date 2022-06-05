@@ -57,7 +57,14 @@ namespace IXICore
                         {
                             blockNum = reader.ReadUInt64();
 
-                            int blockVersion = IxianHandler.getBlockHeader(blockNum).version;
+                            var blockHeader = IxianHandler.getBlockHeader(blockNum);
+
+                            if (blockHeader == null)
+                            {
+                                throw new Exception("Cannot construct PoWSolution, missing block #" + blockNum);
+                            }
+
+                            int blockVersion = blockHeader.version;
 
                             if (blockVersion >= BlockVer.v2)
                             {
