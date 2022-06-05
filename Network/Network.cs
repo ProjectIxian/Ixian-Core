@@ -111,7 +111,9 @@ namespace IXICore.Network
         signaturesChunk2 = 17,
         [Obsolete("Use getBlock3 instead")]
         getBlock2 = 18,
+        [Obsolete("Use getBlockHeaders3 instead")]
         getBlockHeaders2 = 19,
+        [Obsolete("Use blockHeaders3 instead")]
         blockHeaders2 = 20,
         getPIT2 = 21,
         pitData2 = 22,
@@ -147,10 +149,8 @@ namespace IXICore.Network
         //[Obsolete("Use signaturesChunk instead")]
         //blockSignatures = 44, // deprecated
         getNextSuperBlock = 45,
-        [Obsolete("Use getBlockHeaders2 instead")]
-        getBlockHeaders = 46, // deprecated
-        [Obsolete("Use blockHeaders2 instead")]
-        blockHeaders = 47, // deprecated
+        getBlockHeaders3 = 46,
+        blockHeaders3 = 47,
         getRandomPresences = 48,
         [Obsolete("Use getPIT2 instead")]
         getPIT = 49, // deprecated

@@ -180,7 +180,13 @@ namespace IXICore
                 }
             }else
             {
-                pitHash = block.pitChecksum;
+                if (block.receivedPitChecksum != null)
+                {
+                    pitHash = block.receivedPitChecksum;
+                }else
+                {
+                    pitHash = block.pitChecksum;
+                }
             }
 
             if (block.blockChecksum != null)

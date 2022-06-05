@@ -102,19 +102,26 @@ namespace IXICore
             }
         }
 
-        public byte[] getBytesForBlock(bool includeSignature = true)
+        public byte[] getBytesForBlock(bool includeSignature = true, bool compacted = false)
         {
             using (MemoryStream m = new MemoryStream(1200))
             {
                 using (BinaryWriter writer = new BinaryWriter(m))
                 {
-                    byte[] address = recipientPubKeyOrAddress.getInputBytes();
+                    byte[] address;
+                    if (compacted)
+                    {
+                        address = recipientPubKeyOrAddress.addressNoChecksum;
+                    }else
+                    {
+                        address = recipientPubKeyOrAddress.getInputBytes();
+                    }
                     writer.WriteIxiVarInt(address.Length);
                     writer.Write(address);
 
                     if (powSolution != null)
                     {
-                        byte[] powSolutionBytes = powSolution.getBytes();
+                        byte[] powSolutionBytes = powSolution.getBytes(compacted);
                         writer.WriteIxiVarInt(powSolutionBytes.Length);
                         writer.Write(powSolutionBytes);
                     }
@@ -123,7 +130,7 @@ namespace IXICore
                         writer.WriteIxiVarInt(0);
                     }
 
-                    if(signature != null && includeSignature)
+                    if(signature != null && includeSignature && !compacted)
                     {
                         writer.WriteIxiVarInt(signature.Length);
                         writer.Write(signature);

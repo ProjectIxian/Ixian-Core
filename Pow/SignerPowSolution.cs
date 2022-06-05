@@ -120,7 +120,7 @@ namespace IXICore
         }
 
         // TODO Omega a blockHash should be included so that clients can verify PoW
-        public byte[] getBytes()
+        public byte[] getBytes(bool compacted = false)
         {
             using (MemoryStream m = new MemoryStream(640))
             {
@@ -131,8 +131,16 @@ namespace IXICore
                     writer.WriteIxiVarInt(solution.Length);
                     writer.Write(solution);
 
-                    writer.WriteIxiVarInt(signingPubKey.Length);
-                    writer.Write(signingPubKey);
+                    byte[] pubKey = signingPubKey;
+                    if (compacted)
+                    {
+                        if (signingPubKey.Length > 64)
+                        {
+                            pubKey = CryptoManager.lib.sha3_512sq(signingPubKey);
+                        }
+                    }
+                    writer.WriteIxiVarInt(pubKey.Length);
+                    writer.Write(pubKey);
 #if TRACE_MEMSTREAM_SIZES
                     Logging.info(String.Format("SignerPowSolution::getBytes: {0}", m.Length));
 #endif

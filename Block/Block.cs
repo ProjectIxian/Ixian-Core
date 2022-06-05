@@ -16,7 +16,6 @@ using System;
 using System.Collections.Generic;
 using System.IO;
 using System.Linq;
-using System.Numerics;
 using System.Text;
 
 namespace IXICore
@@ -55,6 +54,8 @@ namespace IXICore
         /// Prefix Inclusion Tree (PIT) checksum which enables the TIV protocol.
         /// </summary>
         public byte[] pitChecksum { get { return transactionPIT.calculateTreeHash(); } }
+        public byte[] receivedPitChecksum = null;
+
 
         private PrefixInclusionTree transactionPIT;
 
@@ -637,8 +638,7 @@ namespace IXICore
                         }
                         if (dataLen > 0)
                         {
-                            // TODO TODO Omega, PIT hash; TODO needs to be handled for headers/PIT/TIV
-                            reader.ReadBytes(dataLen);
+                            receivedPitChecksum = reader.ReadBytes(dataLen);
                         }
 
                         timestamp = (long)reader.ReadIxiVarUInt();
@@ -738,6 +738,12 @@ namespace IXICore
                                     transactions.Add(txid);
                                     transactionPIT.add(txid);
                                 }
+
+                                if (!pitChecksum.SequenceEqual(receivedPitChecksum))
+                                {
+                                    // Block contains duplicate txid
+                                    throw new Exception("Invalid PIT Checksum.");
+                                }
                             }
                         }
 
@@ -775,7 +781,7 @@ namespace IXICore
         /// <param name="include_sb_segments">Includes superblock segments if true.</param>
         /// <param name="frozen_sigs_only">Returns only frozen signatures if true. If false it returns all signatures, if they are still available, otherwise falls back to frozen signatures.</param>
         /// <returns>Byte buffer with the serialized block.</returns>
-        public byte[] getBytes(bool include_sb_segments = true, bool frozen_sigs_only = true, bool forceV10Structure = false)
+        public byte[] getBytes(bool include_sb_segments = true, bool frozen_sigs_only = true, bool forceV10Structure = false, bool asBlockHeader = false)
         {
             if(compacted)
             {
@@ -785,7 +791,7 @@ namespace IXICore
 
             if(forceV10Structure || version >= BlockVer.v10)
             {
-                return getBytesV10(include_sb_segments, frozen_sigs_only, false);
+                return getBytesV10(include_sb_segments, frozen_sigs_only, false, asBlockHeader);
             }
             else if (version < BlockVer.v8)
             {
@@ -1068,7 +1074,7 @@ namespace IXICore
             }
         }
 
-        private byte[] getBytesV10(bool include_sb_segments = true, bool frozen_sigs_only = true, bool for_checksum = false)
+        private byte[] getBytesV10(bool include_sb_segments = true, bool frozen_sigs_only = true, bool for_checksum = false, bool asBlockHeader = false)
         {
             using (MemoryStream m = new MemoryStream(5120))
             {
@@ -1102,14 +1108,22 @@ namespace IXICore
                     int num_transactions = transactions.Count;
                     writer.WriteIxiVarInt(num_transactions);
 
-                    if (pitChecksum != null)
+                    if(receivedPitChecksum != null)
                     {
-                        writer.WriteIxiVarInt(pitChecksum.Length);
-                        writer.Write(pitChecksum);
+                        writer.WriteIxiVarInt(receivedPitChecksum.Length);
+                        writer.Write(receivedPitChecksum);
                     }
                     else
                     {
-                        writer.WriteIxiVarInt((int)0);
+                        if (pitChecksum != null)
+                        {
+                            writer.WriteIxiVarInt(pitChecksum.Length);
+                            writer.Write(pitChecksum);
+                        }
+                        else
+                        {
+                            writer.WriteIxiVarInt((int)0);
+                        }
                     }
 
                     writer.WriteIxiVarInt(timestamp);
@@ -1171,17 +1185,20 @@ namespace IXICore
                             {
                                 BlockSignature signature = tmp_signatures[i];
 
-                                byte[] sigBytes = signature.getBytesForBlock();
+                                byte[] sigBytes = signature.getBytesForBlock(true, asBlockHeader);
                                 writer.WriteIxiVarInt(sigBytes.Length);
                                 writer.Write(sigBytes);
                             }
                         }
 
-                        // Write each txid
-                        foreach (byte[] txid in transactions)
+                        if (!asBlockHeader)
                         {
-                            writer.WriteIxiVarInt(txid.Length);
-                            writer.Write(txid);
+                            // Write each txid
+                            foreach (byte[] txid in transactions)
+                            {
+                                writer.WriteIxiVarInt(txid.Length);
+                                writer.Write(txid);
+                            }
                         }
                     }
 

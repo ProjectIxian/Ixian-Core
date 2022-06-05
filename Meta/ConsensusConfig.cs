@@ -177,7 +177,7 @@ namespace IXICore
         /// <summary>
         /// Number of blocks after how many the signing and mining rewards become available for spending.
         /// </summary>
-        public static readonly ulong rewardMaturity = plPowBlocksValidity * 8;
+        public static readonly ulong rewardMaturity = 960;// plPowBlocksValidity * 8;
 
         /// <summary>
         ///  Retrieves the lenght of the redacted window based on the block version in use.
