@@ -1335,7 +1335,6 @@ namespace IXICore
             }
             if (blockNum != 1 && version >= BlockVer.v10 && IxianHandler.getBlockHeader(blockNum - 1).version >= BlockVer.v10)
             {
-                // TODO TODO Omega - detect and skip first v10 block
                 //sortedSigs = sortedSigs.OrderBy(x => x.powSolution.difficulty, Comparer<IxiNumber>.Default).ThenBy(x => x.recipientPubKeyOrAddress.addressNoChecksum, new ByteArrayComparer()).ToList();
             }
             else

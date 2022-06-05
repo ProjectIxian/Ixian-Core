@@ -136,7 +136,7 @@ namespace IXICore
             return new_address;
         }
 
-        public Address generateNewAddress_v0(Address key_primary_address, byte[] last_nonce, bool add_to_pool = true)
+        private Address generateNewAddress_v0(Address key_primary_address, byte[] last_nonce, bool add_to_pool = true)
         {
             lock (myKeys)
             {
@@ -178,7 +178,7 @@ namespace IXICore
             }
         }
 
-        public Address generateNewAddress_v1(Address key_primary_address, byte[] last_nonce, bool add_to_pool = true)
+        private Address generateNewAddress_v1(Address key_primary_address, byte[] last_nonce, bool add_to_pool = true)
         {
             lock (myKeys)
             {
@@ -220,7 +220,7 @@ namespace IXICore
             }
         }
 
-        public Address generateNewAddress_v5(Address key_primary_address, byte[] last_nonce, bool add_to_pool = true)
+        private Address generateNewAddress_v5(Address key_primary_address, byte[] last_nonce, bool add_to_pool = true)
         {
             lock (myKeys)
             {
@@ -1365,7 +1365,7 @@ namespace IXICore
 
             privateKey = kp.privateKeyBytes;
             publicKey = kp.publicKeyBytes;
-            baseNonce = CryptoManager.lib.getSecureRandomBytes(16); //.sha3_512sqTrunc(privateKey); TODO TODO Omega; make sure that this is valid
+            baseNonce = CryptoManager.lib.getSecureRandomBytes(64);
 
             Address addr = new Address(new Address(publicKey).addressNoChecksum);
             lastAddress = address = addr;

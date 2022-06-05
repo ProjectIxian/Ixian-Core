@@ -134,7 +134,7 @@ namespace IXICore
                 lastRequestedBlockTime = currentTime;
 
                 // request next blocks
-                requestBlockHeaders(lastBlockHeader.blockNum + 1, lastBlockHeader.blockNum + 500);
+                requestBlockHeaders(lastBlockHeader.blockNum + 1, 500);
 
                 return true;
             }
@@ -529,8 +529,7 @@ namespace IXICore
             }
         }
 
-        // TODO Omega enable after upgrade
-        private void requestBlockHeaders2(ulong from, ulong count)
+        private void requestBlockHeaders(ulong from, ulong count)
         {
             Logging.info("Requesting block headers from {0} to {1}", from, from + count);
             using (MemoryStream mOut = new MemoryStream())
@@ -546,25 +545,6 @@ namespace IXICore
 
                 // Request from a single random node
                 CoreProtocolMessage.broadcastProtocolMessageToSingleRandomNode(new char[] { 'M', 'H' }, ProtocolMessageCode.getBlockHeaders3, mOut.ToArray(), 0);
-            }
-        }
-
-        private void requestBlockHeaders(ulong from, ulong to)
-        {
-            Logging.info("Requesting block headers from {0} to {1}", from, to);
-            using (MemoryStream mOut = new MemoryStream())
-            {
-                using (BinaryWriter writer = new BinaryWriter(mOut))
-                {
-                    writer.WriteIxiVarInt(from);
-                    writer.WriteIxiVarInt(to);
-                }
-
-                // Request from all nodes
-                //NetworkClientManager.broadcastData(new char[] { 'M', 'H' }, ProtocolMessageCode.getBlockHeaders, mOut.ToArray(), null);
-
-                // Request from a single random node
-                CoreProtocolMessage.broadcastProtocolMessageToSingleRandomNode(new char[] { 'M', 'H' }, ProtocolMessageCode.getBlockHeaders2, mOut.ToArray(), 0);
             }
         }
 
