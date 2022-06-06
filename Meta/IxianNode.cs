@@ -38,7 +38,7 @@ namespace IXICore.Meta
     {
         // Required
         public abstract ulong getHighestKnownNetworkBlockHeight();
-        public abstract BlockHeader getBlockHeader(ulong blockNum);
+        public abstract Block getBlockHeader(ulong blockNum);
         public abstract Block getLastBlock();
         public abstract ulong getLastBlockHeight();
         public abstract int getLastBlockVersion();
@@ -52,7 +52,7 @@ namespace IXICore.Meta
 
         // Optional
         public virtual void receivedTransactionInclusionVerificationResponse(byte[] txid, bool verified) { }
-        public virtual void receivedBlockHeader(BlockHeader block_header, bool verified) { }
+        public virtual void receivedBlockHeader(Block block_header, bool verified) { }
 
         public abstract IxiNumber getMinSignerPowDifficulty(ulong blockNum);
     }
@@ -188,13 +188,13 @@ namespace IXICore.Meta
             handlerClass.receivedTransactionInclusionVerificationResponse(txid, verified);
         }
 
-        public static void receivedBlockHeader(BlockHeader block_header, bool verified)
+        public static void receivedBlockHeader(Block block_header, bool verified)
         {
             verifyHandler();
             handlerClass.receivedBlockHeader(block_header, verified);
         }
 
-        public static BlockHeader getBlockHeader(ulong blockNum)
+        public static Block getBlockHeader(ulong blockNum)
         {
             verifyHandler();
             return handlerClass.getBlockHeader(blockNum);

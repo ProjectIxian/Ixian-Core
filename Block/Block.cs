@@ -20,6 +20,34 @@ using System.Text;
 
 namespace IXICore
 {
+    public static class BlockVer
+    {
+        public static int v0 = 0;
+        public static int v1 = 1;
+        public static int v2 = 2;
+        public static int v3 = 3;
+        public static int v4 = 4;
+        public static int v5 = 5;
+        public static int v6 = 6;
+        public static int v7 = 7;
+        public static int v8 = 8;
+        public static int v9 = 9;
+        public static int v10 = 10; // Omega Lock-in (partial activation)
+        public static int v11 = 11; // Omega Full activation
+    }
+
+    public class SuperBlockSegment
+    {
+        public ulong blockNum = 0;
+        public byte[] blockChecksum = null;
+
+        public SuperBlockSegment(ulong block_num, byte[] block_checksum)
+        {
+            blockNum = block_num;
+            blockChecksum = block_checksum;
+        }
+    }
+    
     /// <summary>
     ///  An Ixian DLT Block.
     ///  A block contains all the transactions which act on the WalletState and various checksums which validate the actions performed on the blockchain.
@@ -1212,6 +1240,130 @@ namespace IXICore
         }
 
         /// <summary>
+        ///  Retrieves the block header in its serialized, 'byte stream' format. See also `BlockHeader(byte[] bytes)`.
+        /// </summary>
+        /// <remarks>
+        ///  A block header can be serialized for network transmission using this function. All relevant fields will be encoded and a byte buffer will
+        ///  be returned. The byte buffer contains a copy of the block header, so no thread synchronization is required.
+        /// </remarks>
+        /// <returns>Byte buffer with the serialized block header.</returns>
+        /// TODO Omega remove
+        public byte[] getBytesLegacyHeader()
+        {
+            using (MemoryStream m = new MemoryStream())
+            {
+                using (BinaryWriter writer = new BinaryWriter(m))
+                {
+                    writer.Write(version);
+
+                    writer.Write(blockNum);
+
+                    if (version < BlockVer.v6)
+                    {
+                        // Write the number of transactions
+                        int num_transactions = transactions.Count;
+                        writer.Write(num_transactions);
+
+                        // Write each wallet
+                        foreach (byte[] txid in transactions)
+                        {
+                            writer.Write(Transaction.getTxIdString(txid));
+                        }
+                    }
+                    else
+                    {
+                        if (receivedPitChecksum != null)
+                        {
+                            writer.Write(receivedPitChecksum.Length);
+                            writer.Write(receivedPitChecksum);
+                        }else
+                        {
+                            writer.Write(pitChecksum.Length);
+                            writer.Write(pitChecksum);
+                        }
+                    }
+
+                    writer.Write(blockChecksum.Length);
+                    writer.Write(blockChecksum);
+
+                    if (lastBlockChecksum != null)
+                    {
+                        writer.Write(lastBlockChecksum.Length);
+                        writer.Write(lastBlockChecksum);
+                    }
+                    else
+                    {
+                        writer.Write((int)0);
+                    }
+
+                    if (walletStateChecksum != null)
+                    {
+                        writer.Write(walletStateChecksum.Length);
+                        writer.Write(walletStateChecksum);
+                    }
+                    else
+                    {
+                        writer.Write((int)0);
+                    }
+
+                    if (signatureFreezeChecksum != null)
+                    {
+                        writer.Write(signatureFreezeChecksum.Length);
+                        writer.Write(signatureFreezeChecksum);
+                    }
+                    else
+                    {
+                        writer.Write((int)0);
+                    }
+
+                    writer.Write(difficulty);
+
+                    writer.Write(lastSuperBlockNum);
+
+                    if (lastSuperBlockChecksum != null)
+                    {
+                        writer.Write(lastSuperBlockChecksum.Length);
+                        writer.Write(lastSuperBlockChecksum);
+                    }
+                    else
+                    {
+                        writer.Write((int)0);
+                    }
+
+                    writer.Write(superBlockSegments.Count);
+                    foreach (var entry in superBlockSegments)
+                    {
+                        writer.Write(entry.Key);
+                        writer.Write(entry.Value.blockChecksum.Length);
+                        writer.Write(entry.Value.blockChecksum);
+                    }
+
+                    writer.Write(timestamp);
+
+                    if (version == 9)
+                    {
+                        byte[] proposer;
+                        if (blockProposer != null)
+                        {
+                            proposer = blockProposer;
+                        }
+                        else
+                        {
+                            proposer = signatures.First().recipientPubKeyOrAddress.addressWithChecksum;
+                        }
+                        writer.WriteIxiVarInt(proposer.Length);
+                        writer.Write(proposer);
+                    }
+                    else
+                    {
+                        writer.WriteIxiVarInt((int)0);
+                    }
+                }
+                return m.ToArray();
+            }
+        }
+
+        /// <summary>
         ///  Implementation of block equality.
         /// </summary>
         /// <remarks>
@@ -1301,7 +1453,95 @@ namespace IXICore
             }
             else
             {
-                return new BlockHeader(this).calculateChecksum();
+                return calculateChecksumLegacy();
+            }
+        }
+
+        /// <summary>
+        ///  Calculates the `blockChecksum` of the DLT Block header, using the relevant fields.
+        /// </summary>
+        /// <returns>Byte value of the checksum result.</returns>
+        private byte[] calculateChecksumLegacy()
+        {
+            List<byte> merged_segments = new List<byte>();
+            foreach (var entry in superBlockSegments.OrderBy(x => x.Key))
+            {
+                merged_segments.AddRange(BitConverter.GetBytes(entry.Key));
+                merged_segments.AddRange(entry.Value.blockChecksum);
+            }
+
+            List<byte> rawData = new List<byte>();
+            rawData.AddRange(ConsensusConfig.ixianChecksumLock);
+            rawData.AddRange(BitConverter.GetBytes(version));
+            rawData.AddRange(BitConverter.GetBytes(blockNum));
+            if (version < BlockVer.v6)
+            {
+                StringBuilder merged_txids = new StringBuilder();
+                foreach (byte[] txid in transactions)
+                {
+                    merged_txids.Append(Transaction.getTxIdString(txid));
+                }
+
+                rawData.AddRange(Encoding.UTF8.GetBytes(merged_txids.ToString()));
+            }
+            else
+            {
+                // PIT is included in checksum since v6
+                if(receivedPitChecksum != null)
+                {
+                    rawData.AddRange(receivedPitChecksum);
+                }
+                else
+                {
+                    rawData.AddRange(pitChecksum);
+                }
+            }
+
+            if (lastBlockChecksum != null)
+            {
+                rawData.AddRange(lastBlockChecksum);
+            }
+
+            if (walletStateChecksum != null)
+            {
+                rawData.AddRange(walletStateChecksum);
+            }
+
+            if (signatureFreezeChecksum != null)
+            {
+                rawData.AddRange(signatureFreezeChecksum);
+            }
+
+            rawData.AddRange(BitConverter.GetBytes(difficulty));
+            rawData.AddRange(merged_segments);
+
+            if (lastSuperBlockChecksum != null)
+            {
+                rawData.AddRange(BitConverter.GetBytes(lastSuperBlockNum));
+                rawData.AddRange(lastSuperBlockChecksum);
+            }
+
+            if (version >= BlockVer.v7)
+            {
+                rawData.AddRange(BitConverter.GetBytes(timestamp));
+            }
+
+            if (version == BlockVer.v9)
+            {
+                if (blockProposer == null)
+                {
+                    blockProposer = signatures.First().recipientPubKeyOrAddress.addressWithChecksum;
+                }
+                rawData.AddRange(blockProposer);
+            }
+
+            if (version <= BlockVer.v2)
+            {
+                return Crypto.sha512quTrunc(rawData.ToArray());
+            }
+            else
+            {
+                return Crypto.sha512sqTrunc(rawData.ToArray());
             }
         }
 

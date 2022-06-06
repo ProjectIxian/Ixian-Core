@@ -32,7 +32,7 @@ namespace IXICore
 
         private static bool stopped = false;
 
-        private static List<BlockHeader> blockHeaderCache = new List<BlockHeader>();
+        private static List<Block> blockHeaderCache = new List<Block>();
 
         public static long lastBlockHeaderTime { get; private set; } = Clock.getTimestamp();
 
@@ -67,7 +67,7 @@ namespace IXICore
         /// </summary>
         /// <param name="block_header">Block header to save</param>
         /// <exception cref="Exception">Exception occurred while saving block header.</exception>
-        public static bool saveBlockHeader(BlockHeader block_header)
+        public static bool saveBlockHeader(Block block_header)
         {
             if(stopped)
             {
@@ -101,11 +101,12 @@ namespace IXICore
                     // insert dummy block for first block
                     if(block_num == 1)
                     {
-                        BlockHeader dummy_block_header = new BlockHeader();
+                        Block dummy_block_header = new Block();
                         dummy_block_header.blockNum = 0;
                         dummy_block_header.blockChecksum = new byte[1];
+                        dummy_block_header.walletStateChecksum = new byte[1];
 
-                        byte[] dummy_block_header_bytes = dummy_block_header.getBytes();
+                        byte[] dummy_block_header_bytes = dummy_block_header.getBytes(true, true, true, true);
                         byte[] dummy_block_header_len_bytes = BitConverter.GetBytes(dummy_block_header_bytes.Length);
 
                         fs.Write(dummy_block_header_len_bytes, 0, dummy_block_header_len_bytes.Length);
@@ -115,7 +116,7 @@ namespace IXICore
                         fs.Write(dummy_block_num_bytes, 0, dummy_block_num_bytes.Length);
                     }
 
-                    byte[] block_header_bytes = block_header.getBytes();
+                    byte[] block_header_bytes = block_header.getBytes(true, true, true, true);
                     byte[] block_header_len_bytes = BitConverter.GetBytes(block_header_bytes.Length);
 
                     fs.Write(block_header_len_bytes, 0, block_header_len_bytes.Length);
@@ -142,7 +143,7 @@ namespace IXICore
         /// <param name="block_num">Block height of the block header to fetch.</param>
         /// <exception cref="Exception">Exception occured while trying to get block header.</exception>
         /// <returns>Requested block header or null if block header doesn't exist.</returns>
-        public static BlockHeader getBlockHeader(ulong block_num)
+        public static Block getBlockHeader(ulong block_num)
         {
             if (stopped)
             {
@@ -160,7 +161,7 @@ namespace IXICore
 
             lock (lockObject)
             {
-                BlockHeader block_header = null;
+                Block block_header = null;
 
                 try
                 {
@@ -191,7 +192,7 @@ namespace IXICore
 
                         if (i == block_num)
                         {
-                            block_header = new BlockHeader(block_header_bytes);
+                            block_header = new Block(block_header_bytes, true);
 
                             if(block_header.blockNum != block_num)
                             {
@@ -224,7 +225,7 @@ namespace IXICore
         /// <summary>
         /// Returns last block header from local storage.
         /// </summary>
-        public static BlockHeader getLastBlockHeader()
+        public static Block getLastBlockHeader()
         {
             if (stopped)
             {
@@ -291,7 +292,7 @@ namespace IXICore
 
                 fs.Seek(0, SeekOrigin.Begin);
 
-                BlockHeader block_header = null;
+                Block block_header = null;
 
                 try
                 {
@@ -307,7 +308,7 @@ namespace IXICore
                         byte[] block_num_bytes = new byte[8];
                         fs.Read(block_num_bytes, 0, 8);
 
-                        BlockHeader cur_block_header = new BlockHeader(block_header_bytes);
+                        Block cur_block_header = new Block(block_header_bytes, true);
 
                         if (BitConverter.ToUInt64(block_num_bytes, 0) != cur_block_header.blockNum)
                         {
@@ -367,7 +368,7 @@ namespace IXICore
                 byte[] block_num_bytes = new byte[8];
                 fs.Read(block_num_bytes, 0, 8);
 
-                BlockHeader cur_block_header = new BlockHeader(block_header_bytes);
+                Block cur_block_header = new Block(block_header_bytes, true);
 
                 if (BitConverter.ToUInt64(block_num_bytes, 0) != cur_block_header.blockNum)
                 {
@@ -576,24 +577,24 @@ namespace IXICore
         {
             deleteCache();
 
-            BlockHeader tmp_bh = getLastBlockHeader();
+            Block tmp_bh = getLastBlockHeader();
 
-            BlockHeader bh1 = new BlockHeader();
+            Block bh1 = new Block();
             bh1.blockNum = 1;
             bh1.blockChecksum = new byte[10];
             saveBlockHeader(bh1);
 
-            BlockHeader bh2 = new BlockHeader();
+            Block bh2 = new Block();
             bh2.blockNum = 2;
             bh2.blockChecksum = new byte[10];
             saveBlockHeader(bh2);
 
-            BlockHeader bh3 = new BlockHeader();
+            Block bh3 = new Block();
             bh3.blockNum = 3;
             bh3.blockChecksum = new byte[10];
             saveBlockHeader(bh3);
 
-            BlockHeader bh4 = new BlockHeader();
+            Block bh4 = new Block();
             bh4.blockNum = 4;
             bh4.blockChecksum = new byte[10];
             saveBlockHeader(bh4);
@@ -628,7 +629,7 @@ namespace IXICore
             tmp_bh = getBlockHeader(3);
             Console.WriteLine("Got block header " + tmp_bh + ", expecting null");
 
-            BlockHeader bh5 = new BlockHeader();
+            Block bh5 = new Block();
             bh5.blockNum = 1000;
             bh5.blockChecksum = new byte[10];
             saveBlockHeader(bh5);

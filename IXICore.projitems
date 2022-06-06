@@ -14,7 +14,6 @@
     <Compile Include="$(MSBuildThisFileDirectory)Address\AddressMatcher.cs" />
     <Compile Include="$(MSBuildThisFileDirectory)API\GenericAPIServer.cs" />
     <Compile Include="$(MSBuildThisFileDirectory)Block\Block.cs" />
-    <Compile Include="$(MSBuildThisFileDirectory)Block\BlockHeader.cs" />
     <Compile Include="$(MSBuildThisFileDirectory)Block\BlockHeaderStorage.cs" />
     <Compile Include="$(MSBuildThisFileDirectory)Block\BlockSignature.cs" />
     <Compile Include="$(MSBuildThisFileDirectory)Crypto\ASNParser.cs" />

@@ -45,7 +45,7 @@ namespace IXICore
         long pitRequestTimeout = 5; // timeout (seconds) before PIT for a specific block is re-requested
         long pitCachePruneInterval = 30; // interval how often pit cache is checked and uninteresting entries removed (to save memory)
 
-        BlockHeader lastBlockHeader = null;
+        Block lastBlockHeader = null;
 
         long lastRequestedBlockTime = 0;
         long lastPITPruneTime = 0;
@@ -77,7 +77,7 @@ namespace IXICore
 
             BlockHeaderStorage.init(block_header_storage_path);
 
-            BlockHeader last_block_header = BlockHeaderStorage.getLastBlockHeader();
+            Block last_block_header = BlockHeaderStorage.getLastBlockHeader();
 
             if (last_block_header != null && last_block_header.blockNum > starting_block_height)
             {
@@ -86,7 +86,7 @@ namespace IXICore
             else
             {
                 BlockHeaderStorage.deleteCache();
-                lastBlockHeader = new BlockHeader() { blockNum = starting_block_height, blockChecksum = starting_block_checksum };
+                lastBlockHeader = new Block() { blockNum = starting_block_height, blockChecksum = starting_block_checksum };
             }
 
             running = true;
@@ -198,7 +198,7 @@ namespace IXICore
                 var tmp_txQueue = txQueue.Values.Where(x => x.applied != 0 && x.applied <= lastBlockHeader.blockNum).ToArray();
                 foreach(var tx in tmp_txQueue)
                 {
-                    BlockHeader bh = BlockHeaderStorage.getBlockHeader(tx.applied);
+                    Block bh = BlockHeaderStorage.getBlockHeader(tx.applied);
                     if(bh is null)
                     {
                         // TODO: need to wait for the block to arrive, or re-request
@@ -328,7 +328,7 @@ namespace IXICore
             }
         }
 
-        private bool processBlockHeader(BlockHeader header)
+        private bool processBlockHeader(Block header)
         {
             if (lastBlockHeader != null && lastBlockHeader.blockChecksum != null && !header.lastBlockChecksum.SequenceEqual(lastBlockHeader.blockChecksum))
             {
@@ -345,7 +345,7 @@ namespace IXICore
                     minBlockHeightReorg = lastBlockHeader.blockNum - 100;
                 }
 
-                BlockHeader prev_header = BlockHeaderStorage.getBlockHeader(minBlockHeightReorg);
+                Block prev_header = BlockHeaderStorage.getBlockHeader(minBlockHeightReorg);
 
                 if(prev_header == null)
                 {
@@ -404,13 +404,13 @@ namespace IXICore
                     try
                     {
                         pit.reconstructMinimumTree(pit_data);
-                        BlockHeader h = BlockHeaderStorage.getBlockHeader(block_num);
+                        Block h = BlockHeaderStorage.getBlockHeader(block_num);
                         if (h == null)
                         {
                             Logging.warn("TIV: Received PIT information for block {0}, but we do not have that block header in storage!", block_num);
                             return;
                         }
-                        if (!h.pitHash.SequenceEqual(pit.calculateTreeHash()))
+                        if (!h.receivedPitChecksum.SequenceEqual(pit.calculateTreeHash()))
                         {
                             Logging.error("TIV: Received PIT information for block {0}, but the PIT checksum does not match the one in the block header!", block_num);
                             // TODO: more drastic action? Maybe blacklist or something.
@@ -428,54 +428,6 @@ namespace IXICore
                     catch (Exception)
                     {
                         Logging.warn("TIV: Invalid or corrupt data received for block {0}.", block_num);
-                    }
-                }
-            }
-        }
-
-        /// <summary>
-        ///  Called when receiving multiple block headers at once from a remote endpoint
-        /// </summary>
-        /// <param name="data">byte array of received data</param>
-        /// <param name="endpoint">corresponding remote endpoint</param>
-        public void receivedBlockHeaders2(byte[] data, RemoteEndpoint endpoint)
-        {
-            using (MemoryStream m = new MemoryStream(data))
-            {
-                using (BinaryReader reader = new BinaryReader(m))
-                {
-                    bool processed = false;
-                    try
-                    {
-
-                        while (m.Position < m.Length)
-                        {
-                            int header_len = (int)reader.ReadIxiVarUInt();
-                            byte[] header_bytes = reader.ReadBytes(header_len);
-
-                            // Create the blockheader from the data and process it
-                            BlockHeader header = new BlockHeader(header_bytes);
-                            if (lastBlockHeader != null && header.blockNum <= lastBlockHeader.blockNum)
-                            {
-                                continue;
-                            }
-                            if (!processBlockHeader(header))
-                            {
-                                break;
-                            }
-                            processed = true;
-                            Thread.Yield();
-                        }
-                        if (processed)
-                        {
-                            updateBlockHeaders(true);
-                            verifyUnprocessedTransactions();
-                        }
-                    }
-                    catch (Exception)
-                    {
-                        // TODO blacklist sender
-                        updateBlockHeaders(true);
                     }
                 }
             }
@@ -507,7 +459,7 @@ namespace IXICore
                             {
                                 continue;
                             }
-                            if (!processBlockHeader(new BlockHeader(header)))
+                            if (!processBlockHeader(header))
                             {
                                 break;
                             }
@@ -574,7 +526,7 @@ namespace IXICore
             }
         }
 
-        public BlockHeader getLastBlockHeader()
+        public Block getLastBlockHeader()
         {
             return lastBlockHeader;
         }
