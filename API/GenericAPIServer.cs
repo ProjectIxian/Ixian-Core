@@ -943,7 +943,7 @@ namespace IXICore
             byte[] orig_txid = Transaction.txIdLegacyToV8((string)parameters["origtx"]);
             // no need to check if orig_txid exists as it may not (yet) because we're C/W node, TODO TODO in the future we could query a M/H node
 
-            IxiNumber fee = ConsensusConfig.transactionPrice;
+            IxiNumber fee = ConsensusConfig.forceTransactionPrice;
 
             Transaction transaction = Transaction.multisigAddTxSignature(orig_txid, fee, new Address(destWallet), IxianHandler.getHighestKnownNetworkBlockHeight());
             if (IxianHandler.addTransaction(transaction, true))
@@ -979,7 +979,7 @@ namespace IXICore
             }
 
             IxiNumber amount = 0;
-            IxiNumber fee = ConsensusConfig.transactionPrice;
+            IxiNumber fee = ConsensusConfig.forceTransactionPrice;
             Dictionary<Address, Transaction.ToEntry> toList = new Dictionary<Address, Transaction.ToEntry>(new AddressComparer());
             string[] to_split = ((string)parameters["to"]).Split('-');
             if (to_split.Length > 0)
@@ -1078,7 +1078,7 @@ namespace IXICore
             string signer = (string)parameters["signer"];
 
             Address signer_address = new Address(Base58Check.Base58CheckEncoding.DecodePlain(signer));
-            IxiNumber fee = ConsensusConfig.transactionPrice;
+            IxiNumber fee = ConsensusConfig.forceTransactionPrice;
 
             Transaction transaction = Transaction.multisigAddKeyTransaction(signer_address, fee, destWallet, IxianHandler.getHighestKnownNetworkBlockHeight());
             if (IxianHandler.addTransaction(transaction, true))
@@ -1113,7 +1113,7 @@ namespace IXICore
 
             Address signer_address = new Address(Base58Check.Base58CheckEncoding.DecodePlain(signer));
 
-            IxiNumber fee = ConsensusConfig.transactionPrice;
+            IxiNumber fee = ConsensusConfig.forceTransactionPrice;
 
             Transaction transaction = Transaction.multisigDelKeyTransaction(signer_address, fee, destWallet, IxianHandler.getHighestKnownNetworkBlockHeight());
             if (IxianHandler.addTransaction(transaction, true))
@@ -1146,7 +1146,7 @@ namespace IXICore
             }
             string sigs = (string)parameters["sigs"];
 
-            IxiNumber fee = ConsensusConfig.transactionPrice;
+            IxiNumber fee = ConsensusConfig.forceTransactionPrice;
             if (byte.TryParse(sigs, out byte reqSigs))
             {
 
@@ -1611,7 +1611,7 @@ namespace IXICore
         private object createTransactionHelper(Dictionary<string, object> parameters, bool sign_transaction = true)
         {
             IxiNumber from_amount = 0;
-            IxiNumber fee = ConsensusConfig.transactionPrice;
+            IxiNumber fee = ConsensusConfig.forceTransactionPrice;
 
             bool auto_fee = false;
             if (parameters.ContainsKey("autofee"))

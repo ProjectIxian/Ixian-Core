@@ -10,6 +10,7 @@
 // MERCHANTABILITY or FITNESS FOR A PARTICULAR PURPOSE.  See the
 // MIT License for more details.
 
+using IXICore.Meta;
 using System.Numerics;
 using System.Text;
 
@@ -110,12 +111,44 @@ namespace IXICore
         /// </summary>
         public static readonly IxiNumber minimumMasterNodeFunds = new IxiNumber("2000");
         /// <summary>
-        /// Transaction fee per kilobyte. Total transaction size is used. (Used in DLT Node executable.) TODO Omega - make it configurable
+        /// Transaction fee per kilobyte. Total transaction size is used. (Used in DLT Node executable.) 
         /// </summary>
-        public static readonly IxiNumber transactionPrice = new IxiNumber("0.00005000");
+        private static IxiNumber _forceTransactionPrice = new IxiNumber("0.00500000");
+        public static IxiNumber forceTransactionPrice
+        {
+            get
+            {
+                if(_forceTransactionPrice != 0)
+                {
+                    return _forceTransactionPrice;
+                }
+                return transactionPrice;
+            }
+
+            set
+            {
+                _forceTransactionPrice = value;
+            }
+        }
+
+        public static IxiNumber transactionPrice
+        {
+            get
+            {
+                // TODO Omega this has to be configurable; needs modifications to the mempool
+                int lastBlockVersion = IxianHandler.getLastBlockVersion();
+                if (lastBlockVersion == -1 || lastBlockVersion >= BlockVer.v10)
+                {
+                    return new IxiNumber("0.00500000");
+                }
+                return new IxiNumber("0.00005000");
+            }
+        }
+
         /// <summary>
-        /// Transaction Dust Limit. Recipient value cannot be lower than this number. TODO Omega - make it configurable
+        /// Transaction Dust Limit. Recipient value cannot be lower than this number.
         /// </summary>
+        /// TODO Omega this has to be configurable; needs modifications to the mempool
         public static readonly IxiNumber transactionDustLimit = new IxiNumber("0.01000000");
         /// <summary>
         /// Amount of transaction fees, in percent, that are deposited into the foundation wallet, which funds the development of Ixian technology. (Used in DLT Node executable.)
