@@ -374,7 +374,7 @@ namespace IXICore
                     continue;
                 }
 
-                if (entry.nodeVersion.Length > 64)
+                if (entry.nodeVersion.Length > 20)
                 {
                     continue;
                 }

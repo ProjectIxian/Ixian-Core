@@ -223,6 +223,14 @@ namespace IXICore
                 superBlockSegments.Add(entry.Key, new SuperBlockSegment(entry.Key, entry.Value.blockChecksum));
             }
 
+            txCount = block.txCount;
+
+            if (block.receivedPitChecksum != null)
+            {
+                receivedPitChecksum = new byte[block.receivedPitChecksum.Length];
+                Array.Copy(block.receivedPitChecksum, receivedPitChecksum, receivedPitChecksum.Length);
+            }
+
             // Add transactions and signatures from the old block
             foreach (byte[] txid in block.transactions)
             {
@@ -677,7 +685,7 @@ namespace IXICore
                         if(blockNum == 1)
                         {
                             signerBits = reader.ReadUInt64();
-                        }else if (blockNum % ConsensusConfig.superblockInterval == 0)
+                        }else if (blockNum != 0 && blockNum % ConsensusConfig.superblockInterval == 0)
                         {
                             signerBits = reader.ReadUInt64();
 
@@ -769,7 +777,6 @@ namespace IXICore
 
                                 if (!pitChecksum.SequenceEqual(receivedPitChecksum))
                                 {
-                                    // Block contains duplicate txid
                                     throw new Exception("Invalid PIT Checksum.");
                                 }
                             }
@@ -1173,7 +1180,11 @@ namespace IXICore
                         if (include_sb_segments)
                         {
                             writer.WriteIxiVarInt(superBlockSegments.Count);
-                            foreach (var entry in superBlockSegments)
+
+                            // TODO optimize
+                            // Ensure the correct order; superblock segments are built in the reverse order
+                            var orderedSbSegments = superBlockSegments.OrderBy(x => x.Key);
+                            foreach (var entry in orderedSbSegments)
                             {
                                 writer.WriteIxiVarInt(entry.Value.blockChecksum.Length);
                                 writer.Write(entry.Value.blockChecksum);
@@ -1219,7 +1230,8 @@ namespace IXICore
                             }
                         }
 
-                        if (!asBlockHeader)
+                        if (version < BlockVer.v6
+                            || !asBlockHeader)
                         {
                             // Write each txid
                             foreach (byte[] txid in transactions)

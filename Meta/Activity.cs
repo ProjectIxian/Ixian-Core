@@ -579,9 +579,16 @@ namespace IXICore.Meta
 
             bool result = false;
 
-            if (CoreConfig.walletNotifyCommand != "")
+            try
             {
-                IxiUtils.executeProcess(CoreConfig.walletNotifyCommand, Encoding.UTF8.GetString(activity.data), false);
+                if (CoreConfig.walletNotifyCommand != "")
+                {
+                    IxiUtils.executeProcess(CoreConfig.walletNotifyCommand, Transaction.getTxIdString(activity.data), false);
+                }
+            }
+            catch (Exception e)
+            {
+                Logging.error("Exception occurred in Activity:insertActivityInternal: " + e);
             }
 
             lock (storageLock)
@@ -614,9 +621,16 @@ namespace IXICore.Meta
         {
             bool result = false;
 
-            if (CoreConfig.walletNotifyCommand != "")
+            try
             {
-                IxiUtils.executeProcess(CoreConfig.walletNotifyCommand, Encoding.UTF8.GetString(data), false);
+                if (CoreConfig.walletNotifyCommand != "")
+                {
+                    IxiUtils.executeProcess(CoreConfig.walletNotifyCommand, Transaction.getTxIdString(data), false);
+                }
+            }
+            catch (Exception e)
+            {
+                Logging.error("Exception occurred in Activity:updateStatusInternal: " + e);
             }
 
             lock (storageLock)
@@ -656,9 +670,16 @@ namespace IXICore.Meta
         {
             bool result = false;
 
-            if (CoreConfig.walletNotifyCommand != "")
+            try
             {
-                IxiUtils.executeProcess(CoreConfig.walletNotifyCommand, Encoding.UTF8.GetString(data), false);
+                if (CoreConfig.walletNotifyCommand != "")
+                {
+                    IxiUtils.executeProcess(CoreConfig.walletNotifyCommand, Transaction.getTxIdString(data), false);
+                }
+            }
+            catch (Exception e)
+            {
+                Logging.error("Exception occurred in Activity:updateValueInternal: " + e);
             }
 
             lock (storageLock)
