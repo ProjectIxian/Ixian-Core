@@ -398,6 +398,18 @@ namespace IXICore
                 response = onGetPresence(parameters);
             }
 
+            if (methodName.Equals("pauseClient", StringComparison.OrdinalIgnoreCase))
+            {
+                NetworkClientManager.pause();
+                response = new JsonResponse { result = "Network Client paused.", error = null };
+            }
+
+            if (methodName.Equals("resumeClient", StringComparison.OrdinalIgnoreCase))
+            {
+                NetworkClientManager.resume();
+                response = new JsonResponse { result = "Network Client resumed.", error = null };
+            }
+
             bool resources = false;
 
             if (methodName.Equals("resources", StringComparison.OrdinalIgnoreCase))

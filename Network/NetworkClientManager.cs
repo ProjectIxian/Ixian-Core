@@ -30,6 +30,8 @@ namespace IXICore.Network
         private static bool running = false;
         private static ThreadLiveCheck TLC;
 
+        private static bool paused = false;
+
         // Starts the Network Client Manager.
         // If connections_to_wait_for parameter is bigger than 0, it waits until it connects to the specified number of nodes.
         // Afterwards, it starts the reconnect and keepalive threads
@@ -134,6 +136,17 @@ namespace IXICore.Network
                 return;
             reconnectThread.Abort();
             reconnectThread = null;
+        }
+
+        public static void pause()
+        {
+            paused = true;
+            isolate();
+        }
+
+        public static void resume()
+        {
+            paused = false;
         }
 
         // Immediately disconnects all clients
@@ -591,9 +604,12 @@ namespace IXICore.Network
 
             while (autoReconnect)
             {
-                TLC.Report();
+                if (!paused)
+                {
+                    TLC.Report();
 
-                reconnectClients(rnd);
+                    reconnectClients(rnd);
+                }
 
                 // Wait 5 seconds before rechecking
                 Thread.Sleep(CoreConfig.networkClientReconnectInterval);
