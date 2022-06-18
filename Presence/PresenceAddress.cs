@@ -21,7 +21,7 @@ namespace IXICore
     // An object class that describes how to contact the specific node/client
     public class PresenceAddress
     {
-        public int version = 1;
+        public int version = 2;
         public byte[] device; // Device id
         public string address; // IP and port
         public char type;   // M for MasterNode, R for RelayNode, D for Direct ip client, C for normal client

@@ -20,7 +20,7 @@ namespace IXICore
 {
     public class KeepAlive
     {
-        public int version = 1;
+        public int version = 2;
         public Address walletAddress = null;
         public byte[] deviceId = null;
         public long timestamp = 0;
