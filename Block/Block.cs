@@ -92,8 +92,8 @@ namespace IXICore
         /// </summary>
         public List<BlockSignature> frozenSignatures { get; private set; } = null;
 
-        private int signatureCount = 0; // used only when block is compacted
-        private IxiNumber totalSignerDifficulty = 0; // used only when block is compacted
+        public int signatureCount = 0; // used only when block is compacted
+        public IxiNumber totalSignerDifficulty = 0; // used only when block is compacted
 
         /// <summary>
         /// Block version.
@@ -307,6 +307,7 @@ namespace IXICore
             compacted = block.compacted;
             compactedSigs = block.compactedSigs;
             signatureCount = block.signatureCount;
+            totalSignerDifficulty = block.totalSignerDifficulty;
 
             if(block.blockProposer != null)
             {
@@ -736,19 +737,26 @@ namespace IXICore
                             // Get the signatures
                             int num_signatures = (int)reader.ReadIxiVarUInt();
 
-                            if (num_signatures > ConsensusConfig.maximumBlockSigners * 2)
+                            if (num_signatures == 0)
                             {
-                                throw new Exception("Block #" + blockNum + " has more than " + (ConsensusConfig.maximumBlockSigners * 2) + " signatures");
-                            }
-
-                            for (int i = 0; i < num_signatures; i++)
+                                signatureCount = (int)reader.ReadIxiVarUInt();
+                                totalSignerDifficulty = reader.ReadIxiVarUInt();
+                            }else
                             {
-                                int sigLen = (int)reader.ReadIxiVarUInt();
-                                BlockSignature sig = new BlockSignature(reader.ReadBytes(sigLen), false);
-
-                                if (!containsSignature(sig.recipientPubKeyOrAddress))
+                                if (num_signatures > ConsensusConfig.maximumBlockSigners * 2)
                                 {
-                                    signatures.Add(sig);
+                                    throw new Exception("Block #" + blockNum + " has more than " + (ConsensusConfig.maximumBlockSigners * 2) + " signatures");
+                                }
+
+                                for (int i = 0; i < num_signatures; i++)
+                                {
+                                    int sigLen = (int)reader.ReadIxiVarUInt();
+                                    BlockSignature sig = new BlockSignature(reader.ReadBytes(sigLen), false);
+
+                                    if (!containsSignature(sig.recipientPubKeyOrAddress))
+                                    {
+                                        signatures.Add(sig);
+                                    }
                                 }
                             }
                         }
@@ -1209,24 +1217,33 @@ namespace IXICore
                                 tmp_signatures = frozenSignatures;
                             }
 
-                            // Write the number of signatures
-                            int num_signatures = tmp_signatures.Count;
-
-                            if (num_signatures > ConsensusConfig.maximumBlockSigners * 2)
+                            if (tmp_signatures == null || tmp_signatures.Count == 0)
                             {
-                                num_signatures = ConsensusConfig.maximumBlockSigners * 2;
+                                writer.WriteIxiVarInt(0);
+                                writer.WriteIxiVarInt(signatureCount);
+                                writer.WriteIxiVarInt(SignerPowSolution.difficultyToBits(totalSignerDifficulty));
                             }
-
-                            writer.WriteIxiVarInt(num_signatures);
-
-                            // Write each signature
-                            for (int i = 0; i < num_signatures; i++)
+                            else
                             {
-                                BlockSignature signature = tmp_signatures[i];
+                                // Write the number of signatures
+                                int num_signatures = tmp_signatures.Count;
 
-                                byte[] sigBytes = signature.getBytesForBlock(true, asBlockHeader);
-                                writer.WriteIxiVarInt(sigBytes.Length);
-                                writer.Write(sigBytes);
+                                if (num_signatures > ConsensusConfig.maximumBlockSigners * 2)
+                                {
+                                    num_signatures = ConsensusConfig.maximumBlockSigners * 2;
+                                }
+
+                                writer.WriteIxiVarInt(num_signatures);
+
+                                // Write each signature
+                                for (int i = 0; i < num_signatures; i++)
+                                {
+                                    BlockSignature signature = tmp_signatures[i];
+
+                                    byte[] sigBytes = signature.getBytesForBlock(true, asBlockHeader);
+                                    writer.WriteIxiVarInt(sigBytes.Length);
+                                    writer.Write(sigBytes);
+                                }
                             }
                         }
 
@@ -1604,7 +1621,7 @@ namespace IXICore
                     {
                         if (version >= BlockVer.v10)
                         {
-                            byte[] sigBytes = sig.getBytesForBlock(false);
+                            byte[] sigBytes = sig.getBytesForBlock(false, true);
                             writer.WriteIxiVarInt(sigBytes.Length);
                             writer.Write(sigBytes);
                         }
@@ -2253,7 +2270,7 @@ namespace IXICore
         ///  Retrives the number of signatures on this block. This function might return a larger value, because it does not check for potential duplicates.
         /// </summary>
         /// <returns>Number of signatures.</returns>
-        public int getSignatureCount()
+        private int getSignatureCount()
         {
             if (compacted)
             {
@@ -2354,6 +2371,8 @@ namespace IXICore
             signatures = null;
 
             superBlockSegments = null;
+
+            txCount = (ulong)transactions.Count;
             transactions = null;
 
             return true;

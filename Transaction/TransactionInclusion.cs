@@ -56,7 +56,7 @@ namespace IXICore
         {
         }
 
-        public void start(string block_header_storage_path = "")
+        public void start(string block_header_storage_path = "", bool compacted = false)
         {
             ulong block_height = 0;
             byte[] block_checksum = null;
@@ -65,17 +65,17 @@ namespace IXICore
                 block_height = CoreConfig.bakedBlockHeight;
                 block_checksum = CoreConfig.bakedBlockChecksum;
             }
-            start(block_header_storage_path, block_height, block_checksum);
+            start(block_header_storage_path, block_height, block_checksum, compacted);
         }
 
-        public void start(string block_header_storage_path, ulong starting_block_height, byte[] starting_block_checksum)
+        public void start(string block_header_storage_path, ulong starting_block_height, byte[] starting_block_checksum, bool compacted)
         {
             if (running)
             {
                 return;
             }
 
-            BlockHeaderStorage.init(block_header_storage_path);
+            BlockHeaderStorage.init(block_header_storage_path, compacted);
 
             Block last_block_header = BlockHeaderStorage.getLastBlockHeader();
 
@@ -375,9 +375,9 @@ namespace IXICore
             if(BlockHeaderStorage.saveBlockHeader(lastBlockHeader))
             {
                 // Cleanup every n blocks
-                if ((header.blockNum > CoreConfig.maxBlockHeadersPerDatabase * 25) && header.blockNum % CoreConfig.maxBlockHeadersPerDatabase == 0)
+                if ((header.blockNum > CoreConfig.maxBlockHeadersPerDatabase * 5) && header.blockNum % CoreConfig.maxBlockHeadersPerDatabase == 0)
                 {
-                    BlockHeaderStorage.removeAllBlocksBefore(header.blockNum - (CoreConfig.maxBlockHeadersPerDatabase * 25));
+                    BlockHeaderStorage.removeAllBlocksBefore(header.blockNum - (CoreConfig.maxBlockHeadersPerDatabase * 5));
                 }
             }
 

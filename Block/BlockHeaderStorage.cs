@@ -36,7 +36,9 @@ namespace IXICore
 
         public static long lastBlockHeaderTime { get; private set; } = Clock.getTimestamp();
 
-        public static void init(string storage_path = "")
+        private static bool compacted = false;
+
+        public static void init(string storage_path = "", bool compacted = false)
         {
             if (storage_path != "")
             {
@@ -54,6 +56,7 @@ namespace IXICore
                 Directory.CreateDirectory(db_path);
             }
             stopped = false;
+            BlockHeaderStorage.compacted = compacted;
         }
 
         public static void stop()
@@ -73,6 +76,20 @@ namespace IXICore
             {
                 return false;
             }
+
+            block_header.signatureCount = block_header.getFrozenSignatureCount();
+            block_header.totalSignerDifficulty = block_header.getTotalSignerDifficulty();
+
+            if (compacted)
+            {
+                if (block_header.version >= BlockVer.v10)
+                {
+                    // nullify signatures to save space
+                    block_header.signatures = null;
+                    block_header.setFrozenSignatures(null);
+                }
+            }
+
             lock (lockObject)
             {
                 ulong block_num = block_header.blockNum;
