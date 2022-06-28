@@ -686,7 +686,9 @@ namespace IXICore
                         if(blockNum == 1)
                         {
                             signerBits = reader.ReadUInt64();
-                        }else if (blockNum != 0 && blockNum % ConsensusConfig.superblockInterval == 0)
+                        }else if (blockNum != 0
+                            && version >= BlockVer.v2
+                            && blockNum % ConsensusConfig.superblockInterval == 0)
                         {
                             signerBits = reader.ReadUInt64();
 
@@ -783,7 +785,7 @@ namespace IXICore
                                     transactionPIT.add(txid);
                                 }
 
-                                if (!pitChecksum.SequenceEqual(receivedPitChecksum))
+                                if (version >= BlockVer.v6 && !pitChecksum.SequenceEqual(receivedPitChecksum))
                                 {
                                     throw new Exception("Invalid PIT Checksum.");
                                 }

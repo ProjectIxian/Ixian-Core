@@ -122,6 +122,13 @@ namespace IXICore
             running = false;
 
             BlockHeaderStorage.stop();
+
+            // Force stopping of thread
+            if (tiv_thread == null)
+                return;
+
+            tiv_thread.Abort();
+            tiv_thread = null;
         }
 
         private bool updateBlockHeaders(bool force_update = false)

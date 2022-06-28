@@ -89,6 +89,13 @@ namespace IXICore.Meta
 
             running = false;
 
+            // Force stopping of thread
+            if (updateVerifyThread == null)
+                return true;
+
+            updateVerifyThread.Abort();
+            updateVerifyThread = null;
+
             return true;
         }
 
