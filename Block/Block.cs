@@ -636,9 +636,12 @@ namespace IXICore
 
                         blockNum = reader.ReadIxiVarUInt();
 
-                        if (bytes.Length > ConsensusConfig.maximumBlockSize)
+                        if (version >= BlockVer.v6)
                         {
-                            throw new Exception("Block #" + blockNum + " size " + bytes.Length + "B is bigger than " + ConsensusConfig.maximumBlockSize + "B.");
+                            if (bytes.Length > ConsensusConfig.maximumBlockSize)
+                            {
+                                throw new Exception("Block #" + blockNum + " size " + bytes.Length + "B is bigger than " + ConsensusConfig.maximumBlockSize + "B.");
+                            }
                         }
 
                         if (version > maxVersion)
@@ -687,7 +690,7 @@ namespace IXICore
                         {
                             signerBits = reader.ReadUInt64();
                         }else if (blockNum != 0
-                            && version >= BlockVer.v2
+                            && version >= BlockVer.v5
                             && blockNum % ConsensusConfig.superblockInterval == 0)
                         {
                             signerBits = reader.ReadUInt64();

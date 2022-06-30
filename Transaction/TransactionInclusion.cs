@@ -52,11 +52,13 @@ namespace IXICore
 
         ulong minBlockHeightReorg = 0;
 
+        bool pruneBlocks = true;
+
         public TransactionInclusion()
         {
         }
 
-        public void start(string block_header_storage_path = "", bool compacted = false)
+        public void start(string block_header_storage_path = "", bool compacted = false, bool pruneBlocks = true)
         {
             ulong block_height = 0;
             byte[] block_checksum = null;
@@ -65,11 +67,13 @@ namespace IXICore
                 block_height = CoreConfig.bakedBlockHeight;
                 block_checksum = CoreConfig.bakedBlockChecksum;
             }
-            start(block_header_storage_path, block_height, block_checksum, compacted);
+            start(block_header_storage_path, block_height, block_checksum, compacted, pruneBlocks);
         }
 
-        public void start(string block_header_storage_path, ulong starting_block_height, byte[] starting_block_checksum, bool compacted)
+        public void start(string block_header_storage_path, ulong starting_block_height, byte[] starting_block_checksum, bool compacted, bool pruneBlocks = true)
         {
+            this.pruneBlocks = pruneBlocks;
+
             if (running)
             {
                 return;
@@ -381,10 +385,13 @@ namespace IXICore
 
             if(BlockHeaderStorage.saveBlockHeader(lastBlockHeader))
             {
-                // Cleanup every n blocks
-                if ((header.blockNum > CoreConfig.maxBlockHeadersPerDatabase * 5) && header.blockNum % CoreConfig.maxBlockHeadersPerDatabase == 0)
+                if (pruneBlocks)
                 {
-                    BlockHeaderStorage.removeAllBlocksBefore(header.blockNum - (CoreConfig.maxBlockHeadersPerDatabase * 5));
+                    // Cleanup every n blocks
+                    if ((header.blockNum > CoreConfig.maxBlockHeadersPerDatabase * 5) && header.blockNum % CoreConfig.maxBlockHeadersPerDatabase == 0)
+                    {
+                        BlockHeaderStorage.removeAllBlocksBefore(header.blockNum - (CoreConfig.maxBlockHeadersPerDatabase * 5));
+                    }
                 }
             }
 

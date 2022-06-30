@@ -1226,7 +1226,7 @@ namespace IXICore
                     {
                         writer.Write(entry.Key.addressWithChecksum.Length);
                         writer.Write(entry.Key.addressWithChecksum);
-                        writer.Write(entry.Value.ToString());
+                        writer.Write(entry.Value.amount.ToString());
                     }
 
                     if (version <= 1)
