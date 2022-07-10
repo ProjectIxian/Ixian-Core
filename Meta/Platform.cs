@@ -11,6 +11,8 @@
 // MIT License for more details.
 
 using System;
+using System.Diagnostics;
+using System.IO;
 
 namespace IXICore
 {
@@ -19,6 +21,8 @@ namespace IXICore
     /// </summary>
     class Platform
     {
+        private static PerformanceCounter ramCounter = null;
+
         /// <summary>
         ///  Checks if the DLT is running on Mono.
         /// </summary>
@@ -29,6 +33,51 @@ namespace IXICore
         public static bool onMono()
         {
             return Type.GetType("Mono.Runtime") != null;
+        }
+
+        /// <summary>
+        ///  Returns the number of available RAM bytes.
+        /// </summary>
+        /// <remarks>
+        ///  If this function is called for the first time, it initializes an internal RAM PerformanceCounter
+        ///  to speed up future lookups
+        /// </remarks>
+        /// <returns>Number of available bytes in RAM as a long</returns>
+        public static long getAvailableRAM()
+        {
+            if (ramCounter == null)
+            {
+                if (IXICore.Platform.onMono() == false)
+                {
+                    ramCounter = new PerformanceCounter("Memory", "Available Bytes", true);
+                }
+                else
+                {
+                    ramCounter = new PerformanceCounter("Mono Memory", "Available Physical Memory", true);
+                }
+            }
+
+            return Convert.ToInt64(ramCounter.NextValue());
+        }
+
+        /// <summary>
+        ///  Returns the number of available disk space bytes for the current folder's root disk.
+        /// </summary>
+        /// <remarks>
+        ///  This function detects the current running folder's root path disk and returns the available free space
+        /// </remarks>
+        /// <returns>Number of available disk space bytes as a long</returns>
+        public static long getAvailableDiskSpace()
+        {
+            string driveLetter = Path.GetPathRoot(Environment.CurrentDirectory).ToLower();
+            foreach (DriveInfo drive in DriveInfo.GetDrives())
+            {
+                if (drive.IsReady && drive.Name.ToLower() == driveLetter)
+                {
+                    return drive.AvailableFreeSpace;
+                }
+            }
+            return -1;
         }
 
     }
