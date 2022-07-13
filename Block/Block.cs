@@ -1153,7 +1153,7 @@ namespace IXICore
                     }
 
                     // Write the number of transactions
-                    int num_transactions = transactions.Count;
+                    ulong num_transactions = transactions.Count > 0 ? (ulong)transactions.Count : txCount;
                     writer.WriteIxiVarInt(num_transactions);
 
                     if(receivedPitChecksum != null)

@@ -234,6 +234,7 @@ namespace IXICore.Meta
             public byte[] data;
             public ActivityStatus status;
             public ulong blockHeight;
+            public long timestamp;
         }
 
         private struct MessageDataValue
@@ -600,14 +601,14 @@ namespace IXICore.Meta
             return result;
         }
 
-        public static void updateStatus(byte[] data, ActivityStatus status, ulong block_height)
+        public static void updateStatus(byte[] data, ActivityStatus status, ulong block_height, long timestamp = 0)
         {
             // Make a copy of the block for the queue storage message processing
             QueueStorageMessage message = new QueueStorageMessage
             {
                 code = QueueStorageCode.updateStatus,
                 retryCount = 0,
-                data = new MessageDataStatus { data = data, status = status, blockHeight = block_height }
+                data = new MessageDataStatus { data = data, status = status, blockHeight = block_height, timestamp = timestamp }
             };
 
             lock (queueStatements)
@@ -617,7 +618,7 @@ namespace IXICore.Meta
         }
 
 
-        private static bool updateStatusInternal(byte[] data, ActivityStatus status, ulong block_height)
+        private static bool updateStatusInternal(byte[] data, ActivityStatus status, ulong block_height, long timestamp)
         {
             bool result = false;
 
@@ -635,16 +636,26 @@ namespace IXICore.Meta
 
             lock (storageLock)
             {
+                List<object> sqlParams = new List<object>();
+                string sql = "UPDATE `activity` SET `status` = ?";
+                sqlParams.Add(status);
+
                 if (block_height > 0)
                 {
-                    string sql = "UPDATE `activity` SET `status` = ?, `blockHeight` = ? WHERE `data` = ?";
-                    result = executeSQL(sql, status, (long)block_height, data);
+                    sql += ", `blockHeight` = ?";
+                    sqlParams.Add((long)block_height);
                 }
-                else
+
+                if (timestamp > 0)
                 {
-                    string sql = "UPDATE `activity` SET `status` = ? WHERE `data` = ?";
-                    result = executeSQL(sql, status, data);
+                    sql += ", `timestamp` = ?";
+                    sqlParams.Add(timestamp);
                 }
+
+                sql += " WHERE `data` = ?";
+                sqlParams.Add(data);
+
+                result = executeSQL(sql, sqlParams.ToArray());
             }
 
             return result;
@@ -751,7 +762,7 @@ namespace IXICore.Meta
                         else if (active_message.code == QueueStorageCode.updateStatus)
                         {
                             MessageDataStatus mds = (MessageDataStatus)active_message.data;
-                            updateStatusInternal(mds.data, mds.status, mds.blockHeight);
+                            updateStatusInternal(mds.data, mds.status, mds.blockHeight, mds.timestamp);
                         }
                         else if (active_message.code == QueueStorageCode.updateValue)
                         {

@@ -12,11 +12,28 @@
 
 using IXICore.Meta;
 using IXICore.Utils;
+using Newtonsoft.Json;
+using Newtonsoft.Json.Converters;
 using System;
 using System.IO;
 
 namespace IXICore
 {
+    public class IxiNumberConverter : JsonConverter<IxiNumber>
+    {
+        public override void WriteJson(JsonWriter writer, IxiNumber value, JsonSerializer serializer)
+        {
+            writer.WriteValue(value.ToString());
+        }
+
+        public override IxiNumber ReadJson(JsonReader reader, Type objectType, IxiNumber existingValue, bool hasExistingValue, JsonSerializer serializer)
+        {
+            string s = (string)reader.Value;
+
+            return new IxiNumber(s);
+        }
+    }
+
     public class SignerPowSolution
     {
         public static readonly ulong maxTargetBits = 0x39FFFFFFFFFFFFFF; // Highest possible value for target bits with 64 byte hashes -> lowest difficulty
@@ -39,6 +56,8 @@ namespace IXICore
             } } // checksum is not trasmitted over the network
 
         private IxiNumber _difficulty = 0;
+
+        [JsonConverter(typeof(IxiNumberConverter))]
         public IxiNumber difficulty
         {
             get
