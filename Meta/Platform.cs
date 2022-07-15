@@ -21,7 +21,9 @@ namespace IXICore
     /// </summary>
     class Platform
     {
+#if !__MOBILE__
         private static PerformanceCounter ramCounter = null;
+#endif
 
         /// <summary>
         ///  Checks if the DLT is running on Mono.
@@ -45,6 +47,7 @@ namespace IXICore
         /// <returns>Number of available bytes in RAM as a long</returns>
         public static long getAvailableRAM()
         {
+#if !__MOBILE__
             if (ramCounter == null)
             {
                 if (IXICore.Platform.onMono() == false)
@@ -58,6 +61,8 @@ namespace IXICore
             }
 
             return Convert.ToInt64(ramCounter.NextValue());
+#endif
+            return 0;
         }
 
         /// <summary>
