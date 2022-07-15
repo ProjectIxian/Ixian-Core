@@ -57,12 +57,44 @@ namespace IXICore
             }
             stopped = false;
             BlockHeaderStorage.compacted = compacted;
+
+            try
+            {
+                initCache();
+            }catch(Exception e)
+            {
+                Logging.error("Exception occured in BlockHeaderStorage.init: " + e);
+            }
+        }
+
+        private static void initCache()
+        {
+            Block lastBlock = getLastBlockHeader();
+            if (lastBlock == null)
+            {
+                return;
+            }
+
+            ulong cacheFromBlockNum = 0;
+            if (lastBlock.blockNum > ConsensusConfig.plPowBlocksValidity)
+            {
+                cacheFromBlockNum = lastBlock.blockNum - ConsensusConfig.plPowBlocksValidity;
+            }
+            for (ulong i = 0; i < ConsensusConfig.plPowBlocksValidity; i++)
+            {
+                Block b = getBlockHeader(cacheFromBlockNum + i);
+                if (b == null)
+                {
+                    break;
+                }
+                blockHeaderCache.Add(b);
+            }
         }
 
         public static void stop()
         {
             stopped = true;
-            cleanupFileCache(true);
+            cleanupCache(true);
         }
 
         /// <summary>
@@ -87,6 +119,15 @@ namespace IXICore
                     // nullify signatures to save space
                     block_header.signatures = null;
                     block_header.setFrozenSignatures(null);
+                }
+            }
+
+            lock (blockHeaderCache)
+            {
+                blockHeaderCache.Add(block_header);
+                if ((ulong)blockHeaderCache.Count > ConsensusConfig.plPowBlocksValidity)
+                {
+                    blockHeaderCache.RemoveAt(0);
                 }
             }
 
@@ -215,16 +256,6 @@ namespace IXICore
                             {
                                 block_header = null;
                                 Logging.error("Incorrect block header number #{0} received from storage, expecting #{1}", block_header.blockNum, block_num);
-                            }else
-                            {
-                                lock (blockHeaderCache)
-                                {
-                                    blockHeaderCache.Add(block_header);
-                                    if(blockHeaderCache.Count > 20)
-                                    {
-                                        blockHeaderCache.RemoveAt(0);
-                                    }
-                                }
                             }
                             break;
                         }
@@ -556,10 +587,20 @@ namespace IXICore
                     }
                 }
             }
+        }
+
+        private static void cleanupBlockHeaderCache()
+        {
             lock (blockHeaderCache)
             {
                 blockHeaderCache.Clear();
             }
+        }
+
+        private static void cleanupCache(bool force = false)
+        {
+            cleanupFileCache(force);
+            cleanupBlockHeaderCache();
         }
 
         private static FileStream getStorageFile(string path, bool cache)

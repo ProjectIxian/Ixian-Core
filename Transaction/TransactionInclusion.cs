@@ -462,11 +462,14 @@ namespace IXICore
                     bool processed = false;
                     try
                     {
-
+                        int blockCnt = 0;
+                        long startTime = Clock.getTimestampMillis();
                         while (m.Position < m.Length)
                         {
                             int header_len = (int)reader.ReadIxiVarUInt();
                             byte[] header_bytes = reader.ReadBytes(header_len);
+
+                            lastRequestedBlockTime = Clock.getTimestamp();
 
                             // Create the blockheader from the data and process it
                             Block header = new Block(header_bytes, true);
@@ -480,7 +483,9 @@ namespace IXICore
                             }
                             processed = true;
                             Thread.Yield();
+                            blockCnt++;
                         }
+                        Logging.info("Processed {0} block headers in {1}ms.", blockCnt, Clock.getTimestampMillis() - startTime);
                         if (processed)
                         {
                             updateBlockHeaders(true);

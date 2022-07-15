@@ -357,7 +357,7 @@ namespace IXICore
             if(powSolution == null)
             {
                 // do nothing
-            }else if (verifyPowSolution(powSolution, minDifficulty, wallet))
+            }else if (verifyPowSolution(powSolution, minDifficulty, wallet) || IxianHandler.status == NodeStatus.warmUp)
             {
                 validPowSolution = true;
             }
