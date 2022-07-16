@@ -446,6 +446,10 @@ namespace IXICore.Meta
                     {
                         logFileStream.Flush();
                     }
+                    else
+                    {
+                        break;
+                    }
                 }
                 Thread.Sleep(100);
             }

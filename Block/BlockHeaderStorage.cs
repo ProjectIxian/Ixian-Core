@@ -57,17 +57,9 @@ namespace IXICore
             }
             stopped = false;
             BlockHeaderStorage.compacted = compacted;
-
-            try
-            {
-                initCache();
-            }catch(Exception e)
-            {
-                Logging.error("Exception occured in BlockHeaderStorage.init: " + e);
-            }
         }
 
-        private static void initCache()
+        public static void initCache()
         {
             Block lastBlock = getLastBlockHeader();
             if (lastBlock == null)
@@ -279,6 +271,15 @@ namespace IXICore
             {
                 return null;
             }
+
+            lock (blockHeaderCache)
+            {
+                if (blockHeaderCache.Count > 0)
+                {
+                    return blockHeaderCache.Last();
+                }
+            }
+
             lock (lockObject)
             {
                 ulong file_block_num = 0;

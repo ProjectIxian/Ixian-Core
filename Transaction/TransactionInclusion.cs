@@ -54,6 +54,9 @@ namespace IXICore
 
         bool pruneBlocks = true;
 
+        ulong startingBlockHeight = 0;
+        byte[] startingBlockChecksum = null;
+
         public TransactionInclusion()
         {
         }
@@ -79,21 +82,13 @@ namespace IXICore
                 return;
             }
 
+            running = true;
+
+            startingBlockHeight = starting_block_height;
+            startingBlockChecksum = starting_block_checksum;
+
             BlockHeaderStorage.init(block_header_storage_path, compacted);
 
-            Block last_block_header = BlockHeaderStorage.getLastBlockHeader();
-
-            if (last_block_header != null && last_block_header.blockNum > starting_block_height)
-            {
-                lastBlockHeader = last_block_header;
-            }
-            else
-            {
-                BlockHeaderStorage.deleteCache();
-                lastBlockHeader = new Block() { blockNum = starting_block_height, blockChecksum = starting_block_checksum };
-            }
-
-            running = true;
             // Start the thread
             tiv_thread = new Thread(onUpdate);
             tiv_thread.Name = "TIV_Update_Thread";
@@ -102,6 +97,27 @@ namespace IXICore
 
         public void onUpdate()
         {
+            try
+            {
+                BlockHeaderStorage.initCache();
+            }
+            catch (Exception e)
+            {
+                Logging.error("Exception occured in BlockHeaderStorage.init: " + e);
+            }
+
+            Block last_block_header = BlockHeaderStorage.getLastBlockHeader();
+
+            if (last_block_header != null && last_block_header.blockNum > startingBlockHeight)
+            {
+                lastBlockHeader = last_block_header;
+            }
+            else
+            {
+                BlockHeaderStorage.deleteCache();
+                lastBlockHeader = new Block() { blockNum = startingBlockHeight, blockChecksum = startingBlockChecksum };
+            }
+
             while (running)
             {
                 if(updateBlockHeaders())
