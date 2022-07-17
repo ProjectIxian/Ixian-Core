@@ -2373,7 +2373,7 @@ namespace IXICore
             totalSignerDifficulty = getTotalSignerDifficulty();
 
             frozenSignatures = null;
-            signatures = null;
+            signatures.Clear();
 
             superBlockSegments = null;
 

@@ -109,7 +109,7 @@ namespace IXICore
                 if (block_header.version >= BlockVer.v10)
                 {
                     // nullify signatures to save space
-                    block_header.signatures = null;
+                    block_header.signatures.Clear();
                     block_header.setFrozenSignatures(null);
                 }
             }

@@ -57,6 +57,8 @@ namespace IXICore
         ulong startingBlockHeight = 0;
         byte[] startingBlockChecksum = null;
 
+        public ulong blockHeadersToRequestInChunk = 250;
+
         public TransactionInclusion()
         {
         }
@@ -103,7 +105,7 @@ namespace IXICore
             }
             catch (Exception e)
             {
-                Logging.error("Exception occured in BlockHeaderStorage.init: " + e);
+                Logging.error("Exception occurred in BlockHeaderStorage.init: " + e);
             }
 
             Block last_block_header = BlockHeaderStorage.getLastBlockHeader();
@@ -161,7 +163,7 @@ namespace IXICore
                 lastRequestedBlockTime = currentTime;
 
                 // request next blocks
-                requestBlockHeaders(lastBlockHeader.blockNum + 1, 500);
+                requestBlockHeaders(lastBlockHeader.blockNum + 1, blockHeadersToRequestInChunk);
 
                 return true;
             }
@@ -508,8 +510,9 @@ namespace IXICore
                             verifyUnprocessedTransactions();
                         }
                     }
-                    catch (Exception)
+                    catch (Exception e)
                     {
+                        Logging.error("Exception occurred while processing block header: " + e);
                         // TODO blacklist sender
                         updateBlockHeaders(true);
                     }
