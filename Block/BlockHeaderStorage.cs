@@ -101,8 +101,15 @@ namespace IXICore
                 return false;
             }
 
-            block_header.signatureCount = block_header.getFrozenSignatureCount();
-            block_header.totalSignerDifficulty = block_header.getTotalSignerDifficulty();
+            try
+            {
+                block_header.signatureCount = block_header.getFrozenSignatureCount();
+                block_header.totalSignerDifficulty = block_header.getTotalSignerDifficulty();
+            }
+            catch (Exception)
+            {
+
+            }
 
             if (compacted)
             {
@@ -405,6 +412,11 @@ namespace IXICore
             {
 
                 FileStream fs = getStorageFile(db_path, true);
+
+                if (fs.Length == 0)
+                {
+                    return false;
+                }
 
                 fs.Seek(0, SeekOrigin.Begin);
 
