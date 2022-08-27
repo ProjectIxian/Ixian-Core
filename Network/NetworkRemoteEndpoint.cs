@@ -155,6 +155,10 @@ namespace IXICore.Network
 
             remoteIP = (IPEndPoint)clientSocket.RemoteEndPoint;
             address = remoteIP.Address.ToString();
+            if (remoteIP.Address.IsIPv4MappedToIPv6 && address.StartsWith("::FFFF:", StringComparison.OrdinalIgnoreCase))
+            {
+                address = address.Substring(7);
+            }
             fullAddress = address + ":" + remoteIP.Port;
             presence = null;
             presenceAddress = null;
