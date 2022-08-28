@@ -451,7 +451,8 @@ namespace IXICore
             autoKeepalive = false;
             if (keepAliveThread != null)
             {
-                keepAliveThread.Abort();
+                keepAliveThread.Interrupt();
+                keepAliveThread.Join();
                 keepAliveThread = null;
             }
         }
@@ -459,82 +460,94 @@ namespace IXICore
         // Sends perioding keepalive network messages
         private static void keepAlive()
         {
-            forceSendKeepAlive = true;
-            while (autoKeepalive)
+            try
             {
-                TLC.Report();
-
-                int keepalive_interval = CoreConfig.serverKeepAliveInterval;
-
-                if (curNodePresenceAddress.type == 'C')
+                forceSendKeepAlive = true;
+                while (autoKeepalive)
                 {
-                    keepalive_interval = CoreConfig.clientKeepAliveInterval;
-                }
+                    TLC.Report();
 
-                // Wait x seconds before rechecking
-                for (int i = 0; i < keepalive_interval; i++)
-                {
-                    if (autoKeepalive == false)
+                    int keepalive_interval = CoreConfig.serverKeepAliveInterval;
+
+                    if (curNodePresenceAddress.type == 'C')
                     {
-                        return;
+                        keepalive_interval = CoreConfig.clientKeepAliveInterval;
                     }
-                    if (IxianHandler.publicIP == "")
+
+                    // Wait x seconds before rechecking
+                    for (int i = 0; i < keepalive_interval; i++)
                     {
-                        // do not send KA
-                        i = 0;
-                    }
-                    else
-                    {
-                        if (forceSendKeepAlive)
+                        if (autoKeepalive == false)
                         {
-                            Thread.Sleep(1000);
-                            forceSendKeepAlive = false;
-                            break;
+                            return;
                         }
+                        if (IxianHandler.publicIP == "")
+                        {
+                            // do not send KA
+                            i = 0;
+                        }
+                        else
+                        {
+                            if (forceSendKeepAlive)
+                            {
+                                Thread.Sleep(1000);
+                                forceSendKeepAlive = false;
+                                break;
+                            }
+                        }
+                        // Sleep for one second
+                        Thread.Sleep(1000);
                     }
-                    // Sleep for one second
-                    Thread.Sleep(1000);
+
+                    if (curNodePresenceAddress.type == 'W')
+                    {
+                        continue; // no need to send PL for worker nodes
+                    }
+
+                    try
+                    {
+                        KeepAlive ka = new KeepAlive()
+                        {
+                            deviceId = CoreConfig.device_id,
+                            hostName = curNodePresenceAddress.address,
+                            nodeType = curNodePresenceAddress.type,
+                            timestamp = Clock.getNetworkTimestamp(),
+                            walletAddress = IxianHandler.getWalletStorage().getPrimaryAddress(),
+                            powSolution = curNodePresence.powSolution
+                        };
+                        ka.sign(IxianHandler.getWalletStorage().getPrimaryPrivateKey());
+
+                        curNodePresenceAddress.lastSeenTime = ka.timestamp;
+                        curNodePresenceAddress.signature = ka.signature;
+
+                        byte[] ka_bytes = ka.getBytes();
+
+                        Address address = null;
+                        long last_seen = 0;
+                        byte[] device_id = null;
+
+                        // Update self presence
+                        receiveKeepAlive(ka_bytes, out address, out last_seen, out device_id, null);
+
+                        // Send this keepalive to all connected non-clients
+                        CoreProtocolMessage.broadcastProtocolMessage(new char[] { 'M', 'H', 'W' }, ProtocolMessageCode.keepAlivePresence, ka_bytes, address.addressNoChecksum);
+
+                        // Send this keepalive message to all connected clients
+                        CoreProtocolMessage.broadcastEventDataMessage(NetworkEvents.Type.keepAlive, address.addressNoChecksum, ProtocolMessageCode.keepAlivePresence, ka_bytes, address.addressNoChecksum);
+                    }
+                    catch (Exception e)
+                    {
+                        Logging.error("Exception occurred while generating keepalive: " + e);
+                    }
                 }
+            }
+            catch (ThreadInterruptedException)
+            {
 
-                if (curNodePresenceAddress.type == 'W')
-                {
-                    continue; // no need to send PL for worker nodes
-                }
-
-                try
-                {
-                    KeepAlive ka = new KeepAlive() { 
-                        deviceId = CoreConfig.device_id,
-                        hostName = curNodePresenceAddress.address,
-                        nodeType = curNodePresenceAddress.type,
-                        timestamp = Clock.getNetworkTimestamp(),
-                        walletAddress = IxianHandler.getWalletStorage().getPrimaryAddress(),
-                        powSolution = curNodePresence.powSolution
-                    };
-                    ka.sign(IxianHandler.getWalletStorage().getPrimaryPrivateKey());
-
-                    curNodePresenceAddress.lastSeenTime = ka.timestamp;
-                    curNodePresenceAddress.signature = ka.signature;
-
-                    byte[] ka_bytes = ka.getBytes();
-
-                    Address address = null;
-                    long last_seen = 0;
-                    byte[] device_id = null;
-
-                    // Update self presence
-                    receiveKeepAlive(ka_bytes, out address, out last_seen, out device_id, null);
-
-                    // Send this keepalive to all connected non-clients
-                    CoreProtocolMessage.broadcastProtocolMessage(new char[] { 'M', 'H', 'W' }, ProtocolMessageCode.keepAlivePresence, ka_bytes, address.addressNoChecksum);
-
-                    // Send this keepalive message to all connected clients
-                    CoreProtocolMessage.broadcastEventDataMessage(NetworkEvents.Type.keepAlive, address.addressNoChecksum, ProtocolMessageCode.keepAlivePresence, ka_bytes, address.addressNoChecksum);
-                }
-                catch (Exception e)
-                {
-                    Logging.error("Exception occurred while generating keepalive: " + e);
-                }
+            }
+            catch (Exception e)
+            {
+                Console.WriteLine("KeepAlive exception: {0}", e);
             }
         }
 
@@ -567,10 +580,13 @@ namespace IXICore
                     {
                         if (myPresenceType == 'M' || myPresenceType == 'H')
                         {
-                            // check balance
-                            if (IxianHandler.getWalletBalance(ka.walletAddress) < ConsensusConfig.minimumMasterNodeFunds)
+                            if (ConsensusConfig.minimumMasterNodeFunds > 0)
                             {
-                                return false;
+                                // check balance
+                                if (IxianHandler.getWalletBalance(ka.walletAddress) < ConsensusConfig.minimumMasterNodeFunds)
+                                {
+                                    return false;
+                                }
                             }
                         }
                     }

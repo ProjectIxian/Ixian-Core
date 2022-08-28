@@ -134,7 +134,8 @@ namespace IXICore.Network
             // Force stopping of reconnect thread
             if (reconnectThread == null)
                 return;
-            reconnectThread.Abort();
+            reconnectThread.Interrupt();
+            reconnectThread.Join();
             reconnectThread = null;
         }
 
@@ -600,19 +601,30 @@ namespace IXICore.Network
 
         private static void reconnectLoop()
         {
-            Random rnd = new Random();
-
-            while (autoReconnect)
+            try
             {
-                if (!paused)
+                Random rnd = new Random();
+
+                while (autoReconnect)
                 {
-                    TLC.Report();
+                    if (!paused)
+                    {
+                        TLC.Report();
 
-                    reconnectClients(rnd);
+                        reconnectClients(rnd);
+                    }
+
+                    // Wait 5 seconds before rechecking
+                    Thread.Sleep(CoreConfig.networkClientReconnectInterval);
                 }
+            }
+            catch (ThreadInterruptedException)
+            {
 
-                // Wait 5 seconds before rechecking
-                Thread.Sleep(CoreConfig.networkClientReconnectInterval);
+            }
+            catch (Exception e)
+            {
+                Console.WriteLine("ReconnectLoop exception: {0}", e);
             }
         }
 

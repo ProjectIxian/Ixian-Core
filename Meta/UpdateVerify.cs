@@ -93,7 +93,8 @@ namespace IXICore.Meta
             if (updateVerifyThread == null)
                 return true;
 
-            updateVerifyThread.Abort();
+            updateVerifyThread.Interrupt();
+            updateVerifyThread.Join();
             updateVerifyThread = null;
 
             return true;
@@ -101,36 +102,47 @@ namespace IXICore.Meta
 
         private static void updateVerifyLoop()
         {
-            using (HttpClient client = new HttpClient())
+            try
             {
-                while (running)
+                using (HttpClient client = new HttpClient())
                 {
-                    try
+                    while (running)
                     {
-                        var response = client.GetStringAsync(updateUrl).Result;
-                        string[] update_strings = response.Split(';');
-                        string version_text = update_strings[0];
-                        string signature = update_strings[1];
-                        if (!checkSignature(version_text, signature))
+                        try
                         {
-                            throw new Exception("Incorrect signature for the retrieved version text!");
+                            var response = client.GetStringAsync(updateUrl).Result;
+                            string[] update_strings = response.Split(';');
+                            string version_text = update_strings[0];
+                            string signature = update_strings[1];
+                            if (!checkSignature(version_text, signature))
+                            {
+                                throw new Exception("Incorrect signature for the retrieved version text!");
+                            }
+                            serverVersion = version_text;
+                            error = false;
                         }
-                        serverVersion = version_text;
-                        error = false;
-                    }
-                    catch (Exception ex)
-                    {
-                        Logging.warn("Error while checking {0} for version update: {1}", updateUrl, ex.Message);
-                        serverVersion = "";
-                        error = true;
-                    }
-                    finally
-                    {
-                        ready = true;
-                    }
+                        catch (Exception ex)
+                        {
+                            Logging.warn("Error while checking {0} for version update: {1}", updateUrl, ex.Message);
+                            serverVersion = "";
+                            error = true;
+                        }
+                        finally
+                        {
+                            ready = true;
+                        }
 
-                    Thread.Sleep(checkInterval * 1000);
+                        Thread.Sleep(checkInterval * 1000);
+                    }
                 }
+            }
+            catch (ThreadInterruptedException)
+            {
+
+            }
+            catch (Exception e)
+            {
+                Console.WriteLine("UpdateVerify exception: {0}", e);
             }
         }
 

@@ -50,6 +50,7 @@ namespace IXICore
 #if !__MOBILE__
             if (ramCounter == null)
             {
+#pragma warning disable CA1416 // Validate platform compatibility
                 if (IXICore.Platform.onMono() == false)
                 {
                     ramCounter = new PerformanceCounter("Memory", "Available Bytes", true);
@@ -58,6 +59,7 @@ namespace IXICore
                 {
                     ramCounter = new PerformanceCounter("Mono Memory", "Available Physical Memory", true);
                 }
+#pragma warning restore CA1416 // Validate platform compatibility
             }
 
             return Convert.ToInt64(ramCounter.NextValue());

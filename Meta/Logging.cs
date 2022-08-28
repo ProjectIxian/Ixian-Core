@@ -147,7 +147,8 @@ namespace IXICore.Meta
             }
 
             running = false;
-            thread.Abort();
+            thread.Interrupt();
+            thread.Join();
             lock (logfilename)
             {
                 logFileStream.Flush();
@@ -256,47 +257,58 @@ namespace IXICore.Meta
         // Storage thread
         private static void threadLoop()
         {
-            LogStatement statement = new LogStatement();
-            bool message_found = false;
-
-            long last_flush = Clock.getTimestamp();
-
-            while (running)
+            try
             {
-                TLC.Report();
-                message_found = false;
+                LogStatement statement = new LogStatement();
+                bool message_found = false;
 
-                lock (statements)
-                {
-                    if (statements.Count() > 0)
-                    {
-                        statement = statements[0];
-                        statements.RemoveAt(0);
-                        message_found = true;
-                    }
-                }
+                long last_flush = Clock.getTimestamp();
 
-                if (message_found)
+                while (running)
                 {
-                    log_internal(statement.severity, statement.message, statement.threadId, statement.time.ToString("MM-dd HH:mm:ss.ffff"));
-                }
-                else
-                {
-                    // Sleep for 25ms to prevent cpu waste
-                    Thread.Sleep(25);
-                }
-                long cur_time = Clock.getTimestamp();
-                if (cur_time - last_flush > 1)
-                {
-                    last_flush = cur_time;
-                    lock(logfilename)
+                    TLC.Report();
+                    message_found = false;
+
+                    lock (statements)
                     {
-                        if(logFileStream != null)
+                        if (statements.Count() > 0)
                         {
-                            logFileStream.Flush();
+                            statement = statements[0];
+                            statements.RemoveAt(0);
+                            message_found = true;
+                        }
+                    }
+
+                    if (message_found)
+                    {
+                        log_internal(statement.severity, statement.message, statement.threadId, statement.time.ToString("MM-dd HH:mm:ss.ffff"));
+                    }
+                    else
+                    {
+                        // Sleep for 25ms to prevent cpu waste
+                        Thread.Sleep(25);
+                    }
+                    long cur_time = Clock.getTimestamp();
+                    if (cur_time - last_flush > 1)
+                    {
+                        last_flush = cur_time;
+                        lock (logfilename)
+                        {
+                            if (logFileStream != null)
+                            {
+                                logFileStream.Flush();
+                            }
                         }
                     }
                 }
+            }
+            catch (ThreadInterruptedException)
+            {
+
+            }
+            catch (Exception e)
+            {
+                Console.WriteLine("Logging exception: {0}", e);
             }
         }
 

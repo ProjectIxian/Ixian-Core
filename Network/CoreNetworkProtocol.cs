@@ -347,13 +347,16 @@ namespace IXICore
                     {
                         if (node_type != 'R')
                         {
-                            // Check the wallet balance for the minimum amount of coins
-                            IxiNumber balance = IxianHandler.getWalletBalance(addr);
-                            if (balance < ConsensusConfig.minimumMasterNodeFunds)
+                            if (ConsensusConfig.minimumMasterNodeFunds > 0)
                             {
-                                Logging.warn("Hello: Rejected master node {0} due to insufficient funds: {1}", endpoint.getFullAddress(), balance.ToString());
-                                sendBye(endpoint, ProtocolByeCode.insufficientFunds, string.Format("Insufficient funds. Minimum is {0}", ConsensusConfig.minimumMasterNodeFunds), balance.ToString(), true);
-                                return false;
+                                // Check the wallet balance for the minimum amount of coins
+                                IxiNumber balance = IxianHandler.getWalletBalance(addr);
+                                if (balance < ConsensusConfig.minimumMasterNodeFunds)
+                                {
+                                    Logging.warn("Hello: Rejected master node {0} due to insufficient funds: {1}", endpoint.getFullAddress(), balance.ToString());
+                                    sendBye(endpoint, ProtocolByeCode.insufficientFunds, string.Format("Insufficient funds. Minimum is {0}", ConsensusConfig.minimumMasterNodeFunds), balance.ToString(), true);
+                                    return false;
+                                }
                             }
                         }
                         // Limit to one IP per masternode

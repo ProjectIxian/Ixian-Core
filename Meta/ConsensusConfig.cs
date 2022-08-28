@@ -109,7 +109,7 @@ namespace IXICore
         /// <summary>
         /// Minimum funds a wallet must have before it is allowed to participate in the block consensus algorithm. (used in DLT Node executable).
         /// </summary>
-        public static readonly IxiNumber minimumMasterNodeFunds = new IxiNumber("2000");
+        public static readonly IxiNumber minimumMasterNodeFunds = new IxiNumber("0");
         /// <summary>
         /// Transaction fee per kilobyte. Total transaction size is used. (Used in DLT Node executable.) 
         /// </summary>

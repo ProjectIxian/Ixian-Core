@@ -101,37 +101,48 @@ namespace IXICore
         {
             try
             {
-                BlockHeaderStorage.initCache();
+                try
+                {
+                    BlockHeaderStorage.initCache();
+                }
+                catch (Exception e)
+                {
+                    Logging.error("Exception occurred in BlockHeaderStorage.init: " + e);
+                }
+
+                Block last_block_header = BlockHeaderStorage.getLastBlockHeader();
+
+                if (last_block_header != null && last_block_header.blockNum > startingBlockHeight)
+                {
+                    lastBlockHeader = last_block_header;
+                }
+                else
+                {
+                    BlockHeaderStorage.deleteCache();
+                    lastBlockHeader = new Block() { blockNum = startingBlockHeight, blockChecksum = startingBlockChecksum };
+                }
+
+                while (running)
+                {
+                    if (updateBlockHeaders())
+                    {
+                        verifyUnprocessedTransactions();
+                        long currentTime = Clock.getTimestamp();
+                        if (currentTime - lastPITPruneTime > pitCachePruneInterval)
+                        {
+                            prunePITCache();
+                        }
+                    }
+                    Thread.Sleep(ConsensusConfig.blockGenerationInterval);
+                }
+            }
+            catch (ThreadInterruptedException)
+            {
+
             }
             catch (Exception e)
             {
-                Logging.error("Exception occurred in BlockHeaderStorage.init: " + e);
-            }
-
-            Block last_block_header = BlockHeaderStorage.getLastBlockHeader();
-
-            if (last_block_header != null && last_block_header.blockNum > startingBlockHeight)
-            {
-                lastBlockHeader = last_block_header;
-            }
-            else
-            {
-                BlockHeaderStorage.deleteCache();
-                lastBlockHeader = new Block() { blockNum = startingBlockHeight, blockChecksum = startingBlockChecksum };
-            }
-
-            while (running)
-            {
-                if(updateBlockHeaders())
-                {
-                    verifyUnprocessedTransactions();
-                    long currentTime = Clock.getTimestamp();
-                    if(currentTime - lastPITPruneTime > pitCachePruneInterval)
-                    {
-                        prunePITCache();
-                    }
-                }
-                Thread.Sleep(ConsensusConfig.blockGenerationInterval);
+                Console.WriteLine("OnUpdate exception: {0}", e);
             }
         }
 
@@ -149,7 +160,8 @@ namespace IXICore
             if (tiv_thread == null)
                 return;
 
-            tiv_thread.Abort();
+            tiv_thread.Interrupt();
+            tiv_thread.Join();
             tiv_thread = null;
         }
 

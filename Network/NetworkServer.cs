@@ -107,7 +107,8 @@ namespace IXICore.Network
             }
             continueRunning = false;
 
-            netControllerThread.Abort();
+            netControllerThread.Interrupt();
+            netControllerThread.Join();
             netControllerThread = null;
 
             // Close blocking socket
@@ -176,61 +177,73 @@ namespace IXICore.Network
 
         private static void networkOpsLoop(object data)
         {
-            if (data is NetOpsData)
+            try
             {
-                try
+                if (data is NetOpsData)
                 {
-                    NetOpsData netOpsData = (NetOpsData)data;
-                    listener = new TcpListener(netOpsData.listenAddress);
-                    listener.Start();
-                }
-                catch (Exception e)
-                {
-                    Logging.error("Exception starting server: {0}", e.ToString());
-                    return;
-                }
-            }
-            else
-            {
-                Logging.error("NetworkServer.networkOpsLoop called with incorrect data object. Expected 'NetOpsData', got '{0}'", data.GetType().ToString());
-                return;
-            }
-            // housekeeping tasks
-            while (continueRunning)
-            {
-                TLC.Report();
-                try
-                {
-                    handleDisconnectedClients();
-                }catch(Exception e)
-                {
-                    Logging.error("Fatal exception occurred in NetworkServer.networkOpsLoop: " + e);
-                }
-                // Use a blocking mechanism
-                try
-                {
-                    Socket handlerSocket = listener.AcceptSocket();
-                    acceptConnection(handlerSocket);
-                }
-                catch (SocketException)
-                {
-                    // Could be an interupt request
-                }
-                catch (Exception)
-                {
-                    if (continueRunning)
+                    try
                     {
-                        Logging.error("Exception occurred in NetworkServer while trying to accept socket connection.");
-                        restartNetworkOperations();
+                        NetOpsData netOpsData = (NetOpsData)data;
+                        listener = new TcpListener(netOpsData.listenAddress);
+                        listener.Start();
                     }
+                    catch (Exception e)
+                    {
+                        Logging.error("Exception starting server: {0}", e.ToString());
+                        return;
+                    }
+                }
+                else
+                {
+                    Logging.error("NetworkServer.networkOpsLoop called with incorrect data object. Expected 'NetOpsData', got '{0}'", data.GetType().ToString());
                     return;
                 }
+                // housekeeping tasks
+                while (continueRunning)
+                {
+                    TLC.Report();
+                    try
+                    {
+                        handleDisconnectedClients();
+                    }
+                    catch (Exception e)
+                    {
+                        Logging.error("Fatal exception occurred in NetworkServer.networkOpsLoop: " + e);
+                    }
+                    // Use a blocking mechanism
+                    try
+                    {
+                        Socket handlerSocket = listener.AcceptSocket();
+                        acceptConnection(handlerSocket);
+                    }
+                    catch (SocketException)
+                    {
+                        // Could be an interupt request
+                    }
+                    catch (Exception)
+                    {
+                        if (continueRunning)
+                        {
+                            Logging.error("Exception occurred in NetworkServer while trying to accept socket connection.");
+                            restartNetworkOperations();
+                        }
+                        return;
+                    }
 
-                // Sleep to prevent cpu usage
-                Thread.Sleep(100);
+                    // Sleep to prevent cpu usage
+                    Thread.Sleep(100);
+
+                }
+                Logging.info("Server listener thread ended.");
+            }
+            catch (ThreadInterruptedException)
+            {
 
             }
-            Logging.info("Server listener thread ended.");
+            catch (Exception e)
+            {
+                Console.WriteLine("NetworkOpsLoop exception: {0}", e);
+            }
         }
 
         /// <summary>
