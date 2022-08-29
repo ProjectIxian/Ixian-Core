@@ -13,6 +13,7 @@
 using System;
 using System.Diagnostics;
 using System.IO;
+using System.Runtime.InteropServices;
 
 namespace IXICore
 {
@@ -24,6 +25,53 @@ namespace IXICore
 #if !__MOBILE__
         private static PerformanceCounter ramCounter = null;
 #endif
+
+        /// <summary>
+        /// Get the Operating System name and Version.
+        /// Example: "Microsoft Windows 10.0.10586"
+        /// Example: "Linux 5.15.0-46-generic #49-Ubuntu SMP Thu Aug 4 18:03:25 UTC 2022"
+        /// </summary>
+        /// <returns>OS name and version</returns>
+        public static string getOSNameAndVersion()
+        {
+            return RuntimeInformation.OSDescription;
+        }
+
+        /// <summary>
+        /// Checks if the DLT is running on a Windows operating system.
+        /// </summary>
+        /// <returns>True, if the program is executing on Windows</returns>
+        public static bool onWindows()
+        {
+            return RuntimeInformation.IsOSPlatform(OSPlatform.Windows);
+        }
+
+        /// <summary>
+        /// Checks if the DLT is running on a Linux operating system.
+        /// </summary>
+        /// <returns>True, if the program is executing on Linux</returns>
+        public static bool onLinux()
+        {
+            return RuntimeInformation.IsOSPlatform(OSPlatform.Linux);
+        }
+
+        /// <summary>
+        /// Checks if the DLT is running on a BSD operating system.
+        /// </summary>
+        /// <returns>True, if the program is executing on BSD</returns>
+        public static bool onBSD()
+        {
+            return RuntimeInformation.IsOSPlatform(OSPlatform.FreeBSD);
+        }
+
+        /// <summary>
+        /// Checks if the DLT is running on a Mac operating system.
+        /// </summary>
+        /// <returns>True, if the program is executing on Mac</returns>
+        public static bool onMac()
+        {
+            return RuntimeInformation.IsOSPlatform(OSPlatform.OSX);
+        }
 
         /// <summary>
         ///  Checks if the DLT is running on Mono.

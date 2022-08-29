@@ -42,8 +42,8 @@ namespace IXICore.Utils
         // Handle Windows OS-specific calls
         static public void prepareWindowsConsole()
         {
-            // Ignore if we're on Mono
-            if (IXICore.Platform.onMono())
+            // Ignore if we're not on Windows
+            if (!Platform.onWindows())
                 return;
 
             installUnhandledExceptionHandler();
