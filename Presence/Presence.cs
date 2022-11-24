@@ -354,10 +354,12 @@ namespace IXICore
 
             bool validPowSolution = false;
 
-            if(powSolution == null)
+            if (powSolution == null)
             {
                 // do nothing
-            }else if (verifyPowSolution(powSolution, minDifficulty, wallet) || IxianHandler.status == NodeStatus.warmUp)
+            }
+            else if (IxianHandler.status == NodeStatus.warmUp
+                || verifyPowSolution(powSolution, minDifficulty, wallet))
             {
                 validPowSolution = true;
             }

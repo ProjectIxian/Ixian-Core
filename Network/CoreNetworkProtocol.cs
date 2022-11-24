@@ -736,7 +736,7 @@ namespace IXICore
             Cuckoo filter = new Cuckoo(my_addresses.Count());
             foreach(var addr in my_addresses)
             {
-                filter.Add(addr.addressWithChecksum);
+                filter.Add(addr.addressNoChecksum);
             }
             byte[] filter_data = filter.getFilterBytes();
             byte[] event_data = NetworkEvents.prepareEventMessageData(NetworkEvents.Type.transactionFrom, filter_data);

@@ -86,8 +86,7 @@ namespace IXICore.Utils
 
         private void calculateIndexAndTag(byte[] item, ref int index, ref byte[] tag)
         {
-            // TODO TODO Omega upgrade to sha3
-            byte[] hash = Crypto.sha256(item);
+            byte[] hash = CryptoManager.lib.sha3_512(item);
             tag = new byte[itemSize];
             Array.Copy(hash, hash.Length - itemSize, tag, 0, itemSize);
             if(tag.All(b => b == 0))
@@ -115,8 +114,7 @@ namespace IXICore.Utils
 
         private int calculateAltIndex(int idx1, byte[] tag)
         {
-            // TODO TODO Omega upgrade to sha3
-            byte[] tag_hash = Crypto.sha256(tag);
+            byte[] tag_hash = CryptoManager.lib.sha3_512(tag);
             ulong raw_hash;
             if (itemSize == 4)
             {

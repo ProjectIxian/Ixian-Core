@@ -176,6 +176,7 @@ namespace IXICore
         /// <summary>
         ///  Indicator to show if the block has already been compacted through the superblock functionality.
         /// </summary>
+        public bool compacting = false;
         public bool compacted = false;
         /// <summary>
         ///  Indicator to show if the block's signatures have been compacted through the superblock functionality.
@@ -305,6 +306,7 @@ namespace IXICore
             fromLocalStorage = block.fromLocalStorage;
 
             compacted = block.compacted;
+            compacting = block.compacting;
             compactedSigs = block.compactedSigs;
             signatureCount = block.signatureCount;
             totalSignerDifficulty = block.totalSignerDifficulty;
@@ -2362,15 +2364,18 @@ namespace IXICore
         /// <returns>True if compaction was performed, false if the block is already compacted.</returns>
         public bool compact()
         {
-            if(compacted)
+            if(compacting || compacted)
             {
                 return false;
             }
 
-            compacted = true;
+            compacting = true;
 
+            // The following two functions should be executed before compacted is set to true
             signatureCount = getFrozenSignatureCount();
             totalSignerDifficulty = getTotalSignerDifficulty();
+
+            compacted = true;
 
             frozenSignatures = null;
             signatures.Clear();

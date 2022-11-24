@@ -257,7 +257,8 @@ namespace IXICore
             {
                 // do nothing
             }
-            else if (!Presence.verifyPowSolution(powSolution, minDifficulty, walletAddress))
+            else if (IxianHandler.status != NodeStatus.warmUp
+                && !Presence.verifyPowSolution(powSolution, minDifficulty, walletAddress))
             {
                 Logging.warn("Invalid pow solution received in verifyPresence, verification failed for {0}.", walletAddress.ToString());
                 powSolution = null;
