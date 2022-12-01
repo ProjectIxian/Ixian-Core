@@ -151,7 +151,7 @@ namespace IXICore
                                         PeerStorage.addPeerToPeerList(addr.address, presence.wallet, Clock.getTimestamp(), 0, 0, 0);
                                     }
 
-                                    //Console.WriteLine("[PL] Last time updated for {0}", addr.device);
+                                    //Logging.info("[PL] Last time updated for {0}", addr.device);
                                 }
                             }
                             else
@@ -191,7 +191,7 @@ namespace IXICore
                 else
                 {
                     // Insert a new entry
-                    //Console.WriteLine("[PL] Adding new entry for {0}", presence.wallet);
+                    //Logging.info("[PL] Adding new entry for {0}", presence.wallet);
 
                     foreach (PresenceAddress pa in presence.addresses)
                     {
@@ -232,7 +232,7 @@ namespace IXICore
         {
             lock (presences)
             {
-                //Console.WriteLine("[PL] Received removal for {0} : {1}", wallet_address, address.address);
+                //Logging.info("[PL] Received removal for {0} : {1}", wallet_address, address.address);
                 Presence listEntry = presences.Find(x => x.wallet.addressNoChecksum.SequenceEqual(wallet_address.addressNoChecksum));
 
                 // Check if there is such an entry in the presence list
@@ -263,7 +263,7 @@ namespace IXICore
                         }
 
                         int address_count = listEntry.addresses.Count;
-                        //Console.WriteLine("[PL] --->> Addresses: {0}", address_count);
+                        //Logging.info("[PL] --->> Addresses: {0}", address_count);
 
                         if (address_count == 0)
                         {
@@ -547,7 +547,7 @@ namespace IXICore
             }
             catch (Exception e)
             {
-                Console.WriteLine("KeepAlive exception: {0}", e);
+                Logging.error("KeepAlive exception: {0}", e);
             }
         }
 
@@ -677,7 +677,7 @@ namespace IXICore
                                 }
                             }
                             pa.type = ka.nodeType;
-                            //Console.WriteLine("[PL] LASTSEEN for {0} - {1} set to {2}", hostname, deviceid, pa.lastSeenTime);
+                            //Logging.info("[PL] LASTSEEN for {0} - {1} set to {2}", hostname, deviceid, pa.lastSeenTime);
                             return true;
                         }
                     }

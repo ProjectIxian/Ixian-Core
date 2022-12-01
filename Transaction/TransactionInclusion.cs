@@ -142,7 +142,7 @@ namespace IXICore
             }
             catch (Exception e)
             {
-                Console.WriteLine("OnUpdate exception: {0}", e);
+                Logging.error("OnUpdate exception: {0}", e);
             }
         }
 

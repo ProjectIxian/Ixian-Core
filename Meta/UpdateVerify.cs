@@ -142,7 +142,7 @@ namespace IXICore.Meta
             }
             catch (Exception e)
             {
-                Console.WriteLine("UpdateVerify exception: {0}", e);
+                Logging.error("UpdateVerify exception: {0}", e);
             }
         }
 

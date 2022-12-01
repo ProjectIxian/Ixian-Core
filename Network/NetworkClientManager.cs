@@ -624,7 +624,7 @@ namespace IXICore.Network
             }
             catch (Exception e)
             {
-                Console.WriteLine("ReconnectLoop exception: {0}", e);
+                Logging.error("ReconnectLoop exception: {0}", e);
             }
         }
 

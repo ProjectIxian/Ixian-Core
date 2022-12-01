@@ -671,34 +671,34 @@ namespace IXICore
             saveBlockHeader(bh4);
 
             tmp_bh = getLastBlockHeader();
-            Console.WriteLine("Got block header #" + tmp_bh.blockNum + ", expecting 4");
+            Logging.info("Got block header #" + tmp_bh.blockNum + ", expecting 4");
 
             tmp_bh = getBlockHeader(1);
-            Console.WriteLine("Got block header #" + tmp_bh.blockNum + ", expecting 1");
+            Logging.info("Got block header #" + tmp_bh.blockNum + ", expecting 1");
 
             tmp_bh = getBlockHeader(2);
-            Console.WriteLine("Got block header #" + tmp_bh.blockNum + ", expecting 2");
+            Logging.info("Got block header #" + tmp_bh.blockNum + ", expecting 2");
 
             tmp_bh = getBlockHeader(3);
-            Console.WriteLine("Got block header #" + tmp_bh.blockNum + ", expecting 3");
+            Logging.info("Got block header #" + tmp_bh.blockNum + ", expecting 3");
 
             tmp_bh = getBlockHeader(4);
-            Console.WriteLine("Got block header #" + tmp_bh.blockNum + ", expecting 4");
+            Logging.info("Got block header #" + tmp_bh.blockNum + ", expecting 4");
 
             removeAllBlocksAfter(2);
-            Console.WriteLine("Truncated database to 2");
+            Logging.info("Truncated database to 2");
 
             tmp_bh = getBlockHeader(1);
-            Console.WriteLine("Got block header #" + tmp_bh.blockNum + ", expecting 1");
+            Logging.info("Got block header #" + tmp_bh.blockNum + ", expecting 1");
 
             tmp_bh = getBlockHeader(2);
-            Console.WriteLine("Got block header #" + tmp_bh.blockNum + ", expecting 2");
+            Logging.info("Got block header #" + tmp_bh.blockNum + ", expecting 2");
 
             tmp_bh = getLastBlockHeader();
-            Console.WriteLine("Got block header #" + tmp_bh.blockNum + ", expecting 2");
+            Logging.info("Got block header #" + tmp_bh.blockNum + ", expecting 2");
 
             tmp_bh = getBlockHeader(3);
-            Console.WriteLine("Got block header " + tmp_bh + ", expecting null");
+            Logging.info("Got block header " + tmp_bh + ", expecting null");
 
             Block bh5 = new Block();
             bh5.blockNum = 1000;
@@ -706,7 +706,7 @@ namespace IXICore
             saveBlockHeader(bh5);
 
             tmp_bh = getLastBlockHeader();
-            Console.WriteLine("Got block header #" + tmp_bh.blockNum + ", expecting 1000");
+            Logging.info("Got block header #" + tmp_bh.blockNum + ", expecting 1000");
 
             bh5.blockNum = 1001;
             bh5.blockChecksum = new byte[10];
@@ -715,46 +715,46 @@ namespace IXICore
             saveBlockHeader(bh3);
 
             tmp_bh = getLastBlockHeader();
-            Console.WriteLine("Got block header #" + tmp_bh.blockNum + ", expecting 1001");
+            Logging.info("Got block header #" + tmp_bh.blockNum + ", expecting 1001");
 
             tmp_bh = getBlockHeader(1);
-            Console.WriteLine("Got block header #" + tmp_bh.blockNum + ", expecting 1");
+            Logging.info("Got block header #" + tmp_bh.blockNum + ", expecting 1");
 
             tmp_bh = getBlockHeader(2);
-            Console.WriteLine("Got block header #" + tmp_bh.blockNum + ", expecting 2");
+            Logging.info("Got block header #" + tmp_bh.blockNum + ", expecting 2");
 
             tmp_bh = getBlockHeader(3);
-            Console.WriteLine("Got block header #" + tmp_bh.blockNum + ", expecting 3");
+            Logging.info("Got block header #" + tmp_bh.blockNum + ", expecting 3");
 
             tmp_bh = getBlockHeader(1000);
-            Console.WriteLine("Got block header #" + tmp_bh.blockNum + ", expecting 1000");
+            Logging.info("Got block header #" + tmp_bh.blockNum + ", expecting 1000");
 
             tmp_bh = getBlockHeader(1001);
-            Console.WriteLine("Got block header #" + tmp_bh.blockNum + ", expecting 1001");
+            Logging.info("Got block header #" + tmp_bh.blockNum + ", expecting 1001");
 
             removeAllBlocksAfter(1000);
-            Console.WriteLine("Truncated database to 1000");
+            Logging.info("Truncated database to 1000");
 
             tmp_bh = getLastBlockHeader();
-            Console.WriteLine("Got block header #" + tmp_bh.blockNum + ", expecting 1000");
+            Logging.info("Got block header #" + tmp_bh.blockNum + ", expecting 1000");
 
             removeAllBlocksAfter(999);
-            Console.WriteLine("Truncated database to 999");
+            Logging.info("Truncated database to 999");
 
             tmp_bh = getLastBlockHeader();
-            Console.WriteLine("Got block header #" + tmp_bh.blockNum + ", expecting 3");
+            Logging.info("Got block header #" + tmp_bh.blockNum + ", expecting 3");
 
             saveBlockHeader(bh4);
 
             tmp_bh = getBlockHeader(4);
-            Console.WriteLine("Got block header #" + tmp_bh.blockNum + ", expecting 4");
+            Logging.info("Got block header #" + tmp_bh.blockNum + ", expecting 4");
 
             bh5.blockNum = 6;
             bh5.blockChecksum = new byte[10];
             saveBlockHeader(bh5);
 
             tmp_bh = getLastBlockHeader();
-            Console.WriteLine("Got block header #" + tmp_bh.blockNum + ", expecting 4");
+            Logging.info("Got block header #" + tmp_bh.blockNum + ", expecting 4");
         }
     }
 }

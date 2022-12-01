@@ -133,10 +133,6 @@ namespace IXICore
         {
             try
             {
-                if (ConsoleHelpers.verboseConsoleOutput)
-                    Console.Write("*");
-
-
                 string post_data = "";
                 string method_name = "";
                 Dictionary<string, object> method_params = null;

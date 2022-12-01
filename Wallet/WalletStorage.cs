@@ -1388,9 +1388,11 @@ namespace IXICore
 
             Console.WriteLine();
             Console.Write("Your IXIAN address is ");
-            Console.ForegroundColor = ConsoleColor.Green;
+            if (OperatingSystem.IsWindows())
+                Console.ForegroundColor = ConsoleColor.Green;
             Console.WriteLine(address.ToString());
-            Console.ResetColor();
+            if (OperatingSystem.IsWindows()) 
+                Console.ResetColor();
             Console.WriteLine();
 
             // Write the new wallet data to the file

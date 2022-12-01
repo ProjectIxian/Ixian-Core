@@ -61,7 +61,7 @@ namespace IXICore
         /// <returns>True, if the program is executing on BSD</returns>
         public static bool onBSD()
         {
-            return RuntimeInformation.IsOSPlatform(OSPlatform.FreeBSD);
+            return false;// RuntimeInformation.IsOSPlatform(OSPlatform.FreeBSD);
         }
 
         /// <summary>

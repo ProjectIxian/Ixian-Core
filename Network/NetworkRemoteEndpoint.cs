@@ -383,7 +383,7 @@ namespace IXICore.Network
             }
             catch (Exception e)
             {
-                Console.WriteLine("RecvLoop exception: {0}", e);
+                Logging.error("RecvLoop exception: {0}", e);
             }
             state = RemoteEndpointState.Closed;
             running = false;
@@ -573,7 +573,7 @@ namespace IXICore.Network
             }
             catch (Exception e)
             {
-                Console.WriteLine("SendLoop exception: {0}", e);
+                Logging.error("SendLoop exception: {0}", e);
             }
             state = RemoteEndpointState.Closed;
             running = false;

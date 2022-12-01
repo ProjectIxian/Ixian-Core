@@ -242,7 +242,7 @@ namespace IXICore.Network
             }
             catch (Exception e)
             {
-                Console.WriteLine("NetworkOpsLoop exception: {0}", e);
+                Logging.error("NetworkOpsLoop exception: {0}", e);
             }
         }
 

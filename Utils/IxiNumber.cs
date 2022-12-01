@@ -10,6 +10,7 @@
 // MERCHANTABILITY or FITNESS FOR A PARTICULAR PURPOSE.  See the
 // MIT License for more details.
 
+using IXICore.Meta;
 using System;
 using System.Linq;
 using System.Numerics;
@@ -414,72 +415,67 @@ namespace IXICore
             long num4 = 2;
             int num5 = 2;
 
-            Console.WriteLine(num1);
-            Console.WriteLine(num2);
-            Console.WriteLine("div: " + (num1 / num2).ToString());
-            Console.WriteLine("mul: " + (num1 * num2).ToString());
-            Console.WriteLine("div: " + (num1 / num3).ToString());
-            Console.WriteLine("mul: " + (num1 * num3).ToString());
-            Console.WriteLine("div: " + (num1 / num4).ToString());
-            Console.WriteLine("mul: " + (num1 * num4).ToString());
-            Console.WriteLine("div: " + (num1 / num5).ToString());
-            Console.WriteLine("mul: " + (num1 * num5).ToString());
-            Console.WriteLine("");
+            Logging.info(num1.ToString());
+            Logging.info(num2.ToString());
+            Logging.info("div: " + (num1 / num2).ToString());
+            Logging.info("mul: " + (num1 * num2).ToString());
+            Logging.info("div: " + (num1 / num3).ToString());
+            Logging.info("mul: " + (num1 * num3).ToString());
+            Logging.info("div: " + (num1 / num4).ToString());
+            Logging.info("mul: " + (num1 * num4).ToString());
+            Logging.info("div: " + (num1 / num5).ToString());
+            Logging.info("mul: " + (num1 * num5).ToString());
 
             num1 = new IxiNumber("0.5");
             num2 = new IxiNumber("2");
 
-            Console.WriteLine(num1);
-            Console.WriteLine(num2);
-            Console.WriteLine("div: " + (num1 / num2).ToString());
-            Console.WriteLine("mul: " + (num1 * num2).ToString());
-            Console.WriteLine("div: " + (num1 / num3).ToString());
-            Console.WriteLine("mul: " + (num1 * num3).ToString());
-            Console.WriteLine("div: " + (num1 / num4).ToString());
-            Console.WriteLine("mul: " + (num1 * num4).ToString());
-            Console.WriteLine("div: " + (num1 / num5).ToString());
-            Console.WriteLine("mul: " + (num1 * num5).ToString());
-            Console.WriteLine("");
+            Logging.info(num1.ToString());
+            Logging.info(num2.ToString());
+            Logging.info("div: " + (num1 / num2).ToString());
+            Logging.info("mul: " + (num1 * num2).ToString());
+            Logging.info("div: " + (num1 / num3).ToString());
+            Logging.info("mul: " + (num1 * num3).ToString());
+            Logging.info("div: " + (num1 / num4).ToString());
+            Logging.info("mul: " + (num1 * num4).ToString());
+            Logging.info("div: " + (num1 / num5).ToString());
+            Logging.info("mul: " + (num1 * num5).ToString());
 
             num1 = new IxiNumber(2);
             num2 = new IxiNumber(2);
 
-            Console.WriteLine(num1);
-            Console.WriteLine(num2);
-            Console.WriteLine("div: " + (num1 / num2).ToString());
-            Console.WriteLine("mul: " + (num1 * num2).ToString());
-            Console.WriteLine("div: " + (num1 / num3).ToString());
-            Console.WriteLine("mul: " + (num1 * num3).ToString());
-            Console.WriteLine("div: " + (num1 / num4).ToString());
-            Console.WriteLine("mul: " + (num1 * num4).ToString());
-            Console.WriteLine("div: " + (num1 / num5).ToString());
-            Console.WriteLine("mul: " + (num1 * num5).ToString());
-            Console.WriteLine("");
+            Logging.info(num1.ToString());
+            Logging.info(num2.ToString());
+            Logging.info("div: " + (num1 / num2).ToString());
+            Logging.info("mul: " + (num1 * num2).ToString());
+            Logging.info("div: " + (num1 / num3).ToString());
+            Logging.info("mul: " + (num1 * num3).ToString());
+            Logging.info("div: " + (num1 / num4).ToString());
+            Logging.info("mul: " + (num1 * num4).ToString());
+            Logging.info("div: " + (num1 / num5).ToString());
+            Logging.info("mul: " + (num1 * num5).ToString());
 
             num1 = new IxiNumber("1.23456789");
             num2 = new IxiNumber("2.34567890");
             double num1d = 1.23456789;
             double num2d = 2.34567890;
 
-            Console.WriteLine(num1);
-            Console.WriteLine(num2);
-            Console.WriteLine("div: " + (num1 / num2).ToString());
-            Console.WriteLine("mul: " + (num1 * num2).ToString());
-            Console.WriteLine("div: " + (num1d / num2d).ToString());
-            Console.WriteLine("mul: " + (num1d * num2d).ToString());
-            Console.WriteLine("");
+            Logging.info(num1.ToString());
+            Logging.info(num2.ToString());
+            Logging.info("div: " + (num1 / num2).ToString());
+            Logging.info("mul: " + (num1 * num2).ToString());
+            Logging.info("div: " + (num1d / num2d).ToString());
+            Logging.info("mul: " + (num1d * num2d).ToString());
 
             num1 = new IxiNumber("1.23456789");
             num2 = new IxiNumber("2");
             num3 = 2;
 
-            Console.WriteLine(num1);
-            Console.WriteLine(num2);
-            Console.WriteLine("div: " + (num1 / num2).ToString());
-            Console.WriteLine("mul: " + (num1 * num2).ToString());
-            Console.WriteLine("div: " + (num1 / num3).ToString());
-            Console.WriteLine("mul: " + (num1 * num3).ToString());
-            Console.WriteLine("");
+            Logging.info(num1.ToString());
+            Logging.info(num2.ToString());
+            Logging.info("div: " + (num1 / num2).ToString());
+            Logging.info("mul: " + (num1 * num2).ToString());
+            Logging.info("div: " + (num1 / num3).ToString());
+            Logging.info("mul: " + (num1 * num3).ToString());
         }
 
         public int CompareTo(IxiNumber other)
