@@ -787,10 +787,20 @@ namespace IXICore
                                         throw new Exception("Block #" + blockNum + " contains duplicate txid");
                                     }
                                     transactions.Add(txid);
-                                    transactionPIT.add(txid);
+                                    if (version < BlockVer.v8)
+                                    {
+                                        transactionPIT.add(UTF8Encoding.UTF8.GetBytes(Transaction.getTxIdString(txid)));
+                                    }
+                                    else
+                                    {
+                                        transactionPIT.add(txid);
+                                    }
+
                                 }
 
-                                if (version >= BlockVer.v6 && !pitChecksum.SequenceEqual(receivedPitChecksum))
+                                if (receivedPitChecksum != null
+                                    && version >= BlockVer.v6
+                                    && !pitChecksum.SequenceEqual(receivedPitChecksum))
                                 {
                                     throw new Exception("Invalid PIT Checksum.");
                                 }
@@ -2045,7 +2055,8 @@ namespace IXICore
         /// <returns>True if all signatures are valid and (optionally) match the block's checksum.</returns>
         public bool verifyBlockProposer()
         {
-            if(version >= BlockVer.v10)
+            if(version < BlockVer.v9
+                || version >= BlockVer.v10)
             {
                 return true;
             }
