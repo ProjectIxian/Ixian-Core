@@ -16,6 +16,7 @@ using System;
 using System.Collections.Generic;
 using System.IO;
 using System.Linq;
+using System.Security.Policy;
 using System.Text;
 
 namespace IXICore
@@ -230,7 +231,8 @@ namespace IXICore
             ///  When a transaction involving a 'Multi-Signature' is first posted, it only has one signature, so this stub transaction is used to
             ///  add signatures so that private key sharing is not required among signers.
             /// </summary>
-            MultisigAddTxSignature = 6
+            MultisigAddTxSignature = 6,
+            RegName = 7
         }
 
         /// <summary>
@@ -527,6 +529,22 @@ namespace IXICore
         {
             setVersion();
 
+            type = tx_type;
+
+            timeStamp = Clock.getNetworkTimestamp();
+            amount = new IxiNumber("0");
+            fee = new IxiNumber("0");
+            blockHeight = 0;
+
+            nonce = getRandomNonce();
+
+            applied = 0;
+            readyToApply = 0;
+        }
+
+        public Transaction(int tx_type, int version)
+        {
+            this.version = version;
             type = tx_type;
 
             timeStamp = Clock.getNetworkTimestamp();
@@ -2619,6 +2637,5 @@ namespace IXICore
             }
             return s_txid;
         }
-
     }
 }
