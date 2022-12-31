@@ -17,7 +17,6 @@ using System;
 using System.Collections.Generic;
 using System.IO;
 using System.Linq;
-using System.Numerics;
 using System.Threading;
 
 namespace IXICore
@@ -34,7 +33,8 @@ namespace IXICore
             { 'C', 0 },
             { 'H', 0 },
             { 'M', 0 },
-            { 'R', 0 }
+            { 'R', 0 },
+            { 'W', 0 }
         };
 
         private static Thread keepAliveThread;
