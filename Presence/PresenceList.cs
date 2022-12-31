@@ -30,7 +30,12 @@ namespace IXICore
         private static Presence curNodePresence = null;
 
         // private
-        private static Dictionary<char, long> presenceCount = new Dictionary<char, long>();
+        private static Dictionary<char, long> presenceCount = new Dictionary<char, long>() {
+            { 'C', 0 },
+            { 'H', 0 },
+            { 'M', 0 },
+            { 'R', 0 }
+        };
 
         private static Thread keepAliveThread;
         private static bool autoKeepalive = false;
@@ -88,8 +93,6 @@ namespace IXICore
                 return null;
             }
 
-            bool updated = false;
-
             long currentTime = Clock.getNetworkTimestamp();
 
             lock (presences)
@@ -99,6 +102,14 @@ namespace IXICore
                 {
                     lock (pr)
                     {
+                        Presence diffPresence = new Presence()
+                        {
+                            wallet = presence.wallet,
+                            pubkey = presence.pubkey,
+                            metadata = presence.metadata,
+                            powSolution = presence.powSolution,
+                            version = presence.version
+                        };
                         // Go through all addresses and add any missing ones
                         foreach (PresenceAddress local_addr in presence.addresses)
                         {
@@ -114,13 +125,13 @@ namespace IXICore
                             // Check for tampering. Includes a +300, -30 second synchronization zone
                             if ((currentTime - lTimestamp) > expiration_time)
                             {
-                                Logging.warn(string.Format("[PL] Received expired presence for {0} {1}. Skipping; {2} - {3}", pr.wallet.ToString(), local_addr.address, currentTime, lTimestamp));
+                                Logging.warn("[PL] Received expired presence for {0} {1}. Skipping; {2} - {3}", pr.wallet.ToString(), local_addr.address, currentTime, lTimestamp);
                                 continue;
                             }
 
                             if ((currentTime - lTimestamp) < -30)
                             {
-                                Logging.warn(string.Format("[PL] Potential presence tampering for {0} {1}. Skipping; {2} - {3}", pr.wallet.ToString(), local_addr.address, currentTime, lTimestamp));
+                                Logging.warn("[PL] Potential presence tampering for {0} {1}. Skipping; {2} - {3}", pr.wallet.ToString(), local_addr.address, currentTime, lTimestamp);
                                 continue;
                             }
 
@@ -143,7 +154,16 @@ namespace IXICore
                                         addr.address = local_addr.address;
                                         addr.lastSeenTime = local_addr.lastSeenTime;
                                         addr.signature = local_addr.signature;
-                                        updated = true;
+                                        if (addr.type != local_addr.type)
+                                        {
+                                            lock (presenceCount)
+                                            {
+                                                presenceCount[addr.type]--;
+                                                presenceCount[local_addr.type]++;
+                                            }
+                                            addr.type = local_addr.type;
+                                        }
+                                        diffPresence.addresses.Add(local_addr);
                                     }
 
                                     if (addr.type == 'M' || addr.type == 'H')
@@ -167,24 +187,20 @@ namespace IXICore
 
                                 lock (presenceCount)
                                 {
-                                    if (!presenceCount.ContainsKey(local_addr.type))
-                                    {
-                                        presenceCount.Add(local_addr.type, 0);
-                                    }
                                     presenceCount[local_addr.type]++;
                                 }
 
-                                updated = true;
+                                diffPresence.addresses.Add(local_addr);
                             }
                         }
 
-                        if (!updated && return_presence_only_if_updated)
+                        if (diffPresence.addresses.Count == 0 && return_presence_only_if_updated)
                         {
                             return null;
                         }
                         else
                         {
-                            return pr;
+                            return diffPresence;
                         }
                     }
                 }
@@ -202,28 +218,12 @@ namespace IXICore
 
                         lock (presenceCount)
                         {
-                            if (!presenceCount.ContainsKey(pa.type))
-                            {
-                                presenceCount.Add(pa.type, 0);
-                            }
                             presenceCount[pa.type]++;
                         }
-
-                        updated = true;
                     }
+                    presences.Add(presence);
 
-                    if (updated)
-                    {
-                        presences.Add(presence);
-                    }
-
-                    if (!updated && return_presence_only_if_updated)
-                    {
-                        return null;
-                    }else
-                    {
-                        return presence;
-                    }
+                    return presence;
                 }
             }
         }
@@ -254,10 +254,7 @@ namespace IXICore
                         {
                             lock (presenceCount)
                             {
-                                if (presenceCount.ContainsKey(addr.type))
-                                {
-                                    presenceCount[addr.type]--;
-                                }
+                                presenceCount[addr.type]--;
                             }
                             listEntry.addresses.Remove(addr);
                         }
@@ -349,7 +346,7 @@ namespace IXICore
                             writer.Write(presence_data);
                         }
 #if TRACE_MEMSTREAM_SIZES
-                        Logging.info(String.Format("PresenceList::getBytes: {0}", m.Length));
+                        Logging.info("PresenceList::getBytes: {0}", m.Length);
 #endif
                     }
                     return m.ToArray();
@@ -397,7 +394,7 @@ namespace IXICore
                     }
                     catch (Exception e)
                     {
-                        Logging.error(string.Format("Error reading presence list: {0}", e.ToString()));
+                        Logging.error("Error reading presence list: {0}", e.ToString());
                         return false;
                     }
 
@@ -669,10 +666,6 @@ namespace IXICore
                                 lock (presenceCount)
                                 {
                                     presenceCount[pa.type]--;
-                                    if (!presenceCount.ContainsKey(ka.nodeType))
-                                    {
-                                        presenceCount.Add(ka.nodeType, 0);
-                                    }
                                     presenceCount[ka.nodeType]++;
                                 }
                             }
@@ -749,12 +742,12 @@ namespace IXICore
                                 // Check if timestamp is older than 300 seconds
                                 if ((currentTime - pa.lastSeenTime) > expiration_time)
                                 {
-                                    Logging.info(string.Format("Expired lastseen for {0} / {1}", pa.address, Crypto.hashToString(pa.device)));
+                                    Logging.info("Expired lastseen for {0} / {1}", pa.address, Crypto.hashToString(pa.device));
                                     removeAddressEntry(pr.wallet, pa);
                                 }
                                 else if ((currentTime - pa.lastSeenTime) < -30) // future time + 30 seconds amortization
                                 {
-                                    Logging.info(string.Format("Expired future lastseen for {0} / {1}", pa.address, Crypto.hashToString(pa.device)));
+                                    Logging.info("Expired future lastseen for {0} / {1}", pa.address, Crypto.hashToString(pa.device));
                                     removeAddressEntry(pr.wallet, pa);
                                 }
                             }
@@ -796,7 +789,10 @@ namespace IXICore
             lock (presences)
             {
                 presences.Clear();
-                presenceCount = new Dictionary<char, long>();
+                foreach (var p in presenceCount)
+                {
+                    presenceCount[p.Key] = 0;
+                }
             }
         }
 
