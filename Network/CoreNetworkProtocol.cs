@@ -343,6 +343,31 @@ namespace IXICore
                 {
                     // we're the server
 
+                    int masterNodeCount = 0;
+                    if (node_type == 'M' || node_type == 'H')
+                    {
+                        lock (NetworkServer.connectedClients)
+                        {
+                            masterNodeCount = NetworkServer.connectedClients.Where(x => x.presenceAddress != null && (x.presenceAddress.type == 'M' || x.presenceAddress.type == 'H')).Count();
+                            if (masterNodeCount > CoreConfig.maximumServerMasterNodes)
+                            {
+                                sendBye(endpoint, ProtocolByeCode.rejected, "Too many master nodes already connected.", "");
+                                return false;
+                            }
+                        }
+                    }
+                    else if (node_type == 'C')
+                    {
+                        lock (NetworkServer.connectedClients)
+                        {
+                            if (NetworkServer.connectedClients.Count() - masterNodeCount > CoreConfig.maximumServerClients)
+                            {
+                                sendBye(endpoint, ProtocolByeCode.rejected, "Too many clients already connected.", "");
+                                return false;
+                            }
+                        }
+                    }
+
                     if (node_type == 'M' || node_type == 'H' || node_type == 'R')
                     {
                         if (node_type != 'R')

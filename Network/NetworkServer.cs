@@ -525,9 +525,10 @@ namespace IXICore.Network
 
             lock (connectedClients)
             {
-                if (connectedClients.Count + 1 > CoreConfig.maximumServerMasterNodes)
+                if (CoreConfig.maximumServerMasterNodes + CoreConfig.maximumServerClients > 0
+                    && connectedClients.Count + 1 > CoreConfig.maximumServerMasterNodes + CoreConfig.maximumServerClients)
                 {
-                    Logging.warn("Maximum number of connected clients reached. Disconnecting client: {0}:{1}",
+                    Logging.warn("Maximum number of connected master nodes reached. Disconnecting client: {0}:{1}",
                         clientEndpoint.Address.ToString(), clientEndpoint.Port);
                     CoreProtocolMessage.sendBye(clientSocket, ProtocolByeCode.rejected, "Too many clients already connected.", "");
                     clientSocket.Shutdown(SocketShutdown.Both);
@@ -548,7 +549,7 @@ namespace IXICore.Network
 
                 connectedClients.Add(remoteEndpoint);
 
-                Logging.info("Client connection accepted: {0} | #{1}/{2}", clientEndpoint.ToString(), connectedClients.Count + 1, CoreConfig.maximumServerMasterNodes);
+                Logging.info("Client connection accepted: {0} | #{1}/{2}", clientEndpoint.ToString(), connectedClients.Count + 1, CoreConfig.maximumServerMasterNodes + CoreConfig.maximumServerClients);
 
                 remoteEndpoint.start(clientSocket);
             }
