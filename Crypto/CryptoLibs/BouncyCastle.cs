@@ -214,8 +214,7 @@ namespace IXICore
             try
             {
                 RSACryptoServiceProvider rsa = rsaKeyFromBytes(privateKey);
-
-                byte[] signature = rsa.SignData(input_data, CryptoConfig.MapNameToOID("SHA512"));
+                byte[] signature = rsa.SignData(input_data, SHA512.Create());
                 return signature;
             }
             catch (Exception e)
@@ -239,7 +238,7 @@ namespace IXICore
                 }
 
                 byte[] signature_bytes = signature;
-                return rsa.VerifyData(input_data, CryptoConfig.MapNameToOID("SHA512"), signature_bytes);
+                return rsa.VerifyData(input_data, SHA512.Create(), signature_bytes);
             }
             catch (Exception e)
             {
