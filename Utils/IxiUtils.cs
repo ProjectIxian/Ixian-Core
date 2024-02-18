@@ -13,6 +13,7 @@
 using System;
 using System.Collections.Generic;
 using System.Diagnostics;
+using System.Drawing;
 using System.Linq;
 using System.Numerics;
 
@@ -72,6 +73,108 @@ namespace IXICore.Utils
             else
                 dico.Add(key, value);
         }
+
+        // bytes extension
+        public static byte[] GetIxiBytes(this byte[] value)
+        {
+            if (value == null)
+            {
+                return new byte[1] { 0 };
+            }
+
+            byte[] lenBytes = value.Length.GetIxiVarIntBytes();
+            byte[] bytes = new byte[lenBytes.Length + value.Length];
+            Array.Copy(lenBytes, 0, bytes, 0, lenBytes.Length);
+            Array.Copy(value, 0, bytes, lenBytes.Length, value.Length);
+            return bytes;
+        }
+
+        public static (byte[] bytes, int bytesRead) ReadIxiBytes(this byte[] value, int offset)
+        {
+            int bytesRead = 0;
+
+            var len = value.GetIxiVarUInt(offset);
+            offset += len.bytesRead;
+            bytesRead += len.bytesRead;
+
+            if (len.num < 0 || len.num > int.MaxValue)
+            {
+                throw new Exception("Invalid length specified: " + len.num);
+            }
+
+            if (len.num == 0)
+            {
+                return (null, offset);
+            }
+
+            byte[] bytes = new byte[len.num];
+            Array.Copy(value, offset, bytes, 0, (int)len.num);
+            offset += (int)len.num;
+            bytesRead += (int)len.num;
+
+            return (bytes, bytesRead);
+        }
+
+        public static byte[] copy(byte[] source)
+        {
+            if (source == null)
+            {
+                return null;
+            }
+
+            byte[] newObj = new byte[source.Length];
+            Array.Copy(source, newObj, source.Length);
+            return newObj;
+        }
+
+        public static Address copy(Address source)
+        {
+            if (source == null)
+            {
+                return null;
+            }
+
+            return new Address(source);
+        }
+
+        // TODO test and replace with Cris's implementation
+        public static byte[] calculateMerkleRoot(List<byte[]> hashes)
+        {
+            if (hashes == null || hashes.Count == 0)
+            {
+                return null;
+            }
+
+            if (hashes.Count == 1)
+            {
+                return hashes.First();
+            }
+
+            while (hashes.Count > 1)
+            {
+                List<byte[]> newHashes = new List<byte[]>();
+                for (int i = 0; i < hashes.Count; i += 2)
+                {
+                    byte[] neighbourHash;
+                    if (i + 1 < hashes.Count)
+                    {
+                        neighbourHash = hashes[i + 1];
+                    }
+                    else
+                    {
+                        neighbourHash = hashes[i];
+                    }
+
+                    byte[] pair = hashes[i].Concat(neighbourHash).ToArray();
+                    byte[] hash = CryptoManager.lib.sha3_512sq(pair);
+                    newHashes.Add(hash);
+                }
+                hashes = newHashes;
+            }
+
+            return hashes.First();
+        }
+
     }
 
 

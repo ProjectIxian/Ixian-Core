@@ -10,6 +10,7 @@
 // MERCHANTABILITY or FITNESS FOR A PARTICULAR PURPOSE.  See the
 // MIT License for more details.
 
+using IXICore.Utils;
 using System;
 using System.Linq;
 
@@ -126,6 +127,15 @@ namespace IXICore
                 default:
                     throw new Exception("Cannot construct address, unknown address version");
             }
+        }
+
+        public Address(Address other)
+        {
+            version = other.version;
+            _addressWithChecksum = IxiUtils.copy(other._addressWithChecksum);
+            addressNoChecksum = IxiUtils.copy(other.addressNoChecksum);
+            nonce = IxiUtils.copy(other.nonce);
+            pubKey = IxiUtils.copy(other.pubKey);
         }
 
         public Address(string base58EncodedAddress)

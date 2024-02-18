@@ -14,6 +14,7 @@ using Force.Crc32;
 using IXICore.Inventory;
 using IXICore.Meta;
 using IXICore.Network;
+using IXICore.RegNames;
 using IXICore.Utils;
 using System;
 using System.Collections.Generic;
@@ -618,10 +619,12 @@ namespace IXICore
         /// <param name="types">Types of the nodes where the message should be sent.</param>
         /// <param name="code">Ixian protocol code.</param>
         /// <param name="data">Payload data.</param>
-        /// <param name="block_num">Block which should be searched for the endpoint addresses.</param>
-        /// <param name="skipEndpoint">Minimum block height for endpoints which should receive this message.</param>
+        /// <param name="block_num">Minimum block height for endpoints which should receive this message.</param>
+        /// <param name="skipEndpoint">Skip sending message to this endpoint.</param>
+        /// <param name="helper_data">Additional information, to prevent sending duplicate messages. In case of duplicate message will be replaced with latest message.</param>
+        /// <param name="msg_id">Message id, usually related to block height, which prioritizes relevant incoming messages.</param>
         /// <returns>True, if at least one message was sent to at least one remote endpoint. False if no messages were sent.</returns>
-        public static bool broadcastProtocolMessageToSingleRandomNode(char[] types, ProtocolMessageCode code, byte[] data, ulong block_num, RemoteEndpoint skipEndpoint = null)
+        public static bool broadcastProtocolMessageToSingleRandomNode(char[] types, ProtocolMessageCode code, byte[] data, ulong block_num, RemoteEndpoint skipEndpoint = null, byte[] helper_data = null, long msg_id = 0)
         {
             if (data == null)
             {
@@ -711,7 +714,7 @@ namespace IXICore
 
                     if (re != null && re.isConnected())
                     {
-                        re.sendData(code, data);
+                        re.sendData(code, data, helper_data, msg_id);
                         return true;
                     }
                     return false;
@@ -823,7 +826,7 @@ namespace IXICore
                     }
                     else
                     {
-                        broadcastProtocolMessageToSingleRandomNode(new char[] { 'M', 'R', 'H' }, ProtocolMessageCode.getPresence2, mw.ToArray(), 0, null);
+                        broadcastProtocolMessageToSingleRandomNode(new char[] { 'M', 'R', 'H' }, ProtocolMessageCode.getPresence2, mw.ToArray(), 0, null, address);
                     }
                 }
             }
@@ -902,6 +905,35 @@ namespace IXICore
                     else
                         Logging.warn("Disconnected v0");
                 }
+            }
+        }
+
+        public static void broadcastGetRegisteredNameRecord(byte[] name, byte[] record, RemoteEndpoint endpoint)
+        {
+            using (MemoryStream mw = new MemoryStream())
+            {
+                using (BinaryWriter writer = new BinaryWriter(mw))
+                {
+                    writer.Write(name.GetIxiBytes());
+                    writer.Write(record.GetIxiBytes());
+                }
+
+                if (endpoint != null && endpoint.isConnected())
+                {
+                    endpoint.sendData(ProtocolMessageCode.getNameRecord, mw.ToArray(), name);
+                }
+                else
+                {
+                    broadcastProtocolMessageToSingleRandomNode(new char[] { 'M', 'R', 'H' }, ProtocolMessageCode.getNameRecord, mw.ToArray(), 0, null, name);
+                }
+            }
+        }
+
+        public static void sendRegisteredNameRecord(RemoteEndpoint endpoint, List<RegisteredNameDataRecord> dataRecords)
+        {
+            foreach(var dataRecord in dataRecords)
+            {
+                endpoint.sendData(ProtocolMessageCode.nameRecord, dataRecord.toBytes(false)); // TODO TODO TODO extend this with proof paths, sigs and relevant data, ?send all in one go?
             }
         }
     }

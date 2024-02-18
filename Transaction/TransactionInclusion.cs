@@ -65,6 +65,7 @@ namespace IXICore
 
         public void start(string block_header_storage_path = "", bool compacted = false, bool pruneBlocks = true)
         {
+            // this method should be improved
             ulong block_height = 0;
             byte[] block_checksum = null;
             if(!IxianHandler.isTestNet)

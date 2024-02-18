@@ -96,8 +96,11 @@ namespace IXICore
         /// <summary>
         /// Amount of signatures (ratio) of consenting signatures vs. available Master Nodes before a block can be accepted.
         /// </summary>
-        public static readonly double networkConsensusRatio = 0.75;
-        public static readonly int networkConsensusRatioNew = 75;
+        public static readonly double networkSignerConsensusRatio = 0.75;
+        /// <summary>
+        /// Required signature difficulty (ratio) in percents of consenting signatures before a block can be accepted.
+        /// </summary>
+        public static readonly int networkSignerDifficultyConsensusRatio = 51;
 
         /// <summary>
         /// Maximum allowed signers on a single block.
@@ -105,6 +108,7 @@ namespace IXICore
         public static readonly int maximumBlockSigners = 1000; // TODO TODO Omega - discard sigs that have lower difficulty than the new sig, when it is received
 
         public static readonly IxiNumber minBlockSignerPowDifficulty = 10000000;
+        public static readonly ulong blocksToUseForAverageDifficultyCalculation = 40000;
 
         /// <summary>
         /// Minimum funds a wallet must have before it is allowed to participate in the block consensus algorithm. (used in DLT Node executable).
@@ -181,6 +185,11 @@ namespace IXICore
         public static readonly byte[] ixianChecksumLockTestNet = Encoding.UTF8.GetBytes("IxiTest");
 
         /// <summary>
+        /// Initial value for seeding the Transaction SHA512 checksum generator for RegNet.
+        /// </summary>
+        public static readonly byte[] ixianChecksumLockRegNet = Encoding.UTF8.GetBytes("IxiReg");
+
+        /// <summary>
         /// Initial value for seeding the Transaction SHA512 checksum generator.
         /// </summary>
         public static byte[] ixianChecksumLock = Encoding.UTF8.GetBytes("Ixian");
@@ -211,6 +220,26 @@ namespace IXICore
         /// Number of blocks after how many the signing and mining rewards become available for spending.
         /// </summary>
         public static readonly ulong rewardMaturity = 960;// plPowBlocksValidity * 8;
+
+        // Capacity can only be increased in factors of rnInitialCapacity value
+        public static readonly uint rnMonthInBlocks = 86400; // Approx 30 days - 2880 * 30
+        public static readonly uint rnMinRegistrationTimeInBlocks = 518400; // Approx 6 month - 2880 * 30 * 6
+        public static readonly uint rnMaxRegistrationTimeInBlocks = 2102400; // Approx 2 years - 2880 * 365 * 2
+        public static readonly uint rnGracePeriodInBlocks = 129600; // Approx 45 days - 2880 * 45
+        // Min capacity in kB
+        public static readonly uint rnMinCapacity = 10;
+        // Unit = months * capacity in kB
+        public static readonly IxiNumber rnMinPricePerUnit = new IxiNumber("1000.00000000"); // initial price, will be reduced as things evolve
+        public static readonly IxiNumber rnPricePerUnit = new IxiNumber("10000.00000000");
+        /// <summary>
+        /// Nonexistant wallet address which is used in the 'to' fields for Name transactions, where currency goes to a name reward pool.
+        /// </summary>
+        public static readonly Address rnRewardPoolAddress = new Address(Base58Check.Base58CheckEncoding.DecodePlain("1ixianinfinimine234234234234234234234234234242HP"));
+
+        public static readonly uint rnMaxNameLength = 256;
+        public static readonly uint rnMaxRecordKeyLength = 256;
+        // Max allowed subname levels. If this is ever increased, the implementation must first be fixed to support more than one level.
+        public static readonly uint rnMaxSubNameLevels = 1;
 
         /// <summary>
         ///  Retrieves the lenght of the redacted window based on the block version in use.

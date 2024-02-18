@@ -37,8 +37,14 @@ namespace IXICore.Utils
 	// - BinaryReader with ReadVarInt/ReadVarUInt
 	public static class IxiVarInt
     {
-		// long extension
-		public static byte[] GetIxiVarIntBytes(this long value)
+        // int extension
+        public static byte[] GetIxiVarIntBytes(this int value)
+		{
+            return GetIxiVarIntBytes((long)value);
+        }
+
+        // long extension
+        public static byte[] GetIxiVarIntBytes(this long value)
 		{
 			bool negative = false;
 			if (value < 0)

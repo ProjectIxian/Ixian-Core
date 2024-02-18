@@ -61,7 +61,7 @@ namespace IXICore
         /// <summary>
         /// Latest possible version of the Block structure. New blocks should usually be created with the latest version.
         /// </summary>
-        public static int maxVersion = BlockVer.v10;
+        public static int maxVersion = BlockVer.v11;
 
         /// <summary>
         /// Block height (block number). This is a sequential index in the blockchain which uniquely identifies each block.
@@ -195,6 +195,11 @@ namespace IXICore
 
         public ulong txCount = 0;
 
+        public IxiNumber totalFee = 0;
+
+        public byte[] regNameStateChecksum = null;
+
+
         public Block()
         {
             version = BlockVer.v0;
@@ -225,6 +230,7 @@ namespace IXICore
             }
 
             txCount = block.txCount;
+            totalFee = block.totalFee;
 
             if (block.receivedPitChecksum != null)
             {
@@ -286,6 +292,12 @@ namespace IXICore
             {
                 walletStateChecksum = new byte[block.walletStateChecksum.Length];
                 Array.Copy(block.walletStateChecksum, walletStateChecksum, walletStateChecksum.Length);
+            }
+
+            if (block.regNameStateChecksum != null)
+            {
+                regNameStateChecksum = new byte[block.regNameStateChecksum.Length];
+                Array.Copy(block.regNameStateChecksum, regNameStateChecksum, regNameStateChecksum.Length);
             }
 
             if (block.signatureFreezeChecksum != null)
@@ -648,7 +660,7 @@ namespace IXICore
 
                         if (version > maxVersion)
                         {
-                            return;
+                            throw new Exception("Block #" + blockNum + " version is higher than max supported version " + version + " > " + maxVersion + ".");
                         }
 
                         int dataLen = (int)reader.ReadIxiVarUInt();
@@ -685,13 +697,12 @@ namespace IXICore
 
                         timestamp = (long)reader.ReadIxiVarUInt();
 
-
                         difficulty = reader.ReadIxiVarUInt();
 
-                        if(blockNum == 1)
+                        if (blockNum == 1)
                         {
                             signerBits = reader.ReadUInt64();
-                        }else if (blockNum != 0
+                        } else if (blockNum != 0
                             && version >= BlockVer.v5
                             && blockNum % ConsensusConfig.superblockInterval == 0)
                         {
@@ -735,6 +746,20 @@ namespace IXICore
                         if (dataLen > 0)
                         {
                             walletStateChecksum = reader.ReadBytes(dataLen);
+                        }
+
+                        if (version >= BlockVer.v11)
+                        {
+                            dataLen = (int)reader.ReadIxiVarUInt();
+                            if (dataLen > 64)
+                            {
+                                throw new Exception("Block #" + blockNum + " regNameStateChecksum len " + dataLen + "B is bigger than 64B.");
+                            }
+                            if (dataLen > 0)
+                            {
+                                regNameStateChecksum = reader.ReadBytes(dataLen);
+                            }
+                            totalFee = reader.ReadIxiNumber();
                         }
 
                         int v10HeaderPosition = (int) m.Position;
@@ -1165,7 +1190,7 @@ namespace IXICore
                     }
 
                     // Write the number of transactions
-                    ulong num_transactions = transactions.Count > 0 ? (ulong)transactions.Count : txCount;
+                    ulong num_transactions = getTransactionsCount();
                     writer.WriteIxiVarInt(num_transactions);
 
                     if(receivedPitChecksum != null)
@@ -1190,7 +1215,7 @@ namespace IXICore
 
                     writer.WriteIxiVarInt(difficulty);
 
-                    if(blockNum == 1)
+                    if (blockNum == 1)
                     {
                         writer.Write(signerBits);
                     } else if (lastSuperBlockChecksum != null)
@@ -1223,6 +1248,13 @@ namespace IXICore
 
                     writer.WriteIxiVarInt(walletStateChecksum.Length);
                     writer.Write(walletStateChecksum);
+
+                    if (version >= BlockVer.v11)
+                    {
+                        writer.WriteIxiVarInt(regNameStateChecksum.Length);
+                        writer.Write(regNameStateChecksum);
+                        writer.WriteIxiNumber(totalFee);
+                    }
 
                     if (!for_checksum)
                     {
@@ -2326,6 +2358,22 @@ namespace IXICore
         }
 
         /// <summary>
+        ///  Allocates and sets the `regNameStateChecksum`.
+        /// </summary>
+        /// <param name="checksum">Checksum byte value.</param>
+        public void setRegNameStateChecksum(byte[] checksum)
+        {
+            if (checksum == null)
+            {
+                regNameStateChecksum = null;
+                return;
+            }
+
+            regNameStateChecksum = new byte[checksum.Length];
+            Array.Copy(checksum, regNameStateChecksum, regNameStateChecksum.Length);
+        }
+
+        /// <summary>
         ///  ?
         /// </summary>
         /// <returns></returns>
@@ -2420,10 +2468,12 @@ namespace IXICore
             Logging.info(String.Format("\t\t|- Block Checksum:\t {0}", Crypto.hashToString(blockChecksum)));
             Logging.info(String.Format("\t\t|- Last Block Checksum:\t {0}", last_block_chksum));
             Logging.info(String.Format("\t\t|- WalletState Checksum: {0}", Crypto.hashToString(walletStateChecksum)));
+            Logging.info(String.Format("\t\t|- RegNameState Checksum: {0}", Crypto.hashToString(regNameStateChecksum)));
             Logging.info(String.Format("\t\t|- Sig Freeze Checksum:\t {0}", Crypto.hashToString(signatureFreezeChecksum)));
             Logging.info(String.Format("\t\t|- Mining Difficulty:\t {0}", difficulty));
             Logging.info(String.Format("\t\t|- Signing Difficulty:\t {0}", signerBits));
             Logging.info(String.Format("\t\t|- Transaction Count:\t {0}", transactions.Count));
+            Logging.info(String.Format("\t\t|- Total Fees:\t {0}", totalFee.ToString()));
         }
 
         /// <summary>
@@ -2453,6 +2503,7 @@ namespace IXICore
             }
 
             IxiNumber totalDiff = 0;
+            // TODO TODO ideally we would not use lock (signatures) in combination with sig.powSolution.difficulty
             lock (signatures)
             {
                 var sigs = signatures;
@@ -2472,6 +2523,11 @@ namespace IXICore
                 }
             }
             return totalDiff;
+        }
+
+        public ulong getTransactionsCount()
+        {
+            return (transactions != null && transactions.Count > 0) ? (ulong)transactions.Count : txCount;
         }
     }
 }

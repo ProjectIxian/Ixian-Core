@@ -594,6 +594,8 @@ namespace IXICore
                     return false;
                 }
 
+                IxiNumber minSignerPowDifficulty = IxianHandler.getMinSignerPowDifficulty(IxianHandler.getLastBlockHeight() + 1);
+
                 lock (presences)
                 {
                     Address address = wallet;
@@ -615,8 +617,7 @@ namespace IXICore
                         return false;
                     }
 
-
-                    if(!ka.verify(listEntry.pubkey, IxianHandler.getMinSignerPowDifficulty(IxianHandler.getLastBlockHeight() + 1)))
+                    if(!ka.verify(listEntry.pubkey, minSignerPowDifficulty))
                     {
                         Logging.warn("[PL] KEEPALIVE tampering for {0} {1}, incorrect Sig.", listEntry.wallet.ToString(), ka.hostName);
                         return false;

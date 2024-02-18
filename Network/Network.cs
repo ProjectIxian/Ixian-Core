@@ -144,10 +144,8 @@ namespace IXICore.Network
         detachEvent = 41,
         //[Obsolete("Use blockSignature2 instead")]
         //blockSignature = 42,
-        //[Obsolete("Use getBlockSignatures2 instead")]
-        //getBlockSignatures = 43,
-        //[Obsolete("Use signaturesChunk instead")]
-        //blockSignatures = 44, // deprecated
+        getNameRecord = 43,
+        nameRecord = 44,
         getNextSuperBlock = 45,
         getBlockHeaders3 = 46,
         blockHeaders3 = 47,

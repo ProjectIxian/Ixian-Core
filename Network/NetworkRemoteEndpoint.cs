@@ -668,25 +668,12 @@ namespace IXICore.Network
                         {
                             case ProtocolMessageCode.blockData:
                             case ProtocolMessageCode.blockData2:
-                                int ver = (int)active_message.data.GetIxiVarInt(0).num;
-                                if (ver <= BlockVer.v7)
+                                ulong bh = active_message.data.GetIxiVarUInt(active_message.data.GetIxiVarUInt(0).bytesRead).num;
+                                if (bh == last_bh || bh == last_bh + 1)
                                 {
-                                    ulong bh = BitConverter.ToUInt64(active_message.data, 4);
-                                    if (bh == last_bh || bh == last_bh + 1)
-                                    {
-                                        priority = MessagePriority.medium;
-                                    }
-                                    msg_id = (long)BitConverter.ToUInt64(active_message.data, 4);
+                                    priority = MessagePriority.medium;
                                 }
-                                else
-                                {
-                                    ulong bh = active_message.data.GetIxiVarUInt(active_message.data.GetIxiVarUInt(0).bytesRead).num;
-                                    if (bh == last_bh || bh == last_bh + 1)
-                                    {
-                                        priority = MessagePriority.medium;
-                                    }
-                                    msg_id = (long)active_message.data.GetIxiVarUInt(active_message.data.GetIxiVarUInt(0).bytesRead).num;
-                                }
+                                msg_id = (long)active_message.data.GetIxiVarUInt(active_message.data.GetIxiVarUInt(0).bytesRead).num;
                                 break;
 
                             case ProtocolMessageCode.blockSignature2:
@@ -883,6 +870,10 @@ namespace IXICore.Network
                     if(!requestedMessageIds.Contains(msg_id))
                     {
                         requestedMessageIds.Add(msg_id);
+                        if (requestedMessageIds.Count > CoreConfig.maximumRequestedMessageIds)
+                        {
+                            requestedMessageIds.RemoveAt(0);
+                        }
                     }
                 }
             }

@@ -161,7 +161,8 @@ namespace IXICore
                         Block dummy_block_header = new Block();
                         dummy_block_header.blockNum = 0;
                         dummy_block_header.blockChecksum = new byte[1];
-                        dummy_block_header.walletStateChecksum = new byte[1];
+                        dummy_block_header.setWalletStateChecksum(new byte[1]);
+                        dummy_block_header.setRegNameStateChecksum(new byte[1]);
 
                         byte[] dummy_block_header_bytes = dummy_block_header.getBytes(true, true, true, true);
                         byte[] dummy_block_header_len_bytes = BitConverter.GetBytes(dummy_block_header_bytes.Length);

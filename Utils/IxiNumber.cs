@@ -32,6 +32,11 @@ namespace IXICore
             amount = BigInteger.Zero;
         }
 
+        public IxiNumber(IxiNumber src)
+        {
+            amount = new BigInteger(src.amount.ToByteArray());
+        }
+
         public IxiNumber(BigInteger big_integer)
         {
             amount = big_integer;
@@ -237,7 +242,6 @@ namespace IXICore
 
 
         // TODO: equals, assign, +, -
-        // add assign from long
 
         public static implicit operator IxiNumber(string value)
         {
@@ -272,6 +276,16 @@ namespace IXICore
 
         public static bool operator ==(IxiNumber a, IxiNumber b)
         {
+            if (a is null && b is null)
+            {
+                return true;
+            }
+
+            if (a is null || b is null)
+            {
+                return false;
+            }
+
             bool status = false;
             if(BigInteger.Compare(a.getAmount(), b.getAmount()) == 0)
             {

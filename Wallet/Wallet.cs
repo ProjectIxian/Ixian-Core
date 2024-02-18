@@ -220,7 +220,7 @@ namespace IXICore
             }
 
             rawData.AddRange(BitConverter.GetBytes((int)type));
-            rawData.AddRange(BitConverter.GetBytes(requiredSigs));
+            rawData.AddRange(BitConverter.GetBytes((short)requiredSigs));
 
             if (allowedSigners != null)
             {

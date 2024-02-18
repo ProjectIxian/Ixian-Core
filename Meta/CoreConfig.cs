@@ -20,7 +20,7 @@ namespace IXICore
         /// <summary>
         /// Current version of IxiCore.
         /// </summary>
-        public static readonly string version = "xcore-0.9.1b";
+        public static readonly string version = "xcore-0.9.2-dev-p";
 
         /// <summary>
         /// Current version of the Ixian network protocol.
@@ -32,13 +32,13 @@ namespace IXICore
         /// Useful for optimized block header sync
         /// Note: Always round last block height to 1000 and subtract 1 (i.e. if last block height is 33234, the correct value is 32999)
         /// </summary>
-        public static ulong bakedBlockHeight = 3217999;
+        public static ulong bakedBlockHeight = 3808999;
 
         /// <summary>
         /// Mainnet block checksum (paired with bakedBlockHeight) of bakedBlockHeight
         /// Useful for optimized block header sync
         /// </summary>
-        public static byte[] bakedBlockChecksum = Crypto.stringToHash("2fdb9d3b46c9c5df48cd435af6912bf634cafdceda197f2f52e5f588b9ee8268dee67effd8956a866a61bfb88af03cfa389e0b11ede498f21f9f98303857d701");
+        public static byte[] bakedBlockChecksum = Crypto.stringToHash("4c37becfc751640efe01903cb7596195fad4614b4bcfff2baf4c494dbef1e3652d0619edf22e2f38724628cb1f114a4041576bb93d23f9d9dfcbaad04a2e9de6");
 
         /// <summary>
         /// Number of wallets to send in each chunk of data when synchronizing new Master Nodes.
@@ -205,5 +205,10 @@ namespace IXICore
         /// Maximum number of transactions to be included in the tx chunk.
         /// </summary>
         public static int maximumBlockHeadersPerChunk = 1000;
+
+        /// <summary>
+        /// Maximum number of requested message ids to keep in memory.
+        /// </summary>
+        public static long maximumRequestedMessageIds = 100000;
     }
 }

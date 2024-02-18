@@ -12,8 +12,10 @@
 
 using IXICore.Meta;
 using IXICore.Network;
+using IXICore.RegNames;
 using IXICore.Utils;
 using Newtonsoft.Json;
+using Newtonsoft.Json.Linq;
 using System;
 using System.Collections.Generic;
 using System.IO;
@@ -21,6 +23,7 @@ using System.Linq;
 using System.Net;
 using System.Text;
 using System.Threading;
+using static IXICore.Transaction;
 
 namespace IXICore
 {
@@ -165,12 +168,19 @@ namespace IXICore
                     {
                         if (key != null && key != "")
                         {
-                            string value = context.Request.QueryString[key];
-                            if(value == null)
+                            string[] values = context.Request.QueryString.GetValues(key);
+                            if(values == null || values.Length == 0)
                             {
-                                value = "";
+                                values = new string[1] { "" };
                             }
-                            method_params.Add(key, value);
+                            if (key.EndsWith("[]"))
+                            {
+                                method_params.Add(key, values);
+                            }
+                            else
+                            {
+                                method_params.Add(key, values[0]);
+                            }
                         }
                     }
                 }
@@ -404,6 +414,31 @@ namespace IXICore
             {
                 NetworkClientManager.resume();
                 response = new JsonResponse { result = "Network Client resumed.", error = null };
+            }
+
+            if (methodName.Equals("registerName", StringComparison.OrdinalIgnoreCase))
+            {
+                response = onRegisterName(parameters);
+            }
+
+            if (methodName.Equals("extendName", StringComparison.OrdinalIgnoreCase))
+            {
+                response = onExtendName(parameters);
+            }
+
+            if (methodName.Equals("updateNameCapacity", StringComparison.OrdinalIgnoreCase))
+            {
+                response = onUpdateNameCapacity(parameters);
+            }
+
+            if (methodName.Equals("recoverName", StringComparison.OrdinalIgnoreCase))
+            {
+                response = onRecoverName(parameters);
+            }
+
+            if (methodName.Equals("updateNameRecord", StringComparison.OrdinalIgnoreCase))
+            {
+                response = onUpdateNameRecord(parameters);
             }
 
             bool resources = false;
@@ -1607,11 +1642,268 @@ namespace IXICore
             }
             Address address = new Address(Base58Check.Base58CheckEncoding.DecodePlain((string)parameters["wallet"]));
             Presence p = PresenceList.getPresenceByAddress(address);
-            if(p != null)
+            if (p != null)
             {
                 return new JsonResponse { result = p, error = null };
             }
             return new JsonResponse { result = null, error = null };
+        }
+
+        private JsonResponse onRegisterName(Dictionary<string, object> parameters)
+        {
+            if (!parameters.ContainsKey("name"))
+            {
+                return new JsonResponse { result = null, error = new JsonError() { code = (int)RPCErrorCode.RPC_INVALID_PARAMS, message = "Missing parameter 'name'" } };
+            }
+            byte[] nameBytes = Crypto.stringToHash((string)parameters["name"]);
+            Address recoveryHash = IxianHandler.primaryWalletAddress;
+            Address pkHash = IxianHandler.primaryWalletAddress;
+            uint regTime = ConsensusConfig.rnMinRegistrationTimeInBlocks;
+            uint capacity = 1;
+            ToEntry toEntry = RegisteredNamesTransactions.createRegisterToEntry(nameBytes, regTime, capacity, recoveryHash, pkHash, ConsensusConfig.rnPricePerUnit * (ulong)(regTime / ConsensusConfig.rnMonthInBlocks));
+
+            Transaction fundedTx = createRegNameTransaction(toEntry, null, null);
+            if (fundedTx == null)
+            {
+                return new JsonResponse { result = null, error = new JsonError() { code = (int)RPCErrorCode.RPC_INTERNAL_ERROR, message = "An unknown error occurred while funding the transaction" } };
+            }
+
+            if (IxianHandler.addTransaction(fundedTx, true))
+            {
+                PendingTransactions.addPendingLocalTransaction(fundedTx);
+                return new JsonResponse { result = fundedTx.toDictionary(), error = null };
+            }
+
+            return new JsonResponse { result = null, error = new JsonError() { code = (int)RPCErrorCode.RPC_INTERNAL_ERROR, message = "An unknown error occurred while adding the transaction" } };
+        }
+
+        private JsonResponse onExtendName(Dictionary<string, object> parameters)
+        {
+            if (!parameters.ContainsKey("name"))
+            {
+                return new JsonResponse { result = null, error = new JsonError() { code = (int)RPCErrorCode.RPC_INVALID_PARAMS, message = "Missing parameter 'name'" } };
+            }
+            byte[] nameBytes = Crypto.stringToHash((string)parameters["name"]);
+            uint regTime = ConsensusConfig.rnMinRegistrationTimeInBlocks;
+            ToEntry toEntry = RegisteredNamesTransactions.createExtendToEntry(nameBytes, regTime, ConsensusConfig.rnPricePerUnit * (ulong)(regTime / ConsensusConfig.rnMonthInBlocks));
+
+            Transaction fundedTx = createRegNameTransaction(toEntry, null, null);
+            if (fundedTx == null)
+            {
+                return new JsonResponse { result = null, error = new JsonError() { code = (int)RPCErrorCode.RPC_INTERNAL_ERROR, message = "An unknown error occurred while funding the transaction" } };
+            }
+
+            if (IxianHandler.addTransaction(fundedTx, true))
+            {
+                PendingTransactions.addPendingLocalTransaction(fundedTx);
+                return new JsonResponse { result = fundedTx.toDictionary(), error = null };
+            }
+
+            return new JsonResponse { result = null, error = new JsonError() { code = (int)RPCErrorCode.RPC_INTERNAL_ERROR, message = "An unknown error occurred while adding the transaction" } };
+        }
+
+        private JsonResponse onUpdateNameCapacity(Dictionary<string, object> parameters)
+        {
+            if (!parameters.ContainsKey("name"))
+            {
+                return new JsonResponse { result = null, error = new JsonError() { code = (int)RPCErrorCode.RPC_INVALID_PARAMS, message = "Missing parameter 'name'" } };
+            }
+            byte[] nameBytes = Crypto.stringToHash((string)parameters["name"]);
+            Address nextPkHash = IxianHandler.primaryWalletAddress;
+            Address sigPk = new Address(IxianHandler.getWalletStorage(nextPkHash).getPrimaryPublicKey());
+            byte[] sig = new byte[64];
+            int newCapacity = 2;
+            int months = 1; // TODO Make sure that the new capacity covers the whole lifespan of the name
+            ToEntry toEntry = RegisteredNamesTransactions.createChangeCapacityToEntry(nameBytes, (uint)newCapacity, nextPkHash, sigPk, sig, ConsensusConfig.rnPricePerUnit * months * newCapacity);
+
+            Transaction fundedTx = createRegNameTransaction(toEntry, null, null);
+            if (fundedTx == null)
+            {
+                return new JsonResponse { result = null, error = new JsonError() { code = (int)RPCErrorCode.RPC_INTERNAL_ERROR, message = "An unknown error occurred while funding the transaction" } };
+            }
+
+            if (IxianHandler.addTransaction(fundedTx, true))
+            {
+                PendingTransactions.addPendingLocalTransaction(fundedTx);
+                return new JsonResponse { result = fundedTx.toDictionary(), error = null };
+            }
+
+            return new JsonResponse { result = null, error = new JsonError() { code = (int)RPCErrorCode.RPC_INTERNAL_ERROR, message = "An unknown error occurred while adding the transaction" } };
+        }
+
+        private JsonResponse onRecoverName(Dictionary<string, object> parameters)
+        {
+            if (!parameters.ContainsKey("name"))
+            {
+                return new JsonResponse { result = null, error = new JsonError() { code = (int)RPCErrorCode.RPC_INVALID_PARAMS, message = "Missing parameter 'name'" } };
+            }
+            byte[] nameBytes = Crypto.stringToHash((string)parameters["name"]);
+            Address nextPkHash = IxianHandler.primaryWalletAddress;
+            Address nextRecoveryHash = IxianHandler.primaryWalletAddress;
+            Address sigPk = new Address(IxianHandler.getWalletStorage(nextPkHash).getPrimaryPublicKey());
+
+            var newChecksum = IxianHandler.calculateRegNameChecksumForRecovery(nameBytes, nextRecoveryHash, nextPkHash);
+            byte[] sig = CryptoManager.lib.getSignature(newChecksum, IxianHandler.getWalletStorage(nextPkHash).getPrimaryPrivateKey());
+
+            ToEntry toEntry = RegisteredNamesTransactions.createRecoverToEntry(nameBytes, nextPkHash, nextRecoveryHash, sigPk, sig);
+
+            Transaction fundedTx = createRegNameTransaction(toEntry, null, null);
+            if (fundedTx == null)
+            {
+                return new JsonResponse { result = null, error = new JsonError() { code = (int)RPCErrorCode.RPC_INTERNAL_ERROR, message = "An unknown error occurred while funding the transaction" } };
+            }
+
+            if (IxianHandler.addTransaction(fundedTx, true))
+            {
+                PendingTransactions.addPendingLocalTransaction(fundedTx);
+                return new JsonResponse { result = fundedTx.toDictionary(), error = null };
+            }
+
+            return new JsonResponse { result = null, error = new JsonError() { code = (int)RPCErrorCode.RPC_INTERNAL_ERROR, message = "An unknown error occurred while adding the transaction" } };
+        }
+
+        private JsonResponse onUpdateNameRecord(Dictionary<string, object> parameters)
+        {
+            if (!parameters.ContainsKey("name"))
+            {
+                return new JsonResponse { result = null, error = new JsonError() { code = (int)RPCErrorCode.RPC_INVALID_PARAMS, message = "Missing parameter 'name'" } };
+            }
+            
+            if (!parameters.ContainsKey("records[]"))
+            {
+                return new JsonResponse { result = null, error = new JsonError() { code = (int)RPCErrorCode.RPC_INVALID_PARAMS, message = "Missing parameter/s 'records[]'" } };
+            }
+
+            byte[] nameBytes = Crypto.stringToHash((string)parameters["name"]);
+            Address nextPkHash = IxianHandler.primaryWalletAddress;
+            Address sigPk = new Address(IxianHandler.getWalletStorage(nextPkHash).getPrimaryPublicKey());
+
+            List<RegisteredNameDataRecord> records = new List<RegisteredNameDataRecord>();            
+            foreach (var record in (string[])parameters["records[]"])
+            {
+                var splitRecord = record.Split(',');
+                RegisteredNameDataRecord rndr = new RegisteredNameDataRecord(Crypto.stringToHash(splitRecord[0]), int.Parse(splitRecord[1]), Crypto.stringToHash(splitRecord[2]));
+                records.Add(rndr);
+            }
+
+            var newChecksum = IxianHandler.calculateRegNameChecksumFromUpdatedRecords(nameBytes, records, nextPkHash);
+
+            byte[] sig = CryptoManager.lib.getSignature(newChecksum, IxianHandler.getWalletStorage(nextPkHash).getPrimaryPrivateKey());
+            ToEntry toEntry = RegisteredNamesTransactions.createUpdateRecordToEntry(nameBytes, records, nextPkHash, sigPk, sig);
+
+            Transaction fundedTx = createRegNameTransaction(toEntry, null, null);
+            if (fundedTx == null)
+            {
+                return new JsonResponse { result = null, error = new JsonError() { code = (int)RPCErrorCode.RPC_INTERNAL_ERROR, message = "An unknown error occurred while funding the transaction" } };
+            }
+
+            if (IxianHandler.addTransaction(fundedTx, true))
+            {
+                PendingTransactions.addPendingLocalTransaction(fundedTx);
+                return new JsonResponse { result = fundedTx.toDictionary(), error = null };
+            }
+
+            return new JsonResponse { result = null, error = new JsonError() { code = (int)RPCErrorCode.RPC_INTERNAL_ERROR, message = "An unknown error occurred while adding the transaction" } };
+        }
+
+        private Transaction createRegNameTransaction(ToEntry toEntry, Address walletAddress, Address primaryAddress)
+        {
+            Transaction t = new Transaction((int)Transaction.Type.RegName);
+            t.toList = new Dictionary<Address, ToEntry>(new AddressComparer())
+            {
+                { ConsensusConfig.rnRewardPoolAddress, toEntry }
+            };
+            return createTransaction(t, walletAddress, primaryAddress, 0);
+        }
+
+		private Transaction createTransaction(Transaction t, Address walletAddress, Address primaryAddress, IxiNumber additionalFees)
+		{
+            IxiNumber fromAmount = 0;
+            IxiNumber fee = ConsensusConfig.forceTransactionPrice;
+
+            WalletStorage ws = IxianHandler.getWalletStorage(walletAddress);
+
+            if (primaryAddress == null)
+            {
+                primaryAddress = ws.getPrimaryAddress();
+            }
+
+            IxiNumber toAmount = additionalFees;
+            SortedDictionary<Address, Transaction.ToEntry> toList = new SortedDictionary<Address, Transaction.ToEntry>(new AddressComparer());
+            if (t.toList.Count > 0)
+            {
+                foreach (var toEntry in t.toList)
+                {
+                    IxiNumber singleToAmount = toEntry.Value.amount;
+                    if (singleToAmount < 0)
+                    {
+                        return null;
+                    }
+                    toAmount += singleToAmount;
+                }
+            }
+
+            // Only create a transaction if there is a valid amount
+            if (toAmount < 0)
+            {
+                return null;
+            }
+
+            byte[] pubKey = ws.getKeyPair(primaryAddress).publicKeyBytes;
+
+            // Check if this wallet's public key is already in the WalletState
+            Wallet mywallet = IxianHandler.getWallet(primaryAddress);
+            if (mywallet.publicKey != null && mywallet.publicKey.SequenceEqual(pubKey))
+            {
+                // Walletstate public key matches, we don't need to send the public key in the transaction
+                pubKey = primaryAddress.addressNoChecksum;
+            }
+
+            t.blockHeight = IxianHandler.getHighestKnownNetworkBlockHeight();
+            t.pubKey = new Address(ws.getPrimaryPublicKey());
+
+            SortedDictionary<byte[], IxiNumber> fromList = null;
+            lock (PendingTransactions.pendingTransactions)
+            {
+                fromList = ws.generateFromList(primaryAddress, toAmount + fee, toList.Keys.ToList(), PendingTransactions.pendingTransactions.Select(x => x.transaction).ToList());
+                t.fromList = fromList;
+                t.amount = t.calculateTotalAmount();
+                t.fee = t.calculateMinimumFee(ConsensusConfig.forceTransactionPrice);
+            }
+
+            IxiNumber totalTxFee = fee;
+            for (int i = 0; i < 2 && t.fee != totalTxFee; i++)
+            {
+                totalTxFee = t.fee;
+                lock (PendingTransactions.pendingTransactions)
+                {
+                    fromList = ws.generateFromList(primaryAddress, toAmount + totalTxFee, toList.Keys.ToList(), PendingTransactions.pendingTransactions.Select(x => x.transaction).ToList());
+                }
+                if (fromList == null || fromList.Count == 0)
+                {
+                    return null;
+                }
+                t.fromList = fromList;
+                t.amount = t.calculateTotalAmount();
+                t.fee = t.calculateMinimumFee(ConsensusConfig.forceTransactionPrice);
+            }
+
+            // verify that all "from amounts" match all "to_amounts" and that the fee is included in "from_amounts"
+            // we need to recalculate "from_amount"
+            fromAmount = fromList.Aggregate(new IxiNumber(), (sum, next) => sum + next.Value, sum => sum);
+            if (fromAmount != (toAmount + t.fee))
+            {
+                return null;
+            }
+            if (toAmount + t.fee > ws.getMyTotalBalance(primaryAddress))
+            {
+                return null;
+            }
+
+            t.generateChecksums();
+            t.signature = t.getSignature(t.checksum, ws.getPrimaryPrivateKey());
+            // the transaction appears valid
+            return t;
         }
 
         // This is a bit hacky way to return useful error values

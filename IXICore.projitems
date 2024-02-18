@@ -32,6 +32,7 @@
     <Compile Include="$(MSBuildThisFileDirectory)Inventory\InventoryItemBlock.cs" />
     <Compile Include="$(MSBuildThisFileDirectory)Inventory\InventoryItemKeepAlive.cs" />
     <Compile Include="$(MSBuildThisFileDirectory)Inventory\InventoryItemSignature.cs" />
+    <Compile Include="$(MSBuildThisFileDirectory)Journal\Journal.cs" />
     <Compile Include="$(MSBuildThisFileDirectory)Meta\Activity.cs" />
     <Compile Include="$(MSBuildThisFileDirectory)Meta\ConsensusConfig.cs" />
     <Compile Include="$(MSBuildThisFileDirectory)Meta\CoreConfig.cs" />
@@ -60,6 +61,13 @@
     <Compile Include="$(MSBuildThisFileDirectory)Presence\PresenceAddress.cs" />
     <Compile Include="$(MSBuildThisFileDirectory)Presence\PresenceList.cs" />
     <Compile Include="$(MSBuildThisFileDirectory)Presence\PresenceSelector.cs" />
+    <Compile Include="$(MSBuildThisFileDirectory)RegNames\IRegNamesStorage.cs" />
+    <Compile Include="$(MSBuildThisFileDirectory)RegNames\IxiNameUtils.cs" />
+    <Compile Include="$(MSBuildThisFileDirectory)RegNames\RegisteredNameDataRecord.cs" />
+    <Compile Include="$(MSBuildThisFileDirectory)RegNames\RegisteredNameRecord.cs" />
+    <Compile Include="$(MSBuildThisFileDirectory)RegNames\RegisteredNamesTransactions.cs" />
+    <Compile Include="$(MSBuildThisFileDirectory)RegNames\RegisteredNameTxEntries.cs" />
+    <Compile Include="$(MSBuildThisFileDirectory)RegNames\RegNamesMemoryStorage.cs" />
     <Compile Include="$(MSBuildThisFileDirectory)Streaming\Bot\Channels\BotChannel.cs" />
     <Compile Include="$(MSBuildThisFileDirectory)Streaming\Bot\Channels\BotChannels.cs" />
     <Compile Include="$(MSBuildThisFileDirectory)Streaming\Bot\Groups\BotGroup.cs" />

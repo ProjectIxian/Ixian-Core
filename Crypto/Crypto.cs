@@ -22,9 +22,9 @@ namespace IXICore
     public class Crypto
     {
         [ThreadStatic]
-        static SHA256Managed sha256Engine = null;
+        static SHA256 sha256Engine = null;
         [ThreadStatic]
-        static SHA512Managed sha512Engine = null;
+        static SHA512 sha512Engine = null;
 
         /// <summary>
         /// Converts a byte-field into a hexadecimal string representation.
@@ -77,7 +77,7 @@ namespace IXICore
             }
             if(sha256Engine == null)
             {
-                sha256Engine = new SHA256Managed();
+                sha256Engine = SHA256.Create();
             }
             return sha256Engine.ComputeHash(data, offset, count);
         }
@@ -105,7 +105,7 @@ namespace IXICore
             }
             if (sha512Engine == null)
             {
-                sha512Engine = new SHA512Managed();
+                sha512Engine = SHA512.Create();
             }
             return sha512Engine.ComputeHash(data, offset, count);
 #endif
@@ -139,7 +139,7 @@ namespace IXICore
             }
             if (sha512Engine == null)
             {
-                sha512Engine = new SHA512Managed();
+                sha512Engine = SHA512.Create();
             }
             var h = sha512Engine.ComputeHash(data, offset, count);
             return sha512Engine.ComputeHash(h, 0, h.Length);

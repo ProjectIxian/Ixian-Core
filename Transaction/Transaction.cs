@@ -219,19 +219,22 @@ namespace IXICore
             /// </remarks>
             Genesis = 3,
             /// <summary>
+            ///  Name transaction which manages names.
+            /// </summary>
+            RegName = 4,
+            /// <summary>
             ///  Similar to `Transaction.Type.Normal`, but requires multiple signatures to spend funds from a 'Multi-Signature' wallet.
             /// </summary>
-            MultisigTX = 4,
+            MultisigTX = 997,
             /// <summary>
             ///  Special transaction which alows modifying the list of allowed signers on a 'Multi-Signature' wallet.
             /// </summary>
-            ChangeMultisigWallet = 5,
+            ChangeMultisigWallet = 998,
             /// <summary>
             ///  When a transaction involving a 'Multi-Signature' is first posted, it only has one signature, so this stub transaction is used to
             ///  add signatures so that private key sharing is not required among signers.
             /// </summary>
-            MultisigAddTxSignature = 6,
-            RegName = 7
+            MultisigAddTxSignature = 999
         }
 
         /// <summary>
