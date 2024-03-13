@@ -57,8 +57,8 @@ namespace IXICore.Meta
 
         public abstract IxiNumber getMinSignerPowDifficulty(ulong blockNum);
 
-        public abstract byte[] calculateRegNameChecksumFromUpdatedDataRecords(byte[] name, List<RegisteredNameDataRecord> dataRecords, Address nextPkHash);
-        public abstract byte[] calculateRegNameChecksumForRecovery(byte[] name, Address recoveryHash, Address nextPkHash);
+        public abstract byte[] calculateRegNameChecksumFromUpdatedDataRecords(byte[] name, List<RegisteredNameDataRecord> dataRecords, ulong sequence, Address nextPkHash);
+        public abstract byte[] calculateRegNameChecksumForRecovery(byte[] name, Address recoveryHash, ulong sequence, Address nextPkHash);
     }
 
     public static class IxianHandler
@@ -239,16 +239,16 @@ namespace IXICore.Meta
             return handlerClass.getMinSignerPowDifficulty(blockNum);
         }
 
-        public static byte[] calculateRegNameChecksumForRecovery(byte[] name, Address recoveryHash, Address nextPkHash)
+        public static byte[] calculateRegNameChecksumForRecovery(byte[] name, Address recoveryHash, ulong sequence, Address nextPkHash)
         {
             verifyHandler();
-            return handlerClass.calculateRegNameChecksumForRecovery(name, recoveryHash, nextPkHash);
+            return handlerClass.calculateRegNameChecksumForRecovery(name, recoveryHash, sequence, nextPkHash);
         }
 
-        public static byte[] calculateRegNameChecksumFromUpdatedRecords(byte[] name, List<RegisteredNameDataRecord> dataRecords, Address nextPkHash)
+        public static byte[] calculateRegNameChecksumFromUpdatedRecords(byte[] name, List<RegisteredNameDataRecord> dataRecords, ulong sequence, Address nextPkHash)
         {
             verifyHandler();
-            return handlerClass.calculateRegNameChecksumFromUpdatedDataRecords(name, dataRecords, nextPkHash);
+            return handlerClass.calculateRegNameChecksumFromUpdatedDataRecords(name, dataRecords, sequence, nextPkHash);
         }
 
         public static WalletStorage getWalletStorage(Address walletAddress = null)

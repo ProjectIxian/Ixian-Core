@@ -102,7 +102,7 @@ namespace IXICore.RegNames
 
                     byte[] recordCountBytes = new byte[4];
                     fs.Read(recordCountBytes, 0, 4);
-                    long recordCount = BitConverter.ToInt64(recordCountBytes, 0);
+                    int recordCount = BitConverter.ToInt32(recordCountBytes, 0);
 
                     for (int j = 0; j < recordCount; j++)
                     {

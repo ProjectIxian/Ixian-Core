@@ -108,7 +108,7 @@ namespace IXICore
         public static readonly int maximumBlockSigners = 1000; // TODO TODO Omega - discard sigs that have lower difficulty than the new sig, when it is received
 
         public static readonly IxiNumber minBlockSignerPowDifficulty = 10000000;
-        public static readonly ulong blocksToUseForAverageDifficultyCalculation = 40000;
+        public static readonly ulong blocksToUseForAverageDifficultyCalculation = 40320;
 
         /// <summary>
         /// Minimum funds a wallet must have before it is allowed to participate in the block consensus algorithm. (used in DLT Node executable).
@@ -206,7 +206,7 @@ namespace IXICore
         public static readonly ulong plPowBlocksValidity = 120; // 120 blocks = approx. 1 hour
 
         /// <summary>
-        /// Min. number of seconds that the PL PoW will be calculated for.
+        /// Min. number of blocks that the PL PoW will be calculated for.
         /// </summary>
         public static readonly ulong plPowMinCalculationBlockTime = 20; // 20 blocks = 10 mins
         public static readonly long plPowMinCalculationTime = (long)plPowMinCalculationBlockTime * blockGenerationInterval;
@@ -234,7 +234,7 @@ namespace IXICore
         /// <summary>
         /// Nonexistant wallet address which is used in the 'to' fields for Name transactions, where currency goes to a name reward pool.
         /// </summary>
-        public static readonly Address rnRewardPoolAddress = new Address(Base58Check.Base58CheckEncoding.DecodePlain("1ixianinfinimine234234234234234234234234234242HP"));
+        public static readonly Address rnRewardPoolAddress = new Address(Base58Check.Base58CheckEncoding.DecodePlain("1ixiannames234234234234234234234234234234234"));
 
         public static readonly uint rnMaxNameLength = 256;
         public static readonly uint rnMaxRecordKeyLength = 256;

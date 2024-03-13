@@ -23,12 +23,14 @@ namespace IXICore.RegNames
     {
         public int version = 1;
         public byte[] name { get; private set; }
+        public ulong registrationBlockHeight { get; private set; }
         public uint capacity { get; private set; }
 
-        public Address nextPkHash { get; set; }
-        public Address recoveryHash { get; set; }
+        public Address nextPkHash { get; private set; }
+        public Address recoveryHash { get; private set; }
+        public ulong sequence { get; private set; }
 
-        public bool allowSubnames { get; set; }
+        public bool allowSubnames { get; private set; }
         public IxiNumber subnamePrice { get; private set; } = new IxiNumber(0);
         public Address subnameFeeRecipient { get; private set; }
 
@@ -37,24 +39,29 @@ namespace IXICore.RegNames
 
         public byte[] signaturePk { get; set; }
         public byte[] signature { get; set; }
-        public ulong expirationBlockHeight = 0;
+       
+        public ulong expirationBlockHeight { get; set; } = 0;
         public ulong updatedBlockHeight { get; private set; }
-        public RegisteredNameRecord(byte[] name, uint capacity, ulong expirationBlockHeight, Address nextPkHash, Address recoveryHash)
+        public RegisteredNameRecord(byte[] name, ulong registrationBlockHeight, uint capacity, ulong expirationBlockHeight, Address nextPkHash, Address recoveryHash)
         {
             this.name = name;
+            this.registrationBlockHeight = registrationBlockHeight;
             this.capacity = capacity;
             this.expirationBlockHeight = expirationBlockHeight;
             this.nextPkHash = nextPkHash;
             this.recoveryHash = recoveryHash;
+            this.sequence = 0;
         }
 
         public RegisteredNameRecord(RegisteredNameRecord other)
         {
             version = other.version;
             name = IxiUtils.copy(other.name);
+            registrationBlockHeight = other.registrationBlockHeight;
             capacity = other.capacity;
             nextPkHash = IxiUtils.copy(other.nextPkHash);
             recoveryHash = IxiUtils.copy(other.recoveryHash);
+            sequence = other.sequence;
             allowSubnames = other.allowSubnames;
             subnamePrice = new IxiNumber(other.subnamePrice);
             subnameFeeRecipient = IxiUtils.copy(other.subnameFeeRecipient);
@@ -124,6 +131,11 @@ namespace IXICore.RegNames
 
             name = new byte[nameLength.num];
             Array.Copy(bytes, offset, name, 0, nameLength.num);
+            offset += name.Length;
+
+            var registrationBlockHeightRet = bytes.GetIxiVarUInt(offset);
+            registrationBlockHeight = registrationBlockHeightRet.num;
+            offset += registrationBlockHeightRet.bytesRead;
 
             var capacityRet = bytes.GetIxiVarUInt(offset);
             capacity = (uint)capacityRet.num;
@@ -145,6 +157,10 @@ namespace IXICore.RegNames
             offset += (int)recoveryHashLen.num;
             recoveryHash = new Address(recoveryHashBytes);
 
+            var sequenceRet = bytes.GetIxiVarUInt(offset);
+            sequence = sequenceRet.num;
+            offset += sequenceRet.bytesRead;
+
             allowSubnames = bytes[offset] == 1 ? true : false;
             offset += 1;
 
@@ -159,7 +175,7 @@ namespace IXICore.RegNames
             var subnameFeeRecipientLen = bytes.GetIxiVarInt(offset);
             offset += subnameFeeRecipientLen.bytesRead;
 
-            if (subnameFeeRecipientLen.bytesRead > 0)
+            if (subnameFeeRecipientLen.num > 0)
             {
                 byte[] subnameFeeRecipientBytes = new byte[subnameFeeRecipientLen.num];
                 Array.Copy(bytes, offset, subnameFeeRecipientBytes, 0, subnameFeeRecipientLen.num);
@@ -170,7 +186,7 @@ namespace IXICore.RegNames
             var dataMerkleRootLength = bytes.GetIxiVarInt(offset);
             offset += dataMerkleRootLength.bytesRead;
 
-            if (dataMerkleRootLength.bytesRead > 0)
+            if (dataMerkleRootLength.num > 0)
             {
                 dataMerkleRoot = new byte[dataMerkleRootLength.num];
                 Array.Copy(bytes, offset, dataMerkleRoot, 0, dataMerkleRootLength.num);
@@ -180,7 +196,7 @@ namespace IXICore.RegNames
             var signaturePkLen = bytes.GetIxiVarInt(offset);
             offset += signaturePkLen.bytesRead;
 
-            if (signaturePkLen.bytesRead > 0)
+            if (signaturePkLen.num > 0)
             {
                 signaturePk = new byte[signaturePkLen.num];
                 Array.Copy(bytes, offset, signaturePk, 0, signaturePkLen.num);
@@ -190,7 +206,7 @@ namespace IXICore.RegNames
             var signatureLen = bytes.GetIxiVarInt(offset);
             offset += signatureLen.bytesRead;
 
-            if (signatureLen.bytesRead > 0)
+            if (signatureLen.num > 0)
             {
                 signature = new byte[signatureLen.num];
                 Array.Copy(bytes, offset, signature, 0, signatureLen.num);
@@ -209,9 +225,11 @@ namespace IXICore.RegNames
         public byte[] toBytes(bool forChecksum = false)
         {
             byte[] nameLenBytes = name.Length.GetIxiVarIntBytes();
+            byte[] registrationBlockHeightBytes = registrationBlockHeight.GetIxiVarIntBytes();
             byte[] capacityBytes = ((ulong)capacity).GetIxiVarIntBytes();
             byte[] nextPkHashLenBytes = nextPkHash.addressNoChecksum.Length.GetIxiVarIntBytes();
             byte[] recoveryHashLenBytes = recoveryHash.addressNoChecksum.Length.GetIxiVarIntBytes();
+            byte[] sequenceBytes = sequence.GetIxiVarIntBytes();
             byte[] subnamePriceLenBytes = subnamePrice.getBytes().Length.GetIxiVarIntBytes();
 
             int subnameFeeRecipientLen = 0;
@@ -259,11 +277,13 @@ namespace IXICore.RegNames
                 1 // version
                 + nameLenBytes.Length
                 + name.Length
+                + registrationBlockHeightBytes.Length
                 + capacityBytes.Length
                 + nextPkHashLenBytes.Length
                 + nextPkHash.addressNoChecksum.Length
                 + recoveryHashLenBytes.Length
                 + recoveryHash.addressNoChecksum.Length
+                + sequenceBytes.Length
                 + 1 // bool allowSubnames
                 + subnamePriceLenBytes.Length
                 + subnamePrice.getBytes().Length
@@ -289,6 +309,9 @@ namespace IXICore.RegNames
             Array.Copy(name, 0, bytes, pos, name.Length);
             pos += name.Length;
 
+            Array.Copy(registrationBlockHeightBytes, 0, bytes, pos, registrationBlockHeightBytes.Length);
+            pos += registrationBlockHeightBytes.Length;
+
             Array.Copy(capacityBytes, 0, bytes, pos, capacityBytes.Length);
             pos += capacityBytes.Length;
 
@@ -303,6 +326,9 @@ namespace IXICore.RegNames
 
             Array.Copy(recoveryHash.addressNoChecksum, 0, bytes, pos, recoveryHash.addressNoChecksum.Length);
             pos += recoveryHash.addressNoChecksum.Length;
+
+            Array.Copy(sequenceBytes, 0, bytes, pos, sequenceBytes.Length);
+            pos += sequenceBytes.Length;
 
             bytes[pos] = Convert.ToByte(allowSubnames);
             pos += 1;
@@ -371,33 +397,36 @@ namespace IXICore.RegNames
             return dataRecords;
         }
 
-        public void setCapacity(uint newCapacity, Address pkHash, byte[] sigPk, byte[] sig)
+        public void setCapacity(uint newCapacity, ulong sequence, Address pkHash, byte[] sigPk, byte[] sig)
         {
             capacity = newCapacity;
+            this.sequence = sequence;
             nextPkHash = pkHash;
             signaturePk = sigPk;
             signature = sig;
         }
 
-        public void setRecords(List<RegisteredNameDataRecord> records, Address pkHash, byte[] sigPk, byte[] sig)
+        public void setRecords(List<RegisteredNameDataRecord> records, ulong sequence, Address pkHash, byte[] sigPk, byte[] sig)
         {
             dataRecords = records;
             // TODO Data Merkle Root can be cached for revert operations
             recalculateDataMerkleRoot();
+            this.sequence = sequence;
             nextPkHash = pkHash;
             signaturePk = sigPk;
             signature = sig;
         }
 
-        public void setRecoveryHash(Address recoveryHash, Address pkHash, byte[] sigPk, byte[] sig)
+        public void setRecoveryHash(Address recoveryHash, ulong sequence, Address pkHash, byte[] sigPk, byte[] sig)
         {
             this.recoveryHash = recoveryHash;
+            this.sequence = sequence;
             nextPkHash = pkHash;
             signaturePk = sigPk;
             signature = sig;
         }
 
-        public void setAllowSubnames(bool allowSubnames, IxiNumber subnamePrice, Address subnameFeeRecipient, Address pkHash, byte[] sigPk, byte[] sig)
+        public void setAllowSubnames(bool allowSubnames, IxiNumber subnamePrice, Address subnameFeeRecipient, ulong sequence, Address pkHash, byte[] sigPk, byte[] sig)
         {
             // Reset data records if enabling subnames
             if (allowSubnames && !this.allowSubnames)
@@ -410,6 +439,7 @@ namespace IXICore.RegNames
             this.subnameFeeRecipient = subnameFeeRecipient;
             // TODO Data Merkle Root can be cached for revert operations
             recalculateDataMerkleRoot();
+            this.sequence = sequence;
             nextPkHash = pkHash;
             signaturePk = sigPk;
             signature = sig;

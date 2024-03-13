@@ -81,6 +81,7 @@ namespace IXICore.Journal
 
         public bool revert()
         {
+            bool result = true;
             lock (entries)
             {
                 foreach (var e in entries.AsEnumerable().Reverse())
@@ -88,10 +89,11 @@ namespace IXICore.Journal
                     if (e.revert() == false)
                     {
                         Logging.error("Error while reverting Journal transaction.");
+                        result = false;
                     }
                 }
             }
-            return true;
+            return result;
         }
 
         public void addChange(JournalEntry entry)

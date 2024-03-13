@@ -190,11 +190,13 @@ namespace IXICore.RegNames
     public class RegNameChangeCapacity : RegNameTxEntryBase
     {
         public uint newCapacity { get; private set; }
-        public Address recoveryHash { get; private set; }
-        public RegNameChangeCapacity(byte[] name, uint newCapacity, Address nextPkHash, Address sigPk, byte[] signature)
+        public ulong sequence { get; private set; }
+
+        public RegNameChangeCapacity(byte[] name, uint newCapacity, ulong sequence, Address nextPkHash, Address sigPk, byte[] signature)
             : base(RegNameInstruction.changeCapacity, name, nextPkHash, sigPk.pubKey, signature)
         {
             this.newCapacity = newCapacity;
+            this.sequence = sequence;
         }
 
         public RegNameChangeCapacity(byte[] bytes)
@@ -219,6 +221,10 @@ namespace IXICore.RegNames
             newCapacity = (uint)newCapacityLength.num;
             offset += newCapacityLength.bytesRead;
 
+            var sequenceLength = bytes.GetIxiVarUInt(offset);
+            sequence = sequenceLength.num;
+            offset += sequenceLength.bytesRead;
+
             var nextPkHashBytesAndOffset = bytes.ReadIxiBytes(offset);
             nextPkHash = new Address(nextPkHashBytesAndOffset.bytes);
             offset += nextPkHashBytesAndOffset.bytesRead;
@@ -236,11 +242,12 @@ namespace IXICore.RegNames
         {
             byte[] nameBytes = name.GetIxiBytes();
             byte[] newCapacityBytes = ((ulong)newCapacity).GetIxiVarIntBytes();
+            byte[] sequenceBytes = sequence.GetIxiVarIntBytes();
             byte[] nextPkHashBytes = nextPkHash.addressNoChecksum.GetIxiBytes();
             byte[] pkSigBytes = signaturePk.GetIxiBytes();
             byte[] sigBytes = signature.GetIxiBytes();
 
-            byte[] bytes = new byte[1 + nameBytes.Length + newCapacityBytes.Length + nextPkHashBytes.Length + pkSigBytes.Length + sigBytes.Length];
+            byte[] bytes = new byte[1 + nameBytes.Length + newCapacityBytes.Length + sequenceBytes.Length + nextPkHashBytes.Length + pkSigBytes.Length + sigBytes.Length];
 
             bytes[0] = (byte)instruction;
             int offset = 1;
@@ -250,6 +257,9 @@ namespace IXICore.RegNames
 
             Array.Copy(newCapacityBytes, 0, bytes, offset, newCapacityBytes.Length);
             offset += newCapacityBytes.Length;
+
+            Array.Copy(sequenceBytes, 0, bytes, offset, sequenceBytes.Length);
+            offset += sequenceBytes.Length;
 
             Array.Copy(nextPkHashBytes, 0, bytes, offset, nextPkHashBytes.Length);
             offset += nextPkHashBytes.Length;
@@ -267,10 +277,12 @@ namespace IXICore.RegNames
     public class RegNameRecover : RegNameTxEntryBase
     {
         public Address newRecoveryHash { get; private set; }
-        public RegNameRecover(byte[] name, Address nextPkHash, Address newRecoveryHash, Address recoveryPk, byte[] recoverySig)
+        public ulong sequence { get; private set; }
+        public RegNameRecover(byte[] name, ulong sequence, Address nextPkHash, Address newRecoveryHash, Address recoveryPk, byte[] recoverySig)
             : base(RegNameInstruction.recover, name, nextPkHash, recoveryPk.pubKey, recoverySig)
         {
             this.newRecoveryHash = newRecoveryHash;
+            this.sequence = sequence;
         }
 
         public RegNameRecover(byte[] bytes)
@@ -295,6 +307,10 @@ namespace IXICore.RegNames
             newRecoveryHash = new Address(newRecoveryHashBytesAndOffset.bytes);
             offset += newRecoveryHashBytesAndOffset.bytesRead;
 
+            var sequenceLength = bytes.GetIxiVarUInt(offset);
+            sequence = sequenceLength.num;
+            offset += sequenceLength.bytesRead;
+
             var nextPkHashBytesAndOffset = bytes.ReadIxiBytes(offset);
             nextPkHash = new Address(nextPkHashBytesAndOffset.bytes);
             offset += nextPkHashBytesAndOffset.bytesRead;
@@ -312,11 +328,12 @@ namespace IXICore.RegNames
         {
             byte[] nameBytes = name.GetIxiBytes();
             byte[] newRecoveryHashBytes = newRecoveryHash.addressNoChecksum.GetIxiBytes();
+            byte[] sequenceBytes = sequence.GetIxiVarIntBytes();
             byte[] nextPkHashBytes = nextPkHash.addressNoChecksum.GetIxiBytes();
             byte[] pkSigBytes = signaturePk.GetIxiBytes();
             byte[] sigBytes = signature.GetIxiBytes();
 
-            byte[] bytes = new byte[1 + nameBytes.Length + nextPkHashBytes.Length + newRecoveryHashBytes.Length + pkSigBytes.Length + sigBytes.Length];
+            byte[] bytes = new byte[1 + nameBytes.Length + nextPkHashBytes.Length + newRecoveryHashBytes.Length + sequenceBytes.Length + pkSigBytes.Length + sigBytes.Length];
 
             bytes[0] = (byte)instruction;
             int offset = 1;
@@ -326,6 +343,9 @@ namespace IXICore.RegNames
 
             Array.Copy(newRecoveryHashBytes, 0, bytes, offset, newRecoveryHashBytes.Length);
             offset += newRecoveryHashBytes.Length;
+
+            Array.Copy(sequenceBytes, 0, bytes, offset, sequenceBytes.Length);
+            offset += sequenceBytes.Length;
 
             Array.Copy(nextPkHashBytes, 0, bytes, offset, nextPkHashBytes.Length);
             offset += nextPkHashBytes.Length;
@@ -343,10 +363,12 @@ namespace IXICore.RegNames
     public class RegNameUpdateRecord : RegNameTxEntryBase
     {
         public List<RegisteredNameDataRecord> records { get; private set; }
-        public RegNameUpdateRecord(byte[] name, List<RegisteredNameDataRecord> records, Address nextPkHash, Address pkSig, byte[] signature)
+        public ulong sequence { get; private set; }
+        public RegNameUpdateRecord(byte[] name, List<RegisteredNameDataRecord> records, ulong sequence, Address nextPkHash, Address pkSig, byte[] signature)
             : base(RegNameInstruction.updateRecord, name, nextPkHash, pkSig.pubKey, signature)
         {
             this.records = records;
+            this.sequence = sequence;
         }
 
         public RegNameUpdateRecord(byte[] bytes)
@@ -377,6 +399,10 @@ namespace IXICore.RegNames
                 records.Add(record);
                 offset += recordBytesAndOffset.bytesRead;
             }
+
+            var sequenceLength = bytes.GetIxiVarUInt(offset);
+            sequence = sequenceLength.num;
+            offset += sequenceLength.bytesRead;
 
             var nextPkHashBytesAndOffset = bytes.ReadIxiBytes(offset);
             nextPkHash = new Address(nextPkHashBytesAndOffset.bytes);
@@ -409,11 +435,13 @@ namespace IXICore.RegNames
                 recordBytes = m.ToArray();
             }
 
+            byte[] sequenceBytes = sequence.GetIxiVarIntBytes();
+
             byte[] nextPkHashBytes = nextPkHash.addressNoChecksum.GetIxiBytes();
             byte[] pkSigBytes = signaturePk.GetIxiBytes();
             byte[] sigBytes = signature.GetIxiBytes();
 
-            byte[] bytes = new byte[1 + nameBytes.Length + recordBytes.Length + nextPkHashBytes.Length + pkSigBytes.Length + sigBytes.Length];
+            byte[] bytes = new byte[1 + nameBytes.Length + recordBytes.Length + sequenceBytes.Length + nextPkHashBytes.Length + pkSigBytes.Length + sigBytes.Length];
 
             bytes[0] = (byte)instruction;
             int offset = 1;
@@ -423,6 +451,9 @@ namespace IXICore.RegNames
 
             Array.Copy(recordBytes, 0, bytes, offset, recordBytes.Length);
             offset += recordBytes.Length;
+
+            Array.Copy(sequenceBytes, 0, bytes, offset, sequenceBytes.Length);
+            offset += sequenceBytes.Length;
 
             Array.Copy(nextPkHashBytes, 0, bytes, offset, nextPkHashBytes.Length);
             offset += nextPkHashBytes.Length;
@@ -442,13 +473,15 @@ namespace IXICore.RegNames
         public bool allowSubnames { get; private set; }
         public IxiNumber fee { get; private set; }
         public Address feeRecipientAddress { get; private set; }
+        public ulong sequence { get; private set; }
 
-        public RegNameToggleAllowSubnames(byte[] name, bool allowSubnames, IxiNumber fee, Address feeRecipientAddress, Address nextPkHash, Address pkSig, byte[] signature)
+        public RegNameToggleAllowSubnames(byte[] name, bool allowSubnames, IxiNumber fee, Address feeRecipientAddress, ulong sequence, Address nextPkHash, Address pkSig, byte[] signature)
             : base(RegNameInstruction.toggleAllowSubnames, name, nextPkHash, pkSig.pubKey, signature)
         {
             this.allowSubnames = allowSubnames;
             this.fee = fee;
             this.feeRecipientAddress = feeRecipientAddress;
+            this.sequence = sequence;
         }
 
         public RegNameToggleAllowSubnames(byte[] bytes)
@@ -480,6 +513,10 @@ namespace IXICore.RegNames
             feeRecipientAddress = new Address(feeRecipientBytesAndOffset.bytes);
             offset += feeRecipientBytesAndOffset.bytesRead;
 
+            var sequenceLength = bytes.GetIxiVarUInt(offset);
+            sequence = sequenceLength.num;
+            offset += sequenceLength.bytesRead;
+
             var nextPkHashBytesAndOffset = bytes.ReadIxiBytes(offset);
             nextPkHash = new Address(nextPkHashBytesAndOffset.bytes);
             offset += nextPkHashBytesAndOffset.bytesRead;
@@ -497,13 +534,15 @@ namespace IXICore.RegNames
         {
             byte[] nameBytes = name.GetIxiBytes();
 
+            byte[] feeBytes = fee.getBytes().GetIxiBytes();
+            byte[] feeRecipientAddressBytes = IxiUtils.GetIxiBytes(feeRecipientAddress.addressNoChecksum);
+            byte[] sequenceBytes = sequence.GetIxiVarIntBytes();
+
             byte[] nextPkHashBytes = nextPkHash.addressNoChecksum.GetIxiBytes();
             byte[] pkSigBytes = signaturePk.GetIxiBytes();
             byte[] sigBytes = signature.GetIxiBytes();
-            byte[] feeBytes = fee.getBytes().GetIxiBytes();
-            byte[] feeRecipientAddressBytes = IxiUtils.GetIxiBytes(feeRecipientAddress.addressNoChecksum);
 
-            byte[] bytes = new byte[1 + nameBytes.Length + 1 + feeBytes.Length + feeRecipientAddressBytes.Length + nextPkHashBytes.Length + pkSigBytes.Length + sigBytes.Length];
+            byte[] bytes = new byte[1 + nameBytes.Length + 1 + feeBytes.Length + feeRecipientAddressBytes.Length + sequenceBytes.Length + nextPkHashBytes.Length + pkSigBytes.Length + sigBytes.Length];
 
             bytes[0] = (byte)instruction;
             int offset = 1;
@@ -519,6 +558,9 @@ namespace IXICore.RegNames
 
             Array.Copy(feeRecipientAddressBytes, 0, bytes, offset, feeRecipientAddressBytes.Length);
             offset += feeRecipientAddressBytes.Length;
+
+            Array.Copy(sequenceBytes, 0, bytes, offset, sequenceBytes.Length);
+            offset += sequenceBytes.Length;
 
             Array.Copy(nextPkHashBytes, 0, bytes, offset, nextPkHashBytes.Length);
             offset += nextPkHashBytes.Length;

@@ -38,9 +38,9 @@ namespace IXICore.RegNames
             return toEntry;
         }
 
-        public static ToEntry createRecoverToEntry(byte[] nameToRecover, Address nextPkHash, Address nextRecoveryHash, Address recoveryPk, byte[] recoverySig)
+        public static ToEntry createRecoverToEntry(byte[] nameToRecover, ulong sequence, Address nextPkHash, Address nextRecoveryHash, Address recoveryPk, byte[] recoverySig)
         {
-            RegNameRecover rnr = new RegNameRecover(nameToRecover, nextPkHash, nextRecoveryHash, recoveryPk, recoverySig);
+            RegNameRecover rnr = new RegNameRecover(nameToRecover, sequence, nextPkHash, nextRecoveryHash, recoveryPk, recoverySig);
 
             byte[] data = rnr.toBytes();
 
@@ -48,9 +48,9 @@ namespace IXICore.RegNames
             return toEntry;
         }
 
-        public static ToEntry createChangeCapacityToEntry(byte[] nameToChangeCapacityFor, uint newCapacity, Address nextPkHash, Address sigPk, byte[] signature, IxiNumber fee)
+        public static ToEntry createChangeCapacityToEntry(byte[] nameToChangeCapacityFor, uint newCapacity, ulong sequence, Address nextPkHash, Address sigPk, byte[] signature, IxiNumber fee)
         {
-            RegNameChangeCapacity rncc = new RegNameChangeCapacity(nameToChangeCapacityFor, newCapacity, nextPkHash, sigPk, signature);
+            RegNameChangeCapacity rncc = new RegNameChangeCapacity(nameToChangeCapacityFor, newCapacity, sequence, nextPkHash, sigPk, signature);
 
             byte[] data = rncc.toBytes();
 
@@ -58,9 +58,9 @@ namespace IXICore.RegNames
             return toEntry;
         }
 
-        public static ToEntry createUpdateRecordToEntry(byte[] nameToUpdateEntryFor, List<RegisteredNameDataRecord> records, Address nextPkHash, Address sigPk, byte[] signature)
+        public static ToEntry createUpdateRecordToEntry(byte[] nameToUpdateEntryFor, List<RegisteredNameDataRecord> records, ulong sequence, Address nextPkHash, Address sigPk, byte[] signature)
         {
-            RegNameUpdateRecord rnu = new RegNameUpdateRecord(nameToUpdateEntryFor, records, nextPkHash, sigPk, signature);
+            RegNameUpdateRecord rnu = new RegNameUpdateRecord(nameToUpdateEntryFor, records, sequence, nextPkHash, sigPk, signature);
 
             byte[] data = rnu.toBytes();
 
@@ -68,9 +68,9 @@ namespace IXICore.RegNames
             return toEntry;
         }
 
-        public static ToEntry createToggleAllowSubnamesToEntry(byte[] nameToToggleSubnameFor, bool allowSubnames, IxiNumber fee, Address feeRecipientAddress, Address nextPkHash, Address sigPk, byte[] signature)
+        public static ToEntry createToggleAllowSubnamesToEntry(byte[] nameToToggleSubnameFor, bool allowSubnames, IxiNumber fee, Address feeRecipientAddress, ulong sequence, Address nextPkHash, Address sigPk, byte[] signature)
         {
-            RegNameToggleAllowSubnames rnSub = new RegNameToggleAllowSubnames(nameToToggleSubnameFor, allowSubnames, fee, feeRecipientAddress, nextPkHash, sigPk, signature);
+            RegNameToggleAllowSubnames rnSub = new RegNameToggleAllowSubnames(nameToToggleSubnameFor, allowSubnames, fee, feeRecipientAddress, sequence, nextPkHash, sigPk, signature);
 
             byte[] data = rnSub.toBytes();
 
