@@ -11,7 +11,6 @@
 // MIT License for more details.
 //
 
-using IXICore.Meta;
 using IXICore.Utils;
 using System;
 using System.Collections.Generic;
@@ -85,11 +84,9 @@ namespace IXICore.RegNames
         public void recalculateDataMerkleRoot()
         {
             List<byte[]> hashes = new();
-            Logging.info("Recalculating data merkle root:");
             foreach (var dataRecord in dataRecords)
             {
                 hashes.Add(dataRecord.checksum);
-                Logging.info("Checksum: " + Crypto.hashToString(dataRecord.checksum));
             }
             dataMerkleRoot = IxiUtils.calculateMerkleRoot(hashes);
         }
@@ -97,7 +94,6 @@ namespace IXICore.RegNames
         public byte[] calculateChecksum()
         {
             byte[] bytes = toBytes(true);
-            Logging.info("Calculating checksum: " + Crypto.hashToString(toBytes(true)));
             return CryptoManager.lib.sha3_512sq(bytes);
         }
 
@@ -432,7 +428,7 @@ namespace IXICore.RegNames
             if (allowSubnames && !this.allowSubnames)
             {
                 dataRecords = new();
-                capacity = 1;
+                capacity = ConsensusConfig.rnMinCapacity;
             }
             this.allowSubnames = allowSubnames;
             this.subnamePrice = subnamePrice;

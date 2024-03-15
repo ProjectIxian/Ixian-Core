@@ -27,7 +27,7 @@ namespace IXICore.RegNames
         {
             // Check if name is valid; throws an exception if not
             IdnMapping idn = new IdnMapping();
-            idn.GetAscii(name);
+            name = idn.GetAscii(name.ToLower());
 
             // Split names by '.' and reverse order, so that top domain is first
             var splitNames = name.Split('.').Reverse();
@@ -37,16 +37,28 @@ namespace IXICore.RegNames
                 {
                     foreach (var nameSection in splitNames)
                     {
-                        // to lowercase
-                        string transformedName = nameSection.ToLower();
-                        byte[] nameSectionBytes = UTF8Encoding.UTF8.GetBytes(transformedName);
+                        byte[] nameSectionBytes = UTF8Encoding.UTF8.GetBytes(nameSection);
+                        byte[] nameSectionWithPrefixBytes = new byte[ConsensusConfig.ixianChecksumLock.Length + nameSectionBytes.Length];
+                        Array.Copy(ConsensusConfig.ixianChecksumLock, 0, nameSectionWithPrefixBytes, 0, ConsensusConfig.ixianChecksumLock.Length);
+                        Array.Copy(nameSectionBytes, 0, nameSectionWithPrefixBytes, ConsensusConfig.ixianChecksumLock.Length, nameSectionBytes.Length);
+
                         // double SHA-3 512 hash
-                        byte[] hashedNameSectionBytes = CryptoManager.lib.sha3_512sq(nameSectionBytes);
+                        byte[] hashedNameSectionBytes = CryptoManager.lib.sha3_512sq(nameSectionWithPrefixBytes);
                         bw.Write(hashedNameSectionBytes.GetIxiBytes());
                     }
                 }
                 return m.ToArray();
             }
+        }
+
+        public static byte[] encodeIxiNameRecordKey(byte[] encodedName, byte[] encodedRecordKey)
+        {
+            byte[] nameAndKeyBytes = new byte[encodedName.Length + encodedRecordKey.Length];
+            Array.Copy(encodedName, 0, nameAndKeyBytes, 0, encodedName.Length);
+            Array.Copy(encodedRecordKey, 0, nameAndKeyBytes, encodedName.Length, encodedRecordKey.Length);
+
+            // double SHA-3 512 hash
+            return CryptoManager.lib.sha3_512sq(nameAndKeyBytes);
         }
 
         public static List<byte[]> splitIxiNameBytes(byte[] id)
@@ -68,19 +80,24 @@ namespace IXICore.RegNames
             return splitName;
         }
 
-        public static byte[] encryptRecord(byte[] unhashedNameBytes, byte[] unhashedRecordKey, byte[] recordData)
+        public static byte[] buildEncryptionKey(byte[] unhashedNameBytes, byte[] unhashedRecordKey)
         {
             byte[] key = new byte[unhashedNameBytes.Length + unhashedRecordKey.Length];
             Array.Copy(unhashedNameBytes, 0, key, 0, unhashedNameBytes.Length);
             Array.Copy(unhashedRecordKey, 0, key, unhashedNameBytes.Length, unhashedRecordKey.Length);
+            key = CryptoManager.lib.sha3_512sqTrunc(key, 0, 0, 16);
+            return key;
+        }
+
+        public static byte[] encryptRecord(byte[] unhashedNameBytes, byte[] unhashedRecordKey, byte[] recordData)
+        {
+            byte[] key = buildEncryptionKey(unhashedNameBytes, unhashedRecordKey);
             return CryptoManager.lib.encryptWithAES(recordData, key, true);
         }
 
         public static byte[] decryptRecord(byte[] unhashedNameBytes, byte[] unhashedRecordKey, byte[] recordData)
         {
-            byte[] key = new byte[unhashedNameBytes.Length + unhashedRecordKey.Length];
-            Array.Copy(unhashedNameBytes, 0, key, 0, unhashedNameBytes.Length);
-            Array.Copy(unhashedRecordKey, 0, key, unhashedNameBytes.Length, unhashedRecordKey.Length);
+            byte[] key = buildEncryptionKey(unhashedNameBytes, unhashedRecordKey);
             return CryptoManager.lib.decryptWithAES(recordData, key, true);
         }
     }

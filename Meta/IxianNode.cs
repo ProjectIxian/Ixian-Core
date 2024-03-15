@@ -59,6 +59,7 @@ namespace IXICore.Meta
 
         public abstract byte[] calculateRegNameChecksumFromUpdatedDataRecords(byte[] name, List<RegisteredNameDataRecord> dataRecords, ulong sequence, Address nextPkHash);
         public abstract byte[] calculateRegNameChecksumForRecovery(byte[] name, Address recoveryHash, ulong sequence, Address nextPkHash);
+        public abstract RegisteredNameRecord getRegName(byte[] name, bool useAbsoluteId);
     }
 
     public static class IxianHandler
@@ -249,6 +250,12 @@ namespace IXICore.Meta
         {
             verifyHandler();
             return handlerClass.calculateRegNameChecksumFromUpdatedDataRecords(name, dataRecords, sequence, nextPkHash);
+        }
+
+        public static RegisteredNameRecord getRegName(byte[] name, bool useAbsoluteId = true)
+        {
+            verifyHandler();
+            return handlerClass.getRegName(name, useAbsoluteId);
         }
 
         public static WalletStorage getWalletStorage(Address walletAddress = null)

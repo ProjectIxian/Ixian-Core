@@ -1655,11 +1655,11 @@ namespace IXICore
             {
                 return new JsonResponse { result = null, error = new JsonError() { code = (int)RPCErrorCode.RPC_INVALID_PARAMS, message = "Missing parameter 'name'" } };
             }
-            byte[] nameBytes = Crypto.stringToHash((string)parameters["name"]);
+            byte[] nameBytes = IxiNameUtils.encodeIxiName((string)parameters["name"]);
             Address recoveryHash = IxianHandler.primaryWalletAddress;
             Address pkHash = IxianHandler.primaryWalletAddress;
             uint regTime = ConsensusConfig.rnMinRegistrationTimeInBlocks;
-            uint capacity = 1;
+            uint capacity = ConsensusConfig.rnMinCapacity;
             ToEntry toEntry = RegisteredNamesTransactions.createRegisterToEntry(nameBytes, regTime, capacity, recoveryHash, pkHash, ConsensusConfig.rnPricePerUnit * (ulong)(regTime / ConsensusConfig.rnMonthInBlocks));
 
             Transaction fundedTx = createRegNameTransaction(toEntry, null, null);
@@ -1683,7 +1683,7 @@ namespace IXICore
             {
                 return new JsonResponse { result = null, error = new JsonError() { code = (int)RPCErrorCode.RPC_INVALID_PARAMS, message = "Missing parameter 'name'" } };
             }
-            byte[] nameBytes = Crypto.stringToHash((string)parameters["name"]);
+            byte[] nameBytes = IxiNameUtils.encodeIxiName((string)parameters["name"]);
             uint regTime = ConsensusConfig.rnMinRegistrationTimeInBlocks;
             ToEntry toEntry = RegisteredNamesTransactions.createExtendToEntry(nameBytes, regTime, ConsensusConfig.rnPricePerUnit * (ulong)(regTime / ConsensusConfig.rnMonthInBlocks));
 
@@ -1708,13 +1708,15 @@ namespace IXICore
             {
                 return new JsonResponse { result = null, error = new JsonError() { code = (int)RPCErrorCode.RPC_INVALID_PARAMS, message = "Missing parameter 'name'" } };
             }
-            byte[] nameBytes = Crypto.stringToHash((string)parameters["name"]);
+            byte[] nameBytes = IxiNameUtils.encodeIxiName((string)parameters["name"]);
             Address nextPkHash = IxianHandler.primaryWalletAddress;
             Address sigPk = new Address(IxianHandler.getWalletStorage(nextPkHash).getPrimaryPublicKey());
             byte[] sig = new byte[64];
-            int newCapacity = 2;
+            ulong newCapacity = ConsensusConfig.rnMinCapacity * 2;
             int months = 1; // TODO Make sure that the new capacity covers the whole lifespan of the name
-            ToEntry toEntry = RegisteredNamesTransactions.createChangeCapacityToEntry(nameBytes, (uint)newCapacity, nextPkHash, sigPk, sig, ConsensusConfig.rnPricePerUnit * months * newCapacity);
+            var name = IxianHandler.getRegName(nameBytes);
+            ulong sequence = name.sequence + 1;
+            ToEntry toEntry = RegisteredNamesTransactions.createChangeCapacityToEntry(nameBytes, (uint)newCapacity, sequence, nextPkHash, sigPk, sig, ConsensusConfig.rnPricePerUnit * months * newCapacity);
 
             Transaction fundedTx = createRegNameTransaction(toEntry, null, null);
             if (fundedTx == null)
@@ -1737,15 +1739,17 @@ namespace IXICore
             {
                 return new JsonResponse { result = null, error = new JsonError() { code = (int)RPCErrorCode.RPC_INVALID_PARAMS, message = "Missing parameter 'name'" } };
             }
-            byte[] nameBytes = Crypto.stringToHash((string)parameters["name"]);
+            byte[] nameBytes = IxiNameUtils.encodeIxiName((string)parameters["name"]);
             Address nextPkHash = IxianHandler.primaryWalletAddress;
             Address nextRecoveryHash = IxianHandler.primaryWalletAddress;
             Address sigPk = new Address(IxianHandler.getWalletStorage(nextPkHash).getPrimaryPublicKey());
+            var name = IxianHandler.getRegName(nameBytes);
+            ulong sequence = name.sequence + 1;
 
-            var newChecksum = IxianHandler.calculateRegNameChecksumForRecovery(nameBytes, nextRecoveryHash, nextPkHash);
+            var newChecksum = IxianHandler.calculateRegNameChecksumForRecovery(nameBytes, nextRecoveryHash, sequence, nextPkHash);
             byte[] sig = CryptoManager.lib.getSignature(newChecksum, IxianHandler.getWalletStorage(nextPkHash).getPrimaryPrivateKey());
 
-            ToEntry toEntry = RegisteredNamesTransactions.createRecoverToEntry(nameBytes, nextPkHash, nextRecoveryHash, sigPk, sig);
+            ToEntry toEntry = RegisteredNamesTransactions.createRecoverToEntry(nameBytes, sequence, nextPkHash, nextRecoveryHash, sigPk, sig);
 
             Transaction fundedTx = createRegNameTransaction(toEntry, null, null);
             if (fundedTx == null)
@@ -1773,23 +1777,27 @@ namespace IXICore
             {
                 return new JsonResponse { result = null, error = new JsonError() { code = (int)RPCErrorCode.RPC_INVALID_PARAMS, message = "Missing parameter/s 'records[]'" } };
             }
-
-            byte[] nameBytes = Crypto.stringToHash((string)parameters["name"]);
+            string namePlainText = (string)parameters["name"];
+            byte[] nameBytes = IxiNameUtils.encodeIxiName(namePlainText);
             Address nextPkHash = IxianHandler.primaryWalletAddress;
             Address sigPk = new Address(IxianHandler.getWalletStorage(nextPkHash).getPrimaryPublicKey());
+            var name = IxianHandler.getRegName(nameBytes);
+            ulong sequence = name.sequence + 1;
 
             List<RegisteredNameDataRecord> records = new List<RegisteredNameDataRecord>();            
             foreach (var record in (string[])parameters["records[]"])
             {
                 var splitRecord = record.Split(',');
-                RegisteredNameDataRecord rndr = new RegisteredNameDataRecord(Crypto.stringToHash(splitRecord[0]), int.Parse(splitRecord[1]), Crypto.stringToHash(splitRecord[2]));
+                var recordKeyPlainText = splitRecord[0];
+                byte[] recordKeyBytes = IxiNameUtils.encodeIxiName(recordKeyPlainText);
+                RegisteredNameDataRecord rndr = new RegisteredNameDataRecord(IxiNameUtils.encodeIxiNameRecordKey(nameBytes, recordKeyBytes), int.Parse(splitRecord[1]), IxiNameUtils.encryptRecord(UTF8Encoding.UTF8.GetBytes(namePlainText), UTF8Encoding.UTF8.GetBytes(recordKeyPlainText), Crypto.stringToHash(splitRecord[2])));
                 records.Add(rndr);
             }
 
-            var newChecksum = IxianHandler.calculateRegNameChecksumFromUpdatedRecords(nameBytes, records, nextPkHash);
+            var newChecksum = IxianHandler.calculateRegNameChecksumFromUpdatedRecords(nameBytes, records, sequence, nextPkHash);
 
             byte[] sig = CryptoManager.lib.getSignature(newChecksum, IxianHandler.getWalletStorage(nextPkHash).getPrimaryPrivateKey());
-            ToEntry toEntry = RegisteredNamesTransactions.createUpdateRecordToEntry(nameBytes, records, nextPkHash, sigPk, sig);
+            ToEntry toEntry = RegisteredNamesTransactions.createUpdateRecordToEntry(nameBytes, records, sequence, nextPkHash, sigPk, sig);
 
             Transaction fundedTx = createRegNameTransaction(toEntry, null, null);
             if (fundedTx == null)
