@@ -1655,7 +1655,7 @@ namespace IXICore
             {
                 return new JsonResponse { result = null, error = new JsonError() { code = (int)RPCErrorCode.RPC_INVALID_PARAMS, message = "Missing parameter 'name'" } };
             }
-            byte[] nameBytes = IxiNameUtils.encodeIxiName((string)parameters["name"]);
+            byte[] nameBytes = IxiNameUtils.encodeAndHashIxiName((string)parameters["name"]);
             Address recoveryHash = IxianHandler.primaryWalletAddress;
             Address pkHash = IxianHandler.primaryWalletAddress;
             uint regTime = ConsensusConfig.rnMinRegistrationTimeInBlocks;
@@ -1683,7 +1683,7 @@ namespace IXICore
             {
                 return new JsonResponse { result = null, error = new JsonError() { code = (int)RPCErrorCode.RPC_INVALID_PARAMS, message = "Missing parameter 'name'" } };
             }
-            byte[] nameBytes = IxiNameUtils.encodeIxiName((string)parameters["name"]);
+            byte[] nameBytes = IxiNameUtils.encodeAndHashIxiName((string)parameters["name"]);
             uint regTime = ConsensusConfig.rnMinRegistrationTimeInBlocks;
             ToEntry toEntry = RegisteredNamesTransactions.createExtendToEntry(nameBytes, regTime, ConsensusConfig.rnPricePerUnit * (ulong)(regTime / ConsensusConfig.rnMonthInBlocks));
 
@@ -1708,7 +1708,7 @@ namespace IXICore
             {
                 return new JsonResponse { result = null, error = new JsonError() { code = (int)RPCErrorCode.RPC_INVALID_PARAMS, message = "Missing parameter 'name'" } };
             }
-            byte[] nameBytes = IxiNameUtils.encodeIxiName((string)parameters["name"]);
+            byte[] nameBytes = IxiNameUtils.encodeAndHashIxiName((string)parameters["name"]);
             Address nextPkHash = IxianHandler.primaryWalletAddress;
             Address sigPk = new Address(IxianHandler.getWalletStorage(nextPkHash).getPrimaryPublicKey());
             byte[] sig = new byte[64];
@@ -1739,7 +1739,7 @@ namespace IXICore
             {
                 return new JsonResponse { result = null, error = new JsonError() { code = (int)RPCErrorCode.RPC_INVALID_PARAMS, message = "Missing parameter 'name'" } };
             }
-            byte[] nameBytes = IxiNameUtils.encodeIxiName((string)parameters["name"]);
+            byte[] nameBytes = IxiNameUtils.encodeAndHashIxiName((string)parameters["name"]);
             Address nextPkHash = IxianHandler.primaryWalletAddress;
             Address nextRecoveryHash = IxianHandler.primaryWalletAddress;
             Address sigPk = new Address(IxianHandler.getWalletStorage(nextPkHash).getPrimaryPublicKey());
@@ -1778,7 +1778,7 @@ namespace IXICore
                 return new JsonResponse { result = null, error = new JsonError() { code = (int)RPCErrorCode.RPC_INVALID_PARAMS, message = "Missing parameter/s 'records[]'" } };
             }
             string namePlainText = (string)parameters["name"];
-            byte[] nameBytes = IxiNameUtils.encodeIxiName(namePlainText);
+            byte[] nameBytes = IxiNameUtils.encodeAndHashIxiName(namePlainText);
             Address nextPkHash = IxianHandler.primaryWalletAddress;
             Address sigPk = new Address(IxianHandler.getWalletStorage(nextPkHash).getPrimaryPublicKey());
             var name = IxianHandler.getRegName(nameBytes);
@@ -1789,8 +1789,7 @@ namespace IXICore
             {
                 var splitRecord = record.Split(',');
                 var recordKeyPlainText = splitRecord[0];
-                byte[] recordKeyBytes = IxiNameUtils.encodeIxiName(recordKeyPlainText);
-                RegisteredNameDataRecord rndr = new RegisteredNameDataRecord(IxiNameUtils.encodeIxiNameRecordKey(nameBytes, recordKeyBytes), int.Parse(splitRecord[1]), IxiNameUtils.encryptRecord(UTF8Encoding.UTF8.GetBytes(namePlainText), UTF8Encoding.UTF8.GetBytes(recordKeyPlainText), Crypto.stringToHash(splitRecord[2])));
+                RegisteredNameDataRecord rndr = new RegisteredNameDataRecord(IxiNameUtils.encodeAndHashIxiNameRecordKey(nameBytes, recordKeyPlainText), int.Parse(splitRecord[1]), IxiNameUtils.encryptRecord(UTF8Encoding.UTF8.GetBytes(namePlainText), UTF8Encoding.UTF8.GetBytes(recordKeyPlainText), Crypto.stringToHash(splitRecord[2])));
                 records.Add(rndr);
             }
 

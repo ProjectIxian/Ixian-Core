@@ -23,7 +23,7 @@ namespace IXICore.RegNames
 {
     public static class IxiNameUtils
     {
-        public static byte[] encodeIxiName(string name)
+        public static byte[] encodeAndHashIxiName(string name)
         {
             // Check if name is valid; throws an exception if not
             IdnMapping idn = new IdnMapping();
@@ -51,7 +51,7 @@ namespace IXICore.RegNames
             }
         }
 
-        public static byte[] encodeIxiNameRecordKey(byte[] encodedName, byte[] encodedRecordKey)
+        public static byte[] hashIxiNameRecordKey(byte[] encodedName, byte[] encodedRecordKey)
         {
             byte[] nameAndKeyBytes = new byte[encodedName.Length + encodedRecordKey.Length];
             Array.Copy(encodedName, 0, nameAndKeyBytes, 0, encodedName.Length);
@@ -59,6 +59,11 @@ namespace IXICore.RegNames
 
             // double SHA-3 512 hash
             return CryptoManager.lib.sha3_512sq(nameAndKeyBytes);
+        }
+
+        public static byte[] encodeAndHashIxiNameRecordKey(byte[] encodedName, string recordKey)
+        {
+            return hashIxiNameRecordKey(encodedName, encodeAndHashIxiName(recordKey));
         }
 
         public static List<byte[]> splitIxiNameBytes(byte[] id)

@@ -229,8 +229,8 @@ namespace IXICore
         // Min capacity in kB
         public static readonly uint rnMinCapacity = 10;
         // Unit = months * capacity in kB
-        public static readonly IxiNumber rnMinPricePerUnit = new IxiNumber("1000.00000000"); // initial price, will be reduced as things evolve
-        public static readonly IxiNumber rnPricePerUnit = new IxiNumber("10000.00000000");
+        public static readonly IxiNumber rnMinPricePerUnit = new IxiNumber("10.00000000"); // initial price, will be reduced as things evolve
+        public static readonly IxiNumber rnPricePerUnit = new IxiNumber("500.00000000");
         /// <summary>
         /// Nonexistant wallet address which is used in the 'to' fields for Name transactions, where currency goes to a name reward pool.
         /// </summary>
