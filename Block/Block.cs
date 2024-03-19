@@ -1912,11 +1912,12 @@ namespace IXICore
                         }
                     }
 
+                    /* Should be already handled by verifyBlock
                     if (PresenceList.getPresenceByAddress(sig.recipientPubKeyOrAddress) == null)
                     {
                         Logging.info("Received signature for block {0} whose signer isn't in the PL", blockNum);
                         continue;
-                    }
+                    }*/
                     
                     if(verifySigs)
                     {
@@ -2194,7 +2195,7 @@ namespace IXICore
                 }
             }
 
-            lock(signatures)
+            lock (signatures)
             { 
                 if(signatures.Count == 0)
                 {
@@ -2503,23 +2504,25 @@ namespace IXICore
             }
 
             IxiNumber totalDiff = 0;
-            // TODO TODO ideally we would not use lock (signatures) in combination with sig.powSolution.difficulty
+            List<BlockSignature> sigs;
             lock (signatures)
             {
-                var sigs = signatures;
                 if (frozenSignatures != null)
                 {
-                    sigs = frozenSignatures;
-                }
-                foreach (BlockSignature sig in sigs)
+                    sigs = new List<BlockSignature>(frozenSignatures);
+                } else
                 {
-                    if(sig.powSolution == null)
-                    {
-                        totalDiff += 1;
-                    }else
-                    {
-                        totalDiff += sig.powSolution.difficulty;
-                    }
+                    sigs = new List<BlockSignature>(signatures);
+                }
+            }
+            foreach (BlockSignature sig in sigs)
+            {
+                if(sig.powSolution == null)
+                {
+                    totalDiff += 1;
+                }else
+                {
+                    totalDiff += sig.powSolution.difficulty;
                 }
             }
             return totalDiff;

@@ -307,12 +307,13 @@ namespace IXICore
 
         public static bool operator !=(IxiNumber a, IxiNumber b)
         {
-            bool status = false;
+            return !(a == b);
+            /*bool status = false;
             if (BigInteger.Compare(a.getAmount(), b.getAmount()) != 0)
             {
                 status = true;
             }
-            return status;
+            return status;*/
         }
         /*
         public static bool operator >(IxiNumber a, long b)

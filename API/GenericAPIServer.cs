@@ -1660,7 +1660,7 @@ namespace IXICore
             Address pkHash = IxianHandler.primaryWalletAddress;
             uint regTime = ConsensusConfig.rnMinRegistrationTimeInBlocks;
             uint capacity = ConsensusConfig.rnMinCapacity;
-            ToEntry toEntry = RegisteredNamesTransactions.createRegisterToEntry(nameBytes, regTime, capacity, recoveryHash, pkHash, ConsensusConfig.rnPricePerUnit * (ulong)(regTime / ConsensusConfig.rnMonthInBlocks));
+            ToEntry toEntry = RegisteredNamesTransactions.createRegisterToEntry(nameBytes, regTime, capacity, recoveryHash, pkHash, ConsensusConfig.rnPricePerUnit * (ulong)capacity * (ulong)(regTime / ConsensusConfig.rnMonthInBlocks));
 
             Transaction fundedTx = createRegNameTransaction(toEntry, null, null);
             if (fundedTx == null)
@@ -1685,7 +1685,9 @@ namespace IXICore
             }
             byte[] nameBytes = IxiNameUtils.encodeAndHashIxiName((string)parameters["name"]);
             uint regTime = ConsensusConfig.rnMinRegistrationTimeInBlocks;
-            ToEntry toEntry = RegisteredNamesTransactions.createExtendToEntry(nameBytes, regTime, ConsensusConfig.rnPricePerUnit * (ulong)(regTime / ConsensusConfig.rnMonthInBlocks));
+            var name = IxianHandler.getRegName(nameBytes);
+            var capacity = name.capacity;
+            ToEntry toEntry = RegisteredNamesTransactions.createExtendToEntry(nameBytes, regTime, ConsensusConfig.rnPricePerUnit * (ulong)capacity * (ulong)(regTime / ConsensusConfig.rnMonthInBlocks));
 
             Transaction fundedTx = createRegNameTransaction(toEntry, null, null);
             if (fundedTx == null)
@@ -1713,8 +1715,8 @@ namespace IXICore
             Address sigPk = new Address(IxianHandler.getWalletStorage(nextPkHash).getPrimaryPublicKey());
             byte[] sig = new byte[64];
             ulong newCapacity = ConsensusConfig.rnMinCapacity * 2;
-            int months = 1; // TODO Make sure that the new capacity covers the whole lifespan of the name
             var name = IxianHandler.getRegName(nameBytes);
+            ulong months = name.expirationBlockHeight / ConsensusConfig.rnMonthInBlocks;
             ulong sequence = name.sequence + 1;
             ToEntry toEntry = RegisteredNamesTransactions.createChangeCapacityToEntry(nameBytes, (uint)newCapacity, sequence, nextPkHash, sigPk, sig, ConsensusConfig.rnPricePerUnit * months * newCapacity);
 

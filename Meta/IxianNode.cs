@@ -40,6 +40,7 @@ namespace IXICore.Meta
         // Required
         public abstract ulong getHighestKnownNetworkBlockHeight();
         public abstract Block getBlockHeader(ulong blockNum);
+        public abstract byte[] getBlockHash(ulong blockNum);
         public abstract Block getLastBlock();
         public abstract ulong getLastBlockHeight();
         public abstract int getLastBlockVersion();
@@ -219,6 +220,12 @@ namespace IXICore.Meta
         {
             verifyHandler();
             return handlerClass.getBlockHeader(blockNum);
+        }
+
+        public static byte[] getBlockHash(ulong blockNum)
+        {
+            verifyHandler();
+            return handlerClass.getBlockHash(blockNum);
         }
 
         public static void parseProtocolMessage(ProtocolMessageCode code, byte[] data, RemoteEndpoint endpoint)

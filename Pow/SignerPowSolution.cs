@@ -49,8 +49,8 @@ namespace IXICore
         public byte[] checksum { get {
                 if(_checksum == null)
                 {
-                    var targetHeader = IxianHandler.getBlockHeader(blockNum);
-                    _checksum = solutionToHash(solution, blockNum, targetHeader.blockChecksum, recipientAddress, signingPubKey);
+                    var targetBlockHash = IxianHandler.getBlockHash(blockNum);
+                    _checksum = solutionToHash(solution, blockNum, targetBlockHash, recipientAddress, signingPubKey);
                 }
                 return _checksum;
             } } // checksum is not trasmitted over the network
@@ -104,6 +104,17 @@ namespace IXICore
             recipientAddress = new Address(recipientAddressBytes);
 
             keyPair = src.keyPair;
+
+            if (src._checksum != null)
+            {
+                byte[] checksumBytes = new byte[src._checksum.Length];
+                Array.Copy(src._checksum, checksumBytes, checksumBytes.Length);
+                _checksum = checksumBytes;
+            }
+
+            _difficulty = src._difficulty;
+
+            _bits = src._bits;
         }
 
         public byte[] sign(byte[] bytesToSign)

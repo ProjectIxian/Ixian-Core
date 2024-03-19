@@ -227,10 +227,10 @@ namespace IXICore
         public static readonly uint rnMaxRegistrationTimeInBlocks = 2102400; // Approx 2 years - 2880 * 365 * 2
         public static readonly uint rnGracePeriodInBlocks = 129600; // Approx 45 days - 2880 * 45
         // Min capacity in kB
-        public static readonly uint rnMinCapacity = 10;
+        public static readonly uint rnMinCapacity = 10; // 10kB
         // Unit = months * capacity in kB
-        public static readonly IxiNumber rnMinPricePerUnit = new IxiNumber("10.00000000"); // initial price, will be reduced as things evolve
-        public static readonly IxiNumber rnPricePerUnit = new IxiNumber("500.00000000");
+        public static readonly IxiNumber rnMinPricePerUnit = new IxiNumber("10.00000000"); // initial min price limit, will be reduced as things evolve
+        public static readonly IxiNumber rnPricePerUnit = new IxiNumber("500.00000000"); // initial price, will be reduced as things evolve
         /// <summary>
         /// Nonexistant wallet address which is used in the 'to' fields for Name transactions, where currency goes to a name reward pool.
         /// </summary>
