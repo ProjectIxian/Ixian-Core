@@ -46,12 +46,13 @@ namespace IXICore.RegNames
         public byte[] signaturePk { get; set; }
         public byte[] signature { get; set; }
        
-        public ulong expirationBlockHeight { get; set; } = 0;
-        public ulong updatedBlockHeight { get; private set; }
+        public ulong expirationBlockHeight { get; private set; } = 0;
+        public ulong updatedBlockHeight { get; private set; } = 0;
         public RegisteredNameRecord(byte[] name, ulong registrationBlockHeight, uint capacity, ulong expirationBlockHeight, Address nextPkHash, Address recoveryHash)
         {
             this.name = name;
             this.registrationBlockHeight = registrationBlockHeight;
+            this.updatedBlockHeight = registrationBlockHeight;
             this.capacity = capacity;
             this.expirationBlockHeight = expirationBlockHeight;
             this.nextPkHash = nextPkHash;
@@ -403,16 +404,23 @@ namespace IXICore.RegNames
             return dataRecords;
         }
 
-        public void setCapacity(uint newCapacity, ulong sequence, Address pkHash, byte[] sigPk, byte[] sig)
+        public void setExpirationBlockHeight(ulong expirationBlockHeight, ulong updatedBlockHeight)
+        {
+            this.expirationBlockHeight = expirationBlockHeight;
+            this.updatedBlockHeight = updatedBlockHeight;
+        }
+
+        public void setCapacity(uint newCapacity, ulong sequence, Address pkHash, byte[] sigPk, byte[] sig, ulong updatedBlockHeight)
         {
             capacity = newCapacity;
             this.sequence = sequence;
             nextPkHash = pkHash;
             signaturePk = sigPk;
             signature = sig;
+            this.updatedBlockHeight = updatedBlockHeight;
         }
 
-        public void setRecords(List<RegisteredNameDataRecord> records, ulong sequence, Address pkHash, byte[] sigPk, byte[] sig)
+        public void setRecords(List<RegisteredNameDataRecord> records, ulong sequence, Address pkHash, byte[] sigPk, byte[] sig, ulong updatedBlockHeight)
         {
             dataRecords = records;
             // TODO Data Merkle Root can be cached for revert operations
@@ -421,18 +429,20 @@ namespace IXICore.RegNames
             nextPkHash = pkHash;
             signaturePk = sigPk;
             signature = sig;
+            this.updatedBlockHeight = updatedBlockHeight;
         }
 
-        public void setRecoveryHash(Address recoveryHash, ulong sequence, Address pkHash, byte[] sigPk, byte[] sig)
+        public void setRecoveryHash(Address recoveryHash, ulong sequence, Address pkHash, byte[] sigPk, byte[] sig, ulong updatedBlockHeight)
         {
             this.recoveryHash = recoveryHash;
             this.sequence = sequence;
             nextPkHash = pkHash;
             signaturePk = sigPk;
             signature = sig;
+            this.updatedBlockHeight = updatedBlockHeight;
         }
 
-        public void setAllowSubnames(bool allowSubnames, IxiNumber subnamePrice, Address subnameFeeRecipient, ulong sequence, Address pkHash, byte[] sigPk, byte[] sig)
+        public void setAllowSubnames(bool allowSubnames, IxiNumber subnamePrice, Address subnameFeeRecipient, ulong sequence, Address pkHash, byte[] sigPk, byte[] sig, ulong updatedBlockHeight)
         {
             // Reset data records if enabling subnames
             if (allowSubnames && !this.allowSubnames)
@@ -449,7 +459,7 @@ namespace IXICore.RegNames
             nextPkHash = pkHash;
             signaturePk = sigPk;
             signature = sig;
+            this.updatedBlockHeight = updatedBlockHeight;
         }
-
     }
 }
