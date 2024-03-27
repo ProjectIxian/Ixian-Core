@@ -159,7 +159,7 @@ namespace IXICore.RegNames
 
                 foreach (var kv in names)
                 {
-                    byte[] entryBytes = kv.Value.toBytes();
+                    byte[] entryBytes = kv.Value.toBytes(RegNameRecordByteTypes.full);
                     fs.Write(BitConverter.GetBytes(entryBytes.Length), 0, 4);
                     fs.Write(entryBytes, 0, entryBytes.Length);
 
@@ -180,7 +180,7 @@ namespace IXICore.RegNames
             RegisteredNameRecord regName;
             if (names.TryGetValue(name, out regName))
             {
-                return regName.toBytes();
+                return regName.toBytes(RegNameRecordByteTypes.full);
             }
             return null;
         }
@@ -324,7 +324,7 @@ namespace IXICore.RegNames
             {
                 foreach (var name in names.Values)
                 {
-                    hashes.Add(name.calculateChecksum());
+                    hashes.Add(name.calculateChecksum(RegNameRecordByteTypes.forMerkle));
                 }
             }
             var merkleRoot = IxiUtils.calculateMerkleRoot(hashes);

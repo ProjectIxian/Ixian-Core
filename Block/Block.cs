@@ -1896,50 +1896,50 @@ namespace IXICore
                 return null;
             }
             // Note: we don't need any further validation, since this block has already passed through BlockProcessor.verifyBlock() at this point.
-            lock (signatures)
+            int count = 0;
+            List<BlockSignature> added_signatures = new List<BlockSignature>();
+            foreach (BlockSignature sig in other.signatures)
             {
-                int count = 0;
-                List<BlockSignature> added_signatures = new List<BlockSignature>();
-                foreach (BlockSignature sig in other.signatures)
+                var localSig = getSignature(sig.recipientPubKeyOrAddress);
+                if (localSig != null)
                 {
-                    var localSig = getSignature(sig.recipientPubKeyOrAddress);
-                    if (localSig != null)
+                    if (localSig.powSolution == null
+                        || (localSig.powSolution != null && localSig.powSolution.difficulty >= sig.powSolution.difficulty))
                     {
-                        if (localSig.powSolution == null
-                            || (localSig.powSolution != null && localSig.powSolution.difficulty >= sig.powSolution.difficulty))
-                        {
-                            continue;
-                        }
-                    }
-
-                    /* Should be already handled by verifyBlock
-                    if (PresenceList.getPresenceByAddress(sig.recipientPubKeyOrAddress) == null)
-                    {
-                        Logging.info("Received signature for block {0} whose signer isn't in the PL", blockNum);
                         continue;
-                    }*/
-                    
-                    if(verifySigs)
-                    {
-                        if (!verifySignature(sig))
-                        {
-                            continue;
-                        }
                     }
+                }
 
-                    count++;
+                /* Should be already handled by verifyBlock
+                if (PresenceList.getPresenceByAddress(sig.recipientPubKeyOrAddress) == null)
+                {
+                    Logging.info("Received signature for block {0} whose signer isn't in the PL", blockNum);
+                    continue;
+                }*/
+                    
+                if(verifySigs)
+                {
+                    if (!verifySignature(sig))
+                    {
+                        continue;
+                    }
+                }
+
+                lock (signatures)
+                {
                     if(localSig != null)
                     {
                         signatures.Remove(localSig);
                     }
                     signatures.Add(sig);
-                    added_signatures.Add(sig);
                 }
-                if (count > 0)
-                {
-                    //Logging.info(String.Format("Merged {0} new signatures from incoming block.", count));
-                    return added_signatures;
-                }
+                added_signatures.Add(sig);
+                count++;
+            }
+            if (count > 0)
+            {
+                //Logging.info(String.Format("Merged {0} new signatures from incoming block.", count));
+                return added_signatures;
             }
             return null;
         }
@@ -1966,10 +1966,8 @@ namespace IXICore
                 }
 
                 IxiNumber minPowDifficulty = IxianHandler.getMinSignerPowDifficulty(blockNum);
-                var blockHeader = IxianHandler.getBlockHeader(sig.powSolution.blockNum);
-                if (blockHeader == null
-                    || blockHeader.blockNum >= blockNum
-                    || blockHeader.blockNum + ConsensusConfig.plPowBlocksValidity < blockNum
+                if (sig.powSolution.blockNum >= blockNum
+                    || sig.powSolution.blockNum + ConsensusConfig.plPowBlocksValidity < blockNum
                     || !sig.powSolution.verifySolution(minPowDifficulty))
                 {
                     Logging.error("VerifySig: invalid solution");
@@ -2012,32 +2010,34 @@ namespace IXICore
                 Logging.error("Trying to add signature on a compacted block {0}", blockNum);
                 return false;
             }
-            lock (signatures)
+            var signer_address = sig.recipientPubKeyOrAddress;
+            var local_sig = getSignature(signer_address);
+            if(local_sig != null)
             {
-                var signer_address = sig.recipientPubKeyOrAddress;
-                var local_sig = getSignature(signer_address);
-                if(local_sig != null)
+                if (version < BlockVer.v10)
                 {
-                    if (version < BlockVer.v10)
-                    {
-                        return false;
-                    }
-                    if (local_sig.powSolution.difficulty >= sig.powSolution.difficulty)
-                    {
-                        return false;
-                    }
+                    return false;
                 }
-                if (verifySignature(sig))
+                if (local_sig.powSolution.difficulty >= sig.powSolution.difficulty)
                 {
-                    if(local_sig != null)
-                    {
-                        signatures.Remove(local_sig);
-                    }
-                    signatures.Add(sig);
-                    return true;
+                    return false;
                 }
             }
-            return false;
+
+            if (!verifySignature(sig))
+            {
+                return false;
+            }
+
+            lock (signatures)
+            {
+                if (local_sig != null)
+                {
+                    signatures.Remove(local_sig);
+                }
+                signatures.Add(sig);
+            }
+            return true;
         }
 
         /// <summary>
@@ -2285,35 +2285,35 @@ namespace IXICore
 
             List<(Address address, IxiNumber difficulty)> result = new List<(Address, IxiNumber)>();
 
+            List<BlockSignature> tmp_sigs;
             lock (signatures)
             {
-                List<BlockSignature> tmp_sigs = null;
-                if(frozenSignatures != null)
+                if (frozenSignatures != null)
                 {
                     tmp_sigs = frozenSignatures;
-                }else
+                } else
                 {
                     tmp_sigs = signatures;
                 }
-
-                foreach (BlockSignature merged_signature in tmp_sigs)
-                {
-                    // Add the address to the list
-                    if(merged_signature.powSolution != null)
-                    {
-                        result.Add((merged_signature.recipientPubKeyOrAddress, merged_signature.powSolution.difficulty));
-                    }
-                    else
-                    {
-                        result.Add((merged_signature.recipientPubKeyOrAddress, 1));
-                    }
-                }
-                if (version < BlockVer.v10)
-                {
-                    result.Sort((x, y) => _ByteArrayComparer.Compare(x.address.addressNoChecksum, y.address.addressNoChecksum));
-                }
-                //result = result.OrderBy(x => x.difficulty, Comparer<IxiNumber>.Default).ThenBy(x => x.address.addressNoChecksum, new ByteArrayComparer()).ToList();
             }
+
+            foreach (BlockSignature merged_signature in tmp_sigs)
+            {
+                // Add the address to the list
+                if(merged_signature.powSolution != null)
+                {
+                    result.Add((merged_signature.recipientPubKeyOrAddress, merged_signature.powSolution.difficulty));
+                }
+                else
+                {
+                    result.Add((merged_signature.recipientPubKeyOrAddress, 1));
+                }
+            }
+            if (version < BlockVer.v10)
+            {
+                result.Sort((x, y) => _ByteArrayComparer.Compare(x.address.addressNoChecksum, y.address.addressNoChecksum));
+            }
+            //result = result.OrderBy(x => x.difficulty, Comparer<IxiNumber>.Default).ThenBy(x => x.address.addressNoChecksum, new ByteArrayComparer()).ToList();
             return result;
         }
 

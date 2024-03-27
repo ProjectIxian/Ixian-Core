@@ -18,6 +18,13 @@ using System.Linq;
 
 namespace IXICore.RegNames
 {
+    public enum RegNameRecordByteTypes
+    {
+        full,
+        forSignature,
+        forMerkle
+    }
+
     public class RegisteredNameRecord
     {
         public int version = 1;
@@ -91,9 +98,9 @@ namespace IXICore.RegNames
             dataMerkleRoot = IxiUtils.calculateMerkleRoot(hashes);
         }
 
-        public byte[] calculateChecksum()
+        public byte[] calculateChecksum(RegNameRecordByteTypes type = RegNameRecordByteTypes.forSignature)
         {
-            byte[] bytes = toBytes(true);
+            byte[] bytes = toBytes(type);
             return CryptoManager.lib.sha3_512sq(bytes);
         }
 
@@ -218,7 +225,7 @@ namespace IXICore.RegNames
             offset += updatedBlockHeightRet.bytesRead;
         }
 
-        public byte[] toBytes(bool forChecksum = false)
+        public byte[] toBytes(RegNameRecordByteTypes type)
         {
             byte[] nameLenBytes = name.Length.GetIxiVarIntBytes();
             byte[] registrationBlockHeightBytes = registrationBlockHeight.GetIxiVarIntBytes();
@@ -243,14 +250,14 @@ namespace IXICore.RegNames
             byte[] dataMerkleRootLenBytes = dataMerkleRootLen.GetIxiVarIntBytes();
 
             int signaturePkLen = 0;
-            if (!forChecksum && signaturePk != null)
+            if (type == RegNameRecordByteTypes.full && signaturePk != null)
             {
                 signaturePkLen = signaturePk.Length;
             }
             byte[] signaturePkLenBytes = signaturePkLen.GetIxiVarIntBytes();
 
             int sigLen = 0;
-            if (!forChecksum && signature != null)
+            if (type == RegNameRecordByteTypes.full && signature != null)
             {
                 sigLen = signature.Length;
             }
@@ -260,7 +267,7 @@ namespace IXICore.RegNames
             byte[] expirationBlockHeightBytes = null;
             int updatedBlockHeightLen = 0;
             byte[] updatedBlockHeightBytes = null;
-            if (!forChecksum)
+            if (type == RegNameRecordByteTypes.full || type == RegNameRecordByteTypes.forMerkle)
             {
                 expirationBlockHeightBytes = expirationBlockHeight.GetIxiVarIntBytes();
                 expirationBlockHeightLen = expirationBlockHeightBytes.Length;
@@ -353,7 +360,7 @@ namespace IXICore.RegNames
                 pos += dataMerkleRoot.Length;
             }
 
-            if (!forChecksum)
+            if (type == RegNameRecordByteTypes.full)
             {
                 Array.Copy(signaturePkLenBytes, 0, bytes, pos, signaturePkLenBytes.Length);
                 pos += signaturePkLenBytes.Length;
@@ -372,7 +379,10 @@ namespace IXICore.RegNames
                     Array.Copy(signature, 0, bytes, pos, signature.Length);
                     pos += signature.Length;
                 }
+            }
 
+            if (type == RegNameRecordByteTypes.full || type == RegNameRecordByteTypes.forMerkle)
+            {
                 Array.Copy(expirationBlockHeightBytes, 0, bytes, pos, expirationBlockHeightBytes.Length);
                 pos += expirationBlockHeightBytes.Length;
 
