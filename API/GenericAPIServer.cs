@@ -1736,7 +1736,7 @@ namespace IXICore
             byte[] nameBytes = IxiNameUtils.encodeAndHashIxiName((string)parameters["name"]);
             var name = IxianHandler.getRegName(nameBytes);
 
-            ulong newCapacity = uint.Parse((string)parameters["newCapacity"]);
+            uint newCapacity = uint.Parse((string)parameters["newCapacity"]);
 
             Address nextPkHash = IxianHandler.primaryWalletAddress;
             if (parameters.ContainsKey("nextPkHash"))
@@ -1750,15 +1750,22 @@ namespace IXICore
                 sigPk = new Address((string)parameters["sigPk"]);
             }
 
+            ulong months = name.expirationBlockHeight / ConsensusConfig.rnMonthInBlocks;
+            ulong sequence = name.sequence + 1;
+
             byte[] sig = new byte[64];
             if (parameters.ContainsKey("sig"))
             {
                 sig = Convert.FromBase64String((string)parameters["sig"]);
             }
+            else
+            {
+                name.setCapacity(newCapacity, sequence, nextPkHash, null, null, 0);
+                var newChecksum = name.calculateChecksum();
+                sig = CryptoManager.lib.getSignature(newChecksum, IxianHandler.getWalletStorage(nextPkHash).getPrimaryPrivateKey());
+            }
 
-            ulong months = name.expirationBlockHeight / ConsensusConfig.rnMonthInBlocks;
-            ulong sequence = name.sequence + 1;
-            ToEntry toEntry = RegisteredNamesTransactions.createChangeCapacityToEntry(nameBytes, (uint)newCapacity, sequence, nextPkHash, sigPk, sig, ConsensusConfig.rnPricePerUnit * months * newCapacity);
+            ToEntry toEntry = RegisteredNamesTransactions.createChangeCapacityToEntry(nameBytes, newCapacity, sequence, nextPkHash, sigPk, sig, ConsensusConfig.rnPricePerUnit * months * (ulong)newCapacity);
 
             Transaction fundedTx = createRegNameTransaction(toEntry, null, null);
             if (fundedTx == null)
@@ -1859,7 +1866,7 @@ namespace IXICore
             {
                 var splitRecord = record.Split(',');
                 var recordKeyPlainText = splitRecord[0];
-                RegisteredNameDataRecord rndr = new RegisteredNameDataRecord(IxiNameUtils.encodeAndHashIxiNameRecordKey(nameBytes, recordKeyPlainText), int.Parse(splitRecord[1]), IxiNameUtils.encryptRecord(UTF8Encoding.UTF8.GetBytes(namePlainText), UTF8Encoding.UTF8.GetBytes(recordKeyPlainText), Crypto.stringToHash(splitRecord[2])));
+                RegisteredNameDataRecord rndr = new RegisteredNameDataRecord(IxiNameUtils.encodeAndHashIxiNameRecordKey(nameBytes, recordKeyPlainText), int.Parse(splitRecord[1]), IxiNameUtils.encryptRecord(UTF8Encoding.UTF8.GetBytes(namePlainText), UTF8Encoding.UTF8.GetBytes(recordKeyPlainText), UTF8Encoding.UTF8.GetBytes(splitRecord[2])));
                 records.Add(rndr);
             }
 
