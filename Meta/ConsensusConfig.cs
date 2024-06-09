@@ -100,7 +100,7 @@ namespace IXICore
         /// <summary>
         /// Required signature difficulty (ratio) in percents of consenting signatures before a block can be accepted.
         /// </summary>
-        public static readonly int networkSignerDifficultyConsensusRatio = 51;
+        public static readonly IxiNumber networkSignerDifficultyConsensusRatio = new IxiNumber("23.4");
 
         /// <summary>
         /// Maximum allowed signers on a single block.
