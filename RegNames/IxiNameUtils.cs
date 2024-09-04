@@ -11,6 +11,7 @@
 // MIT License for more details.
 //
 
+using IXICore.Meta;
 using IXICore.Utils;
 using System;
 using System.Collections.Generic;
@@ -104,6 +105,42 @@ namespace IXICore.RegNames
         {
             byte[] key = buildEncryptionKey(unhashedNameBytes, unhashedRecordKey);
             return CryptoManager.lib.decryptWithAES(recordData, key, true);
+        }
+
+        public static RegNameTxEntryBase decodeNameData(byte[] txOutData)
+        {
+            RegNameInstruction rni = (RegNameInstruction)txOutData[0];
+            switch (rni)
+            {
+                case RegNameInstruction.register:
+                    RegNameRegister rnReg = new RegNameRegister(txOutData);
+                    return rnReg;
+                case RegNameInstruction.extend:
+                    RegNameExtend rnExt = new RegNameExtend(txOutData);
+                    return rnExt;
+                case RegNameInstruction.recover:
+                    RegNameRecover rnRec = new RegNameRecover(txOutData);
+                    return rnRec;
+                case RegNameInstruction.changeCapacity:
+                    RegNameChangeCapacity rnCap = new RegNameChangeCapacity(txOutData);
+                    return rnCap;
+                case RegNameInstruction.toggleAllowSubnames:
+                    RegNameToggleAllowSubnames rnSub = new RegNameToggleAllowSubnames(txOutData);
+                    return rnSub;
+                case RegNameInstruction.updateRecord:
+                    RegNameUpdateRecord rnUpd;
+                    try
+                    {
+                        rnUpd = new RegNameUpdateRecord(txOutData);
+                    }
+                    catch (Exception e)
+                    {
+                        Logging.error("Exception occured while parsing RegName data: {0}", e);
+                        return null;
+                    }
+                    return rnUpd;
+            }
+            return null;
         }
     }
 }

@@ -34,6 +34,7 @@ namespace IXICore
         public static int v9 = 9;
         public static int v10 = 10; // Omega Lock-in (partial activation)
         public static int v11 = 11; // Omega Full activation
+        public static int v12 = 12;
     }
 
     public class SuperBlockSegment
@@ -61,7 +62,7 @@ namespace IXICore
         /// <summary>
         /// Latest possible version of the Block structure. New blocks should usually be created with the latest version.
         /// </summary>
-        public static int maxVersion = BlockVer.v11;
+        public static int maxVersion = BlockVer.v12;
 
         /// <summary>
         /// Block height (block number). This is a sequential index in the blockchain which uniquely identifies each block.
@@ -1753,9 +1754,9 @@ namespace IXICore
                     Logging.warn("Trying to apply signature on block #{0} but PoW Signing solution is too old {1} < {2}.", blockNum, powSolution.blockNum + ConsensusConfig.plPowBlocksValidity, blockNum);
                     return null;
                 }
-                if (powSolution.difficulty < IxianHandler.getMinSignerPowDifficulty(blockNum))
+                if (powSolution.difficulty < IxianHandler.getMinSignerPowDifficulty(blockNum, timestamp))
                 {
-                    Logging.warn("Trying to apply signature on block #{0} but difficulty of PoW Signing solution is too small {1} < {2}.", blockNum, powSolution.difficulty, IxianHandler.getMinSignerPowDifficulty(blockNum));
+                    Logging.warn("Trying to apply signature on block #{0} but difficulty of PoW Signing solution is too small {1} < {2}.", blockNum, powSolution.difficulty, IxianHandler.getMinSignerPowDifficulty(blockNum, timestamp));
                     return null;
                 }
                 newSig.powSolution = powSolution;
@@ -1965,7 +1966,7 @@ namespace IXICore
                     return false;
                 }
 
-                IxiNumber minPowDifficulty = IxianHandler.getMinSignerPowDifficulty(blockNum);
+                IxiNumber minPowDifficulty = IxianHandler.getMinSignerPowDifficulty(blockNum, timestamp);
                 if (sig.powSolution.blockNum >= blockNum
                     || sig.powSolution.blockNum + ConsensusConfig.plPowBlocksValidity < blockNum
                     || !sig.powSolution.verifySolution(minPowDifficulty))
@@ -2020,6 +2021,7 @@ namespace IXICore
                 }
                 if (local_sig.powSolution.difficulty >= sig.powSolution.difficulty)
                 {
+                    Logging.warn("Received signature with a lower powSolution from {0}", sig.recipientPubKeyOrAddress.ToString());
                     return false;
                 }
             }

@@ -55,6 +55,8 @@ namespace IXICore.Network
         /// </summary>
         public static bool connectable = true;
 
+        public static bool paused = false;
+
         /// <summary>
         ///  Starts listening for and accepting network connections.
         /// </summary>
@@ -92,6 +94,7 @@ namespace IXICore.Network
 
             Logging.info("Public network node address: {0} port {1}", IxianHandler.publicIP, IxianHandler.publicPort);
 
+            paused = false;
         }
 
         /// <summary>
@@ -126,6 +129,17 @@ namespace IXICore.Network
 
                 connectedClients.Clear();
             }
+        }
+
+        public static void pause()
+        {
+            restartNetworkOperations();
+            paused = true;
+        }
+
+        public static void resume()
+        {
+            paused = false;
         }
 
         /// <summary>
@@ -509,7 +523,7 @@ namespace IXICore.Network
             clientSocket.NoDelay = true;
             clientSocket.Blocking = true;
 
-            if (!IxianHandler.isAcceptingConnections())
+            if (!IxianHandler.isAcceptingConnections() || paused)
             {
                 CoreProtocolMessage.sendBye(clientSocket, ProtocolByeCode.notReady, string.Format("The node isn't ready yet, please try again later."), "");
                 clientSocket.Shutdown(SocketShutdown.Both);

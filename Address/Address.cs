@@ -11,6 +11,7 @@
 // MIT License for more details.
 
 using IXICore.Utils;
+using Newtonsoft.Json;
 using System;
 using System.Linq;
 
@@ -27,6 +28,7 @@ namespace IXICore
     ///  Ixian addresses v1 and above are generated from the wallet's primary key using a 'nonce' value, allowing for fast and efficient generation of multiple
     ///  addresses from the same keypair.
     /// </remarks>
+    /// 
     public class Address
     {
         /// <summary>
@@ -50,6 +52,8 @@ namespace IXICore
             }
         }
 
+        [JsonProperty("base58Address")]
+        private string base58Address => ToString();
 
         /// <summary>
         ///  Byte value of the address without checksum.

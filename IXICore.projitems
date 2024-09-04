@@ -106,27 +106,4 @@
     <Compile Include="$(MSBuildThisFileDirectory)Wallet\WalletLib.cs" />
     <Compile Include="$(MSBuildThisFileDirectory)Wallet\WalletStorage.cs" />
   </ItemGroup>
-  <ItemGroup>
-    <Content Include="$(MSBuildThisFileDirectory)html\css\bootstrap37.css" />
-    <Content Include="$(MSBuildThisFileDirectory)html\css\custom.css" />
-    <Content Include="$(MSBuildThisFileDirectory)html\css\normalize.css" />
-    <Content Include="$(MSBuildThisFileDirectory)html\css\style.css" />
-    <Content Include="$(MSBuildThisFileDirectory)html\img\activity.png" />
-    <Content Include="$(MSBuildThisFileDirectory)html\img\camera.png" />
-    <Content Include="$(MSBuildThisFileDirectory)html\img\iCopy.png" />
-    <Content Include="$(MSBuildThisFileDirectory)html\img\logofull.png" />
-    <Content Include="$(MSBuildThisFileDirectory)html\img\payr.png" />
-    <Content Include="$(MSBuildThisFileDirectory)html\img\receive.png" />
-    <Content Include="$(MSBuildThisFileDirectory)html\img\send.png" />
-    <Content Include="$(MSBuildThisFileDirectory)html\img\sendr.png" />
-    <Content Include="$(MSBuildThisFileDirectory)html\js\bootstrap.min.js" />
-    <Content Include="$(MSBuildThisFileDirectory)html\js\instascan.min.js" />
-    <Content Include="$(MSBuildThisFileDirectory)html\js\jquery.min.js" />
-    <Content Include="$(MSBuildThisFileDirectory)html\js\qrcode.min.js" />
-    <Content Include="$(MSBuildThisFileDirectory)html\wallet.html" />
-  </ItemGroup>
-  <ItemGroup>
-    <None Include="$(MSBuildThisFileDirectory)html\js\custom.js" />
-    <None Include="$(MSBuildThisFileDirectory)html\js\ixian.js" />
-  </ItemGroup>
 </Project>

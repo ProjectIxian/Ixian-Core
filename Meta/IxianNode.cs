@@ -56,7 +56,7 @@ namespace IXICore.Meta
         public virtual void receivedTransactionInclusionVerificationResponse(byte[] txid, bool verified) { }
         public virtual void receivedBlockHeader(Block block_header, bool verified) { }
 
-        public abstract IxiNumber getMinSignerPowDifficulty(ulong blockNum);
+        public abstract IxiNumber getMinSignerPowDifficulty(ulong blockNum, long curBlockTimestamp);
 
         public abstract byte[] calculateRegNameChecksumFromUpdatedDataRecords(byte[] name, List<RegisteredNameDataRecord> dataRecords, ulong sequence, Address nextPkHash);
         public abstract byte[] calculateRegNameChecksumForRecovery(byte[] name, Address recoveryHash, ulong sequence, Address nextPkHash);
@@ -241,10 +241,10 @@ namespace IXICore.Meta
             handlerClass.shutdown();
         }
 
-        public static IxiNumber getMinSignerPowDifficulty(ulong blockNum)
+        public static IxiNumber getMinSignerPowDifficulty(ulong blockNum, long curBlockTimestamp)
         {
             verifyHandler();
-            return handlerClass.getMinSignerPowDifficulty(blockNum);
+            return handlerClass.getMinSignerPowDifficulty(blockNum, curBlockTimestamp);
         }
 
         public static byte[] calculateRegNameChecksumForRecovery(byte[] name, Address recoveryHash, ulong sequence, Address nextPkHash)

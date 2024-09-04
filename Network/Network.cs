@@ -618,12 +618,15 @@ namespace IXICore.Network
         /// <summary>
         /// Disconnects and reconnects the node to the network.
         /// </summary>
-        static public void reconnect()
+        static public void reconnect(bool resetNetworkQueue)
         {
             // Reconnect server and clients
 
-            // Reset the network receive queue
-            NetworkQueue.reset();
+            if (resetNetworkQueue)
+            {
+                // Reset the network receive queue
+                NetworkQueue.reset();
+            }
 
             if (PresenceList.myPresenceType == 'W')
             {
@@ -643,16 +646,8 @@ namespace IXICore.Network
         /// </summary>
         static public void isolate()
         {
-            NetworkClientManager.isolate();
-            if (PresenceList.myPresenceType == 'W')
-            {
-                Logging.info("Network server is not enabled in worker mode.");
-                NetworkServer.stopNetworkOperations();
-            }
-            else
-            {
-                NetworkServer.restartNetworkOperations();
-            }
+            NetworkClientManager.pause();
+            NetworkServer.pause();
         }
     }
 }

@@ -163,12 +163,12 @@ namespace IXICore
 
                     method_name = context.Request.Url.Segments[1].Replace("/", "");
                     method_params = new Dictionary<string, object>();
-                    foreach(string key in context.Request.QueryString.Keys)
+                    foreach (string key in context.Request.QueryString.Keys)
                     {
                         if (key != null && key != "")
                         {
                             string[] values = context.Request.QueryString.GetValues(key);
-                            if(values == null || values.Length == 0)
+                            if (values == null || values.Length == 0)
                             {
                                 values = new string[1] { "" };
                             }
@@ -228,7 +228,7 @@ namespace IXICore
 
             if (methodName.Equals("reconnect", StringComparison.OrdinalIgnoreCase))
             {
-                response = onReconnect();
+                response = onReconnect(parameters);
             }
 
             if (methodName.Equals("connect", StringComparison.OrdinalIgnoreCase))
@@ -307,7 +307,7 @@ namespace IXICore
             {
                 response = onGetTotalBalance(parameters);
             }
-            
+
             if (methodName.Equals("mywallet", StringComparison.OrdinalIgnoreCase))
             {
                 response = onMyWallet(parameters);
@@ -317,7 +317,7 @@ namespace IXICore
             {
                 response = onMyPubKey(parameters);
             }
-            
+
             if (methodName.Equals("clients", StringComparison.OrdinalIgnoreCase))
             {
                 response = onClients();
@@ -440,6 +440,16 @@ namespace IXICore
                 response = onUpdateNameRecord(parameters);
             }
 
+            if (methodName.Equals("decodeNameData", StringComparison.OrdinalIgnoreCase))
+            {
+                response = onDecodeNameData(parameters);
+            }
+
+            if (methodName.Equals("decodeTransaction", StringComparison.OrdinalIgnoreCase))
+            {
+                response = onDecodeTransaction(parameters);
+            }
+
             bool resources = false;
 
             if (methodName.Equals("resources", StringComparison.OrdinalIgnoreCase))
@@ -459,13 +469,15 @@ namespace IXICore
                 {
                     response = new JsonResponse() { error = new JsonError() { code = (int)RPCErrorCode.RPC_METHOD_NOT_FOUND, message = "Unknown API request '" + methodName + "'" } };
                     processed_request = false;
-                }else
+                }
+                else
                 {
                     processed_request = true;
                 }
 
                 sendResponse(context.Response, response);
-            }else
+            }
+            else
             {
                 processed_request = true;
             }
@@ -480,27 +492,27 @@ namespace IXICore
 
         protected bool isAuthorized(HttpListenerContext context)
         {
-            if(authorizedUsers == null)
+            if (authorizedUsers == null)
             {
                 return true;
             }
 
             // No authorized users provided, allow access to everyone
-            if(authorizedUsers.Count < 1)
+            if (authorizedUsers.Count < 1)
             {
                 return true;
             }
 
-            if(context.User == null)
+            if (context.User == null)
             {
                 return false;
             }
 
             HttpListenerBasicIdentity identity = (HttpListenerBasicIdentity)context.User.Identity;
 
-            if(authorizedUsers.ContainsKey(identity.Name))
+            if (authorizedUsers.ContainsKey(identity.Name))
             {
-                if(authorizedUsers[identity.Name] == identity.Password)
+                if (authorizedUsers[identity.Name] == identity.Password)
                 {
                     return true;
                 }
@@ -541,7 +553,7 @@ namespace IXICore
                 {
                     context = listener.GetContext();
                 }
-                catch(Exception ex)
+                catch (Exception ex)
                 {
                     if (continueRunning)
                     {
@@ -571,7 +583,8 @@ namespace IXICore
                         }
                         context.Response.Close();
                     }
-                }catch(Exception e)
+                }
+                catch (Exception e)
                 {
                     Logging.error("Error processing api request in GenericAPIServer.apiLoop: " + e);
                 }
@@ -616,7 +629,8 @@ namespace IXICore
                 try
                 {
                     responseError = JsonConvert.SerializeObject(response.error);
-                }catch(Exception)
+                }
+                catch (Exception)
                 {
                     responseError = response.error.ToString();
                 }
@@ -692,7 +706,8 @@ namespace IXICore
                     }
                     sendResponse(context.Response, File.ReadAllBytes(file_path));
                     return;
-                }else
+                }
+                else
                 {
                     Logging.error("File {0} is missing.", file_path);
                 }
@@ -715,7 +730,7 @@ namespace IXICore
             }
 
             string wallet_html = File.ReadAllText(wallet_path);
-            
+
             // Set the content type to html to show the wallet page
             context.Response.ContentType = "text/html";
 
@@ -736,11 +751,17 @@ namespace IXICore
             return new JsonResponse { result = "Node shutdown", error = error };
         }
 
-        private JsonResponse onReconnect()
+        private JsonResponse onReconnect(Dictionary<string, object> parameters)
         {
             JsonError error = null;
 
-            CoreNetworkUtils.reconnect();
+            bool resetNetworkQueue = false;
+            if (parameters.ContainsKey("resetNetworkQueue"))
+            {
+                resetNetworkQueue = true;
+            }
+
+            CoreNetworkUtils.reconnect(resetNetworkQueue);
 
             return new JsonResponse { result = "Reconnecting node to network now.", error = error };
         }
@@ -1135,7 +1156,7 @@ namespace IXICore
         {
             if (IxianHandler.status != NodeStatus.ready)
             {
-                return new JsonResponse { result = null, error = new JsonError() { code = (int)RPCErrorCode.RPC_IN_WARMUP, message = String.Format("There was an error while creating the transaction: The node isn't ready to process this request yet.") }};
+                return new JsonResponse { result = null, error = new JsonError() { code = (int)RPCErrorCode.RPC_IN_WARMUP, message = String.Format("There was an error while creating the transaction: The node isn't ready to process this request yet.") } };
             }
 
             // transaction which alters a multisig wallet
@@ -1347,7 +1368,7 @@ namespace IXICore
             }
 
             string count = "50";
-            if(parameters.ContainsKey("count"))
+            if (parameters.ContainsKey("count"))
             {
                 count = (string)parameters["count"];
             }
@@ -1359,7 +1380,7 @@ namespace IXICore
             }
 
             bool descending = false;
-            if(parameters.ContainsKey("descending") && (string)parameters["descending"] == "true")
+            if (parameters.ContainsKey("descending") && (string)parameters["descending"] == "true")
             {
                 descending = true;
             }
@@ -1374,7 +1395,7 @@ namespace IXICore
             if (parameters.ContainsKey("orderBy"))
             {
                 string tmpOrderBy = (string)parameters["orderBy"];
-                switch(tmpOrderBy)
+                switch (tmpOrderBy)
                 {
                     case "insertedTimestamp":
                         break;
@@ -1471,9 +1492,9 @@ namespace IXICore
 
             string file = (string)parameters["file"];
             string password = (string)parameters["password"];
-            
+
             WalletStorage ws = IxianHandler.getWalletStorageByFilename(file);
-            if(ws == null)
+            if (ws == null)
             {
                 ws = new WalletStorage(file);
                 if (!ws.readWallet(password))
@@ -1524,11 +1545,13 @@ namespace IXICore
                 byte[] hash = CryptoManager.lib.sha3_512sqTrunc(UTF8Encoding.UTF8.GetBytes(message));
                 signature = Crypto.hashToString(CryptoManager.lib.getSignature(hash, IxianHandler.getWalletStorage(wallet).getPrimaryPrivateKey()));
 
-            }else if (parameters.ContainsKey("hash"))
+            }
+            else if (parameters.ContainsKey("hash"))
             {
                 byte[] hash = Crypto.stringToHash((string)parameters["hash"]);
                 signature = Crypto.hashToString(CryptoManager.lib.getSignature(hash, IxianHandler.getWalletStorage(wallet).getPrimaryPrivateKey()));
-            }else
+            }
+            else
             {
                 return new JsonResponse { result = null, error = new JsonError() { code = (int)RPCErrorCode.RPC_INVALID_PARAMS, message = "Missing parameter 'message' or 'hash'." } };
             }
@@ -1574,7 +1597,8 @@ namespace IXICore
             if (sigOk)
             {
                 return new JsonResponse { result = "OK", error = null };
-            }else
+            }
+            else
             {
                 return new JsonResponse { result = "FAIL", error = null };
             }
@@ -1599,7 +1623,7 @@ namespace IXICore
             {
                 address_bytes = Base58Check.Base58CheckEncoding.DecodePlain(address);
             }
-            catch(Exception)
+            catch (Exception)
             {
                 address_bytes = null;
             }
@@ -1744,7 +1768,8 @@ namespace IXICore
                 nextPkHash = new Address((string)parameters["nextPkHash"]);
             }
 
-            Address sigPk = new Address(IxianHandler.getWalletStorage(nextPkHash).getPrimaryPublicKey());
+            var curPkHash = name.nextPkHash;
+            Address sigPk = new Address(IxianHandler.getWalletStorage(curPkHash).getPrimaryPublicKey());
             if (parameters.ContainsKey("sigPk"))
             {
                 sigPk = new Address((string)parameters["sigPk"]);
@@ -1753,7 +1778,7 @@ namespace IXICore
             ulong months = name.expirationBlockHeight / ConsensusConfig.rnMonthInBlocks;
             ulong sequence = name.sequence + 1;
 
-            byte[] sig = new byte[64];
+            byte[] sig;
             if (parameters.ContainsKey("sig"))
             {
                 sig = Convert.FromBase64String((string)parameters["sig"]);
@@ -1762,7 +1787,7 @@ namespace IXICore
             {
                 name.setCapacity(newCapacity, sequence, nextPkHash, null, null, 0);
                 var newChecksum = name.calculateChecksum();
-                sig = CryptoManager.lib.getSignature(newChecksum, IxianHandler.getWalletStorage(nextPkHash).getPrimaryPrivateKey());
+                sig = CryptoManager.lib.getSignature(newChecksum, IxianHandler.getWalletStorage(curPkHash).getPrimaryPrivateKey());
             }
 
             ToEntry toEntry = RegisteredNamesTransactions.createChangeCapacityToEntry(nameBytes, newCapacity, sequence, nextPkHash, sigPk, sig, ConsensusConfig.rnPricePerUnit * months * (ulong)newCapacity);
@@ -1799,23 +1824,25 @@ namespace IXICore
             {
                 nextRecoveryHash = new Address((string)parameters["nextRecoveryHash"]);
             }
-            Address sigPk = new Address(IxianHandler.getWalletStorage(nextPkHash).getPrimaryPublicKey());
+            var name = IxianHandler.getRegName(nameBytes);
+            var curPkHash = name.nextPkHash;
+            Address sigPk = new Address(IxianHandler.getWalletStorage(curPkHash).getPrimaryPublicKey());
             if (parameters.ContainsKey("sigPk"))
             {
                 sigPk = new Address((string)parameters["sigPk"]);
             }
-            var name = IxianHandler.getRegName(nameBytes);
             ulong sequence = name.sequence + 1;
-            
+
             byte[] sig;
 
             if (parameters.ContainsKey("sig"))
             {
                 sig = Convert.FromBase64String((string)parameters["sig"]);
-            } else
+            }
+            else
             {
                 var newChecksum = IxianHandler.calculateRegNameChecksumForRecovery(nameBytes, nextRecoveryHash, sequence, nextPkHash);
-                sig = CryptoManager.lib.getSignature(newChecksum, IxianHandler.getWalletStorage(nextPkHash).getPrimaryPrivateKey());
+                sig = CryptoManager.lib.getSignature(newChecksum, IxianHandler.getWalletStorage(curPkHash).getPrimaryPrivateKey());
             }
 
             ToEntry toEntry = RegisteredNamesTransactions.createRecoverToEntry(nameBytes, sequence, nextPkHash, nextRecoveryHash, sigPk, sig);
@@ -1841,7 +1868,7 @@ namespace IXICore
             {
                 return new JsonResponse { result = null, error = new JsonError() { code = (int)RPCErrorCode.RPC_INVALID_PARAMS, message = "Missing parameter 'name'" } };
             }
-            
+
             if (!parameters.ContainsKey("records[]"))
             {
                 return new JsonResponse { result = null, error = new JsonError() { code = (int)RPCErrorCode.RPC_INVALID_PARAMS, message = "Missing parameter/s 'records[]'" } };
@@ -1853,15 +1880,16 @@ namespace IXICore
             {
                 nextPkHash = new Address((string)parameters["nextPkHash"]);
             }
-            Address sigPk = new Address(IxianHandler.getWalletStorage(nextPkHash).getPrimaryPublicKey());
+            var name = IxianHandler.getRegName(nameBytes);
+            var curPkHash = name.nextPkHash;
+            Address sigPk = new Address(IxianHandler.getWalletStorage(curPkHash).getPrimaryPublicKey());
             if (parameters.ContainsKey("sigPk"))
             {
                 sigPk = new Address((string)parameters["sigPk"]);
             }
-            var name = IxianHandler.getRegName(nameBytes);
             ulong sequence = name.sequence + 1;
 
-            List<RegisteredNameDataRecord> records = new List<RegisteredNameDataRecord>();            
+            List<RegisteredNameDataRecord> records = new List<RegisteredNameDataRecord>();
             foreach (var record in (string[])parameters["records[]"])
             {
                 var splitRecord = record.Split(',');
@@ -1879,7 +1907,7 @@ namespace IXICore
             else
             {
                 var newChecksum = IxianHandler.calculateRegNameChecksumFromUpdatedRecords(nameBytes, records, sequence, nextPkHash);
-                sig = CryptoManager.lib.getSignature(newChecksum, IxianHandler.getWalletStorage(nextPkHash).getPrimaryPrivateKey());
+                sig = CryptoManager.lib.getSignature(newChecksum, IxianHandler.getWalletStorage(curPkHash).getPrimaryPrivateKey());
             }
             ToEntry toEntry = RegisteredNamesTransactions.createUpdateRecordToEntry(nameBytes, records, sequence, nextPkHash, sigPk, sig);
 
@@ -1898,6 +1926,36 @@ namespace IXICore
             return new JsonResponse { result = null, error = new JsonError() { code = (int)RPCErrorCode.RPC_INTERNAL_ERROR, message = "An unknown error occurred while adding the transaction" } };
         }
 
+        private JsonResponse onDecodeNameData(Dictionary<string, object> parameters)
+        {
+            JsonError error = null;
+            if (!parameters.ContainsKey("data"))
+            {
+                error = new JsonError { code = (int)RPCErrorCode.RPC_INVALID_PARAMETER, message = "data parameter is missing" };
+                return new JsonResponse { result = null, error = error };
+            }
+
+            string rawNameDataHex = (string)parameters["data"];
+
+            RegNameTxEntryBase decodedNameData = IxiNameUtils.decodeNameData(Crypto.stringToHash(rawNameDataHex));
+            return new JsonResponse { result = decodedNameData, error = null };
+        }
+
+        private JsonResponse onDecodeTransaction(Dictionary<string, object> parameters)
+        {
+            JsonError error = null;
+            if (!parameters.ContainsKey("transaction"))
+            {
+                error = new JsonError { code = (int)RPCErrorCode.RPC_INVALID_PARAMETER, message = "transaction parameter is missing" };
+                return new JsonResponse { result = null, error = error };
+            }
+
+            string rawTxHex = (string)parameters["transaction"];
+
+            Transaction decodedTransaction = new Transaction(Crypto.stringToHash(rawTxHex));
+            return new JsonResponse { result = decodedTransaction, error = null };
+        }
+
         private Transaction createRegNameTransaction(ToEntry toEntry, Address walletAddress, Address primaryAddress)
         {
             Transaction t = new Transaction((int)Transaction.Type.RegName);
@@ -1908,8 +1966,8 @@ namespace IXICore
             return createTransaction(t, walletAddress, primaryAddress, 0);
         }
 
-		private Transaction createTransaction(Transaction t, Address walletAddress, Address primaryAddress, IxiNumber additionalFees)
-		{
+        private Transaction createTransaction(Transaction t, Address walletAddress, Address primaryAddress, IxiNumber additionalFees)
+        {
             IxiNumber fromAmount = 0;
             IxiNumber fee = ConsensusConfig.forceTransactionPrice;
 

@@ -594,7 +594,7 @@ namespace IXICore
                     return false;
                 }
 
-                IxiNumber minSignerPowDifficulty = IxianHandler.getMinSignerPowDifficulty(IxianHandler.getLastBlockHeight() + 1);
+                IxiNumber minSignerPowDifficulty = IxianHandler.getMinSignerPowDifficulty(IxianHandler.getLastBlockHeight() + 1, currentTime);
 
                 lock (presences)
                 {
