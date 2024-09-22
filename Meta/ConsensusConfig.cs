@@ -109,6 +109,7 @@ namespace IXICore
 
         public static readonly IxiNumber minBlockSignerPowDifficulty = 10000000;
         public static readonly ulong blocksToUseForAverageDifficultyCalculation = 40320;
+        public static readonly long difficultyAdjustmentTimeInterval = 14 * 24 * 60 * 60; // 2 weeks
 
         /// <summary>
         /// Minimum funds a wallet must have before it is allowed to participate in the block consensus algorithm. (used in DLT Node executable).

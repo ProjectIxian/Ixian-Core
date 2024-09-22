@@ -58,8 +58,6 @@ namespace IXICore.Meta
 
         public abstract IxiNumber getMinSignerPowDifficulty(ulong blockNum, long curBlockTimestamp);
 
-        public abstract byte[] calculateRegNameChecksumFromUpdatedDataRecords(byte[] name, List<RegisteredNameDataRecord> dataRecords, ulong sequence, Address nextPkHash);
-        public abstract byte[] calculateRegNameChecksumForRecovery(byte[] name, Address recoveryHash, ulong sequence, Address nextPkHash);
         public abstract RegisteredNameRecord getRegName(byte[] name, bool useAbsoluteId);
     }
 
@@ -245,18 +243,6 @@ namespace IXICore.Meta
         {
             verifyHandler();
             return handlerClass.getMinSignerPowDifficulty(blockNum, curBlockTimestamp);
-        }
-
-        public static byte[] calculateRegNameChecksumForRecovery(byte[] name, Address recoveryHash, ulong sequence, Address nextPkHash)
-        {
-            verifyHandler();
-            return handlerClass.calculateRegNameChecksumForRecovery(name, recoveryHash, sequence, nextPkHash);
-        }
-
-        public static byte[] calculateRegNameChecksumFromUpdatedRecords(byte[] name, List<RegisteredNameDataRecord> dataRecords, ulong sequence, Address nextPkHash)
-        {
-            verifyHandler();
-            return handlerClass.calculateRegNameChecksumFromUpdatedDataRecords(name, dataRecords, sequence, nextPkHash);
         }
 
         public static RegisteredNameRecord getRegName(byte[] name, bool useAbsoluteId = true)

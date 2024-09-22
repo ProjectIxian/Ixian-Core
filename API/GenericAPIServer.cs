@@ -1841,7 +1841,7 @@ namespace IXICore
             }
             else
             {
-                var newChecksum = IxianHandler.calculateRegNameChecksumForRecovery(nameBytes, nextRecoveryHash, sequence, nextPkHash);
+                var newChecksum = RegisteredNamesTransactions.calculateRegNameChecksumForRecovery(name, nameBytes, nextRecoveryHash, sequence, nextPkHash);
                 sig = CryptoManager.lib.getSignature(newChecksum, IxianHandler.getWalletStorage(curPkHash).getPrimaryPrivateKey());
             }
 
@@ -1906,7 +1906,7 @@ namespace IXICore
             }
             else
             {
-                var newChecksum = IxianHandler.calculateRegNameChecksumFromUpdatedRecords(nameBytes, records, sequence, nextPkHash);
+                var newChecksum = RegisteredNamesTransactions.calculateRegNameChecksumFromUpdatedDataRecords(name, nameBytes, records, sequence, nextPkHash);
                 sig = CryptoManager.lib.getSignature(newChecksum, IxianHandler.getWalletStorage(curPkHash).getPrimaryPrivateKey());
             }
             ToEntry toEntry = RegisteredNamesTransactions.createUpdateRecordToEntry(nameBytes, records, sequence, nextPkHash, sigPk, sig);

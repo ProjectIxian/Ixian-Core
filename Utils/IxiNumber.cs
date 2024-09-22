@@ -25,7 +25,7 @@ namespace IXICore
         private static int num_decimals = 8;
 
         // Set the initial value to 0
-        BigInteger amount = BigInteger.Zero;
+        public BigInteger amount { get; private set; } = BigInteger.Zero;
 
         public IxiNumber()
         {
