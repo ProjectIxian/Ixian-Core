@@ -324,7 +324,7 @@ namespace IXICore
             signatureCount = block.signatureCount;
             totalSignerDifficulty = block.totalSignerDifficulty;
 
-            if(block.blockProposer != null)
+            if (block.blockProposer != null)
             {
                 blockProposer = new byte[block.blockProposer.Length];
                 Array.Copy(block.blockProposer, blockProposer, blockProposer.Length);
@@ -773,8 +773,9 @@ namespace IXICore
                             if (num_signatures == 0)
                             {
                                 signatureCount = (int)reader.ReadIxiVarUInt();
-                                totalSignerDifficulty = reader.ReadIxiVarUInt();
-                            }else
+                                totalSignerDifficulty = SignerPowSolution.bitsToDifficulty(reader.ReadIxiVarUInt());
+                            }
+                            else
                             {
                                 if (num_signatures > ConsensusConfig.maximumBlockSigners * 2)
                                 {
@@ -1749,9 +1750,9 @@ namespace IXICore
                     Logging.warn("Trying to apply signature on block #{0} but PoW Signing solution isn't ready yet.", blockNum);
                     return null;
                 }
-                if(powSolution.blockNum + ConsensusConfig.plPowBlocksValidity < blockNum)
+                if(powSolution.blockNum + ConsensusConfig.getPlPowBlocksValidity(version) < blockNum)
                 {
-                    Logging.warn("Trying to apply signature on block #{0} but PoW Signing solution is too old {1} < {2}.", blockNum, powSolution.blockNum + ConsensusConfig.plPowBlocksValidity, blockNum);
+                    Logging.warn("Trying to apply signature on block #{0} but PoW Signing solution is too old {1} < {2}.", blockNum, powSolution.blockNum + ConsensusConfig.getPlPowBlocksValidity(version), blockNum);
                     return null;
                 }
                 if (powSolution.difficulty < IxianHandler.getMinSignerPowDifficulty(blockNum, timestamp))
@@ -1968,7 +1969,7 @@ namespace IXICore
 
                 IxiNumber minPowDifficulty = IxianHandler.getMinSignerPowDifficulty(blockNum, timestamp);
                 if (sig.powSolution.blockNum >= blockNum
-                    || sig.powSolution.blockNum + ConsensusConfig.plPowBlocksValidity < blockNum
+                    || sig.powSolution.blockNum + ConsensusConfig.getPlPowBlocksValidity(version) < blockNum
                     || !sig.powSolution.verifySolution(minPowDifficulty))
                 {
                     Logging.error("VerifySig: invalid solution");

@@ -795,7 +795,8 @@ namespace IXICore
 
         public JsonResponse onAddTransaction(Dictionary<string, object> parameters)
         {
-            if (IxianHandler.status != NodeStatus.ready)
+            if (IxianHandler.status != NodeStatus.ready
+                && IxianHandler.status != NodeStatus.stalled)
             {
                 return new JsonResponse { result = null, error = new JsonError() { code = (int)RPCErrorCode.RPC_IN_WARMUP, message = String.Format("There was an error while creating the transaction: The node isn't ready to process this request yet.") } };
             }
@@ -838,7 +839,8 @@ namespace IXICore
             // - offline transactions
             // - manually adjusting fee
 
-            if (IxianHandler.status != NodeStatus.ready)
+            if (IxianHandler.status != NodeStatus.ready
+                && IxianHandler.status != NodeStatus.stalled)
             {
                 return new JsonResponse { result = null, error = new JsonError() { code = (int)RPCErrorCode.RPC_IN_WARMUP, message = String.Format("There was an error while creating the transaction: The node isn't ready to process this request yet.") } };
             }
@@ -921,7 +923,8 @@ namespace IXICore
 
         private JsonResponse onSendRawTransaction(Dictionary<string, object> parameters)
         {
-            if (IxianHandler.status != NodeStatus.ready)
+            if (IxianHandler.status != NodeStatus.ready
+                && IxianHandler.status != NodeStatus.stalled)
             {
                 return new JsonResponse { result = null, error = new JsonError() { code = (int)RPCErrorCode.RPC_IN_WARMUP, message = String.Format("There was an error while creating the transaction: The node isn't ready to process this request yet.") } };
             }
@@ -981,7 +984,8 @@ namespace IXICore
 
         private JsonResponse onAddMultiSigTxSignature(Dictionary<string, object> parameters)
         {
-            if (IxianHandler.status != NodeStatus.ready)
+            if (IxianHandler.status != NodeStatus.ready
+                && IxianHandler.status != NodeStatus.stalled)
             {
                 return new JsonResponse { result = null, error = new JsonError() { code = (int)RPCErrorCode.RPC_IN_WARMUP, message = String.Format("There was an error while creating the transaction: The node isn't ready to process this request yet.") } };
             }
@@ -1025,7 +1029,8 @@ namespace IXICore
 
         private JsonResponse onAddMultiSigTransaction(Dictionary<string, object> parameters)
         {
-            if (IxianHandler.status != NodeStatus.ready)
+            if (IxianHandler.status != NodeStatus.ready
+                && IxianHandler.status != NodeStatus.stalled)
             {
                 return new JsonResponse { result = null, error = new JsonError() { code = (int)RPCErrorCode.RPC_IN_WARMUP, message = String.Format("There was an error while creating the transaction: The node isn't ready to process this request yet.") } };
             }
@@ -1122,7 +1127,8 @@ namespace IXICore
 
         private JsonResponse onAddMultiSigKey(Dictionary<string, object> parameters)
         {
-            if (IxianHandler.status != NodeStatus.ready)
+            if (IxianHandler.status != NodeStatus.ready
+                && IxianHandler.status != NodeStatus.stalled)
             {
                 return new JsonResponse { result = null, error = new JsonError() { code = (int)RPCErrorCode.RPC_IN_WARMUP, message = String.Format("There was an error while creating the transaction: The node isn't ready to process this request yet.") } };
             }
@@ -1154,7 +1160,8 @@ namespace IXICore
 
         private JsonResponse onDelMultiSigKey(Dictionary<string, object> parameters)
         {
-            if (IxianHandler.status != NodeStatus.ready)
+            if (IxianHandler.status != NodeStatus.ready
+                && IxianHandler.status != NodeStatus.stalled)
             {
                 return new JsonResponse { result = null, error = new JsonError() { code = (int)RPCErrorCode.RPC_IN_WARMUP, message = String.Format("There was an error while creating the transaction: The node isn't ready to process this request yet.") } };
             }
@@ -1189,7 +1196,8 @@ namespace IXICore
 
         private JsonResponse onChangeMultiSigs(Dictionary<string, object> parameters)
         {
-            if (IxianHandler.status != NodeStatus.ready)
+            if (IxianHandler.status != NodeStatus.ready
+                && IxianHandler.status != NodeStatus.stalled)
             {
                 return new JsonResponse { result = null, error = new JsonError() { code = (int)RPCErrorCode.RPC_IN_WARMUP, message = String.Format("There was an error while creating the transaction: The node isn't ready to process this request yet.") } };
             }

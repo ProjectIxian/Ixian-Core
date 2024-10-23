@@ -416,8 +416,8 @@ namespace IXICore.Network
         public static List<string[]> seedTestNetNodes = new List<string[]>
                     {
                         new string[2] { "seedtest1.ixian.io:11234", null },
-                        new string[2] { "seedtest2.ixian.io:11234", null },
-                        new string[2] { "seedtest3.ixian.io:11234", null }
+                        new string[2] { "seedtest2.ixian.io:11235", null },
+                        new string[2] { "seedtest3.ixian.io:11236", null }
                     };
 
         /// <summary>

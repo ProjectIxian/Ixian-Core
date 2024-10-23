@@ -110,7 +110,7 @@ namespace IXICore
         public static readonly IxiNumber minBlockSignerPowDifficulty = 10000000;
         public static readonly ulong blocksToUseForAverageDifficultyCalculation = 40320;
         public static readonly long difficultyAdjustmentTimeInterval = 14 * 24 * 60 * 60; // 2 weeks
-
+        public static readonly long difficultyAdjustmentExpectedBlockCount = 40000;
         /// <summary>
         /// Minimum funds a wallet must have before it is allowed to participate in the block consensus algorithm. (used in DLT Node executable).
         /// </summary>
@@ -204,25 +204,52 @@ namespace IXICore
         /// <summary>
         /// Number of blocks that the PL PoW is valid for.
         /// </summary>
-        public static readonly ulong plPowBlocksValidity = 120; // 120 blocks = approx. 1 hour
+        private static readonly ulong plPowBlocksValidity_v10 = 120; // 120 blocks = approx. 1 hour
+        private static readonly ulong plPowBlocksValidity_v12 = 30;
+
+        public static ulong getPlPowBlocksValidity(int blockVersion = -1)
+        {
+            if (blockVersion < BlockVer.v12)
+            {
+                return plPowBlocksValidity_v10;
+            }
+            return plPowBlocksValidity_v12;
+        }
 
         /// <summary>
         /// Min. number of blocks that the PL PoW will be calculated for.
         /// </summary>
-        public static readonly ulong plPowMinCalculationBlockTime = 20; // 20 blocks = 10 mins
-        public static readonly long plPowMinCalculationTime = (long)plPowMinCalculationBlockTime * blockGenerationInterval;
+        private static readonly ulong plPowMinCalculationBlockTimeOld = 20;
+        private static readonly ulong plPowMinCalculationBlockTime = 10; // 10 blocks = 5 mins
+        public static ulong getPlPowMinCalculationBlockTime(int blockVersion = -1)
+        {
+            if (blockVersion < BlockVer.v12)
+            {
+                return plPowMinCalculationBlockTimeOld;
+            }
+            return plPowMinCalculationBlockTime;
+        }
 
         /// <summary>
         /// Number of blocks after how many to re-calculate the PL PoW since last solution.
         /// </summary>
-        public static readonly ulong plPowCalculationInterval = 40; // 40 blocks = approx. 20 mins
+        private static readonly ulong plPowCalculationIntervalOld = 40;
+        private static readonly ulong plPowCalculationInterval = 20;
+        public static ulong getPlPowCalculationInterval(int blockVersion = -1)
+        {
+            if (blockVersion < BlockVer.v12)
+            {
+                return plPowCalculationIntervalOld;
+            }
+            return plPowCalculationInterval;
+        }
 
         /// <summary>
         /// Number of blocks after how many the signing and mining rewards become available for spending.
         /// </summary>
         public static readonly ulong rewardMaturity = 960;// plPowBlocksValidity * 8;
 
-        // Capacity can only be increased in factors of rnInitialCapacity value
+        // Name can be registered or extended only by a factor of rnMonthInBlocks value
         public static readonly uint rnMonthInBlocks = 86400; // Approx 30 days - 2880 * 30
         public static readonly uint rnMinRegistrationTimeInBlocks = 518400; // Approx 6 month - 2880 * 30 * 6
         public static readonly uint rnMaxRegistrationTimeInBlocks = 2102400; // Approx 2 years - 2880 * 365 * 2
@@ -241,6 +268,10 @@ namespace IXICore
         public static readonly uint rnMaxRecordKeyLength = 256;
         // Max allowed subname levels. If this is ever increased, the implementation must first be fixed to support more than one level.
         public static readonly uint rnMaxSubNameLevels = 1;
+
+        // If the network is stuck for specified period of time due to missing required signers, go into special recovery mode
+        public static readonly long blockChainRecoveryTimeout = 3600; // 1 hour
+        public static readonly long blockChainRecoveryMissingRequiredSignerRatio = 100;
 
         /// <summary>
         ///  Retrieves the lenght of the redacted window based on the block version in use.

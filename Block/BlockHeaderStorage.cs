@@ -67,12 +67,14 @@ namespace IXICore
                 return;
             }
 
+            ulong plPowBlockValidity = ConsensusConfig.getPlPowBlocksValidity(lastBlock.version);
+
             ulong cacheFromBlockNum = 0;
-            if (lastBlock.blockNum > ConsensusConfig.plPowBlocksValidity)
+            if (lastBlock.blockNum > plPowBlockValidity)
             {
-                cacheFromBlockNum = lastBlock.blockNum - ConsensusConfig.plPowBlocksValidity;
+                cacheFromBlockNum = lastBlock.blockNum - plPowBlockValidity;
             }
-            for (ulong i = 0; i < ConsensusConfig.plPowBlocksValidity; i++)
+            for (ulong i = 0; i < plPowBlockValidity; i++)
             {
                 Block b = getBlockHeader(cacheFromBlockNum + i);
                 if (b == null)
@@ -124,7 +126,7 @@ namespace IXICore
             lock (blockHeaderCache)
             {
                 blockHeaderCache.Add(block_header);
-                if ((ulong)blockHeaderCache.Count > ConsensusConfig.plPowBlocksValidity)
+                if ((ulong)blockHeaderCache.Count > ConsensusConfig.getPlPowBlocksValidity(block_header.version))
                 {
                     blockHeaderCache.RemoveAt(0);
                 }

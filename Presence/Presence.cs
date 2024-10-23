@@ -445,7 +445,7 @@ namespace IXICore
             {
                 return true;
             }
-            if (signerPow.blockNum + ConsensusConfig.plPowBlocksValidity < IxianHandler.getLastBlockHeight())
+            if (signerPow.blockNum + ConsensusConfig.getPlPowBlocksValidity(IxianHandler.getLastBlockVersion()) < IxianHandler.getLastBlockHeight())
             {
                 Logging.warn("Expired pow solution received in verifyPowSolution, verification failed for {0}.", wallet.ToString());
                 return false;
