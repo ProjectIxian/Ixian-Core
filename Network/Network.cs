@@ -89,32 +89,32 @@ namespace IXICore.Network
         bye = 2,
         //[Obsolete("Use getBlock3 instead")]
         //getBlock = 3,
-        [Obsolete("Use blockData2 instead")]
-        blockData = 4,
+        //[Obsolete("Use blockData2 instead")]
+        //blockData = 4,
         [Obsolete("Use inventory instead")]
         blockHeight = 5,
         getKeepAlives = 6,
         keepAlivesChunk = 7,
         transactionData2 = 8,
         blockData2 = 9,
-        [Obsolete("Use transactionData2 instead")]
-        transactionData = 10,
-        [Obsolete("Use getSignatures2 instead")]
-        getSignatures = 11,
-        [Obsolete("Use signaturesChunk2 instead")]
-        signaturesChunk = 12,
+        //[Obsolete("Use transactionData2 instead")]
+        //transactionData = 10,
+        //[Obsolete("Use getSignatures2 instead")]
+        //getSignatures = 11,
+        //[Obsolete("Use signaturesChunk2 instead")]
+        //signaturesChunk = 12,
         blockSignature2 = 13,
         getBlockSignatures2 = 14,
-        [Obsolete("Use transactionsChunk3 instead")]
-        transactionsChunk = 15,
+        //[Obsolete("Use transactionsChunk3 instead")]
+        //transactionsChunk = 15,
         getSignatures2 = 16,
         signaturesChunk2 = 17,
-        [Obsolete("Use getBlock3 instead")]
-        getBlock2 = 18,
-        [Obsolete("Use getBlockHeaders3 instead")]
-        getBlockHeaders2 = 19,
-        [Obsolete("Use blockHeaders3 instead")]
-        blockHeaders2 = 20,
+        //[Obsolete("Use getBlock3 instead")]
+        //getBlock2 = 18,
+        //[Obsolete("Use getBlockHeaders3 instead")]
+        //getBlockHeaders2 = 19,
+        //[Obsolete("Use blockHeaders3 instead")]
+        //blockHeaders2 = 20,
         getPIT2 = 21,
         pitData2 = 22,
         //[Obsolete("Use getTransaction3 instead")]
@@ -133,11 +133,11 @@ namespace IXICore.Network
         [Obsolete("Use balance2 instead")]
         balance = 33,
         keepAlivePresence = 34,
-        [Obsolete("Use getPresence2 instead")]
-        getPresence = 35,
+        //[Obsolete("Use getPresence2 instead")]
+        //getPresence = 35,
         getPresence2 = 36,
-        [Obsolete("Use transactionsChunk3 instead")]
-        blockTransactionsChunk = 37, // deprecated
+        //[Obsolete("Use transactionsChunk3 instead")]
+        //blockTransactionsChunk = 37, // deprecated
         getUnappliedTransactions = 38,
         extend = 39,
         attachEvent = 40,
@@ -160,8 +160,8 @@ namespace IXICore.Network
         walletState = 54,
         getBlock3 = 55,
         getTransactions2 = 56,
-        [Obsolete("Use transactionsChunk3 instead")]
-        transactionsChunk2 = 57,
+        //[Obsolete("Use transactionsChunk3 instead")]
+        //transactionsChunk2 = 57,
         getTransaction3 = 58,
         inventory2 = 59,
         transactionsChunk3 = 60

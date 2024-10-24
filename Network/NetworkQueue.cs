@@ -94,8 +94,7 @@ namespace IXICore.Network
 
         private static byte[] extractHelperData(ProtocolMessageCode code, byte[] data)
         {
-            if (code == ProtocolMessageCode.blockData
-                || code == ProtocolMessageCode.blockData2)
+            if (code == ProtocolMessageCode.blockData2)
             {
                 return data.Take(8).ToArray();
             }
@@ -152,11 +151,8 @@ namespace IXICore.Network
 #pragma warning disable CS0618 // Type or member is obsolete
                     case ProtocolMessageCode.getTransaction3:
                     case ProtocolMessageCode.getTransactions2:
-                    case ProtocolMessageCode.getBlock2:
                     case ProtocolMessageCode.getBlock3:
-                    case ProtocolMessageCode.getBlockHeaders2:
                     case ProtocolMessageCode.getBlockHeaders3:
-                    case ProtocolMessageCode.getSignatures:
                     case ProtocolMessageCode.getSignatures2:
                     case ProtocolMessageCode.getBlockSignatures2:
                     case ProtocolMessageCode.getPIT:
@@ -167,15 +163,9 @@ namespace IXICore.Network
                         break;
 
 #pragma warning disable CS0618 // Type or member is obsolete
-                    case ProtocolMessageCode.transactionsChunk:
-                    case ProtocolMessageCode.transactionsChunk2:
                     case ProtocolMessageCode.transactionsChunk3:
-                    case ProtocolMessageCode.transactionData:
                     case ProtocolMessageCode.transactionData2:
-                    case ProtocolMessageCode.blockTransactionsChunk:
-                    case ProtocolMessageCode.blockHeaders2:
                     case ProtocolMessageCode.blockHeaders3:
-                    case ProtocolMessageCode.blockData:
                     case ProtocolMessageCode.blockData2:
                     case ProtocolMessageCode.pitData:
                     case ProtocolMessageCode.pitData2:
@@ -238,13 +228,9 @@ namespace IXICore.Network
 #pragma warning disable CS0618 // Type or member is obsolete
                             case ProtocolMessageCode.getTransaction3:
                             case ProtocolMessageCode.getTransactions2:
-                            case ProtocolMessageCode.getBlock2:
                             case ProtocolMessageCode.getBlock3:
-                            case ProtocolMessageCode.getBlockHeaders2:
                             case ProtocolMessageCode.getBlockHeaders3:
-                            case ProtocolMessageCode.blockData:
                             case ProtocolMessageCode.blockData2:
-                            case ProtocolMessageCode.getSignatures:
                             case ProtocolMessageCode.getSignatures2:
                             case ProtocolMessageCode.getBlockSignatures2:
                             case ProtocolMessageCode.getPIT:
@@ -286,7 +272,6 @@ namespace IXICore.Network
                         return;
 
                     case ProtocolMessageCode.keepAlivePresence:
-                    case ProtocolMessageCode.getPresence:
                     case ProtocolMessageCode.getPresence2:
                     case ProtocolMessageCode.updatePresence:
                         // Prioritize if queue is large

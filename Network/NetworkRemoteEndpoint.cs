@@ -666,7 +666,6 @@ namespace IXICore.Network
                         ulong last_bh = IxianHandler.getLastBlockHeight();
                         switch (active_message.code)
                         {
-                            case ProtocolMessageCode.blockData:
                             case ProtocolMessageCode.blockData2:
                                 ulong bh = active_message.data.GetIxiVarUInt(active_message.data.GetIxiVarUInt(0).bytesRead).num;
                                 if (bh == last_bh || bh == last_bh + 1)
@@ -677,12 +676,10 @@ namespace IXICore.Network
                                 break;
 
                             case ProtocolMessageCode.blockSignature2:
-                            case ProtocolMessageCode.signaturesChunk:
                             case ProtocolMessageCode.signaturesChunk2:
                                 priority = MessagePriority.medium;
                                 break;
 
-                            case ProtocolMessageCode.transactionsChunk2:
                             case ProtocolMessageCode.transactionsChunk3:
                                 if (msg_id == (long)last_bh + 1)
                                 {
@@ -918,11 +915,7 @@ namespace IXICore.Network
 
                     break;
 
-                case ProtocolMessageCode.transactionsChunk:
-                case ProtocolMessageCode.transactionsChunk2:
                 case ProtocolMessageCode.transactionsChunk3:
-                case ProtocolMessageCode.blockTransactionsChunk:
-                case ProtocolMessageCode.transactionData:
                 case ProtocolMessageCode.transactionData2:
                     lock (sendQueueMessagesLowPriority)
                     {
