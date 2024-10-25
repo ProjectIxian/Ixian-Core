@@ -128,10 +128,10 @@ namespace IXICore.Network
         //inventory = 29,
         getBalance2 = 30,
         balance2 = 31,
-        [Obsolete("Use getBalance2 instead")]
-        getBalance = 32,
-        [Obsolete("Use balance2 instead")]
-        balance = 33,
+        //[Obsolete("Use getBalance2 instead")]
+        //getBalance = 32,
+        //[Obsolete("Use balance2 instead")]
+        //balance = 33,
         keepAlivePresence = 34,
         //[Obsolete("Use getPresence2 instead")]
         //getPresence = 35,
@@ -150,10 +150,10 @@ namespace IXICore.Network
         getBlockHeaders3 = 46,
         blockHeaders3 = 47,
         getRandomPresences = 48,
-        [Obsolete("Use getPIT2 instead")]
-        getPIT = 49, // deprecated
-        [Obsolete("Use pitData2 instead")]
-        pitData = 50, // deprecated
+        //[Obsolete("Use getPIT2 instead")]
+        //getPIT = 49, // deprecated
+        //[Obsolete("Use pitData2 instead")]
+        //pitData = 50, // deprecated
         getWalletStateChunk = 51,
         walletStateChunk = 52,
         syncWalletState = 53,
