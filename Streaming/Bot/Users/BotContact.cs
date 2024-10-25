@@ -35,7 +35,7 @@ namespace IXICore.SpixiBot
         public bool sendNotification = false;
         public BotContactStatus status = BotContactStatus.normal;
 
-        public BotContact(byte[] nick_data, byte[] public_key, int role_index, bool has_avatar, bool send_notification = true, BotContactStatus status = BotContactStatus.normal)
+        public BotContact(byte[] nick_data, byte[] public_key, int role_index, bool has_avatar, bool send_notification = false, BotContactStatus status = BotContactStatus.normal)
         {
             setNick(nick_data);
             publicKey = public_key;
