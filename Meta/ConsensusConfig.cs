@@ -270,8 +270,9 @@ namespace IXICore
         public static readonly uint rnMaxSubNameLevels = 1;
 
         // If the network is stuck for specified period of time due to missing required signers, go into special recovery mode
-        public static readonly long blockChainRecoveryTimeout = 3600; // 1 hour
+        public static readonly long blockChainRecoveryTimeout = 7200; // 2 hours
         public static readonly long blockChainRecoveryMissingRequiredSignerRatio = 100;
+        public static readonly long blockChainRecoveryMissingSignerMultiplier = 7;
 
         /// <summary>
         ///  Retrieves the lenght of the redacted window based on the block version in use.
