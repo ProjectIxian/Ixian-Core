@@ -36,15 +36,17 @@ namespace IXICore
     {
         public static List<PendingTransaction> pendingTransactions = new List<PendingTransaction>();
 
-        public static void addPendingLocalTransaction(Transaction t, byte[] message_id = null)
+        public static bool addPendingLocalTransaction(Transaction t, byte[] message_id = null)
         {
             lock (pendingTransactions)
             {
                 if (pendingTransactions.Find(x => x.transaction.id.SequenceEqual(t.id)) == null)
                 {
                     pendingTransactions.Add(new PendingTransaction( t, Clock.getTimestamp(), message_id));
+                    return true;
                 }
             }
+            return false;
         }
 
 
