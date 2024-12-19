@@ -217,7 +217,7 @@ namespace IXICore
             }
         }
 
-        protected virtual bool processGenericRequest(HttpListenerContext context, string methodName, Dictionary<string, object> parameters)
+        public JsonResponse processDefaultRequest(HttpListenerContext context, string methodName, Dictionary<string, object> parameters)
         {
             JsonResponse response = null;
 
@@ -449,6 +449,14 @@ namespace IXICore
             {
                 response = onDecodeTransaction(parameters);
             }
+
+            return response;
+        }
+
+        // Used as fallback in case processRequest returns false. In addition to handling the default requests, it also serves the web UI
+        protected virtual bool processGenericRequest(HttpListenerContext context, string methodName, Dictionary<string, object> parameters)
+        {
+            JsonResponse response = processDefaultRequest(context, methodName, parameters);
 
             bool resources = false;
 
