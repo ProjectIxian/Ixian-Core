@@ -220,7 +220,7 @@ namespace IXICore
         /// Min. number of blocks that the PL PoW will be calculated for.
         /// </summary>
         private static readonly ulong plPowMinCalculationBlockTimeOld = 20;
-        private static readonly ulong plPowMinCalculationBlockTime = 25; // 10 blocks = 5 mins
+        private static readonly ulong plPowMinCalculationBlockTime = 10; // 10 blocks = 5 mins
         public static ulong getPlPowMinCalculationBlockTime(int blockVersion = -1)
         {
             if (blockVersion < BlockVer.v12)
@@ -234,7 +234,7 @@ namespace IXICore
         /// Number of blocks after how many to re-calculate the PL PoW since last solution.
         /// </summary>
         private static readonly ulong plPowCalculationIntervalOld = 40;
-        private static readonly ulong plPowCalculationInterval = 5;
+        private static readonly ulong plPowCalculationInterval = 15;
         public static ulong getPlPowCalculationInterval(int blockVersion = -1)
         {
             if (blockVersion < BlockVer.v12)
