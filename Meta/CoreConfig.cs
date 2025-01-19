@@ -20,7 +20,7 @@ namespace IXICore
         /// <summary>
         /// Current version of IxiCore.
         /// </summary>
-        public static readonly string version = "xcore-0.9.3c";
+        public static readonly string version = "xcore-0.9.3d";
 
         /// <summary>
         /// Current version of the Ixian network protocol.
@@ -210,5 +210,10 @@ namespace IXICore
         /// Maximum number of requested message ids to keep in memory.
         /// </summary>
         public static long maximumRequestedMessageIds = 100000;
+
+        /// <summary>
+        /// Number of seconds to check block signature's inclusion in PL.
+        /// </summary>
+        public static int blockSignaturePlCheckTimeout = 450;
     }
 }

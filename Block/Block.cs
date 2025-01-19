@@ -1716,7 +1716,7 @@ namespace IXICore
         ///  An example of this is when this node's public key is present in the Presence List.
         /// </remarks>
         /// <returns>Byte array with the node's signature and public key or address.</returns>
-        public BlockSignature applySignature(SignerPowSolution powSolution = null)
+        public BlockSignature applySignature(SignerPowSolution powSolution)
         {
             if (compacted)
             {
