@@ -31,12 +31,6 @@ namespace IXICore
         public static readonly int blockGenerationInterval = 30;
 
         /// <summary>
-        ///  Minimum valid time difference between previous and newly generated block, in seconds.
-        ///  Default value for Ixian DLT is 20.
-        /// </summary>
-        public static readonly int minBlockTimeDifference = 20;
-
-        /// <summary>
         ///  Maximum valid time difference between newly generated block and network time, in seconds.
         ///  Default value for Ixian DLT is 60.
         /// </summary>

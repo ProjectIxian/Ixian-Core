@@ -35,6 +35,8 @@ namespace IXICore
         public static int v10 = 10; // Omega Lock-in (partial activation)
         public static int v11 = 11; // Omega Full activation
         public static int v12 = 12;
+        public static int v13 = 13;
+        public static int v14 = 14;
     }
 
     public class SuperBlockSegment
@@ -62,7 +64,7 @@ namespace IXICore
         /// <summary>
         /// Latest possible version of the Block structure. New blocks should usually be created with the latest version.
         /// </summary>
-        public static int maxVersion = BlockVer.v12;
+        public static int maxVersion = BlockVer.v13;
 
         /// <summary>
         /// Block height (block number). This is a sequential index in the blockchain which uniquely identifies each block.

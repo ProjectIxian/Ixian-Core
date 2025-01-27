@@ -61,8 +61,8 @@ namespace IXICore.Inventory
                 {
                     writer.WriteIxiVarInt((int)type);
 
-                    writer.WriteIxiVarInt(address.addressWithChecksum.Length);
-                    writer.Write(address.addressWithChecksum);
+                    writer.WriteIxiVarInt(address.addressNoChecksum.Length);
+                    writer.Write(address.addressNoChecksum);
 
                     writer.WriteIxiVarInt(blockNum);
 
