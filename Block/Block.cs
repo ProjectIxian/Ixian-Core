@@ -1757,9 +1757,9 @@ namespace IXICore
                     Logging.warn("Trying to apply signature on block #{0} but PoW Signing solution is too old {1} < {2}.", blockNum, powSolution.blockNum + ConsensusConfig.getPlPowBlocksValidity(version), blockNum);
                     return null;
                 }
-                if (powSolution.difficulty < IxianHandler.getMinSignerPowDifficulty(blockNum, timestamp))
+                if (powSolution.difficulty < IxianHandler.getMinSignerPowDifficulty(blockNum, version, timestamp))
                 {
-                    Logging.warn("Trying to apply signature on block #{0} but difficulty of PoW Signing solution is too small {1} < {2}.", blockNum, powSolution.difficulty, IxianHandler.getMinSignerPowDifficulty(blockNum, timestamp));
+                    Logging.warn("Trying to apply signature on block #{0} but difficulty of PoW Signing solution is too small {1} < {2}.", blockNum, powSolution.difficulty, IxianHandler.getMinSignerPowDifficulty(blockNum, version, timestamp));
                     return null;
                 }
                 newSig.powSolution = powSolution;
@@ -1969,7 +1969,7 @@ namespace IXICore
                     return false;
                 }
 
-                IxiNumber minPowDifficulty = IxianHandler.getMinSignerPowDifficulty(blockNum, timestamp);
+                IxiNumber minPowDifficulty = IxianHandler.getMinSignerPowDifficulty(blockNum, version, timestamp);
                 if (sig.powSolution.blockNum >= blockNum
                     || sig.powSolution.blockNum + ConsensusConfig.getPlPowBlocksValidity(version) < blockNum
                     || !sig.powSolution.verifySolution(minPowDifficulty))

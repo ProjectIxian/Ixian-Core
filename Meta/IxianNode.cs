@@ -56,7 +56,7 @@ namespace IXICore.Meta
         public virtual void receivedTransactionInclusionVerificationResponse(byte[] txid, bool verified) { }
         public virtual void receivedBlockHeader(Block block_header, bool verified) { }
 
-        public abstract IxiNumber getMinSignerPowDifficulty(ulong blockNum, long curBlockTimestamp);
+        public abstract IxiNumber getMinSignerPowDifficulty(ulong blockNum, int curBlockVersion, long curBlockTimestamp);
 
         public abstract RegisteredNameRecord getRegName(byte[] name, bool useAbsoluteId);
     }
@@ -239,10 +239,10 @@ namespace IXICore.Meta
             handlerClass.shutdown();
         }
 
-        public static IxiNumber getMinSignerPowDifficulty(ulong blockNum, long curBlockTimestamp)
+        public static IxiNumber getMinSignerPowDifficulty(ulong blockNum, int curBlockVersion, long curBlockTimestamp)
         {
             verifyHandler();
-            return handlerClass.getMinSignerPowDifficulty(blockNum, curBlockTimestamp);
+            return handlerClass.getMinSignerPowDifficulty(blockNum, curBlockVersion, curBlockTimestamp);
         }
 
         public static RegisteredNameRecord getRegName(byte[] name, bool useAbsoluteId = true)
