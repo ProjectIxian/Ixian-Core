@@ -246,7 +246,7 @@ namespace IXICore.Meta
         // Maintain a queue of sql statements
         private static readonly List<QueueStorageMessage> queueStatements = new List<QueueStorageMessage>();
         
-        public static bool prepareStorage(string filename = "")
+        public static bool prepareStorage(string filename = "", bool pruneStorage = true)
         {
             running = true;
             if(filename == "")
@@ -258,7 +258,7 @@ namespace IXICore.Meta
                 }
             }
             ActivityStorage.filename = filename;
-            if (!prepareStorageInternal())
+            if (!prepareStorageInternal(pruneStorage))
             {
                 running = false;
                 return false;
@@ -274,7 +274,7 @@ namespace IXICore.Meta
 
 
         // Creates the storage file if not found
-        private static bool prepareStorageInternal()
+        private static bool prepareStorageInternal(bool pruneStorage = true)
         {
             Logging.info("Preparing Activity storage, please wait...");
 
@@ -321,7 +321,7 @@ namespace IXICore.Meta
                 }
             }
 
-            if(CoreConfig.minActivityBlockHeight > 0)
+            if(pruneStorage && CoreConfig.minActivityBlockHeight > 0)
             {
                 clearStorage(CoreConfig.minActivityBlockHeight);
             }
